@@ -20,6 +20,8 @@ in
 
   homebrew = {
     enable = true;
+    # Custom taps needed by some casks (aerospace lives in nikitabobko/tap)
+    taps = [ "nikitabobko/tap" ];
     casks = pkgs.callPackage ./casks.nix {};
     # onActivation.cleanup = "uninstall";
 
@@ -67,19 +69,14 @@ in
     enable = true;
     username = user;
     entries = [
-      { path = "/Applications/Safari.app/"; }
-      { path = "/System/Applications/Messages.app/"; }
-      { path = "/System/Applications/Notes.app/"; }
-      { path = "${pkgs.alacritty}/Applications/Alacritty.app/"; }
-      { path = "/System/Applications/Music.app/"; }
-      { path = "/System/Applications/Photos.app/"; }
-      { path = "/System/Applications/Photo Booth.app/"; }
+      # NOTE: Finder is auto-pinned at the far left (slot 1) by macOS, so it is
+      # not listed here — adding it would create a duplicate icon.
+      { path = "/Applications/Google Chrome.app/"; }
+      { path = "/Applications/Visual Studio Code.app/"; }
+      { path = "/Applications/Ghostty.app/"; }
+      { path = "/System/Applications/Utilities/Activity Monitor.app/"; }
       { path = "/System/Applications/System Settings.app/"; }
-      {
-        path = "${config.users.users.${user}.home}/Downloads";
-        section = "others";
-        options = "--sort name --view grid --display stack";
-      }
+      { path = "/System/Applications/Messages.app/"; }
     ];
   };
 

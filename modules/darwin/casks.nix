@@ -9,17 +9,19 @@ _:
   "cursor"
 
   # Productivity Tools
-  "raycast"
+  "sol"                # launcher / command palette (replaces Raycast)
 
   # Terminals
   "ghostty"
 
-  # Keyboard / System utilities
+  # Window manager / Keyboard / System utilities
+  "aerospace"          # tiling window manager (from nikitabobko/tap)
   "karabiner-elements"
   "eul"
 
   # Browsers
   "google-chrome"
+  "brave-browser"
 
   # Communication Tools - Examples (uncomment as needed)
   # "discord"

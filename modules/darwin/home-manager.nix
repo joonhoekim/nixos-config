@@ -41,6 +41,9 @@ in
   # Enable home-manager
   home-manager = {
     useGlobalPkgs = true;
+    # Back up pre-existing dotfiles (e.g. ~/.zshrc) to <name>.backup instead
+    # of refusing to overwrite them on first activation.
+    backupFileExtension = "backup";
     users.${user} = { pkgs, config, lib, ... }:{
       home = {
         enableNixpkgsReleaseCheck = false;

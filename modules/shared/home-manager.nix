@@ -263,16 +263,18 @@ let name = "joonhoekim";
         "/Users/${user}/.ssh/config_external"
       )
     ];
-    matchBlocks = {
+    # Host blocks now live under `settings`, keyed by host pattern, using
+    # upstream OpenSSH directive names (PascalCase).
+    settings = {
+      # Global defaults (formerly the `Host *` match block)
       "*" = {
-        # Set the default values we want to keep
-        sendEnv = [ "LANG" "LC_*" ];
-        hashKnownHosts = true;
+        SendEnv = [ "LANG" "LC_*" ];
+        HashKnownHosts = true;
       };
       # Example SSH configuration for GitHub
       # "github.com" = {
-      #   identitiesOnly = true;
-      #   identityFile = [
+      #   IdentitiesOnly = true;
+      #   IdentityFile = [
       #     (lib.mkIf pkgs.stdenv.hostPlatform.isLinux
       #       "/home/${user}/.ssh/id_github"
       #     )

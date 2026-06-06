@@ -63,4 +63,17 @@ with pkgs; [
   # Python packages
   python3
   virtualenv
+
+  # Modern CLI / TUI tools
+  difftastic     # syntax-aware diff (used by `diff` alias)
+  neovim
+  yazi           # TUI file manager
+  tealdeer       # fast `tldr` client
+  dust           # friendlier du
+  procs          # modern `ps`
+  lazydocker     # TUI for docker
+
+  # Nix tooling (handy while editing this config)
+  nil            # Nix language server
+  nixfmt-rfc-style  # Nix formatter
 ]

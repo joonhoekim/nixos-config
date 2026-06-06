@@ -71,6 +71,12 @@ let name = "joonhoekim";
     };
   };
 
+  # Shell-integrated CLI tools (zsh integration added automatically)
+  atuin.enable = true;        # better shell history search (Ctrl-R)
+  zoxide.enable = true;       # smarter cd — use `z <dir>`
+  eza.enable = true;          # modern `ls`
+  pay-respects.enable = true; # correct the previous command (thefuck successor) — use `f`
+
   vim = {
     enable = true;
     plugins = with pkgs.vimPlugins; [ vim-airline vim-airline-themes vim-startify vim-tmux-navigator ];

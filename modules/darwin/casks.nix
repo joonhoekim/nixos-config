@@ -11,6 +11,13 @@ _:
   # Productivity Tools
   "raycast"
 
+  # Terminals
+  "ghostty"
+
+  # Keyboard / System utilities
+  "karabiner-elements"
+  "eul"
+
   # Browsers
   "google-chrome"
 

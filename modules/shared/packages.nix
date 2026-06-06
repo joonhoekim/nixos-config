@@ -75,5 +75,5 @@ with pkgs; [
 
   # Nix tooling (handy while editing this config)
   nil            # Nix language server
-  nixfmt-rfc-style  # Nix formatter
+  nixfmt         # Nix formatter (was nixfmt-rfc-style)
 ]

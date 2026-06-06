@@ -2,7 +2,7 @@ _:
 
 [
   # Development Tools
-  "homebrew/cask/docker"
+  "docker-desktop"   # renamed from "docker" cask; docker CLI also comes from nixpkgs
   "visual-studio-code"
   "iterm2"
   "postman"

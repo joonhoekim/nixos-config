@@ -47,6 +47,7 @@ let user = "jh"; in
         ApplePressAndHoldEnabled = false;
         KeyRepeat = 2; # Values: 120, 90, 60, 30, 12, 6, 2
         InitialKeyRepeat = 15; # Values: 120, 94, 68, 35, 25, 15
+        AppleKeyboardUIMode = 3;   # full keyboard access (Tab through all controls)
 
         # Disable "smart"/auto text substitutions (annoying when coding)
         NSAutomaticCapitalizationEnabled = false;
@@ -92,6 +93,7 @@ let user = "jh"; in
         ShowPathbar = true;
         ShowStatusBar = true;
         FXPreferredViewStyle = "Nlsv";       # list view
+        FXDefaultSearchScope = "SCcf";       # search the current folder by default
         _FXSortFoldersFirst = true;
         QuitMenuItem = true;                 # allow Cmd-Q to quit Finder
       };
@@ -125,6 +127,37 @@ let user = "jh"; in
         Show24Hour = true;
         ShowDayOfWeek = true;
       };
+
+      # Settings without a typed nix-darwin option, written via `defaults`.
+      # These are scalar leaf values, so they don't clobber other keys in the domain.
+      CustomUserPreferences = {
+        NSGlobalDomain = {
+          NSWindowShouldDragOnGesture = true;   # Ctrl+Cmd + drag moves a window
+        };
+        "com.apple.finder" = {
+          NewWindowTarget = "PfHm";             # new Finder windows open Home
+          NewWindowTargetPath = "file:///Users/${user}/";
+        };
+        "com.apple.desktopservices" = {
+          DSDontWriteNetworkStores = true;      # no .DS_Store on network drives
+          DSDontWriteUSBStores = true;          # no .DS_Store on USB drives
+        };
+      };
     };
+
+    # "Select next source in Input menu" → F18 (so Karabiner can drive
+    # input-source switching). We merge just key 61 with `defaults -dict-add`
+    # rather than system.defaults.CustomUserPreferences, which would overwrite
+    # the entire AppleSymbolicHotKeys dict and wipe other shortcuts (Spotlight, etc).
+    # params = [ char keycode modifiers ]; 65535 = no char, 79 = F18, 8388608 = fn flag.
+    activationScripts.postActivation.text = ''
+      echo "configuring input-source hotkey (next source = F18)..." >&2
+      # NOTE: must be XML plist with <true/> — an old-style `enabled=1` writes an
+      # integer, which macOS treats as "not enabled" and reverts to the default.
+      /usr/bin/sudo -u ${user} /usr/bin/defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 61 \
+        '<dict><key>enabled</key><true/><key>value</key><dict><key>type</key><string>standard</string><key>parameters</key><array><integer>65535</integer><integer>79</integer><integer>8388608</integer></array></dict></dict>'
+      # reload so it applies without a full logout (best-effort)
+      /usr/bin/sudo -u ${user} /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u || true
+    '';
   };
 }

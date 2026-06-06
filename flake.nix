@@ -94,7 +94,9 @@
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                 };
-                mutableTaps = false;
+                # Allow imperative `brew tap`/`brew install` and custom taps
+                # (e.g. nikitabobko/tap for aerospace) to coexist with Nix.
+                mutableTaps = true;
                 autoMigrate = true;
               };
             }

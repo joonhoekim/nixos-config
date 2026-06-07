@@ -12,4 +12,10 @@ let
   "${xdg_configHome}/karabiner/karabiner.json" = {
     source = ./config/karabiner/karabiner.json;
   };
+
+  # AeroSpace config, managed declaratively (read-only symlink into the Nix
+  # store). Edit modules/darwin/config/aerospace.toml and rebuild to change it.
+  "${xdg_configHome}/aerospace/aerospace.toml" = {
+    source = ./config/aerospace.toml;
+  };
 }

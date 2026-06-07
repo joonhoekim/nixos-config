@@ -34,6 +34,24 @@ let user = "jh"; in
     reattach = true;
   };
 
+  # Launch GUI apps at login (declarative "Login Items"). The apps' own
+  # start-at-login toggles don't stick on recent macOS, so we drive them
+  # via per-user LaunchAgents instead.
+  launchd.user.agents = {
+    # Tiling WM — keep it alive so a crash/quit relaunches it.
+    aerospace = {
+      command = "/Applications/AeroSpace.app/Contents/MacOS/AeroSpace";
+      serviceConfig = {
+        RunAtLoad = true;
+        KeepAlive = true;
+      };
+    };
+    # Menu-bar system monitor — start at login, but respect a manual quit.
+    eul = {
+      command = "/Applications/eul.app/Contents/MacOS/eul";
+      serviceConfig.RunAtLoad = true;
+    };
+  };
 
   environment.systemPackages =
     import ../../modules/shared/packages.nix { inherit pkgs; };
@@ -129,6 +147,13 @@ let user = "jh"; in
         GloballyEnabled = false;                  # disable Stage Manager
         EnableStandardClickToShowDesktop = false;
       };
+
+      # Mission Control — recommended for AeroSpace multi-monitor use.
+      # true = one Space spans all displays (i.e. "Displays have separate
+      # Spaces" is OFF). Requires a logout to take effect.
+      # (The companion "Automatically rearrange Spaces" toggle is handled
+      # above via dock.mru-spaces = false.)
+      spaces.spans-displays = true;
 
       menuExtraClock = {
         Show24Hour = true;

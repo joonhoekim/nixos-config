@@ -55,6 +55,13 @@ in
           additionalFiles
         ];
         stateVersion = "23.11";
+
+        # Materialize the tool versions declared in programs.mise.globalConfig
+        # at switch time. `mise install` is idempotent (no-op when nothing is
+        # missing); `|| true` keeps an offline switch from failing.
+        activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+          $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
+        '';
       };
       programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib; };
 

@@ -21,6 +21,9 @@
 `apps/aarch64-darwin/build-switch` 스크립트 실행 → 내부에서
 `darwinConfigurations.aarch64-darwin`을 빌드·활성화.
 
+> `apps/`의 정체(flake apps + bash), `apply`의 플레이스홀더 치환, 그리고
+> `nix flake check`가 실패하는 이유는 [11. apps/ 디렉터리와 부트스트랩](./11-apps-and-bootstrap.md) 참고.
+
 ## macOS / Linux 분기는 두 군데서 일어난다
 
 ### (A) 최상위 분기 — `flake.nix`

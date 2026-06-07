@@ -20,8 +20,8 @@ in
 
   homebrew = {
     enable = true;
-    # Custom taps needed by some casks (aerospace lives in nikitabobko/tap)
-    taps = [ "nikitabobko/tap" ];
+    # nikitabobko/tap (aerospace) is managed declaratively via nix-homebrew
+    # in flake.nix, so no `homebrew.taps` entry is needed here.
     casks = pkgs.callPackage ./casks.nix {};
     # onActivation.cleanup = "uninstall";
 

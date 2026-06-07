@@ -23,13 +23,17 @@
       url = "github:homebrew/homebrew-cask";
       flake = false;
     };
+    nikitabobko-tap = {
+      url = "github:nikitabobko/homebrew-tap";
+      flake = false;
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, home-manager, nixpkgs, disko } @inputs:
     let
       user = "jh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -93,9 +97,12 @@
                   "homebrew/homebrew-core" = homebrew-core;
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
+                  # aerospace lives here; managed declaratively so a fresh
+                  # machine never needs an imperative `brew tap` (which fails
+                  # on a not-yet-writable /opt/homebrew/Library/Taps).
+                  "nikitabobko/homebrew-tap" = nikitabobko-tap;
                 };
-                # Allow imperative `brew tap`/`brew install` and custom taps
-                # (e.g. nikitabobko/tap for aerospace) to coexist with Nix.
+                # Allow imperative `brew tap`/`brew install` to coexist with Nix.
                 mutableTaps = true;
                 autoMigrate = true;
               };

@@ -29,8 +29,9 @@ with pkgs; [
   # Media-related packages
   fd
 
-  # Node.js: managed by mise (programs.mise in home-manager), not nixpkgs.
-  # Run `mise use -g node@lts` after rebuild to install a node version.
+  # Node.js (+ bun, corepack-backed yarn/pnpm): declared in programs.mise
+  # globalConfig in home-manager, not nixpkgs. Run `mise install` after
+  # rebuild to materialize the declared tool versions.
 
   # Text and terminal utilities
   htop

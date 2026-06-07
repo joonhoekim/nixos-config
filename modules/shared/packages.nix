@@ -18,8 +18,10 @@ with pkgs; [
   gnupg
 
   # Cloud-related tools and SDKs
-  docker
+  docker          # docker CLI (talks to the colima-managed daemon)
   docker-compose
+  colima          # container runtime on macOS (Docker Desktop replacement)
+  lima            # Linux VM layer colima builds on (provides `limactl`)
 
   # Media-related packages
   emacs-all-the-icons-fonts

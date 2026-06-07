@@ -2,7 +2,8 @@ _:
 
 [
   # Development Tools
-  "docker-desktop"   # renamed from "docker" cask; docker CLI also comes from nixpkgs
+  # NOTE: Docker Desktop removed — container runtime is now colima + lima
+  # (declared in modules/shared/packages.nix); docker CLI comes from nixpkgs.
   "visual-studio-code"
   "iterm2"
   "postman"

@@ -80,7 +80,20 @@ let name = "joonhoekim";
   zoxide.enable = true;       # smarter cd — use `z <dir>`
   eza.enable = true;          # modern `ls`
   pay-respects.enable = true; # correct the previous command (thefuck successor) — use `f`
-  mise.enable = true;         # runtime version manager (node, etc.) — `mise use -g node@lts`
+  mise = {                    # runtime version manager (node, etc.)
+    enable = true;
+    globalConfig = {
+      tools = {
+        node = "lts";
+        bun = "latest";
+      };
+      settings = {
+        # Run `corepack enable` after installing node, exposing the
+        # project-pinned yarn/pnpm (package.json `packageManager` field).
+        node.corepack = true;
+      };
+    };
+  };
 
   vim = {
     enable = true;

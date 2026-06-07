@@ -40,6 +40,13 @@ in
     packages = pkgs.callPackage ./packages.nix {};
     file = shared-files // import ./files.nix { inherit user; };
     stateVersion = "21.05";
+
+    # Materialize the tool versions declared in programs.mise.globalConfig
+    # at switch time. `mise install` is idempotent (no-op when nothing is
+    # missing); `|| true` keeps an offline switch from failing.
+    activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
+    '';
   };
 
   # Use a dark theme

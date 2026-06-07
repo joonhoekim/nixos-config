@@ -8,6 +8,7 @@ _:
   "iterm2"
   "postman"
   "cursor"
+  "dbeaver-community"  # universal database tool / SQL client
 
   # Productivity Tools
   "sol"                # launcher / command palette (replaces Raycast)

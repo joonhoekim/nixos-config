@@ -23,22 +23,17 @@ with pkgs; [
   colima          # container runtime on macOS (Docker Desktop replacement)
   lima            # Linux VM layer colima builds on (provides `limactl`)
 
+  # Note: fonts live in modules/shared/fonts.nix (registered via fonts.packages),
+  # since fonts in systemPackages aren't picked up by the macOS font system.
+
   # Media-related packages
-  emacs-all-the-icons-fonts
-  dejavu_fonts
   fd
-  font-awesome
-  hack-font
-  noto-fonts
-  noto-fonts-color-emoji
-  meslo-lgs-nf
 
   # Node.js: managed by mise (programs.mise in home-manager), not nixpkgs.
   # Run `mise use -g node@lts` after rebuild to install a node version.
 
   # Text and terminal utilities
   htop
-  jetbrains-mono
   jq
   ripgrep
   tree

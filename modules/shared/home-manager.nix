@@ -77,6 +77,7 @@ let name = "joonhoekim";
   zoxide.enable = true;       # smarter cd — use `z <dir>`
   eza.enable = true;          # modern `ls`
   pay-respects.enable = true; # correct the previous command (thefuck successor) — use `f`
+  mise.enable = true;         # runtime version manager (node, etc.) — `mise use -g node@lts`
 
   vim = {
     enable = true;

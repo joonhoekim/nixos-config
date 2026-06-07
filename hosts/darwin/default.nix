@@ -28,6 +28,12 @@ let user = "jh"; in
     '';
   };
 
+  # Touch ID (and Apple Watch) for sudo. `reattach` makes it work inside tmux.
+  security.pam.services.sudo_local = {
+    touchIdAuth = true;
+    reattach = true;
+  };
+
 
   environment.systemPackages =
     import ../../modules/shared/packages.nix { inherit pkgs; };
@@ -42,6 +48,7 @@ let user = "jh"; in
         # Appearance
         AppleInterfaceStyle = "Dark";
         AppleShowAllExtensions = true;
+        AppleShowScrollBars = "Always";   # always show scroll bars
 
         # Keyboard
         ApplePressAndHoldEnabled = false;

@@ -33,8 +33,8 @@ with pkgs; [
   noto-fonts-color-emoji
   meslo-lgs-nf
 
-  # Node.js development tools
-  nodejs_24
+  # Node.js: managed by mise (programs.mise in home-manager), not nixpkgs.
+  # Run `mise use -g node@lts` after rebuild to install a node version.
 
   # Text and terminal utilities
   htop
@@ -55,6 +55,11 @@ with pkgs; [
   lazygit
   fzf
   direnv
+  uv             # fast Python package/venv manager
+  delta          # syntax-highlighting pager for git diffs
+  yq-go          # jq for YAML (provides `yq`)
+  cmake
+  pkg-config
   
   # Programming languages and runtimes
   go

@@ -56,6 +56,11 @@ let user = "jh"; in
   environment.systemPackages =
     import ../../modules/shared/packages.nix { inherit pkgs; };
 
+  # Register fonts with the macOS font system (symlinked into
+  # /Library/Fonts/Nix Fonts). Fonts in systemPackages are NOT picked up by
+  # macOS apps, so terminals show broken glyphs without this.
+  fonts.packages = import ../../modules/shared/fonts.nix { inherit pkgs; };
+
   system = {
     checks.verifyNixPath = false;
     primaryUser = user;

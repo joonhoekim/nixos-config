@@ -298,15 +298,12 @@ in {
     }];
   };
 
-  fonts.packages = with pkgs; [
+  fonts.packages = (import ../../modules/shared/fonts.nix { inherit pkgs; }) ++ (with pkgs; [
     dejavu_fonts
     emacs-all-the-icons-fonts
     feather-font # from overlay
     jetbrains-mono
-    font-awesome
-    noto-fonts
-    noto-fonts-color-emoji
-  ];
+  ]);
 
   environment.systemPackages = with pkgs; [
     gitFull

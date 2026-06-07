@@ -50,6 +50,9 @@ let name = "joonhoekim";
 
       # Always color ls and group directories
       alias ls='ls --color=auto'
+
+      # Claude Code without permission prompts
+      alias cld='claude --dangerously-skip-permissions'
     '';
   };
 

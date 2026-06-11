@@ -50,22 +50,16 @@ with pkgs; [
   awscli2
   lazygit
   fzf
-  direnv
   uv             # fast Python package/venv manager
   delta          # syntax-highlighting pager for git diffs
   yq-go          # jq for YAML (provides `yq`)
   cmake
   pkg-config
-  
-  # Programming languages and runtimes
-  go
-  rustc
-  cargo
-  openjdk
 
-  # Python packages
-  python3
-  virtualenv
+  # Language runtimes are NOT base-installed here. They're version-managed
+  # per project: go / rust / java / node / bun via mise (see
+  # programs.mise.globalConfig in home-manager.nix), and Python via `uv`
+  # (above) — so versions stay project-pinned instead of global.
 
   # Modern CLI / TUI tools
   difftastic     # syntax-aware diff (used by `diff` alias)
@@ -75,6 +69,60 @@ with pkgs; [
   dust           # friendlier du
   procs          # modern `ps`
   lazydocker     # TUI for docker
+
+  # Modern CLI / TUI tools — extended set (ported from previous NixOS config).
+  # atuin / zoxide / eza / pay-respects are enabled as programs in
+  # home-manager.nix, so they're intentionally not listed here.
+  fx             # interactive JSON viewer
+  duf            # friendlier df
+  fastfetch      # system info (neofetch successor)
+  file           # file type detection
+  lsof           # list open files
+  p7zip          # 7z archives
+  xz             # xz/lzma compression
+  unrar          # rar extraction (unfree)
+  glow           # markdown renderer
+  navi           # interactive cheatsheets
+  hyperfine      # CLI benchmarking
+  tokei          # source line counter
+  watchexec      # run a command when files change
+  entr           # run a command when files change (classic)
+  ouch           # universal (de)compression
+  just           # command runner (make alternative)
+  gum            # shell-script UI prompts (charm.sh)
+  onefetch       # git repo summary
+  zellij         # terminal multiplexer
+  bottom         # system monitor (btm)
+  ncdu           # disk usage TUI
+  gitui          # fast git TUI
+  tig            # git history viewer
+  yt-dlp         # video downloader
+  chafa          # terminal image viewer
+  ffmpeg         # media transcoding
+  postgresql     # psql + client libraries
+
+  # Editor / LSP toolchain (system-wide; LazyVim/Mason would install these
+  # per-user otherwise)
+  helix          # modal editor
+  nixd           # Nix LSP (alternative to nil below)
+  lua-language-server
+  stylua         # Lua formatter
+  shellcheck     # shell linter
+  shfmt          # shell formatter
+  ruff           # Python linter/formatter (Rust-based)
+  tree-sitter    # parser generator CLI
+
+  # Infra / DB / network
+  k9s            # Kubernetes TUI
+  dive           # docker image layer explorer
+  pgcli          # postgres CLI with autocomplete
+  lazysql        # database TUI
+  nmap           # network scanner
+  mtr            # traceroute + ping
+  iperf3         # network throughput
+  gping          # ping with a graph
+  xh             # modern HTTP client (httpie-compatible)
+  dog            # modern dig
 
   # Nix tooling (handy while editing this config)
   nil            # Nix language server

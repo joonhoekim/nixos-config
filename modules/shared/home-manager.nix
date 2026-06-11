@@ -80,12 +80,19 @@ let name = "joonhoekim";
   zoxide.enable = true;       # smarter cd — use `z <dir>`
   eza.enable = true;          # modern `ls`
   pay-respects.enable = true; # correct the previous command (thefuck successor) — use `f`
+  direnv = {                  # per-directory env; nix-direnv caches `use flake`
+    enable = true;
+    nix-direnv.enable = true;
+  };
   mise = {                    # runtime version manager (node, etc.)
     enable = true;
     globalConfig = {
       tools = {
         node = "lts";
         bun = "latest";
+        go = "latest";
+        rust = "stable";     # mise core plugin wraps rustup
+        java = "temurin-25";  # LTS (Temurin / Eclipse Adoptium)
       };
       settings = {
         # Run `corepack enable` after installing node, exposing the

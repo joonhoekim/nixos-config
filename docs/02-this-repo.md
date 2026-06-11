@@ -1,7 +1,7 @@
 # 02. 이 저장소의 구조
 
 진입점이 어디고, 파일들이 어떻게 연결되며, macOS/Linux 분기가 어디서 일어나는지.
-`apps/`의 정체와 부트스트랩(플레이스홀더) 구조. 그리고 이 저장소를 읽는 데 필요한 Nix 문법.
+`apps/`(`nix run` 래퍼)의 구조와 머신 고유 부분. 그리고 이 저장소를 읽는 데 필요한 Nix 문법.
 
 ---
 
@@ -10,14 +10,14 @@
 모든 것의 시작점. `inputs`(외부 의존성)와 `outputs`(그걸로 무엇을 만들지)로 나뉜다.
 `outputs`가 만드는 네 가지:
 
-- `darwinConfigurations.<system>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
-- `nixosConfigurations.<system>` → `hosts/nixos/` (Linux)
-- `apps.<system>.{build-switch, ...}` → `apps/<system>/` (`nix run .#build-switch`의 실체)
+- `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
+- `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `amd`/`intel`)
+- `apps.<system>.{build-switch, build, rollback, clean}` → `apps/<name>` (`nix run`의 실체)
 - `devShells`
 
-흐름: `nix run .#build-switch` → `apps.aarch64-darwin.build-switch` →
-`apps/aarch64-darwin/build-switch` 실행 → 내부에서 `darwinConfigurations.aarch64-darwin`을 빌드·활성화.
-(`apps/`의 자세한 구조는 아래 "apps/ 와 부트스트랩" 절.)
+흐름: `nix run .#build-switch` → `apps.<현재system>.build-switch` → 공유 스크립트 `apps/build-switch`
+실행 → `uname`으로 OS를 감지해 macOS면 `darwinConfigurations.<arch>`, NixOS면
+`nixosConfigurations.<hostname>`을 빌드·활성화. (`apps/`의 자세한 구조는 아래 "apps/" 절.)
 
 ---
 
@@ -72,7 +72,8 @@ modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
 └─ default.nix        nixpkgs.config + overlays
 ```
 
-리눅스도 대칭이다. `hosts/nixos/default.nix` → `modules/nixos/*` → 같은 `modules/shared/*` 재사용.
+리눅스도 대칭이다. `hosts/nixos/<host>/default.nix` → `hosts/nixos/common.nix` → `modules/nixos/*`
+→ 같은 `modules/shared/*` 재사용.
 
 핵심 원칙:
 
@@ -81,13 +82,15 @@ modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
 
 ---
 
-## `apps/` 와 부트스트랩
+## `apps/`
 
-### `apps/`의 정체: "내용은 bash, 진입은 Nix"
+### 정체: "내용은 sh, 진입은 Nix"
 
-흔한 오해: "그냥 clone할 때 돌리는 CLI고 Nix와 무관하다." → **반은 맞고 반은 틀리다.**
-`apps/<system>/` 안의 파일은 평범한 **bash 스크립트**(Nix 언어 아님)지만, flake의 **`apps` 출력**으로
-노출되어 `nix run`으로 실행된다. 즉 Nix가 진입점(`nix run .#<name>`)을 제공하고 실제 일은 bash가 한다.
+`apps/`의 파일은 평범한 **POSIX sh 스크립트**(Nix 언어 아님)지만, flake의 **`apps` 출력**으로
+노출되어 `nix run .#<name>`으로 실행된다. Nix가 진입점을 주고 실제 일은 셸이 한다.
+
+예전 dustinlyons 템플릿은 system마다 디렉터리를 두고 스크립트를 중복시켰지만, 지금은
+**스크립트 한 벌을 `apps/`에 평평하게 두고 런타임에 macOS/NixOS를 자동 감지**한다.
 
 연결 고리(`flake.nix`):
 
@@ -96,91 +99,64 @@ mkApp = scriptName: system: {
   type = "app";
   program = "${(writeScriptBin scriptName ''
     #!/usr/bin/env bash
-    PATH=${git}/bin:$PATH                       # git을 PATH에 보장
-    exec ${self}/apps/${system}/${scriptName}   # 실제 bash 스크립트 실행
+    PATH=${git}/bin:$PATH                  # git을 PATH에 보장
+    exec ${self}/apps/${scriptName} "$@"   # 공유 스크립트 실행, 인자 전달
   '')}/bin/${scriptName}";
+};
+# 스크립트가 플랫폼을 자체 감지하므로 모든 system이 같은 앱을 노출
+mkApps = system: {
+  "build-switch" = mkApp "build-switch" system;
+  "build"        = mkApp "build" system;
+  "rollback"     = mkApp "rollback" system;
+  "clean"        = mkApp "clean" system;
 };
 ```
 
-`${self}`는 flake 소스 루트. 흐름: `nix run .#build-switch` → flake 출력 → writeScriptBin 래퍼 →
-`apps/<system>/build-switch` bash → 내부에서 `darwinConfigurations.<system>` 빌드·활성화.
-
-디렉터리는 system마다 따로다(상수 `SYSTEM_TYPE`가 박혀 있음). `aarch64-linux`는 `x86_64-linux`
-심링크. 새 app 추가 시 각 system 디렉터리에 파일을 두고 `flake.nix`의
-`mkDarwinApps`/`mkLinuxApps`에 `"name" = mkApp "name" system;`를 등록한다.
+`${self}`는 flake 소스 루트. 흐름: `nix run .#build-switch` → writeScriptBin 래퍼 →
+`apps/build-switch` → `uname`으로 OS 판별 → macOS면 `darwinConfigurations.<arch>`,
+NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps/`에 스크립트를 두고
+`mkApps`에 한 줄 등록하면 모든 플랫폼에 노출된다.
 
 ### 각 app이 하는 일
 
 | app | 용도 | 비고 |
 |-----|------|------|
-| `apply` | **부트스트랩(1회)**. 플레이스홀더 치환 | clone 직후 한 번. 대화형 |
-| `build` | 빌드만 (활성화 X) | `nix build .#…system`, 결과 확인용 |
-| `build-switch` | 빌드 + 활성화 | **일상 명령.** `sudo darwin-rebuild switch` |
-| `clean` | 구 세대 GC | `nix-collect-garbage --delete-older-than 7d` |
-| `rollback` | 이전 세대로 복구 | 세대 번호 입력 (darwin 전용) |
-| `*-keys` | SSH/GPG 키 생성·복사·확인 | `create-/copy-/check-keys` |
+| `build-switch` | 빌드 + 활성화 | **일상 명령.** macOS=`darwin-rebuild switch`, NixOS=`nixos-rebuild switch` |
+| `build` | 빌드만 (활성화 X) | 평가·빌드 검증용 |
+| `rollback` | 이전 세대로 복구 | 세대 번호 입력(공백=직전). 양 OS |
+| `clean` | 구 세대 GC | `nix-collect-garbage --delete-older-than 7d` (인자로 기간 변경) |
 
-### `apply` = 코드모드: 플레이스홀더 치환
+인자 규칙 세 가지:
 
-`apply`는 단순 빌드가 아니라 **소스 파일을 `sed`로 직접 고치는 코드모드**다. clone 직후 한 번
-돌려 템플릿 토큰을 내 환경 값으로 바꾼다.
+- 추가 플래그는 그대로 전달된다: `nix run .#build-switch -- --show-trace`.
+- NixOS 호스트는 `hostname`에서 자동으로 잡고, `--host`로 덮어쓴다(첫 switch 전 유용):
+  `nix run .#build-switch -- --host amd`.
+- `build-switch`를 통째로 `sudo`로 돌리지 말 것 — 빌드는 유저로, 활성화 단계만 `sudo`.
 
-| 토큰 | 의미 | 채워지는 곳 |
-|------|------|-------------|
-| `%USER%` / `%EMAIL%` / `%NAME%` | 사용자명·git 신원 | 양쪽 OS |
-| `%HOST%` | 호스트명 | NixOS 전용 |
-| `%INTERFACE%` | 기본 네트워크 인터페이스 | NixOS 전용 |
-| `%DISK%` | 부트 디스크(disko 포맷 대상) | NixOS 전용 |
+### 머신 고유 부분: `hardware-configuration.nix`
 
-**핵심: macOS(Darwin) 분기는 `%HOST%`/`%INTERFACE%`/`%DISK%`를 일부러 건너뛴다**(Linux 전용 값).
-그래서 Mac에서 `apply`를 돌려도 NixOS 쪽 플레이스홀더 3개는 그대로 남는다. 현재 남은 것:
+이 fork는 재배포용 템플릿이 아니라 개인 설정이라, 예전의 `%HOST%`/`%DISK%` 플레이스홀더
+치환(`apply`)·비밀키 부트스트랩(`*-keys`)·disko 포맷·`install` 앱은 **전부 제거**했다.
+머신마다 다른 값은 한 곳, 각 호스트의 `hardware-configuration.nix`에만 모인다.
 
-```
-hosts/nixos/default.nix:37        hostName = "%HOST%"
-hosts/nixos/default.nix:39        interfaces."%INTERFACE%".useDHCP
-modules/nixos/disk-config.nix:7   device = "/dev/%DISK%"
-```
+- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.amd`, `.intel`). 각
+  `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관 설정) + 자기
+  `hardware-configuration.nix`를 import한다.
+- `hardware-configuration.nix`는 커밋된 **PLACEHOLDER**다. 해당 머신에서
+  `nixos-generate-config --show-hardware-config`로 생성해 교체한 뒤 빌드한다. 교체 전엔
+  `fileSystems` 미정의로 빌드가 **일부러 실패**한다 — 잘못된 디스크로 빌드하는 사고 방지.
+- CPU 마이크로코드·initrd 모듈·디스크 UUID는 이 파일이 자동으로 담으므로, AMD/Intel 머신
+  차이는 여기서 흡수된다. GPU(amdgpu / i915·xe)는 mesa로 공통 처리.
 
-### 그래서 `nix flake check`가 실패한다 (의도된 동작)
+### `nix flake check`는 여전히 NixOS 쪽에서 멈춘다
 
-`nix flake check`는 darwin뿐 아니라 **`nixosConfigurations`까지 전부 평가**한다. 위 `%HOST%`는
-호스트명 정규식 타입 검사를 통과 못 해 거기서 터진다:
-
-```
-error: A definition for option `networking.hostName' is not of type
-`string matching the pattern ...`. Definition values:
-- In `…/hosts/nixos': "%HOST%"
-```
-
-**버그가 아니라 템플릿 설계의 트레이드오프다:**
-
-1. 이건 clone해서 자기 걸로 만드는 **템플릿**이라, `apply`가 찾아 치환하도록 플레이스홀더가
-   커밋된 채 있어야 한다. 실제 값을 박으면 모두가 남의 호스트명·디스크를 clone하게 된다.
-2. 안내 워크플로는 `nix run .#apply` → `nix run .#build-switch`이지 `flake check`가 아니다.
-3. `%HOST%`는 일부러 유효하지 않게 생겼다(grep으로 찾기 쉽게). `"nixos"` 같은 유효 기본값은
-   check는 통과시키지만 잘못된 호스트명/디스크로 빌드할 위험을 만든다(특히 `%DISK%`는 포맷 대상).
-
-**중요: `build-switch`와 일상 사용에는 영향 없다.** 빨갛게 나오는 건 `nix flake check`뿐.
-darwin 설정만 검증하려면(플레이스홀더 무관):
+`flake check`는 darwin뿐 아니라 `nixosConfigurations`까지 평가하는데, 위 placeholder 때문에
+`fileSystems` assertion에서 멈춘다(의도된 안전장치). 일상 사용(`build-switch`)에는 영향이 없고,
+빨갛게 나오는 건 `flake check`뿐이다. darwin 설정만 검증하려면:
 
 ```bash
 nix eval --raw '.#darwinConfigurations.aarch64-darwin.config.system.build.toplevel.drvPath'
 ```
-
-> 플레이스홀더를 임시 더미값(`%HOST%`→`check-host`, `%DISK%`→`sda`)으로 치환했다가 check 후
-> 원복하는 "검증용 코드모드"를 둘 수도 있다. `%DISK%`는 평가만으론 안 터지므로 더미값은 안전.
-
-### 이 fork에서의 선택
-
-이건 재배포할 템플릿이 아니라 **개인 fork**라, "남이 clone한다"는 제약이 없다. NixOS를 실제로
-쓸 때 두 길:
-
-- **(A) 템플릿 유지** — 실제 NixOS 머신에서 `nix run .#apply`로 3개 값을 그 자리에서 채운다.
-  머신별 disk/interface를 의식적으로 고르게 되어 안전. Mac에선 `flake check`가 계속 실패로 남음.
-- **(B) 개인 설정 전환** — 호스트명을 정했다면 실제 값을 커밋. interface는
-  `networking.useDHCP = true`로 명시를 없애고 disk만 실제 장치명으로. 그러면 `flake check`도 통과.
-
-어느 쪽이든 `%DISK%`는 그 머신에서 신중히 정한다(포맷 대상).
 
 ---
 

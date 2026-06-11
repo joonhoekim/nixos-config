@@ -62,7 +62,7 @@ in
         # on PATH because mise's rust backend shells out to rustup-init, which
         # needs curl/wget — the activation env doesn't otherwise provide it.
         activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          $DRY_RUN_CMD PATH="${pkgs.curl}/bin:$PATH" ${config.programs.mise.package}/bin/mise install || true
+          PATH="${pkgs.curl}/bin:$PATH" $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
         '';
       };
       programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib; };

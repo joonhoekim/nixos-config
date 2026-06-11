@@ -93,11 +93,18 @@ let name = "joonhoekim";
         go = "latest";
         rust = "stable";     # mise core plugin wraps rustup
         java = "temurin-25";  # LTS (Temurin / Eclipse Adoptium)
+        # A current global python3 on both macOS and NixOS, instead of the
+        # stale macOS system stub / nothing on NixOS. uv still manages
+        # per-project venvs and dependencies; the two coexist fine.
+        python = "latest";
       };
       settings = {
         # Run `corepack enable` after installing node, exposing the
         # project-pinned yarn/pnpm (package.json `packageManager` field).
         node.corepack = true;
+        # Use a precompiled python-build-standalone instead of compiling from
+        # source (faster, no build toolchain needed during activation).
+        python.compile = false;
       };
     };
   };

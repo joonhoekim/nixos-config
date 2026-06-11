@@ -27,13 +27,9 @@
       url = "github:nikitabobko/homebrew-tap";
       flake = false;
     };
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, home-manager, nixpkgs, disko } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, home-manager, nixpkgs } @inputs:
     let
       user = "jh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -112,20 +108,29 @@
         }
       );
 
-      nixosConfigurations = nixpkgs.lib.genAttrs linuxSystems (system: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = inputs;
-        modules = [
-          disko.nixosModules.disko
-          home-manager.nixosModules.home-manager {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              users.${user} = import ./modules/nixos/home-manager.nix;
-            };
-          }
-          ./hosts/nixos
-        ];
-     });
+      # NixOS hosts are keyed by hostname (not arch) so multiple physical
+      # machines can share ./hosts/nixos/common.nix while each pins its own
+      # hardware-configuration.nix. Build with e.g.:
+      #   nixos-rebuild switch --flake .#amd
+      #   nixos-rebuild switch --flake .#intel
+      nixosConfigurations = let
+        mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = inputs;
+          modules = [
+            home-manager.nixosModules.home-manager {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.${user} = import ./modules/nixos/home-manager.nix;
+              };
+            }
+            hostModule
+          ];
+        };
+      in {
+        amd = mkNixosHost ./hosts/nixos/amd;
+        intel = mkNixosHost ./hosts/nixos/intel;
+      };
   };
 }

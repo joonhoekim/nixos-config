@@ -22,25 +22,16 @@ shared-packages ++ [
   pavucontrol # Pulse audio controls
 
   # Testing and development tools
-  rofi
-  rofi-calc
   libtool # for Emacs vterm
-
-  # Screenshot and recording tools
-  flameshot
 
   # Text and terminal utilities
   tree
   unixtools.ifconfig
   unixtools.netstat
-  xclip # For the org-download package in Emacs
-  xwininfo # Provides a cursor to click and learn about windows
-  xrandr
 
   # File and system utilities
   inotify-tools # inotifywait, inotifywatch - For file system events
   libnotify
-  pcmanfm # File browser
   sqlite
   xdg-utils
 
@@ -50,8 +41,32 @@ shared-packages ++ [
   # PDF viewer
   zathura
 
-  # Development tools
-  firefox
-  
-  # Music and entertainment
+  # ── Ported from previous NixOS config (Linux-only or GUI). Cross-platform
+  #    CLI/TUI tools live in ../shared/packages.nix instead. GUI apps on
+  #    macOS are managed via homebrew casks (modules/darwin/casks.nix). ──
+
+  # Compilers / toolchain
+  gcc
+
+  # Linux system utilities
+  psmisc          # killall, pstree, fuser
+  usbutils        # lsusb
+  pciutils        # lspci
+  man-pages
+  man-pages-posix
+  wl-clipboard    # wl-copy / wl-paste (Wayland clipboard — KDE)
+
+  # Networking diagnostics (Linux variants)
+  traceroute
+  dnsutils        # dig, nslookup
+
+  # GUI applications
+  vscode
+  brave
+  firefox-devedition
+  claude-code     # CLI, but already provided via mise/npm on macOS
+  mpv             # video player
+  krita           # digital painting
+  gimp            # image editor
+  inkscape        # vector graphics
 ]

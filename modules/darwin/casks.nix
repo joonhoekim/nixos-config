@@ -24,6 +24,7 @@ _:
   # Browsers
   "google-chrome"
   "brave-browser"
+  "firefox@developer-edition"
 
   # Communication Tools - Examples (uncomment as needed)
   # "discord"

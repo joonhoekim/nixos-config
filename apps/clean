@@ -1,0 +1,16 @@
+#!/bin/sh -e
+#
+# Garbage-collect old generations to reclaim disk space.
+# Pass an age to override the default, e.g. `clean 14d` or `clean 0`.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+
+age="${1:-7d}"
+
+printf "${YELLOW}Deleting system generations older than %s...${NC}\n" "$age"
+sudo nix-collect-garbage --delete-older-than "$age"
+
+printf "${YELLOW}Deleting user generations older than %s...${NC}\n" "$age"
+nix-collect-garbage --delete-older-than "$age"
+
+printf "${GREEN}Cleanup complete!${NC}\n"

@@ -1,0 +1,32 @@
+#!/bin/sh -e
+#
+# Roll back to a previous system generation (blank input = the previous one).
+# Works on both macOS (darwin-rebuild) and NixOS (system profile).
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; NC='\033[0m'
+
+if [ "$(uname)" = "Darwin" ]; then
+  printf "${YELLOW}Available generations:${NC}\n"
+  sudo darwin-rebuild --list-generations
+  printf "${YELLOW}Generation to roll back to (blank = previous): ${NC}"
+  read gen
+  if [ -z "$gen" ]; then
+    sudo darwin-rebuild --rollback
+  else
+    sudo darwin-rebuild --switch-generation "$gen"
+  fi
+else
+  profile=/nix/var/nix/profiles/system
+  printf "${YELLOW}Available generations:${NC}\n"
+  sudo nix-env -p "$profile" --list-generations
+  printf "${YELLOW}Generation to roll back to (blank = previous): ${NC}"
+  read gen
+  if [ -z "$gen" ]; then
+    sudo nixos-rebuild switch --rollback
+  else
+    sudo nix-env -p "$profile" --switch-generation "$gen"
+    sudo "$profile/bin/switch-to-configuration" switch
+  fi
+fi
+
+printf "${GREEN}Rollback complete!${NC}\n"

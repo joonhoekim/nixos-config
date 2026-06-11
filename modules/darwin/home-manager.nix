@@ -58,9 +58,11 @@ in
 
         # Materialize the tool versions declared in programs.mise.globalConfig
         # at switch time. `mise install` is idempotent (no-op when nothing is
-        # missing); `|| true` keeps an offline switch from failing.
+        # missing); `|| true` keeps an offline switch from failing. curl is put
+        # on PATH because mise's rust backend shells out to rustup-init, which
+        # needs curl/wget — the activation env doesn't otherwise provide it.
         activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
+          $DRY_RUN_CMD PATH="${pkgs.curl}/bin:$PATH" ${config.programs.mise.package}/bin/mise install || true
         '';
       };
       programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib; };

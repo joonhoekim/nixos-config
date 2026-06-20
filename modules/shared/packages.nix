@@ -130,6 +130,7 @@ with pkgs; [
   chafa          # terminal image viewer
   ffmpeg         # media transcoding
   postgresql     # psql + client libraries
+  redis          # redis-cli (server runs via colima/docker)
 
   # Editor / LSP toolchain (system-wide; LazyVim/Mason would install these
   # per-user otherwise)
@@ -153,6 +154,8 @@ with pkgs; [
   gping          # ping with a graph
   xh             # modern HTTP client (httpie-compatible)
   dog            # modern dig
+  mkcert         # locally-trusted dev HTTPS certificates
+  cloudflared    # quick public tunnels for webhook/callback testing
 
   # Nix tooling (handy while editing this config)
   nil            # Nix language server

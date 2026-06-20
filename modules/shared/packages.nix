@@ -52,6 +52,36 @@ with pkgs; [
   fzf
   uv             # fast Python package/venv manager
   delta          # syntax-highlighting pager for git diffs
+
+  # PDF / document tooling
+  poppler-utils  # pdftotext, pdfinfo, pdfimages, pdftoppm, ...
+
+  # The global `python3`. Python is intentionally NOT managed by mise (see
+  # programs.mise in home-manager.nix) so this nix interpreter is the one on
+  # PATH, with analysis libraries pre-imported — `python3 -c 'import pymupdf'`
+  # works in any shell, no per-project venv. Add libraries to this list and
+  # rebuild; use uv per-project when a project needs pinned/extra deps.
+  (python3.withPackages (ps: with ps; [
+    # PDF
+    pymupdf            # fitz / pymupdf — text, render, metadata
+    pdfplumber         # strong table extraction
+    pypdf              # page merge/split/rotate
+    # XLSX
+    openpyxl           # read/write cells & styles (pandas' xlsx engine)
+    xlsxwriter         # create xlsx with charts/formatting
+    # DOCX
+    python-docx        # read/write .docx
+    # CSV / dataframes
+    pandas             # load+transform csv/xlsx/json (pulls numpy)
+    tabulate           # pretty terminal tables
+    # web / HTML
+    httpx              # quick API calls (sync/async)
+    beautifulsoup4     # HTML parsing
+    lxml               # fast parser backend for bs4
+    # helpers
+    rich               # colored terminal output / tables / progress
+    charset-normalizer # detect mangled CSV encodings (e.g. cp949)
+  ]))
   yq-go          # jq for YAML (provides `yq`)
   cmake
   pkg-config

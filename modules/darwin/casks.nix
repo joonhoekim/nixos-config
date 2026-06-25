@@ -29,19 +29,20 @@ _:
   "brave-browser"
   "firefox@developer-edition"
 
-  # Communication Tools - Examples (uncomment as needed)
+  # Communication Tools
   # "discord"
   # "notion"
   # "slack"
   # "telegram"
   # "zoom"
 
-  # Utility Tools - Examples (uncomment as needed)
+  # Utility Tools
   # "syncthing"
   # "1password"
   # "rectangle"
 
-  # Entertainment Tools - Examples (uncomment as needed)
+  # Entertainment Tools
   # "spotify"
   # "vlc"
+  "iina"
 ]

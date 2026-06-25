@@ -11,7 +11,7 @@ _:
   "bruno"              # git-friendly API client (collections as repo files)
   "cursor"
   "dbeaver-community"  # universal database tool / SQL client
-  "redisinsight"       # official Redis GUI
+  "redis-insight"       # official Redis GUI
 
   # Productivity Tools
   "sol"                # launcher / command palette (replaces Raycast)

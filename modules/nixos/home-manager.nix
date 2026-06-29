@@ -1,8 +1,7 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, user, ... }:
 
 let
-  user = "jh";
-  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib; };
+  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib user; };
   shared-files = import ../shared/files.nix { inherit config pkgs; };
 in
 {

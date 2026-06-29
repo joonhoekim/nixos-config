@@ -64,12 +64,12 @@
       devShells = forAllSystems devShell;
       apps = forAllSystems mkApps;
 
-      darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system: let
-        user = "jh";
-      in
+      darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system:
         darwin.lib.darwinSystem {
           inherit system;
-          specialArgs = inputs;
+          # `user` is the single source of truth (defined once above) threaded
+          # into every system module via specialArgs.
+          specialArgs = inputs // { inherit user; };
           modules = [
             home-manager.darwinModules.home-manager
             nix-homebrew.darwinModules.nix-homebrew
@@ -104,12 +104,15 @@
       nixosConfigurations = let
         mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = inputs;
+          specialArgs = inputs // { inherit user; };
           modules = [
             home-manager.nixosModules.home-manager {
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                # Thread `user` into home-manager modules (separate arg scope
+                # from the system modules' specialArgs).
+                extraSpecialArgs = { inherit user; };
                 users.${user} = import ./modules/nixos/home-manager.nix;
               };
             }

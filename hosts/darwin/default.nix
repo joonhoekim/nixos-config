@@ -1,10 +1,9 @@
-{ config, pkgs, ... }:
-
-let user = "jh"; in
+{ config, pkgs, user, ... }:
 
 {
   imports = [
     ../../modules/darwin/home-manager.nix
+    ../../modules/darwin/eul.nix
     ../../modules/shared
   ];
 

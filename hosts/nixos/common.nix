@@ -1,11 +1,10 @@
-{ config, inputs, pkgs, lib, ... }:
+{ config, inputs, pkgs, lib, user, ... }:
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
 # host dirs (./amd, ./intel) that import this file.
 
 let
-  user = "jh";
   # NOTE: replace with your own SSH public key(s) so you can log into this
   # machine (and so root authorizes the same key).
   sshKeys = [

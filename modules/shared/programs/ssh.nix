@@ -1,8 +1,5 @@
 # SSH client configuration. Returns a `programs`-shaped fragment.
-{ pkgs, lib, ... }:
-let
-  user = "jh";
-in
+{ pkgs, lib, user, ... }:
 {
   ssh = {
     enable = true;

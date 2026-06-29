@@ -1,7 +1,6 @@
-{ config, pkgs, lib, home-manager, ... }:
+{ config, pkgs, lib, home-manager, user, ... }:
 
 let
-  user = "jh";
   sharedFiles = import ../shared/files.nix { inherit config pkgs; };
   additionalFiles = import ./files.nix { inherit user config pkgs; };
 in
@@ -43,6 +42,9 @@ in
   # Enable home-manager
   home-manager = {
     useGlobalPkgs = true;
+    # Thread `user` into home-manager modules (separate arg scope from the
+    # system modules' specialArgs).
+    extraSpecialArgs = { inherit user; };
     # Back up pre-existing dotfiles (e.g. ~/.zshrc) to <name>.backup instead
     # of refusing to overwrite them on first activation.
     backupFileExtension = "backup";
@@ -65,7 +67,7 @@ in
           PATH="${pkgs.curl}/bin:$PATH" $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
         '';
       };
-      programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib; };
+      programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib user; };
 
       # Marked broken Oct 20, 2022 check later to remove this
       # https://github.com/nix-community/home-manager/issues/3344

@@ -37,6 +37,7 @@ _:
   # "zoom"
 
   # Utility Tools
+  "stats"
   # "syncthing"
   # "1password"
   # "rectangle"

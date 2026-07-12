@@ -34,6 +34,18 @@
     reattach = true;
   };
 
+  # Passwordless sudo, so every machine gets it from this repo instead of a
+  # hand-edited visudo. Lands in /etc/sudoers.d/10-nix-darwin-extra-config,
+  # which macOS's /etc/sudoers already includes — and because the include sits
+  # at the end, this rule wins over the default `%admin ALL=(ALL) ALL`.
+  #
+  # This bypasses the Touch ID prompt above entirely: anything running as
+  # ${user}, including background agents, can reach root without confirmation.
+  # The prompt still applies to other users.
+  security.sudo.extraConfig = ''
+    ${user} ALL=(ALL) NOPASSWD: ALL
+  '';
+
   # Launch GUI apps at login (declarative "Login Items"). The apps' own
   # start-at-login toggles don't stick on recent macOS, so we drive them
   # via per-user LaunchAgents instead.

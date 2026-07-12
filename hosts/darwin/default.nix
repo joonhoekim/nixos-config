@@ -4,6 +4,7 @@
   imports = [
     ../../modules/darwin/home-manager.nix
     ../../modules/darwin/eul.nix
+    ../../modules/darwin/ios.nix
     ../../modules/shared
   ];
 

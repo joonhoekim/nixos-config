@@ -46,4 +46,7 @@ _:
   # "spotify"
   # "vlc"
   "iina"
+
+  # Office
+  "onlyoffice"
 ]

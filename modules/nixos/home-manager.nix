@@ -28,12 +28,14 @@ in
   gtk = {
     enable = true;
     iconTheme = {
-      name = "Adwaita-dark";
+      # adwaita-icon-theme ships only "Adwaita" (no -dark variant); it adapts
+      # to the dark GTK theme on its own.
+      name = "Adwaita";
       package = pkgs.adwaita-icon-theme;
     };
     theme = {
       name = "Adwaita-dark";
-      package = pkgs.adwaita-icon-theme;
+      package = pkgs.gnome-themes-extra; # provides the Adwaita-dark GTK theme
     };
     # From home.stateVersion 26.05 on, gtk4.theme defaults to null instead of
     # inheriting gtk.theme. Set it explicitly so GTK4 apps stay dark too.

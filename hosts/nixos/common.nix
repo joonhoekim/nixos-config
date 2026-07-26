@@ -4,13 +4,7 @@
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
 # host dirs (./amd, ./intel) that import this file.
 
-let
-  # NOTE: replace with your own SSH public key(s) so you can log into this
-  # machine (and so root authorizes the same key).
-  sshKeys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOk8iAnIaa1deoc7jw8YACPNVka1ZFJxhnU4G74TmS+p"
-  ];
-in {
+{
   imports = [
     # Korean locale, IME (fcitx5-hangul), Right Alt -> Hangul, and CJK fonts.
     ../../modules/nixos/korean.nix
@@ -93,7 +87,9 @@ in {
     # Better support for general peripherals
     libinput.enable = true;
 
-    # Let's be able to SSH into this machine
+    # Let's be able to SSH into this machine. No authorized keys are declared,
+    # so access is by account password (set imperatively with `passwd`). To use
+    # key auth instead, add your own pubkey to the user below.
     openssh.enable = true;
 
     # Printing
@@ -139,11 +135,6 @@ in {
         "docker"
       ];
       shell = pkgs.zsh;
-      openssh.authorizedKeys.keys = sshKeys;
-    };
-
-    root = {
-      openssh.authorizedKeys.keys = sshKeys;
     };
   };
 

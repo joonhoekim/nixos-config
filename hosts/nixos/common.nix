@@ -158,5 +158,7 @@
 
   # Match the release your machine was first installed at. Don't change
   # this casually — it pins stateful-data compatibility, not the channel.
-  system.stateVersion = "25.11";
+  # 26.11 = the nixpkgs release this repo tracks (nixos-unstable), i.e. the
+  # release these hosts get installed at.
+  system.stateVersion = "26.11";
 }

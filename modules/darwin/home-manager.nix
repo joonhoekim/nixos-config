@@ -84,17 +84,15 @@ in
     entries = [
       # NOTE: Finder is auto-pinned at the far left (slot 1) by macOS, so it is
       # not listed here — adding it would create a duplicate icon.
-      { path = "/Applications/Zed.app/"; }
-      { path = "/Applications/Google Chrome.app/"; }
       { path = "/Applications/Visual Studio Code.app/"; }
+      { path = "/Applications/Google Chrome.app/"; }
+      { path = "/Applications/Claude.app/"; } # NOTE: Claude is installed manually (not declaratively managed), so it may be missing. dockutil just warns and skips it if the path doesn't exist.
+      { path = "/Applications/Zed.app/"; }
       { path = "/Applications/Brave Browser.app/"; }
       { path = "/Applications/Ghostty.app/"; }
       { path = "/Applications/DBeaver.app/"; }
       { path = "/Applications/Redis Insight.app/"; }
       { path = "/Applications/Bruno.app/"; }
-      # NOTE: Claude is installed manually (not declaratively managed), so it may
-      # be missing. dockutil just warns and skips it if the path doesn't exist.
-      { path = "/Applications/Claude.app/"; }
       { path = "/System/Applications/Messages.app/"; }
       { path = "/System/Applications/Utilities/Activity Monitor.app/"; }
       { path = "/System/Applications/System Settings.app/"; }

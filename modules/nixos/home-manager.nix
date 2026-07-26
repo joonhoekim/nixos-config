@@ -11,7 +11,7 @@ in
     homeDirectory = "/home/${user}";
     packages = pkgs.callPackage ./packages.nix {};
     file = shared-files;
-    stateVersion = "25.11";
+    stateVersion = "26.11";
 
     # Materialize the tool versions declared in programs.mise.globalConfig
     # at switch time. `mise install` is idempotent (no-op when nothing is
@@ -35,6 +35,9 @@ in
       name = "Adwaita-dark";
       package = pkgs.adwaita-icon-theme;
     };
+    # From home.stateVersion 26.05 on, gtk4.theme defaults to null instead of
+    # inheriting gtk.theme. Set it explicitly so GTK4 apps stay dark too.
+    gtk4.theme = config.gtk.theme;
   };
 
   programs = shared-programs // {};

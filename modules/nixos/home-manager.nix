@@ -11,7 +11,10 @@ in
     homeDirectory = "/home/${user}";
     packages = pkgs.callPackage ./packages.nix {};
     file = shared-files;
-    stateVersion = "26.11";
+    # mkDefault so a host installed at an older release can pin its own (see
+    # hosts/nixos/galaxy-chromebook-1). Keep this in sync with the host's
+    # system.stateVersion.
+    stateVersion = lib.mkDefault "26.11";
 
     # Materialize the tool versions declared in programs.mise.globalConfig
     # at switch time. `mise install` is idempotent (no-op when nothing is
@@ -23,8 +26,14 @@ in
     '';
   };
 
-  # Dark theme for GTK apps running under Plasma (KDE itself is themed in
-  # System Settings).
+  # Dark mode. GNOME reads the dconf keys below; the `gtk` block writes
+  # ~/.config/gtk-{3,4}.0/settings.ini, which covers GTK apps launched
+  # outside a GNOME session (and Xwayland ones that ignore the portal).
+  dconf.settings."org/gnome/desktop/interface" = {
+    color-scheme = "prefer-dark";
+    gtk-theme = "Adwaita-dark";
+  };
+
   gtk = {
     enable = true;
     iconTheme = {

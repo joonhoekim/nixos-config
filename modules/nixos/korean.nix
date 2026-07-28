@@ -31,16 +31,16 @@
     };
   };
 
-  # Korean input via fcitx5 + Hangul engine, tuned for Plasma 6 / Wayland.
+  # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
     fcitx5 = {
-      waylandFrontend = true; # Wayland text-input protocol for Qt6 / Plasma 6
+      waylandFrontend = true; # Wayland text-input-v3 (GNOME/Mutter, GTK apps)
       addons = with pkgs; [
         fcitx5-hangul
-        fcitx5-gtk                      # GTK3/GTK4 IM module
-        qt6Packages.fcitx5-qt           # Qt6 IM module (Plasma 6 apps)
+        fcitx5-gtk                      # GTK3/GTK4 IM module (GNOME apps)
+        qt6Packages.fcitx5-qt           # Qt6 IM module (Qt apps under GNOME)
         qt6Packages.fcitx5-configtool   # GUI configurator
       ];
       # Declarative profile — adds Hangul to the active input-method group.

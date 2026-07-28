@@ -66,7 +66,7 @@
   };
 
   services = {
-    # ── Desktop: KDE Plasma 6 on Wayland via SDDM ──────────────────────
+    # ── Desktop: GNOME on Wayland via GDM ──────────────────────────────
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
@@ -75,17 +75,21 @@
         options = "ctrl:nocaps"; # Caps Lock -> Ctrl
       };
     };
-    displayManager = {
-      sddm = {
-        enable = true;
-        wayland.enable = true;
-      };
-      defaultSession = "plasma";
-    };
-    desktopManager.plasma6.enable = true;
+    # GDM defaults to a Wayland session; no extra wayland.enable needed.
+    displayManager.gdm.enable = true;
+    displayManager.defaultSession = "gnome";
+    desktopManager.gnome.enable = true;
 
     # Better support for general peripherals
     libinput.enable = true;
+
+    # Periodic SSD TRIM.
+    fstrim.enable = true;
+
+    # Tray-toggleable power profiles (Power Saver / Balanced / Performance),
+    # which GNOME's quick settings drive. Mutually exclusive with tlp and
+    # auto-cpufreq — don't enable those alongside it.
+    power-profiles-daemon.enable = true;
 
     # Let's be able to SSH into this machine. No authorized keys are declared,
     # so access is by account password (set imperatively with `passwd`). To use
@@ -159,6 +163,7 @@
   # Match the release your machine was first installed at. Don't change
   # this casually — it pins stateful-data compatibility, not the channel.
   # 26.11 = the nixpkgs release this repo tracks (nixos-unstable), i.e. the
-  # release these hosts get installed at.
-  system.stateVersion = "26.11";
+  # release a *newly installed* host gets. mkDefault so an already-installed
+  # machine can keep the release it was born at (see galaxy-chromebook-1).
+  system.stateVersion = lib.mkDefault "26.11";
 }

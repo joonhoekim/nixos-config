@@ -101,6 +101,7 @@
       # hardware-configuration.nix. Build with e.g.:
       #   nixos-rebuild switch --flake .#amd
       #   nixos-rebuild switch --flake .#intel
+      #   nixos-rebuild switch --flake .#galaxy-chromebook-1
       nixosConfigurations = let
         mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
@@ -122,6 +123,7 @@
       in {
         amd = mkNixosHost ./hosts/nixos/amd;
         intel = mkNixosHost ./hosts/nixos/intel;
+        galaxy-chromebook-1 = mkNixosHost ./hosts/nixos/galaxy-chromebook-1;
       };
   };
 }

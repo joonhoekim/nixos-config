@@ -51,11 +51,33 @@ shared-packages ++ [
   pciutils        # lspci
   man-pages
   man-pages-posix
-  wl-clipboard    # wl-copy / wl-paste (Wayland clipboard — KDE)
+  wl-clipboard    # wl-copy / wl-paste (Wayland clipboard)
 
   # Networking diagnostics (Linux variants)
   traceroute
   dnsutils        # dig, nslookup
+  bandwhich       # per-process network usage
+
+  # Input / display / session diagnostics. Mostly earn their keep when a
+  # remap (keyd, see korean.nix) or a Wayland-vs-Xwayland difference misbehaves.
+  wev             # Wayland event viewer (keys, pointer, touch)
+  xev             # X11 event viewer (for Xwayland apps)
+  evtest          # raw evdev events per /dev/input/event*
+  wayland-utils   # `wayland-info` — compositor + supported protocols
+  mesa-demos      # glxinfo, eglinfo, glxgears
+  vulkan-tools    # vulkaninfo, vkcube
+
+  # Hardware / power inspection (vendor-neutral; per-vendor tools such as
+  # intel-gpu-tools live in the host dirs under hosts/nixos)
+  dmidecode       # BIOS / motherboard / chassis info
+  lshw            # detailed hardware tree
+  inxi            # one-shot system summary
+  acpi            # battery / thermal zones
+  lm_sensors      # `sensors` — read all temp sensors
+  powertop        # power-usage analyzer + tuning suggestions
+  s-tui           # TUI: stress + temperature + frequency graphs
+  stress-ng       # stress tester (useful to verify thermal behavior)
+  pulsemixer      # pipewire/pulse volume TUI (CLI counterpart to pavucontrol)
 
   # GUI applications
   vscode

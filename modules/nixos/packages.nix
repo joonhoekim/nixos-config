@@ -21,9 +21,6 @@ shared-packages ++ [
   # Audio tools
   pavucontrol # Pulse audio controls
 
-  # Testing and development tools
-  libtool # for Emacs vterm
-
   # Text and terminal utilities
   tree
   unixtools.ifconfig

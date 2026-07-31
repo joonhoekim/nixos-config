@@ -78,10 +78,10 @@
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
-      xkb = {
-        layout = "us";
-        options = "ctrl:nocaps"; # Caps Lock -> Ctrl
-      };
+      # Layout only. Per-machine key remaps (e.g. Caps Lock -> Ctrl on
+      # galaxy-chromebook-1) belong in the host dirs, not here — and under
+      # GNOME Wayland xkb.options is inert anyway, see that host for why.
+      xkb.layout = "us";
     };
     # GDM defaults to a Wayland session; no extra wayland.enable needed.
     displayManager.gdm.enable = true;

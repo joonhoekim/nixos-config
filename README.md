@@ -7,8 +7,8 @@ macOS(nix-darwin + home-manager)와 NixOS를 위한 개인 Nix 설정.
 darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다: `aarch64-darwin`(Apple
 Silicon), `x86_64-darwin`(Intel). 이 이름을 flake 타겟으로 쓴다 — 예: `.#aarch64-darwin`.
 
-NixOS 설정은 **hostname**으로 키잉된다 — `amd`, `intel`, `galaxy-chromebook-1`(전부
-`x86_64-linux`). 이 이름을 flake 타겟으로 쓴다 — 예: `.#amd`. 머신별 설정은
+NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `intel`, `galaxy-chromebook-1`(전부
+`x86_64-linux`). 이 이름을 flake 타겟으로 쓴다 — 예: `.#mn56`. 머신별 설정은
 [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
 
 데스크톱 환경은 세 호스트 모두 **GNOME / Wayland**(GDM)로 통일돼 있다.
@@ -68,7 +68,7 @@ NixOS 설정은 **hostname**으로 키잉된다 — `amd`, `intel`, `galaxy-chro
 `--extra-experimental-features 'nix-command flakes'`가 필요). 거기에 더해, 첫 빌드 **전에**
 반드시 정해야 하는 머신 고유 항목이 셋 있다:
 
-1. **이 머신의 하드웨어 설정을 채운다.** `amd`와 `intel`은 *placeholder*
+1. **이 머신의 하드웨어 설정을 채운다.** `mn56`와 `intel`은 *placeholder*
    `hosts/nixos/<host>/hardware-configuration.nix`를 갖고 있다 — 트리가 해석되도록 커밋돼
    있지만 일부러 `fileSystems`가 비어 있어서, 교체하지 않은 placeholder는 부팅 불가능한
    시스템을 만드는 대신 요란하게 실패한다. 타겟 머신에서 진짜 파일을 생성해 덮어쓴다
@@ -76,16 +76,16 @@ NixOS 설정은 **hostname**으로 키잉된다 — `amd`, `intel`, `galaxy-chro
 
    ```sh
    # 기존 NixOS 설치라면:
-   cp /etc/nixos/hardware-configuration.nix hosts/nixos/amd/hardware-configuration.nix
+   cp /etc/nixos/hardware-configuration.nix hosts/nixos/mn56/hardware-configuration.nix
    # …또는 라이브 하드웨어 스캔으로:
-   sudo nixos-generate-config --show-hardware-config > hosts/nixos/amd/hardware-configuration.nix
-   git add hosts/nixos/amd/hardware-configuration.nix
+   sudo nixos-generate-config --show-hardware-config > hosts/nixos/mn56/hardware-configuration.nix
+   git add hosts/nixos/mn56/hardware-configuration.nix
    ```
 
    이 파일은 root/boot 파일시스템, swap, initrd 모듈, CPU 마이크로코드를 고정하므로 머신
    간에 공유할 수 없다.
 
-2. **호스트를 고른다.** 호스트는 hostname으로 키잉된다(`amd`, `intel`,
+2. **호스트를 고른다.** 호스트는 hostname으로 키잉된다(`mn56`, `intel`,
    `galaxy-chromebook-1`). 더 추가하려면 `hosts/nixos/<name>/`를 만들고(`../common.nix` +
    자기 `hardware-configuration.nix`를 import) `flake.nix`의 `mkNixosHost` 목록에 등록한다.
    flake 속성 이름과 `networking.hostName`을 맞춰두면 `build-switch`가 호스트를 자동으로
@@ -98,7 +98,7 @@ NixOS 설정은 **hostname**으로 키잉된다 — `amd`, `intel`, `galaxy-chro
 그다음 빌드:
 
 ```sh
-sudo nixos-rebuild switch --flake .#amd      # 또는 .#intel, .#galaxy-chromebook-1
+sudo nixos-rebuild switch --flake .#mn56      # 또는 .#intel, .#galaxy-chromebook-1
 # flakes가 켜져 있고 hostname이 호스트와 일치하면: nix run .#build-switch
 ```
 
@@ -117,7 +117,7 @@ nix run .#build-switch          # 새 generation을 빌드해 활성화
 
 - **macOS** → `darwinConfigurations.<arch>`(예: `aarch64-darwin`)를 빌드·활성화.
 - **NixOS** → `nixosConfigurations.<hostname>`을 활성화. 호스트는 `hostname`에서 가져오며,
-  첫 switch 전에는 `nix run .#build-switch -- --host amd`(또는 `--host intel`)로 덮어쓴다.
+  첫 switch 전에는 `nix run .#build-switch -- --host mn56`(또는 `--host intel`)로 덮어쓴다.
 - **앞에 `sudo`를 붙이지 말 것.** 스크립트는 유저 권한으로 빌드한 뒤 활성화 단계에서만
   `sudo`를 부른다. 전체를 root로 돌리면 저장소의 git 소유권 검사가 깨진다.
 - 추가 플래그는 그대로 전달된다 — 예: `nix run .#build-switch -- --show-trace`.
@@ -127,7 +127,7 @@ rebuild 도구를 직접 부르려면 설정 이름을 명시한다(맨 `.#`는 
 
 ```sh
 sudo darwin-rebuild switch --flake .#aarch64-darwin   # macOS
-sudo nixos-rebuild  switch --flake .#amd              # NixOS
+sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 ```
 
 ## 그 밖의 flake 앱

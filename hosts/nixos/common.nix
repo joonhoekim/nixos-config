@@ -2,7 +2,9 @@
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
-# host dirs (./amd, ./intel) that import this file.
+# host dirs (./mn56, ./intel, ./galaxy-chromebook-1) that import this file.
+# Vendor-common layers shared by several hosts live in modules/nixos
+# (e.g. amd.nix).
 
 {
   imports = [
@@ -31,7 +33,7 @@
 
   time.timeZone = "Asia/Seoul";
 
-  # hostName is set per-host (see ./amd, ./intel).
+  # hostName is set per-host (see ./mn56, ./intel).
   networking.networkmanager.enable = true;
 
   # Turn on flag for proprietary software
@@ -162,8 +164,10 @@
 
   # Match the release your machine was first installed at. Don't change
   # this casually — it pins stateful-data compatibility, not the channel.
-  # 26.11 = the nixpkgs release this repo tracks (nixos-unstable), i.e. the
-  # release a *newly installed* host gets. mkDefault so an already-installed
-  # machine can keep the release it was born at (see galaxy-chromebook-1).
+  # 26.11 is just the value this repo's nixos-unstable checkout carries; it is
+  # NOT what a fresh install gets. Whatever nixos-generate-config wrote on the
+  # target machine (e.g. 26.05 from a 26.05 installer) is the correct value for
+  # that host, so every host pins its own and this stays mkDefault
+  # (see ./mn56 = 26.05, ./galaxy-chromebook-1 = 25.11).
   system.stateVersion = lib.mkDefault "26.11";
 }

@@ -11,7 +11,7 @@
 `outputs`가 만드는 네 가지:
 
 - `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
-- `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `amd`/`intel`)
+- `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`/`intel`)
 - `apps.<system>.{build-switch, build, rollback, clean}` → `apps/<name>` (`nix run`의 실체)
 - `devShells`
 
@@ -130,7 +130,7 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 
 - 추가 플래그는 그대로 전달된다: `nix run .#build-switch -- --show-trace`.
 - NixOS 호스트는 `hostname`에서 자동으로 잡고, `--host`로 덮어쓴다(첫 switch 전 유용):
-  `nix run .#build-switch -- --host amd`.
+  `nix run .#build-switch -- --host mn56`.
 - `build-switch`를 통째로 `sudo`로 돌리지 말 것 — 빌드는 유저로, 활성화 단계만 `sudo`.
 
 ### 머신 고유 부분: `hardware-configuration.nix`
@@ -139,7 +139,7 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 치환(`apply`)·비밀키 부트스트랩(`*-keys`)·disko 포맷·`install` 앱은 **전부 제거**했다.
 머신마다 다른 값은 한 곳, 각 호스트의 `hardware-configuration.nix`에만 모인다.
 
-- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.amd`, `.intel`). 각
+- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`, `.intel`). 각
   `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관 설정) + 자기
   `hardware-configuration.nix`를 import한다.
 - `hardware-configuration.nix`는 커밋된 **PLACEHOLDER**다. 해당 머신에서

@@ -6,6 +6,7 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 
 ```
 .
+├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + GTK 다크 테마 + mise 활성화)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, keyd 한/영 리맵, CJK 폰트
 └── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
@@ -45,8 +46,14 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 
 ## 호스트 추가하기
 
-호스트는 아키텍처가 아니라 **hostname**으로 키잉된다. 현재 `amd`, `intel`,
-`galaxy-chromebook-1` 셋이 있고, 새 호스트는 이들을 그대로 따라 하면 된다.
+호스트는 아키텍처가 아니라 **hostname**으로 키잉된다. 현재 `mn56`(Firebat MN56, Ryzen
+7840HS), `intel`, `galaxy-chromebook-1` 셋이 있고, 새 호스트는 이들을 그대로 따라 하면
+된다. CPU 벤더가 아니라 **머신 이름**으로 짓는다 — 같은 칩을 쓰는 기기가 둘 이상이면
+`amd` 같은 이름은 바로 무너진다.
+
+벤더 공통 설정(예: AMD의 `radeontop`/전력 관리 주석)은 호스트 디렉토리가 아니라
+[`amd.nix`](amd.nix) 같은 모듈에 두고 여러 호스트가 import한다. 호스트 디렉토리에는
+그 섀시에만 해당하는 것만 남긴다.
 
 flake 속성 이름은 실제 hostname과 달라도 `--flake .#<이름>`으로 지정하면 동작하지만,
 `apps/build-switch`가 인자 없이 실행될 때 `$(hostname)`으로 타겟을 고르므로 둘을 같게

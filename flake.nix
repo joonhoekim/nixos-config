@@ -99,7 +99,7 @@
       # NixOS hosts are keyed by hostname (not arch) so multiple physical
       # machines can share ./hosts/nixos/common.nix while each pins its own
       # hardware-configuration.nix. Build with e.g.:
-      #   nixos-rebuild switch --flake .#amd
+      #   nixos-rebuild switch --flake .#mn56
       #   nixos-rebuild switch --flake .#intel
       #   nixos-rebuild switch --flake .#galaxy-chromebook-1
       nixosConfigurations = let
@@ -121,7 +121,7 @@
           ];
         };
       in {
-        amd = mkNixosHost ./hosts/nixos/amd;
+        mn56 = mkNixosHost ./hosts/nixos/mn56;
         intel = mkNixosHost ./hosts/nixos/intel;
         galaxy-chromebook-1 = mkNixosHost ./hosts/nixos/galaxy-chromebook-1;
       };

@@ -8,9 +8,9 @@ The darwin configurations are keyed by **architecture**, not hostname:
 `aarch64-darwin` (Apple Silicon) and `x86_64-darwin` (Intel). Use that name as
 the flake target — e.g. `.#aarch64-darwin`.
 
-The NixOS configurations are keyed by **hostname** — `amd`, `intel` and
+The NixOS configurations are keyed by **hostname** — `mn56`, `intel` and
 `galaxy-chromebook-1` (all `x86_64-linux`). Use that name as the flake target —
-e.g. `.#amd`. See [NixOS — first build](#nixos--first-build-on-a-new-machine)
+e.g. `.#mn56`. See [NixOS — first build](#nixos--first-build-on-a-new-machine)
 for the machine-specific setup.
 
 All three hosts run **GNOME on Wayland** (GDM).
@@ -71,7 +71,7 @@ The flakes-enabling step above applies on NixOS too (the first flake command
 needs `--extra-experimental-features 'nix-command flakes'`). On top of that,
 three things are machine-specific and must be set **before** the first build:
 
-1. **Provide this machine's hardware config.** `amd` and `intel` ship a
+1. **Provide this machine's hardware config.** `mn56` and `intel` ship a
    *placeholder* `hosts/nixos/<host>/hardware-configuration.nix` — committed so
    the tree resolves, but deliberately missing `fileSystems` so an un-replaced
    placeholder fails loudly instead of building an unbootable system. Generate
@@ -80,16 +80,16 @@ three things are machine-specific and must be set **before** the first build:
 
    ```sh
    # on an existing NixOS install:
-   cp /etc/nixos/hardware-configuration.nix hosts/nixos/amd/hardware-configuration.nix
+   cp /etc/nixos/hardware-configuration.nix hosts/nixos/mn56/hardware-configuration.nix
    # …or from a live hardware scan:
-   sudo nixos-generate-config --show-hardware-config > hosts/nixos/amd/hardware-configuration.nix
-   git add hosts/nixos/amd/hardware-configuration.nix
+   sudo nixos-generate-config --show-hardware-config > hosts/nixos/mn56/hardware-configuration.nix
+   git add hosts/nixos/mn56/hardware-configuration.nix
    ```
 
    It pins your root/boot filesystems, swap, initrd modules, and CPU microcode,
    so it can't be shared between machines.
 
-2. **Pick the host.** Hosts are keyed by hostname (`amd`, `intel`,
+2. **Pick the host.** Hosts are keyed by hostname (`mn56`, `intel`,
    `galaxy-chromebook-1`). To add another, create `hosts/nixos/<name>/`
    (importing `../common.nix` plus its own `hardware-configuration.nix`) and
    register it in `flake.nix`'s `mkNixosHost` list. Keep the flake attribute
@@ -104,7 +104,7 @@ three things are machine-specific and must be set **before** the first build:
 Then build:
 
 ```sh
-sudo nixos-rebuild switch --flake .#amd      # or .#intel, .#galaxy-chromebook-1
+sudo nixos-rebuild switch --flake .#mn56      # or .#intel, .#galaxy-chromebook-1
 # once flakes are enabled and the hostname matches a host: nix run .#build-switch
 ```
 
@@ -124,7 +124,7 @@ nix run .#build-switch          # build the new generation and activate it
 - **macOS** → builds + activates `darwinConfigurations.<arch>` (e.g. `aarch64-darwin`).
 - **NixOS** → activates `nixosConfigurations.<hostname>`. The host is taken from
   `hostname`; override it before the first switch with
-  `nix run .#build-switch -- --host amd` (or `--host intel`).
+  `nix run .#build-switch -- --host mn56` (or `--host intel`).
 - **Don't prefix it with `sudo`.** The script builds as your user, then calls
   `sudo` only for the activation step. Running the whole thing as root breaks
   git ownership checks on the repo.
@@ -135,7 +135,7 @@ To call the rebuild tools directly instead, name the config explicitly (a bare
 
 ```sh
 sudo darwin-rebuild switch --flake .#aarch64-darwin   # macOS
-sudo nixos-rebuild  switch --flake .#amd              # NixOS
+sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 ```
 
 ## Other flake apps

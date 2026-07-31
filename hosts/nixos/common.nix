@@ -114,6 +114,31 @@
   # Lets PipeWire acquire realtime scheduling priority
   security.rtkit.enable = true;
 
+  # Don't let activation restart the *session* bus. The generated user
+  # dbus-broker unit embeds store paths (PATH, LOCALE_ARCHIVE, TZDIR,
+  # X-Restart-Triggers), so nearly every nixpkgs bump marks it changed — and
+  # switch-to-configuration talks to the user manager over that very bus
+  # (LocalConnection::new_session()), then waits for the job's JobRemoved
+  # signal in a loop with no timeout. Restarting the broker drops that
+  # connection, so the signal never arrives and `nixos-rebuild switch` stalls
+  # at "restarting the following user units: dbus-broker.service".
+  #
+  # X-RestartIfChanged=false moves it to the skip list ("NOT restarting the
+  # following user units: ..."). The running bus then keeps its old
+  # environment until the next login, which is what upstream wants anyway —
+  # see nixos/modules/services/system/dbus.nix: "Don't restart dbus. Bad
+  # things tend to happen if we do."
+  #
+  # reloadIfChanged has to go too, and with mkForce: dbus.nix sets it to true,
+  # and systemd-lib.nix emits these as an if/else chain (X-ReloadIfChanged
+  # wins and X-RestartIfChanged is never written). The cost is that the user
+  # bus no longer picks up new D-Bus service/activation files on rebuild —
+  # a re-login does that instead.
+  systemd.user.services.dbus-broker = {
+    reloadIfChanged = lib.mkForce false;
+    restartIfChanged = false;
+  };
+
   # RAM-compressed swap — relieves memory pressure (zstd).
   zramSwap = {
     enable = true;

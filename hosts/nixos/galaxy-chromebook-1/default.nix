@@ -17,6 +17,17 @@
 
   networking.hostName = "galaxy-chromebook-1";
 
+  # Caps Lock -> Ctrl. This machine only: the Chromebook chassis has no Ctrl
+  # where the fingers expect one. It used to sit in ../common.nix and applied
+  # to every host, which was never the intent.
+  #
+  # This knob covers X11 sessions and (with console.useXkbConfig) the TTY. It
+  # does NOT reach a GNOME Wayland session — mutter builds its keymap from
+  # org.gnome.desktop.input-sources, so the dconf half in ./home.nix is what
+  # actually does the work there. Both are kept: they cover different sessions,
+  # and this host is expected to see more than one.
+  services.xserver.xkb.options = "ctrl:nocaps";
+
   # Installed at 25.11 and stays there. stateVersion pins stateful-data
   # layouts, not the nixpkgs channel — the flake still tracks nixos-unstable,
   # so packages keep moving. common.nix sets 26.11 with mkDefault for hosts

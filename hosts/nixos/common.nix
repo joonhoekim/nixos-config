@@ -40,8 +40,14 @@
   nix = {
     nixPath = [ "nixos-config=/home/${user}/.local/share/src/nixos-config:/etc/nixos" ];
     settings = {
-      allowed-users = [ "${user}" ];
-      trusted-users = [ "@admin" "${user}" ];
+      # `@wheel`, not the `@admin` this once carried: `admin` is the macOS
+      # administrators group (see hosts/darwin, where it is correct). NixOS has
+      # no such group, so nix warned about it and ignored the entry. Both lists
+      # name the group because a wheel member who could not even connect to the
+      # daemon made "trusted" meaningless. root is always allowed and trusted,
+      # regardless of what is listed here.
+      allowed-users = [ "@wheel" "${user}" ];
+      trusted-users = [ "@wheel" "${user}" ];
       substituters = [ "https://nix-community.cachix.org" "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
 

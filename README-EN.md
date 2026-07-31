@@ -112,6 +112,29 @@ sudo nixos-rebuild switch --flake .#mn56      # or .#intel, .#galaxy-chromebook-
 > `fileSystems` assertion until a real hardware-configuration.nix is in place.
 > That's expected and doesn't affect `build-switch`.
 
+### Right after the first switch
+
+**The account is created for you; the password is not.** `users.users` in
+`common.nix` declares it, so activation creates `jh` — home directory
+`/home/jh`, zsh as the shell, and the `wheel`/`networkmanager`/`docker` groups.
+But no password is declared anywhere in this repo (`hashedPassword` and
+`initialPassword` are both null), so the account is created **locked**: no GDM
+login, no TTY login, no `su - jh`. Unlock it once as root:
+
+```sh
+passwd jh
+```
+
+`users.mutableUsers` defaults to `true`, so the password you set survives later
+rebuilds. You could declare a hash instead (`initialHashedPassword`) and skip
+this step, but this is a public repo — not recommended.
+
+> Not seeing your dev tools in a root shell is expected.
+> `modules/nixos/packages.nix` feeds home-manager's `home.packages`, so those
+> land in `jh`'s profile only. What's system-wide
+> (`environment.systemPackages`) is just `gitFull`/`inetutils` from
+> `common.nix` plus the per-host inspection tools.
+
 ## Daily usage
 
 The app scripts (`apps/`) are shared across platforms and detect macOS vs NixOS

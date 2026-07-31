@@ -106,6 +106,27 @@ sudo nixos-rebuild switch --flake .#mn56      # 또는 .#intel, .#galaxy-chromeb
 > 들어가기 전까지는 `fileSystems` assertion에서 실패한다. 의도된 동작이며 `build-switch`에는
 > 영향이 없다.
 
+### 첫 switch 직후
+
+**유저는 자동 생성되지만 비밀번호는 직접 설정해야 한다.** `common.nix`의 `users.users`가
+계정을 선언하므로 activation이 `jh`를 만들어준다 — 홈 디렉토리 `/home/jh`, 셸 zsh,
+`wheel`/`networkmanager`/`docker` 그룹까지 전부. 하지만 비밀번호는 레포 어디에도 선언돼
+있지 않아서(`hashedPassword`/`initialPassword` 전부 null) 계정이 **잠긴 상태**로 생긴다.
+GDM 로그인도, TTY 로그인도, `su - jh`도 안 된다. root로 한 번 풀어준다:
+
+```sh
+passwd jh
+```
+
+`users.mutableUsers`가 기본값 `true`라 이렇게 잡은 비밀번호는 이후 rebuild에도 유지된다.
+해시를 선언해서 이 단계를 없앨 수도 있지만(`initialHashedPassword`), 공개 저장소라 권하지
+않는다.
+
+> root 셸에서 개발 도구가 안 보이는 건 정상이다. `modules/nixos/packages.nix`는
+> home-manager의 `home.packages`로 들어가므로 `jh`의 프로필에만 깔린다. 시스템 전역
+> (`environment.systemPackages`)에 있는 건 `common.nix`의 `gitFull`/`inetutils`와
+> 호스트별 관찰 도구 정도다.
+
 ## 일상 사용
 
 앱 스크립트(`apps/`)는 플랫폼 공유이고 런타임에 macOS/NixOS를 감지하므로, 같은 명령이

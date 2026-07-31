@@ -3,7 +3,14 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    home-manager.url = "github:nix-community/home-manager";
+    # `follows` keeps home-manager on the same nixpkgs as everything else.
+    # useGlobalPkgs = true means the modules already build against the system's
+    # pkgs, so without this the only effect was a second nixpkgs pinned in
+    # flake.lock — extra fetches and a channel that could silently drift.
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     darwin = {
       url = "github:LnL7/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";

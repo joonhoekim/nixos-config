@@ -88,4 +88,19 @@ shared-packages ++ [
   krita           # digital painting
   gimp            # image editor
   inkscape        # vector graphics
+
+  # ── Counterparts to the homebrew casks in modules/darwin/casks.nix ──
+  # Everything here is a cask on macOS that also ships for Linux in nixpkgs.
+  # Casks with no Linux counterpart stay macOS-only on purpose: iterm2 and
+  # sol (macOS-only terminal/launcher — GNOME's overview covers the latter),
+  # aerospace (tiling WM), karabiner-elements (keyd handles remaps here, see
+  # korean.nix), eul / stats (macOS menu-bar monitors — btop/bottom above),
+  # and iina (mpv above is the same engine).
+  ghostty                    # terminal (cask "ghostty")
+  zed-editor                 # editor (cask "zed")
+  dbeaver-bin                # universal database tool / SQL client
+  redisinsight               # official Redis GUI
+  postman                    # API client
+  bruno                      # git-friendly API client
+  onlyoffice-desktopeditors  # office suite
 ]

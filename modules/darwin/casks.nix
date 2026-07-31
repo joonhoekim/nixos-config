@@ -9,7 +9,6 @@ _:
   "iterm2"
   "postman"
   "bruno"              # git-friendly API client (collections as repo files)
-  "cursor"
   "dbeaver-community"  # universal database tool / SQL client
   "redis-insight"       # official Redis GUI
 

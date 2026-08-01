@@ -263,13 +263,25 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // 스캔라인·그릴·커서 꼬리는 전부 곡면 좌표로 재므로 화면과 같이 휜다.
     vec2 pix = uv * iResolution.xy;
 
-    float t = iTime * ANIM_SPEED;
+    // 포커스 없는 창은 정지 화면으로 둔다.
+    //
+    // custom-shader-animation = true 는 "포커스된 창만 애니메이션 루프를 돈다"는
+    // 뜻이지 "다른 창은 절대 안 그린다"는 뜻이 아니다. 수정키 입력이나 링크 호버
+    // 같은 일로 가끔 한 장씩 그려지는데, 그때 iTime 만 훌쩍 뛴 채로 그려지니
+    // 움직이는 것들이 아주 느리게 뚝뚝 넘어가는 것처럼 보인다. ghostty 가 iFocus
+    // 를 주는 이유가 정확히 이거다(문서에 "deceptive frames" 라고 적혀 있다).
+    //
+    // 그래서 포커스가 없으면 시간을 세우고 띠를 지운다. 그레인 무늬는 고정된
+    // 씨앗으로 남으니 질감은 그대로고, 굴러가던 띠만 사라진다.
+    float live = float(iFocus > 0);
+
+    float t = iTime * ANIM_SPEED * live;
 
     // 험 바 위치. fract 로 감고, 감긴 좌표에서의 최단 거리로 띠를 만든다.
     // 화면 전체를 훑는 사인이 아니라 HUM_WIDTH 만큼의 띠 하나뿐이다.
     float humY   = fract(uv.y + t * HUM_SPEED);
     float humD   = min(humY, 1.0 - humY);
-    float humBar = exp(-(humD * humD) / (HUM_WIDTH * HUM_WIDTH));
+    float humBar = exp(-(humD * humD) / (HUM_WIDTH * HUM_WIDTH)) * live;
 
     // 글로우 쪽을 훨씬 세게 민다. 띠가 지날 때 글자 둘레가 확 번지는 게
     // 브라운관에서 실제로 눈에 띄는 부분이다.

@@ -36,7 +36,7 @@
 #define EDGE_SOFT   1.5
 
 // 비네트 지수. 작을수록 가장자리가 깊게 죽는다.
-#define VIGNETTE    0.35
+#define VIGNETTE    0.25
 
 // ── 광학 ──────────────────────────────────────────────────────────────────
 // 초점. 진짜 브라운관은 픽셀 경계가 칼같지 않다. 0 이면 원본 그대로, 1 이면
@@ -235,13 +235,18 @@ vec3 cursorTrail(vec2 p) {
                     iPreviousCursor.y - iPreviousCursor.w * 0.5);
 
     // 커서가 깜빡이거나 색이 바뀌어도 iTimeCursorChange 는 갱신된다. 그때까지
-    // 빛나면 제자리에서 맥동하는 꼴이라 제일 피곤하다 — 실제로 움직였을 때만
-    // 그린다. 분기 대신 곱으로 처리해서 아래 fwidth 의 미분이 흐트러지지 않게 한다.
+    // 빛나면 제자리에서 맥동하는 꼴이라 제일 피곤하다 — 실제로 움직였을 때만 그린다.
     float moved = smoothstep(1.0, 4.0, length(cur - prv));
 
     // 나이가 들수록 빠르게 죽는다. 인광체가 지수적으로 꺼지는 것과 비슷하다.
     float age  = clamp((iTime - iTimeCursorChange) / TRAIL_SEC, 0.0, 1.0);
     float fade = (1.0 - age) * (1.0 - age);
+
+    // 여기서 끊고 나가도 안전하다. 조건이 유니폼만으로 정해지므로 화면 전체가
+    // 같은 쪽으로 분기하고, 워프가 갈라지지 않는다. 그리고 이건 드문 경우가
+    // 아니다 — 커서가 멈춰 있으면 TRAIL_SEC(0.22초) 뒤부터 계속 여기로 빠진다.
+    // 아래 거리장은 그동안 0 을 곱할 값을 구하느라 도는 셈이었다.
+    if (TRAIL * fade * moved <= 0.0) return vec3(0.0);
 
     // 거리를 커서 반폭/반높이로 나눈 공간에서 잰다. 그러면 d 의 단위가 "커서
     // 몇 개분"이 되고, 꼬리가 커서와 같은 두께·같은 비율로 끌린다. 예전처럼
@@ -254,6 +259,46 @@ vec3 cursorTrail(vec2 p) {
     float halo = exp(-max(d, 0.0) / TRAIL_GLOW);           // 그 둘레 번짐
 
     return iCurrentCursorColor.rgb * (core * 0.55 + halo * 0.45) * TRAIL * fade * moved;
+}
+
+// 효과 하나를 화면에 얹는다. 이 셰이더에서 제일 여러 번 나오는 모양이라 함수로
+// 뺐다 — 그레인과 험 바가 이걸로 얹히고, 새 효과를 붙일 때도 여기부터 보면 된다.
+//
+// 왜 곱하기와 더하기를 같이 쓰나: 배경이 순검정인 터미널에서 곱하기는 어두운
+// 곳에서 죽고(검정 × 무엇이든 검정), 더하기는 밝은 곳에서 묻힌다(같은 절대량이라도
+// 바탕이 밝을수록 상대 대비가 작고, 감마가 어두운 쪽 차이를 한 번 더 키운다).
+// 한쪽만 쓰면 반드시 한쪽에서 안 보인다 — 이 셰이더는 그 함정에 세 번 걸렸다.
+// gain 은 밝은 픽셀에서의 몫, lift 는 검정에서의 몫이다.
+vec3 modulate(vec3 col, float amount, float gain, float lift) {
+    return col * (1.0 + amount * gain) + vec3(amount * lift);
+}
+
+// 스캔라인과 인광체 그릴. 곡면 좌표(pix)로 재므로 화면과 같이 휜다.
+vec3 stripes(vec3 col, vec2 pix) {
+    // 한 화면 픽셀 안에 줄무늬가 얼마나 들어가는지. 반 주기를 넘으면 애초에
+    // 표현할 수 없어서 모아레만 남는다 — 그런 곳에서는 줄무늬를 서서히 지운다.
+    // 곡률이 강한 가장자리가 특히 그렇다. 없는 편이 지저분한 것보다 낫다.
+    float scanAA   = 1.0 - smoothstep(0.25, 0.5, fwidth(pix.y) / SCAN_PX);
+    float grilleAA = 1.0 - smoothstep(0.25, 0.5, fwidth(pix.x) / GRILLE_PX);
+
+    col *= 1.0 - SCAN_DEPTH * scanAA * (0.5 + 0.5 * sin(pix.y * TAU / SCAN_PX));
+
+    float gp = pix.x * TAU / GRILLE_PX;
+    vec3 mask = 0.5 + 0.5 * vec3(sin(gp), sin(gp + TAU / 3.0), sin(gp + TAU * 2.0 / 3.0));
+    return col * (1.0 - GRILLE * grilleAA * mask);
+}
+
+// 유리 안쪽 — 비네트와 화면 가장자리.
+vec3 bezel(vec3 col, vec2 uv) {
+    // uv 가 화면 밖이면 곱이 음수라 pow 가 NaN 을 뱉는다. 하드 컷을 없앤 자리를
+    // 여기서 막는다.
+    vec2 e = uv * (1.0 - uv.yx);
+    col *= smoothstep(0.0, 1.0, pow(max(e.x * e.y, 0.0) * 30.0, VIGNETTE));
+
+    // 하드 컷 대신 EDGE_SOFT 픽셀에 걸쳐 죽인다. 덤으로 fwidth 를 쓰는 stripes 가
+    // 분기 밖에 있게 되어 미분값이 정의된다.
+    vec2 d = min(uv, 1.0 - uv) * iResolution.xy;
+    return col * smoothstep(0.0, EDGE_SOFT, min(d.x, d.y));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -291,17 +336,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     col += bloom(uv, px) * BLOOM * humGlow;
     col += cursorTrail(pix) * humGlow;
 
-    // 한 화면 픽셀 안에 줄무늬가 얼마나 들어가는지. 반 주기를 넘으면 애초에
-    // 표현할 수 없어서 모아레만 남는다 — 그런 곳에서는 줄무늬를 서서히 지운다.
-    // 곡률이 강한 가장자리가 특히 그렇다. 없는 편이 지저분한 것보다 낫다.
-    float scanAA   = 1.0 - smoothstep(0.25, 0.5, fwidth(pix.y) / SCAN_PX);
-    float grilleAA = 1.0 - smoothstep(0.25, 0.5, fwidth(pix.x) / GRILLE_PX);
-
-    col *= 1.0 - SCAN_DEPTH * scanAA * (0.5 + 0.5 * sin(pix.y * TAU / SCAN_PX));
-
-    float gp = pix.x * TAU / GRILLE_PX;
-    vec3 mask = 0.5 + 0.5 * vec3(sin(gp), sin(gp + TAU / 3.0), sin(gp + TAU * 2.0 / 3.0));
-    col *= 1.0 - GRILLE * grilleAA * mask;
+    col = stripes(col, pix);
 
     // 그레인은 GRAIN_HZ 로 계단을 밟되, 계단 사이를 smoothstep 으로 이어 붙인다.
     // 새 무늬로 툭 갈아치우면 그게 눈에 걸리는 지글거림이 된다.
@@ -309,30 +344,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float g  = mix(grainAt(fragCoord, floor(ts)),
                    grainAt(fragCoord, floor(ts) + 1.0),
                    smoothstep(0.0, 1.0, fract(ts)));
-    // 어두운 곳은 더하기가, 밝은 곳은 곱하기가 담당한다. 위 GRAIN_ADD/MUL 주석
-    // 참고 — 더하기만으로는 밝은 글자 위에서 잡티가 묻힌다.
-    float gv = g * GRAIN;
-    col = col * (1.0 + gv * GRAIN_MUL) + gv * GRAIN_ADD;
+    col = modulate(col, g * GRAIN, GRAIN_MUL, GRAIN_ADD);
 
-    // 띠 안쪽만 밝아진다. 띠 밖은 humBar 가 0 이라 곱은 1, 더하기는 0 — 화면의
-    // 대부분이 아예 손대지지 않는다. 예전 사인 방식이 피곤했던 건 어느 순간에도
-    // 화면 전부가 변하고 있었기 때문이다.
-    //
-    // 곱하기와 더하기를 같이 쓰는 이유는 그레인 때와 같다: 곱하기는 검정 배경
-    // 에서 아무 일도 안 하고, 더하기는 밝은 글자 위에서 묻힌다.
-    col *= 1.0 + HUM * humBar;
-    col += vec3(HUM_LIFT) * humBar;
+    // 띠 밖은 humBar 가 0 이라 아무 일도 일어나지 않는다 — 어느 순간에도 화면의
+    // 대부분은 손대지 않는다. 예전 사인 방식이 피곤했던 건 그 반대였기 때문이다.
+    col = modulate(col, humBar, HUM, HUM_LIFT);
 
-    // uv 가 화면 밖이면 곱이 음수라 pow 가 NaN 을 뱉는다. 하드 컷을 없앤 자리를
-    // 여기서 막는다.
-    vec2 e = uv * (1.0 - uv.yx);
-    col *= smoothstep(0.0, 1.0, clamp(pow(max(e.x * e.y, 0.0) * 30.0, VIGNETTE), 0.0, 1.0));
-
-    // 화면 가장자리. 하드 컷 대신 EDGE_SOFT 픽셀에 걸쳐 죽인다. 덤으로 위쪽
-    // fwidth 가 분기 밖에 있게 되어 미분값이 정의된다.
-    vec2 d = min(uv, 1.0 - uv) * iResolution.xy;
-    col *= smoothstep(0.0, 1.0, clamp(min(d.x, d.y) / EDGE_SOFT, 0.0, 1.0));
-
+    col = bezel(col, uv);
     col *= BRIGHTNESS * TINT;
 
     // 알파는 1 이다. 곡률로 잘라낸 가장자리가 창 밖으로 비쳐 보이면 유리 안쪽이

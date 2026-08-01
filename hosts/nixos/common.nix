@@ -10,9 +10,8 @@
   imports = [
     # Korean locale, IME (fcitx5-hangul), Right Alt -> Hangul, and CJK fonts.
     ../../modules/nixos/korean.nix
-    # niri session + a Quickshell desktop shell (DMS by default), offered
-    # alongside GNOME at the tuigreet greeter and the default session below.
-    # Pick the shell with local.niri.shell.
+    # niri session + DankMaterialShell, offered alongside GNOME at the
+    # tuigreet greeter and set as the default session below.
     ../../modules/nixos/niri
     ../../modules/shared
   ];

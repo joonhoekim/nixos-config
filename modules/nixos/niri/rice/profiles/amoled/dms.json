@@ -1,51 +1,28 @@
 {
-  "_comment": [
-    "DMS 설정 오버레이. settings.json 전체가 아니라 이 프로필이 관여하는 키만 담는다.",
-    "apps/rice-switch 가 jq 로 병합하므로, 여기 없는 키(월페이퍼 이력, 디스플레이",
-    "프로필, 위젯 사용 기록 같은 머신 상태)는 그대로 보존된다.",
-    "",
-    "세 프로필이 같은 키 집합을 다루도록 맞춰 두었다. 한쪽에만 있는 키가 생기면",
-    "A->B->A 로 돌아왔을 때 원래 값으로 안 돌아온다.",
-    "",
-    "settings = 최상위 키, bar = barConfigs 의 각 항목에 병합될 키.",
-    "",
-    "테마는 StockThemes.js 의 이름만 쓴다(blue/purple/green/orange/red/cyan/",
-    "pink/amber/coral/monochrome, 그리고 특수값 dynamic). themes/ 에 받아 둔",
-    "레지스트리 테마(amoledBlack 등)는 currentThemeName=custom 으로 지정해도",
-    "파일 쓰기만으로는 적용되지 않는다 — 실측으로 확인했다. 그건 설정 GUI 에서",
-    "고르고, 프로필은 그 위의 형태/투명도만 건드리는 쪽이 안전하다."
-  ],
-
+  "_note": "amoled — 순검정. 그림자·블러 없이 형태만으로 대비를 만든다. 키 집합 규칙은 README.md 참고.",
   "settings": {
     "currentThemeName": "monochrome",
     "currentThemeCategory": "generic",
-
     "blurEnabled": false,
     "blurForegroundLayers": false,
     "blurBorderEnabled": false,
     "blurredWallpaperLayer": false,
     "blurWallpaperOnOverview": false,
-
     "cornerRadius": 6,
     "popupTransparency": 1,
     "dockTransparency": 1,
-
     "m3ElevationEnabled": false,
     "barElevationEnabled": false,
     "modalElevationEnabled": false,
     "popoutElevationEnabled": false,
-
     "animationSpeed": 1,
     "animationVariant": 0,
-
     "wallpaperBackgroundColorMode": "black",
-
     "fontFamily": "Inter Variable",
     "monoFontFamily": "JetBrainsMono Nerd Font",
     "fontWeight": 400,
     "fontScale": 1
   },
-
   "bar": {
     "transparency": 1,
     "widgetTransparency": 1,

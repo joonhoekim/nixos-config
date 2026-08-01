@@ -1,25 +1,10 @@
 {
-  "_comment": [
-    "matugen — 월페이퍼에서 Material You 팔레트를 뽑아 셸·니리·터미널을 한 색조로.",
-    "키 집합 규칙은 amoled/dms.json 주석 참고.",
-    "",
-    "동적 테마의 스위치는 currentThemeName = \"dynamic\" 이다. 이 값일 때만 DMS 가",
-    "월페이퍼를 matugen 에 물리고, matugenTemplate* 들이 dms/colors.kdl 과",
-    "ghostty/themes/dankcolors 를 다시 쓴다.",
-    "",
-    "월페이퍼가 없으면 뽑을 색이 없다 — apps/rice-wall 로 하나 고르고 나서 봐야",
-    "제 모습이 나온다.",
-    "",
-    "블러는 중간값. 색이 주인공인 룩이라 frosted 만큼 투명하게 만들면 팔레트가",
-    "월페이퍼에 묻혀서 안 보인다."
-  ],
-
+  "_note": "matugen — 월페이퍼가 색을 정한다(currentThemeName=dynamic). 블러는 중간값: frosted 만큼 투명하면 뽑아낸 팔레트가 월페이퍼에 묻힌다.",
   "settings": {
     "currentThemeName": "dynamic",
     "currentThemeCategory": "generic",
     "matugenScheme": "scheme-tonal-spot",
     "matugenContrast": 0,
-
     "blurEnabled": true,
     "blurForegroundLayers": true,
     "blurBorderEnabled": true,
@@ -28,28 +13,22 @@
     "blurLayerOutlineOpacity": 0.12,
     "blurredWallpaperLayer": false,
     "blurWallpaperOnOverview": true,
-
     "cornerRadius": 12,
     "popupTransparency": 0.92,
     "dockTransparency": 0.92,
-
     "m3ElevationEnabled": true,
     "m3ElevationIntensity": 12,
     "barElevationEnabled": true,
     "modalElevationEnabled": true,
     "popoutElevationEnabled": true,
-
     "animationSpeed": 1,
     "animationVariant": 0,
-
     "wallpaperBackgroundColorMode": "black",
-
     "fontFamily": "Inter Variable",
     "monoFontFamily": "JetBrainsMono Nerd Font",
     "fontWeight": 400,
     "fontScale": 1
   },
-
   "bar": {
     "transparency": 0.85,
     "widgetTransparency": 0.9,

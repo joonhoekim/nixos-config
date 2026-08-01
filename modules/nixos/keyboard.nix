@@ -9,56 +9,71 @@
 #
 # Two remaps:
 #   - Right Alt -> Hangul (한/영), for fcitx5-hangul. See ./korean.nix.
-#   - Caps Lock held -> a vim/neovim navigation layer.
+#   - Caps Lock held -> a TouchCursor navigation layer.
 #
-# The layer is a port of the Karabiner-Elements config this repo ships for
-# macOS — same trigger, same keys, same tap-vs-hold split. The full rationale
-# and key table is in modules/darwin/config/karabiner/README.md; only the
-# actions differ, because the Linux equivalents of the macOS editing keys are
-# Ctrl-arrow for word motions, Home/End for line ends, and Ctrl-c/v/z rather
-# than Cmd-c/v/z.
+# TouchCursor (https://github.com/martin-stone/touchcursor) solves exactly one
+# problem — moving the cursor without leaving the home row — and solves it
+# spatially: hold the trigger, and `ijkl` is an inverted-T arrow cluster under
+# the right hand. Nothing about it has to be memorised.
+#
+# It is here rather than a vim layer (which this file used to hold; the parked
+# version is ./keyboard.nix.vim) because it is what the Windows machines run,
+# and TouchCursor cannot import a config — every box is set up by hand, so one
+# vocabulary across all of them is worth more than notational purity.
+#
+# The trigger is Caps Lock on every machine, which is the single setting
+# changed from stock TouchCursor there and the one thing this file has to
+# match. It also happens to be the trigger the mapping wants: TouchCursor's
+# default is space, and a space trigger has to be defended against the typing
+# it sits in the middle of (an idle timeout so fast rolls don't open the layer,
+# plus emitting the swallowed space ahead of any key the layer doesn't map).
+# Caps Lock is dead weight otherwise, so it needs none of that.
+#
+# Two consequences of the mapping worth knowing:
+#
+#   - Every binding is unshifted, so Shift is never part of a command and stays
+#     free to extend a selection: Caps+Shift+j selects left, Caps+Shift+o
+#     selects to end of line. The vim layer could not do this for `$ { } G N`,
+#     because there Shift *was* the command.
+#   - Nothing in the layer composes. That is not a limitation to work around;
+#     it is the whole design. Composition (`d2w`, `ci"`) needs an application
+#     that parses a grammar, which is what an editor is for — see
+#     ./keyboard.nix.vim for the long version of that argument.
+#
+# The vim motions TouchCursor has no answer for are kept on the keys it leaves
+# free: w/e/b word motions, g/G document ends, / for find.
 #
 # Imported by hosts/nixos/common.nix.
 { ... }:
 
 let
-  # [nav] — a *plain* layer, not a modifier layer. Keys with no binding below
-  # type their own letter while Caps Lock is held, which is what the macOS
-  # config does. (Making this `[nav:C]` would turn unbound keys into Ctrl
-  # combos instead — see ../../hosts/nixos/galaxy-chromebook-1 for a host that
-  # wants that trade.)
-  #
-  # Shift is not bound here, so it passes through: Caps+Shift+j emits Shift-Down
-  # and extends a selection, exactly like the macOS layer. Keys where Shift is
-  # itself part of the command ($ { } G N X U) are in the composite layer below.
+  # [nav] — a plain layer, not a modifier layer: keys with no binding here type
+  # their own letter while Caps Lock is held.
   nav = {
-    # hjkl -> arrows
-    h = "left";
-    j = "down";
-    k = "up";
+    # TouchCursor proper — the mapping muscle memory is already trained on.
+    # Inverted T under the right hand, one row up from the home row.
+    i = "up";
+    j = "left";
+    k = "down";
     l = "right";
 
-    # w/e -> word forward, b -> word back (Alt-arrow on macOS, Ctrl-arrow here)
-    w = "C-right";
+    u = "home"; # line start (⌘← in the macOS original)
+    o = "end"; # line end   (⌘→)
+
+    h = "pageup";
+    n = "pagedown";
+
+    p = "backspace";
+    m = "delete"; # forward delete
+    y = "insert";
+
+    # Borrowed from vim, on keys TouchCursor leaves unmapped. These are the
+    # motions it has no equivalent for at all, not stylistic replacements.
+    w = "C-right"; # word forward
     e = "C-right";
-    b = "C-left";
-
-    "0" = "home"; # line start ($ = Shift-4 -> end, in [nav+shift])
-
-    # No neovim counterpart — i is insert and m is mark, so both are free.
-    # They stand in for Ctrl-b/Ctrl-u and Ctrl-f/Ctrl-d.
-    i = "pageup";
-    m = "pagedown";
-
+    b = "C-left"; # word back
     g = "C-home"; # gg -> document top (G -> bottom, in [nav+shift])
-
-    slash = "C-f"; # / -> find
-    n = "C-g"; # n -> find next. GTK/Firefox/Chromium; some apps want F3.
-
-    u = "C-z"; # undo (U -> redo, in [nav+shift])
-    x = "delete"; # forward delete (X -> backspace, in [nav+shift])
-    y = "C-c"; # yank -> copy
-    p = "C-v"; # put -> paste
+    slash = "C-f"; # find
   };
 in
 {
@@ -70,42 +85,23 @@ in
 
       settings.main = {
         rightalt = "hangeul"; # keyd's name for KEY_HANGEUL (122)
-        # Tap for a normal Caps Lock toggle, hold for the layer — the same
-        # split Karabiner does with to_if_alone on macOS.
+        # Tap for a normal Caps Lock toggle, hold for the layer — same as
+        # tapping the trigger key in TouchCursor itself.
         capslock = "overload(nav, capslock)";
       };
 
       settings.nav = nav;
 
-      # A composite layer fires only while *all* of its constituent layers are
-      # held, and — unlike a passed-through modifier — it strips those layers'
-      # modifiers from the output. That is exactly what the shifted commands
-      # need: `$` must emit End, not Shift-End (which would select instead of
-      # move). keyd requires composite layers to be declared after the layers
-      # they are built from, which is what this option is for.
-      #
-      # `[` and `]` are spelled leftbrace/rightbrace: keyd treats any line
-      # starting with `[` as a section header, so the literal key name cannot
-      # appear on the left-hand side. Comments get their own lines for a
-      # related reason — `#` is a key name to keyd (Shift-3), not a trailing
-      # comment marker.
+      # A composite layer fires only while all of its constituent layers are
+      # held, and strips their modifiers from the output — Shift here is part of
+      # the command (`G`), not a selection. keyd requires composite layers to be
+      # declared after the layers they are built from, which is what this option
+      # is for.
       extraConfig = ''
         [nav+shift]
 
-        # $ -> line end
-        4 = end
-        # { -> paragraph up
-        leftbrace = C-up
-        # } -> paragraph down
-        rightbrace = C-down
         # G -> document bottom
         g = C-end
-        # N -> find previous
-        n = C-S-g
-        # X -> delete backwards
-        x = backspace
-        # U -> redo
-        u = C-S-z
       '';
     };
   };

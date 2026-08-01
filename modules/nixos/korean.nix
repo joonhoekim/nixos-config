@@ -23,8 +23,8 @@
 
   # 한/영 is Right Alt -> Hangul, remapped by keyd in ./keyboard.nix rather
   # than here: keyd takes one config per machine, and this box also puts a
-  # navigation layer on Caps Lock. fcitx5-hangul sees the resulting Hangul_Mode
-  # and toggles keyboard-us <-> hangul.
+  # navigation layer on held Caps Lock. fcitx5-hangul sees the resulting
+  # Hangul_Mode and toggles keyboard-us <-> hangul.
 
   # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {

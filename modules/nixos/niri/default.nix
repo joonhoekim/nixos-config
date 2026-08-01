@@ -4,9 +4,9 @@
 # GNOME one in hosts/nixos/common.nix, driven by a Quickshell-based desktop
 # shell — DankMaterialShell (default) or Noctalia.
 #
-# GDM lists both sessions; `services.displayManager.defaultSession = "gnome"`
-# (common.nix) still decides which one a plain login lands in, so niri is opt-in
-# per login and a broken shell config never locks anyone out of their desktop.
+# tuigreet lists both sessions (see the greetd block in common.nix); niri is now
+# the default one, and GNOME is the fallback a login can still be steered to
+# when a shell bump breaks the desktop.
 #
 # Everything here comes from the pinned nixpkgs/home-manager — no extra flake
 # input. That is worth stating because most guides still reach for

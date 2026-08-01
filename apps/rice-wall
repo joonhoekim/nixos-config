@@ -78,4 +78,7 @@ printf "${GREEN}월페이퍼:${NC} %s\n" "${pick#"$root"/}"
 
 if [ "$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/rice/current" 2>/dev/null)" = "matugen" ]; then
   printf "${DIM}matugen 프로필이라 셸·니리·터미널 팔레트가 곧 따라온다.${NC}\n"
+  # --wait: matugen 이 비동기라 팔레트가 갱신되기를 기다렸다 fuzzel 을 다시 만든다.
+  # 셸/니리/터미널은 DMS 가 알아서 하고, fuzzel 만 우리 몫이다.
+  "$(dirname "$0")/rice-fuzzel" --wait || true
 fi

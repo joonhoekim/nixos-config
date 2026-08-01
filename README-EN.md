@@ -36,6 +36,11 @@ apps/rice-wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+
 apps/rice-wall --pick         # pick one through fuzzel                    (Mod+Ctrl+W)
 ```
 
+The launcher (fuzzel) and the terminal (ghostty) have no per-profile piece.
+The terminal reads the palette DMS generates for it; `apps/rice-fuzzel` derives
+fuzzel's colors from that same palette, taking opacity and radius from whatever
+profile is active.
+
 A profile is two pieces (`niri.kdl` / `dms.json`). Only the
 DMS piece is an overlay rather than a whole-file swap — `settings.json` also
 holds machine state that has nothing to do with the look, and replacing it

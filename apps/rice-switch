@@ -86,7 +86,15 @@ fi
 # 최상위 병합에서 빼고, 각 항목에 .bar 를 따로 병합한다 — 모니터마다 바를
 # 여러 개 둔 설정에서도 전부에 같은 룩이 적용된다.
 settings="$cfg/DankMaterialShell/settings.json"
+theme_changed=0
 if [ -f "$dir/dms.json" ] && [ -f "$settings" ]; then
+  # 테마 이름이 바뀌면 DMS 가 matugen 을 다시 돌린다. 그건 비동기라, 바로 뒤에서
+  # fuzzel 색을 만들면 직전 프로필의 팔레트를 읽는다(실제로 한 박자씩 밀렸다).
+  # 바뀌는지 여부를 병합 *전에* 봐 둬야 하는 이유다.
+  old_theme="$(jq -r '.currentThemeName // ""' "$settings")"
+  new_theme="$(jq -r '.settings.currentThemeName // ""' "$dir/dms.json")"
+  [ -n "$new_theme" ] && [ "$new_theme" != "$old_theme" ] && theme_changed=1
+
   tmpf="$(mktemp)"
   jq --slurpfile p "$dir/dms.json" '
     (. * $p[0].settings)
@@ -107,6 +115,17 @@ fi
 
 mkdir -p "$rice"
 printf '%s\n' "$name" > "$current_file"
+
+# fuzzel 은 DMS 팔레트를 스스로 못 따라가서(matugen 템플릿 목록이 하드코딩) 우리가
+# 밀어 넣는다. current 를 쓴 다음에 불러야 새 프로필의 투명도/곡률을 읽는다.
+# 테마가 그대로면 팔레트도 그대로라 기다릴 이유가 없다.
+# 실패해도 전환 자체는 성공이니 죽이지 않는다 — 런처 색이 한 박자 늦을 뿐이다.
+if [ "$theme_changed" -eq 1 ]; then
+  "$(dirname "$0")/rice-fuzzel" --wait || true
+else
+  "$(dirname "$0")/rice-fuzzel" || true
+fi
+
 printf "${GREEN}프로필 전환: %s${NC}\n" "$name"
 
 if [ "$name" = "matugen" ] && ! dms ipc call wallpaper get >/dev/null 2>&1; then

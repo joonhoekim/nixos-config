@@ -122,6 +122,22 @@ in
         # theme change (its matugenTemplateGhostty template), so the terminal
         # tracks the shell without anything else being declared.
         seed ${./rice/ghostty.conf} "$HOME/.config/ghostty/config"
+
+        # fuzzel 은 형태만 시드한다. 색은 apps/rice-fuzzel 이 DMS 팔레트에서
+        # 만들어 dank-colors.ini 에 쓰고, fuzzel.ini 끝에 include 를 붙인다.
+        # 그래서 이 시드에는 include 줄이 없다 — fuzzel 은 절대 경로만 받는데
+        # 그건 머신마다 다르다.
+        # include 줄은 여기서 붙여 내보낸다. 레포 파일에 넣어둘 수 없는 건
+        # fuzzel 이 절대 경로만 받기 때문인데, 홈 경로는 이 모듈이 알고 있다.
+        # rice-fuzzel 도 같은 줄을 붙일 줄 알지만, 그건 손으로 만든 설정을 위한
+        # 안전망이고 — 첫 로그인에 런처가 fuzzel 기본 테마(솔라라이즈드 라이트)로
+        # 뜨지 않으려면 이 시점에 이미 배선돼 있어야 한다.
+        seed ${pkgs.writeText "fuzzel.ini" (''
+          # apps/rice-fuzzel 이 쓰는 색 파일. 기본 섹션이어야 해서 맨 위다.
+          include=/home/${user}/.config/fuzzel/dank-colors.ini
+
+        '' + builtins.readFile ./rice/fuzzel.ini)} "$HOME/.config/fuzzel/fuzzel.ini"
+        seed ${./rice/fuzzel-colors.ini} "$HOME/.config/fuzzel/dank-colors.ini"
       '';
     };
 

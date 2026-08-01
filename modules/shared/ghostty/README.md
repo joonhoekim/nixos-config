@@ -150,14 +150,25 @@ ghostty +show-config --default --docs | grep -B120 '^custom-shader = '
 |---|---|---|
 | 리로드 | `rice-term` 이 D-Bus 로 시킨다 | 세션 버스가 없어서 **단축키로 직접** (`cmd+shift+,`) |
 | 투명도 | 리로드로 바뀐다 | `background-opacity` 는 **ghostty 를 완전히 다시 띄워야** 바뀐다(문서 명시). 룩마다 값이 달라서, 셰이더만 갈리고 투명도는 그대로인 상태가 잠깐 보인다 |
-| 색 | DMS/matugen 이 `themes/dankcolors` 를 써 준다 | 그 생성기가 없다. `config` 의 `theme = dankcolors` 가 없는 테마를 가리키면 ghostty 는 조용히 넘기지 않고 **설정 에러로 잡는다** — 그 파일을 하나 만들어 두거나 스톡 테마 이름으로 바꿔야 한다. 셰이더는 그것과 무관하게 돈다 |
+| 색 | DMS/matugen 이 `themes/dankcolors` 를 써 준다 | 그 생성기가 없어서 **레포가 시드한 폴백 팔레트**(`themes/dankcolors`)가 그 자리에 그대로 남는다. 벽지를 따라가지는 않는다 |
 
 `rice-term` 은 이 셋을 알고 있다: `gdbus` 가 없으면 단축키를 안내하고, macOS 면
 투명도 제약을 같이 알려 준다. 목록도 `find -printf`(GNU 확장) 대신 글롭으로 만들어
 BSD 도구에서 돈다.
 
-**아직 실제 Mac 에서 돌려 보지는 않았다.** 위는 문서와 코드에서 확인한 것이고,
-첫 `build-switch` 때 확인할 것은 두 가지다 — `~/.config/ghostty/config` 가 실제로
-읽히는지(macOS 전용 경로 `~/Library/Application Support/com.mitchellh.ghostty/`
-쪽을 쓰고 있었다면 그쪽 config 에 `config-file = ~/.config/ghostty/config` 한 줄을
-넣으면 된다), 그리고 `theme = dankcolors` 에러가 나는지.
+실제 Mac 에서 돌려 보고 알게 된 것 둘을 더 안다:
+
+- **`ghostty` 는 PATH 에 없다.** macOS 는 CLI 를 앱 번들 안
+  (`/Applications/Ghostty.app/Contents/MacOS/ghostty`)에 두므로, 그냥 부르면
+  `command not found` 가 나고 그게 `+validate-config` 실패로 둔갑한다. 그러면
+  멀쩡한 조각을 넣고도 "설정이 유효하지 않다"며 되돌리게 된다. `rice-term` 이
+  번들 경로를 폴백으로 찾고, 둘 다 없으면 검증을 건너뛴다.
+- **`/bin/sh` 가 bash 3.2 다.** 이 버전은 `$( )` 안을 괄호 세기로 훑다가 `case`
+  패턴의 닫는 괄호를 치환의 끝으로 착각해 조각을 잘라 버린다. 그래서 명령 치환
+  안의 `case` 는 패턴에 여는 괄호를 붙여야 한다 — `case "$p" in (/*) … ;; (*) … ;;
+  esac`. 같은 이유로 그 안의 주석에는 백틱도 못 쓴다. `sh -n` 은 통과하니
+  (치환 본문은 실행 시점에 파싱된다) 문법 검사로는 안 걸린다.
+
+`~/.config/ghostty/config` 가 읽히는 것도 확인했다. macOS 전용 경로
+(`~/Library/Application Support/com.mitchellh.ghostty/`)를 쓰는 머신이라면 그쪽
+config 에 `config-file = ~/.config/ghostty/config` 한 줄을 넣으면 된다.

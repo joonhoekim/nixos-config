@@ -103,11 +103,29 @@ in
           $DRY_RUN_CMD chmod -R u+w "$2"
           echo "seeded $2"
         }
+
+        # seed 의 짝. seed 는 파일이 *없을 때만* 도므로, 이미 설정을 가진 머신은
+        # 레포 시드에 새로 넣은 줄을 영영 못 받는다. 그런데 include 한 줄은 기능
+        # 전체를 켜고 끄는 스위치라, 없으면 스위처가 성실히 동작하고 화면만 안
+        # 바뀌는 — 원인 찾기 제일 나쁜 — 상태가 된다.
+        #
+        # 그래서 "줄 하나가 있는지"만 따로 보장한다. 기존 내용은 건드리지 않고
+        # 없을 때만 덧붙이므로, 이 모듈이 손으로 한 리싱을 덮지 않는다는 원칙은
+        # 그대로다. rice-fuzzel 과 rice-term 도 각자 같은 일을 한 번 더 한다.
+        ensure() { # ensure <file> <line> <comment>
+          [ -f "$1" ] || return 0
+          grep -qxF "$2" "$1" && return 0
+          $DRY_RUN_CMD printf '\n%s\n%s\n' "$3" "$2" >> "$1"
+          echo "wired $2 into $1"
+        }
+
         seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
 
         # config.kdl 이 optional 로 include 하는 조각. 창 열림/닫힘 셰이더가
         # 들어 있고, 지우면 니리 기본 애니메이션으로 돌아간다.
         seed ${./rice/animations.kdl} "$HOME/.config/niri/animations.kdl"
+        ensure "$HOME/.config/niri/config.kdl" 'include "animations.kdl" optional=true' \
+          '// 창 열림/닫힘 셰이더. 파일을 지우면 니리 기본 애니메이션으로 돌아간다.'
 
         # Look profiles, swapped live by apps/rice-switch.
         seed ${./rice/profiles} "$HOME/.config/rice/profiles"
@@ -134,6 +152,8 @@ in
         seed ${./rice/ghostty/config}  "$HOME/.config/ghostty/config"
         seed ${./rice/ghostty/rices}   "$HOME/.config/ghostty/rices"
         seed ${./rice/ghostty/shaders} "$HOME/.config/ghostty/shaders"
+        ensure "$HOME/.config/ghostty/config" "config-file = ?rice.conf" \
+          '# apps/rice-term 이 갈아끼우는 룩 조각. 없어도 되도록 ? 를 붙인다.'
 
         # fuzzel 은 형태(폰트/여백/줄높이)만 레포에 두고, 색과 화면에 맞춰
         # 계산되는 lines/radius 는 apps/rice-fuzzel 이 dank-rice.ini 에 쓴다.

@@ -1,5 +1,12 @@
 # ghostty 룩
 
+이 디렉터리는 **NixOS 와 macOS 가 같이 쓴다.** `../ghostty.nix` 가 양쪽
+home-manager 에서 import 되어 같은 파일을 `~/.config/ghostty/` 에 심고,
+`apps/rice-term` 도 두 플랫폼에서 돈다. 그래서 `modules/nixos/niri/rice/` 가
+아니라 `modules/shared/` 에 있다 — 니리는 리눅스 전용이지만 터미널 룩은 아니다.
+
+macOS 에서 다른 점은 세 가지다. [아래](#macos-에서-다른-점)에 정리했다.
+
 `config` 는 어느 룩에서나 같은 것(폰트, 팔레트)을 정하고, 바뀌는 것은
 `rices/<name>.conf` 조각 하나로 뺐다. `apps/rice-term <name>` 이 고른 조각을
 `~/.config/ghostty/rice.conf` 로 복사하고 D-Bus 로 리로드를 시킨다. 재시작도
@@ -32,8 +39,8 @@ config-file = ?rice.conf
 **모든 조각이 같은 키 집합을 다룬다** — `custom-shader`,
 `custom-shader-animation`, `background-opacity`, `window-padding-x/y`. 조각은
 앞 조각을 지우지 않고 덮어쓰기만 하므로, 어느 하나에만 있는 키가 생기면
-A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `rice/profiles/README.md` 와 같은
-이유, 같은 규칙이다.
+A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `../../nixos/niri/rice/profiles/README.md`
+와 같은 이유, 같은 규칙이다.
 
 **색은 조각에서 건드리지 않는다.** `theme = dankcolors` 는 DMS/matugen 이 쓰는
 파일이라 프로필을 알아서 따라온다. 조각에 색을 박으면 그게 끊긴다.
@@ -82,7 +89,7 @@ A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `rice/profiles
 
 **레포 파일을 고치고 `apps/rice-term` 을 돌리면 아무 일도 일어나지 않는다.**
 `rice-term` 이 복사하는 건 `rices/<name>.conf` 뿐이고, 셰이더 파일은 건드리지
-않는다. 레포는 시드일 뿐이라 니리 모듈도 **파일이 없을 때만** 넣어 준다 —
+않는다. 레포는 시드일 뿐이라 `../ghostty.nix` 도 **파일이 없을 때만** 넣어 준다 —
 이미 있는 `~/.config/ghostty/shaders/crt.glsl` 은 리빌드를 해도 덮이지 않는다.
 그래서 ghostty 는 리로드를 성실히 하고도 바뀐 게 없다고 나온다.
 
@@ -129,3 +136,28 @@ ghostty +show-config --default --docs | grep -B120 '^custom-shader = '
 그 상태에서도 다른 터미널이나 fuzzel(`Mod+D`)에서 `apps/rice-term off` 를 돌리면
 돌아온다. 그마저 안 되면 `~/.config/ghostty/rice.conf` 를 지우면 된다 — `?` 덕에
 없는 게 정상 상태다.
+
+## macOS 에서 다른 점
+
+셰이더 자체는 같다 — ghostty 문서가 `custom-shader` 를 "GLSL 문법, 모든
+플랫폼"이라고 명시하고, 기본 설정 경로도 두 플랫폼 모두
+`$XDG_CONFIG_HOME/ghostty` 다(macOS 에서 그 변수가 비어 있으면 `~/.config`).
+그래서 조각·셰이더·스위처를 한 벌만 두고 쓴다.
+
+다른 건 주변부 셋이다:
+
+| | 리눅스 | macOS |
+|---|---|---|
+| 리로드 | `rice-term` 이 D-Bus 로 시킨다 | 세션 버스가 없어서 **단축키로 직접** (`cmd+shift+,`) |
+| 투명도 | 리로드로 바뀐다 | `background-opacity` 는 **ghostty 를 완전히 다시 띄워야** 바뀐다(문서 명시). 룩마다 값이 달라서, 셰이더만 갈리고 투명도는 그대로인 상태가 잠깐 보인다 |
+| 색 | DMS/matugen 이 `themes/dankcolors` 를 써 준다 | 그 생성기가 없다. `config` 의 `theme = dankcolors` 가 없는 테마를 가리키면 ghostty 는 조용히 넘기지 않고 **설정 에러로 잡는다** — 그 파일을 하나 만들어 두거나 스톡 테마 이름으로 바꿔야 한다. 셰이더는 그것과 무관하게 돈다 |
+
+`rice-term` 은 이 셋을 알고 있다: `gdbus` 가 없으면 단축키를 안내하고, macOS 면
+투명도 제약을 같이 알려 준다. 목록도 `find -printf`(GNU 확장) 대신 글롭으로 만들어
+BSD 도구에서 돈다.
+
+**아직 실제 Mac 에서 돌려 보지는 않았다.** 위는 문서와 코드에서 확인한 것이고,
+첫 `build-switch` 때 확인할 것은 두 가지다 — `~/.config/ghostty/config` 가 실제로
+읽히는지(macOS 전용 경로 `~/Library/Application Support/com.mitchellh.ghostty/`
+쪽을 쓰고 있었다면 그쪽 config 에 `config-file = ~/.config/ghostty/config` 한 줄을
+넣으면 된다), 그리고 `theme = dankcolors` 에러가 나는지.

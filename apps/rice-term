@@ -34,7 +34,15 @@ live="$gt/rice.conf"
 
 rice_kind="룩"
 rice_current_file="$cfg/rice/term"
-rice_list() { find "$rices" -maxdepth 1 -name '*.conf' -printf '%f\n' | sed 's/\.conf$//' | sort; }
+# find -printf 은 GNU 확장이라 macOS 의 BSD find 에는 없다. 이 스크립트는 양쪽에서
+# 돌아야 하므로(터미널 룩은 플랫폼을 안 가린다) 글롭으로 푼다.
+rice_list() {
+  for f in "$rices"/*.conf; do
+    [ -f "$f" ] || continue
+    f="${f##*/}"
+    printf '%s\n' "${f%.conf}"
+  done | sort
+}
 
 if [ ! -d "$rices" ]; then
   printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$rices"
@@ -86,13 +94,23 @@ printf "  ghostty    %s\n" "rice.conf ← rices/$name.conf"
 
 # 떠 있는 ghostty 에 리로드를 시킨다. 안 떠 있으면 이름이 버스에 없어서 실패하는데,
 # 그건 정상이다 — 다음에 뜰 때 새 설정을 읽는다.
-if gdbus call --session --dest com.mitchellh.ghostty \
-     --object-path /com/mitchellh/ghostty \
-     --method org.gtk.Actions.Activate reload-config '[]' '{}' >/dev/null 2>&1; then
+#
+# D-Bus 는 리눅스 얘기다. macOS 에는 세션 버스도 gdbus 도 없고 ghostty 가 대신
+# 부를 CLI 도 없어서(+action 목록에 리로드가 없다) 단축키로 안내한다.
+if ! command -v gdbus >/dev/null 2>&1; then
+  printf "${GREEN}터미널 룩 전환: %s${NC} ${DIM}(리로드 단축키를 누르면 반영된다)${NC}\n" "$name"
+elif gdbus call --session --dest com.mitchellh.ghostty \
+       --object-path /com/mitchellh/ghostty \
+       --method org.gtk.Actions.Activate reload-config '[]' '{}' >/dev/null 2>&1; then
   printf "${GREEN}터미널 룩 전환: %s${NC}\n" "$name"
 else
   printf "${GREEN}터미널 룩 전환: %s${NC} ${DIM}(열려 있는 ghostty 없음 — 다음 실행부터)${NC}\n" "$name"
 fi
+
+# macOS 만의 함정: background-opacity 는 리로드로 안 바뀌고 ghostty 를 완전히
+# 다시 띄워야 한다(문서 명시). 룩마다 값이 다르므로, 셰이더는 바로 갈리는데
+# 투명도만 그대로인 어중간한 상태가 잠깐 보인다.
+[ "$(uname)" = "Darwin" ] && printf "${DIM}투명도까지 바꾸려면 ghostty 를 완전히 다시 띄워야 한다 (macOS 제약).${NC}\n"
 
 # 셰이더 컴파일 실패는 설정 에러로 잡히지 않는다. ghostty 문서가 명시하는 대로
 # 렌더 스레드에서 로그로만 나가고, 최악의 경우 창이 새까매진다. 그 상태에서도

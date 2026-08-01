@@ -20,6 +20,8 @@ GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; NC='\033[0m'
 # overrides for the odd case of running from outside the checkout.
 repo="${RICE_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
 rice="$repo/modules/nixos/niri/rice"
+# 터미널 라이싱은 두 플랫폼이 공유하므로 니리 밑이 아니라 shared 에 있다.
+gt="$repo/modules/shared/ghostty"
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
@@ -36,10 +38,16 @@ check_only=0
 #
 # Run it from the live config's own directory: `include` paths are relative to
 # the config file, and dms/*.kdl only exists next to the live copy.
-printf "${YELLOW}Validating %s/niri/config.kdl...${NC}\n" "$cfg"
-if ! niri validate --config "$cfg/niri/config.kdl"; then
-  printf "${RED}Live niri config is invalid — not snapshotting.${NC}\n"
-  exit 1
+#
+# niri 가 없는 머신(macOS)에서는 건너뛴다. 터미널 라이싱은 두 플랫폼이 같은
+# 파일을 쓰므로 이 스크립트도 양쪽에서 돌아야 하고, 그쪽에는 검증할 대상 자체가
+# 없다 — 아래 copy 들이 "skip (absent)" 로 알아서 비켜 간다.
+if command -v niri >/dev/null 2>&1 && [ -f "$cfg/niri/config.kdl" ]; then
+  printf "${YELLOW}Validating %s/niri/config.kdl...${NC}\n" "$cfg"
+  if ! niri validate --config "$cfg/niri/config.kdl"; then
+    printf "${RED}Live niri config is invalid — not snapshotting.${NC}\n"
+    exit 1
+  fi
 fi
 
 copy() { # copy <live> <repo-relative destination>
@@ -66,9 +74,9 @@ copy() { # copy <live> <repo-relative destination>
 copy "$cfg/niri/config.kdl"                   "$rice/config.kdl"
 copy "$cfg/niri/animations.kdl"               "$rice/animations.kdl"
 copy "$cfg/rice/profiles"                     "$rice/profiles"
-copy "$cfg/ghostty/config"                    "$rice/ghostty/config"
-copy "$cfg/ghostty/rices"                     "$rice/ghostty/rices"
-copy "$cfg/ghostty/shaders"                   "$rice/ghostty/shaders"
+copy "$cfg/ghostty/config"                    "$gt/config"
+copy "$cfg/ghostty/rices"                     "$gt/rices"
+copy "$cfg/ghostty/shaders"                   "$gt/shaders"
 copy "$cfg/fuzzel/fuzzel.ini"                 "$rice/fuzzel.ini"
 
 # fuzzel.ini 끝의 include 줄은 rice-fuzzel 이 이 머신의 절대 경로로 붙인 것이라
@@ -76,7 +84,9 @@ copy "$cfg/fuzzel/fuzzel.ini"                 "$rice/fuzzel.ini"
 # 저장하지 않는다.
 # 그 줄을 설명하는 주석까지 같이 지운다. 문구가 두 가지인데(니리 모듈이 시드하며
 # 붙인 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice-fuzzel` 로 시작한다.
-if [ "$check_only" -eq 0 ] && [ -f "$rice/fuzzel.ini" ]; then
+# 라이브 파일이 있을 때만 — 즉 방금 복사한 것만 손본다. 그래야 fuzzel 이 없는
+# 머신(macOS)에서 BSD sed 가 `-i` 인자 없는 GNU 문법에 걸려 죽지 않는다.
+if [ "$check_only" -eq 0 ] && [ -f "$cfg/fuzzel/fuzzel.ini" ] && [ -f "$rice/fuzzel.ini" ]; then
   sed -i -e '/^include=.*dank-rice\.ini$/d' \
          -e '/^# apps\/rice-fuzzel /d' "$rice/fuzzel.ini"
   # 위 삭제로 파일 앞에 남은 빈 줄 정리
@@ -105,5 +115,5 @@ fi
 if [ "$check_only" -eq 1 ]; then
   printf "${GREEN}Check complete (nothing written).${NC}\n"
 else
-  printf "${GREEN}Snapshot complete. Review with: git -C %s diff -- modules/nixos/niri/rice${NC}\n" "$repo"
+  printf "${GREEN}Snapshot complete. Review with: git -C %s diff${NC}\n" "$repo"
 fi

@@ -95,29 +95,7 @@ in
     # in.
     home-manager.users.${user} = { lib, ... }: {
       home.activation.seedNiriRice = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-        seed() { # seed <store-source> <destination>
-          [ -e "$2" ] && return 0
-          $DRY_RUN_CMD mkdir -p "$(dirname "$2")"
-          $DRY_RUN_CMD cp -rT "$1" "$2"
-          # Store paths are read-only; the whole point is a writable copy.
-          $DRY_RUN_CMD chmod -R u+w "$2"
-          echo "seeded $2"
-        }
-
-        # seed 의 짝. seed 는 파일이 *없을 때만* 도므로, 이미 설정을 가진 머신은
-        # 레포 시드에 새로 넣은 줄을 영영 못 받는다. 그런데 include 한 줄은 기능
-        # 전체를 켜고 끄는 스위치라, 없으면 스위처가 성실히 동작하고 화면만 안
-        # 바뀌는 — 원인 찾기 제일 나쁜 — 상태가 된다.
-        #
-        # 그래서 "줄 하나가 있는지"만 따로 보장한다. 기존 내용은 건드리지 않고
-        # 없을 때만 덧붙이므로, 이 모듈이 손으로 한 리싱을 덮지 않는다는 원칙은
-        # 그대로다. rice-fuzzel 과 rice-term 도 각자 같은 일을 한 번 더 한다.
-        ensure() { # ensure <file> <line> <comment>
-          [ -f "$1" ] || return 0
-          grep -qxF "$2" "$1" && return 0
-          $DRY_RUN_CMD printf '\n%s\n%s\n' "$3" "$2" >> "$1"
-          echo "wired $2 into $1"
-        }
+        ${import ../../shared/rice-seed-helpers.nix}
 
         seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
 
@@ -137,23 +115,15 @@ in
         seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
         seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
 
-        # ghostty is the terminal, and its colours are configured nowhere else
-        # in this repo on purpose — the only thing the config has to say about
-        # them is "use the palette DMS already generates". matugen rewrites
-        # themes/dankcolors on every wallpaper or theme change (its
-        # matugenTemplateGhostty template), so the terminal tracks the shell
-        # without anything else being declared.
+        # 터미널(ghostty)은 여기 없다. ../../shared/ghostty.nix 가 심고, 그
+        # 모듈은 macOS 에서도 같은 파일을 쓴다 — 셰이더는 플랫폼을 안 가리고
+        # 니리는 리눅스 전용이라, 터미널 룩을 니리 밑에 두면 macOS 가 같은 것을
+        # 쓰려 할 때 경로부터 막힌다.
         #
-        # 셰이더 룩은 별도 축이다. 조각은 rices/ 에 있고 apps/rice-term 이
-        # 고른 것을 rice.conf 로 복사한다 — config 끝의 `config-file =
-        # ?rice.conf` 가 그걸 읽는다. rice.conf 자체는 파생물이라 시드하지
-        # 않는다: `?` 덕에 없는 게 정상 상태이고, 첫 로그인은 셰이더 없이 뜬다.
-        # 자세한 건 rice/ghostty/README.md.
-        seed ${./rice/ghostty/config}  "$HOME/.config/ghostty/config"
-        seed ${./rice/ghostty/rices}   "$HOME/.config/ghostty/rices"
-        seed ${./rice/ghostty/shaders} "$HOME/.config/ghostty/shaders"
-        ensure "$HOME/.config/ghostty/config" "config-file = ?rice.conf" \
-          '# apps/rice-term 이 갈아끼우는 룩 조각. 없어도 되도록 ? 를 붙인다.'
+        # 색이 프로필을 따라오는 건 그쪽에서도 그대로다. ghostty 가
+        # `theme = dankcolors` 로 읽는 파일을 matugen 이 월페이퍼·테마가 바뀔
+        # 때마다 다시 쓰기 때문이고(matugenTemplateGhostty), 이 레포는 그 외에
+        # 터미널 색을 어디서도 선언하지 않는다.
 
         # fuzzel 은 형태(폰트/여백/줄높이)만 레포에 두고, 색과 화면에 맞춰
         # 계산되는 lines/radius 는 apps/rice-fuzzel 이 dank-rice.ini 에 쓴다.

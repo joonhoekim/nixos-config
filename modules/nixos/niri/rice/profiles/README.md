@@ -26,9 +26,9 @@ DMS 만 오버레이인 이유: `settings.json` 에는 룩과 무관한 머신 �
 
 터미널(ghostty)은 프로필에 조각이 없다. DMS/matugen 이 써 주는
 `~/.config/ghostty/themes/dankcolors` 를 읽으므로 색은 이미 따라온다. 형태는
-`../ghostty/config` 가 기본값을 정하고, 그 위에 `apps/rice-term` 이 고른
-`../ghostty/rices/<name>.conf` 가 얹힌다 — 그건 프로필과 **독립된 축**이라
-프로필을 바꿔도 터미널 룩은 그대로 남는다. 자세한 건 `../ghostty/README.md`.
+`modules/shared/ghostty/config` 가 기본값을 정하고, 그 위에 `apps/rice-term` 이 고른
+`modules/shared/ghostty/rices/<name>.conf` 가 얹힌다 — 그건 프로필과 **독립된 축**이라
+프로필을 바꿔도 터미널 룩은 그대로 남는다. 자세한 건 `modules/shared/ghostty/README.md`.
 
 ## 지켜야 할 규칙
 

@@ -115,13 +115,21 @@ in
         seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
         seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
 
-        # ghostty is the terminal, and it is configured nowhere else in this
-        # repo on purpose — a one-line config beats a Nix module here, because
-        # the only thing it has to say is "use the palette DMS already
-        # generates". matugen rewrites themes/dankcolors on every wallpaper or
-        # theme change (its matugenTemplateGhostty template), so the terminal
-        # tracks the shell without anything else being declared.
-        seed ${./rice/ghostty.conf} "$HOME/.config/ghostty/config"
+        # ghostty is the terminal, and its colours are configured nowhere else
+        # in this repo on purpose — the only thing the config has to say about
+        # them is "use the palette DMS already generates". matugen rewrites
+        # themes/dankcolors on every wallpaper or theme change (its
+        # matugenTemplateGhostty template), so the terminal tracks the shell
+        # without anything else being declared.
+        #
+        # 셰이더 룩은 별도 축이다. 조각은 rices/ 에 있고 apps/rice-term 이
+        # 고른 것을 rice.conf 로 복사한다 — config 끝의 `config-file =
+        # ?rice.conf` 가 그걸 읽는다. rice.conf 자체는 파생물이라 시드하지
+        # 않는다: `?` 덕에 없는 게 정상 상태이고, 첫 로그인은 셰이더 없이 뜬다.
+        # 자세한 건 rice/ghostty/README.md.
+        seed ${./rice/ghostty/config}  "$HOME/.config/ghostty/config"
+        seed ${./rice/ghostty/rices}   "$HOME/.config/ghostty/rices"
+        seed ${./rice/ghostty/shaders} "$HOME/.config/ghostty/shaders"
 
         # fuzzel 은 형태(폰트/여백/줄높이)만 레포에 두고, 색과 화면에 맞춰
         # 계산되는 lines/radius 는 apps/rice-fuzzel 이 dank-rice.ini 에 쓴다.

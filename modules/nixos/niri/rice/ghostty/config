@@ -17,3 +17,10 @@ window-padding-y = 20
 # 프로필별로 다르게 하고 싶으면 rice-switch 에 ghostty 조각을 붙이면 되지만,
 # 지금은 조각 하나를 줄이는 쪽을 택했다. 투명도는 여기서 한 번만 정한다.
 background-opacity = 0.94
+
+# 터미널 룩 조각. apps/rice-term 이 ./rices/<name>.conf 를 여기로 복사한다.
+# `?` 는 파일이 없어도 조용히 넘어가라는 뜻이고, 경로는 이 파일 기준 상대다.
+#
+# 위치가 맨 아래인 건 읽는 사람을 위한 것일 뿐이다 — ghostty 는 config-file 을
+# 자기를 담은 파일보다 *나중에* 읽으므로, 어디에 적든 조각이 본체를 이긴다.
+config-file = ?rice.conf

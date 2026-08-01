@@ -1,0 +1,60 @@
+{
+  "_comment": [
+    "frosted — 유리 룩. amoled/dms.json 의 주석에 키 집합 규칙을 적어 두었다.",
+    "",
+    "blurEnabled 하나로는 티가 안 난다. transparency 를 같이 내려야 뒤가 비치고,",
+    "그래야 블러가 블러처럼 보인다. blurredWallpaperLayer 는 월페이퍼를 블러된",
+    "백드롭 레이어로 올려서 창 사이 여백까지 유리처럼 만드는 스위치다."
+  ],
+
+  "settings": {
+    "currentThemeName": "blue",
+    "currentThemeCategory": "generic",
+
+    "blurEnabled": true,
+    "blurForegroundLayers": true,
+    "blurBorderEnabled": true,
+    "blurBorderColor": "outline",
+    "blurBorderOpacity": 0.35,
+    "blurLayerOutlineOpacity": 0.12,
+    "blurredWallpaperLayer": true,
+    "blurWallpaperOnOverview": true,
+
+    "cornerRadius": 16,
+    "popupTransparency": 0.85,
+    "dockTransparency": 0.8,
+
+    "m3ElevationEnabled": true,
+    "m3ElevationIntensity": 12,
+    "barElevationEnabled": true,
+    "modalElevationEnabled": true,
+    "popoutElevationEnabled": true,
+
+    "animationSpeed": 1,
+    "animationVariant": 0,
+
+    "wallpaperBackgroundColorMode": "black",
+
+    "fontFamily": "Inter Variable",
+    "monoFontFamily": "JetBrainsMono Nerd Font",
+    "fontWeight": 400,
+    "fontScale": 1
+  },
+
+  "bar": {
+    "transparency": 0.6,
+    "widgetTransparency": 0.75,
+    "spacing": 6,
+    "innerPadding": 6,
+    "barInsetPadding": 8,
+    "bottomGap": 0,
+    "squareCorners": false,
+    "noBackground": false,
+    "borderEnabled": true,
+    "borderColor": "outline",
+    "borderOpacity": 0.5,
+    "borderThickness": 1,
+    "widgetOutlineEnabled": false,
+    "gothCornersEnabled": false
+  }
+}

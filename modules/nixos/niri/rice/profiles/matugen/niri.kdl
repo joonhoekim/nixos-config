@@ -1,0 +1,32 @@
+// matugen — 월페이퍼에서 뽑은 색이 주인공이라, 형태는 일부러 중립으로 둔다.
+//
+// 색 경로: 월페이퍼 → matugen → dms/colors.kdl(니리) + dank-theme.toml(터미널)
+//          + DMS 자체 팔레트. 그래서 이 파일에는 색이 한 줄도 없다.
+//
+// 보더를 2px 로 두는 건 dms/colors.kdl 의 active-color 를 실제로 보여주기
+// 위해서다. 1px 이면 월페이퍼에서 뽑은 색이 눈에 안 들어온다.
+
+layout {
+    gaps 10
+
+    border {
+        width 2
+    }
+
+    focus-ring {
+        off
+    }
+
+    shadow {
+        on
+        softness 20
+        spread 2
+        offset x=0 y=4
+        color "#00000060"
+    }
+}
+
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+}

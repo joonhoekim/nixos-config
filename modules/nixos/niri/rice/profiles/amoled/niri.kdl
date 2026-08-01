@@ -1,0 +1,36 @@
+// amoled — 순검정 배경, 얇은 단색 보더, 그림자·블러 없음, 좁은 갭.
+//
+// apps/rice-switch 가 이 파일을 ~/.config/niri/profile.kdl 로 복사하고,
+// config.kdl 의 `include "profile.kdl"` 이 그걸 읽는다. niri 는 include 된
+// 파일의 변경도 감지하므로 저장 즉시 반영된다.
+//
+// 색은 여기서 정하지 않는다 — dms/colors.kdl 이 DMS 테마에서 뽑아서 넣는다.
+// 여기 있는 건 형태(굵기·간격·반경)뿐이다.
+
+layout {
+    gaps 6
+
+    // 포커스 링 대신 보더 하나만. 링과 보더를 겹치면 검정 배경에서 테두리가
+    // 두 겹으로 보여서 얇은 룩이 깨진다.
+    border {
+        width 1
+    }
+
+    focus-ring {
+        off
+    }
+
+    // OLED 에서 그림자는 검정 위에 검정이라 보이지도 않으면서 합성 비용만 든다.
+    shadow {
+        off
+    }
+}
+
+overview {
+    backdrop-color "#000000"
+}
+
+window-rule {
+    geometry-corner-radius 6
+    clip-to-geometry true
+}

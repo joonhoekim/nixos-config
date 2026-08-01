@@ -22,6 +22,20 @@ niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범�
 [modules/nixos/niri/rice](modules/nixos/niri/rice)는 백업 겸 새 머신용 시드이며
 (없을 때만 복사된다), 살아있는 설정을 되받아 저장하는 건 `apps/rice-save`다.
 
+룩은 프로필로 나눠 두었고 전환은 즉시 반영된다 — 재시작도 리빌드도 없다:
+
+```sh
+apps/rice-switch              # 현재 프로필 + 목록          (Mod+Shift+P = 다음 것)
+apps/rice-switch frosted      # amoled | frosted | matugen
+apps/rice-wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+W)
+apps/rice-wall --pick         # fuzzel 로 직접 고르기            (Mod+Ctrl+W)
+```
+
+한 프로필은 세 조각(`niri.kdl` / `dms.json` / `alacritty.toml`)이고, DMS 쪽만
+전체 교체가 아니라 오버레이 병합이다 — `settings.json`에는 룩과 무관한 머신
+상태가 섞여 있어서 통째로 갈면 그것까지 날아간다. `matugen` 프로필은 월페이퍼에서
+색을 뽑아 셸·니리 보더·터미널 팔레트를 한 번에 맞춘다.
+
 ## 부트스트랩 — macOS (새 머신 최초 1회)
 
 이 설정을 적용하면 `nix-command`와 `flakes`가 시스템 전역으로 켜진다(`nix.extraOptions`

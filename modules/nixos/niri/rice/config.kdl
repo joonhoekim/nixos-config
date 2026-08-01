@@ -24,6 +24,7 @@
 //
 // DMS appends further includes under this exact header when a settings tab
 // needs one, so keep the comment line verbatim.
+include "profile.kdl" optional=true
 include "dms/colors.kdl" optional=true
 include "dms/cursor.kdl" optional=true
 include "dms/windowrules.kdl" optional=true
@@ -92,6 +93,19 @@ binds {
 	}
 	Mod+D {
 		spawn "fuzzel"
+	}
+	// ── ricing ─────────────────────────────────────────────────────────
+	// 레포의 스크립트를 직접 부른다. niri 의 spawn 은 $HOME 을 확장하지 않아서
+	// sh -c 를 한 겹 씌운다. 스크립트를 PATH 에 올리지 않는 건, 리싱 중에는
+	// 스크립트 자체도 자주 고치게 되는데 그때마다 rebuild 하고 싶지 않아서다.
+	Mod+Shift+P hotkey-overlay-title="Next rice profile" {
+		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-switch --next"
+	}
+	Mod+Shift+W hotkey-overlay-title="Random wallpaper" {
+		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall"
+	}
+	Mod+Ctrl+W hotkey-overlay-title="Pick wallpaper" {
+		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall --pick"
 	}
 	Mod+Down {
 		focus-window-down

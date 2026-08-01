@@ -65,7 +65,11 @@ src="$rices/$name.conf"
 # 안 일어났다"가 된다. 경로는 조각 기준 상대이니 $gt 에서 푼다.
 missing="$(sed -n 's/^[[:space:]]*custom-shader[[:space:]]*=[[:space:]]*\(..*[^[:space:]]\)[[:space:]]*$/\1/p' "$src" |
   while IFS= read -r p; do
-    case "$p" in /*) full="$p" ;; *) full="$gt/$p" ;; esac
+    # 패턴 앞의 여는 괄호는 장식이 아니다. macOS 의 /bin/sh 는 bash 3.2 이고,
+    # 얘는 $( ) 안을 괄호 세기로 훑다가 case 패턴의 닫는 괄호를 치환의 끝으로
+    # 착각해 조각을 잘라 버린다(syntax error near unexpected token newline).
+    # 여는 괄호를 붙여 짝을 맞춰 주면 제대로 읽는다.
+    case "$p" in (/*) full="$p" ;; (*) full="$gt/$p" ;; esac
     [ -f "$full" ] || printf ' %s' "$p"
   done)"
 if [ -n "$missing" ]; then
@@ -81,7 +85,20 @@ had_live=0
 [ -f "$live" ] && cp "$live" "$prev" && had_live=1
 cp "$src" "$live"
 
-if ! out="$(ghostty +validate-config 2>&1)"; then
+# macOS 의 ghostty 는 CLI 를 앱 번들 안에 감춰 둔다 — PATH 에는 없다. 그걸 못 찾고
+# 그냥 `ghostty` 를 부르면 command not found 가 검증 실패로 둔갑해서, 멀쩡한 조각을
+# 넣고도 "설정이 유효하지 않다"며 되돌리게 된다.
+if command -v ghostty >/dev/null 2>&1; then
+  ghostty_bin=ghostty
+elif [ -x /Applications/Ghostty.app/Contents/MacOS/ghostty ]; then
+  ghostty_bin=/Applications/Ghostty.app/Contents/MacOS/ghostty
+else
+  ghostty_bin=""
+fi
+
+if [ -z "$ghostty_bin" ]; then
+  printf "${YELLOW}ghostty 를 못 찾아 검증은 건너뛴다.${NC}\n"
+elif ! out="$("$ghostty_bin" +validate-config 2>&1)"; then
   printf "${RED}%s 를 넣으니 설정이 유효하지 않다. 되돌린다.${NC}\n" "$name"
   printf '%s\n' "$out" | sed 's/^/  /'
   [ "$had_live" -eq 1 ] && cp "$prev" "$live" || rm -f "$live"

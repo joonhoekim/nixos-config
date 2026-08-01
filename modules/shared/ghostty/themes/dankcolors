@@ -1,0 +1,51 @@
+# ~/.config/ghostty/themes/dankcolors 의 초기값.
+#
+# 평소 리눅스에서는 이 파일을 matugen 이 통째로 덮어쓴다 — 월페이퍼나 테마가
+# 바뀔 때마다 DMS 가 자기 ghostty 템플릿을 돌려서 새 팔레트를 여기 쓴다.
+# `config` 의 `theme = dankcolors` 한 줄이 프로필을 따라가는 게 그 덕이다.
+#
+# 여기 있는 값이 실제로 쓰이는 건 그 생성기가 없을 때다:
+#
+#   - macOS. DMS 는 Quickshell/Wayland 셸이라 아예 성립하지 않는다. matugen 자체는
+#     macOS 바이너리가 있지만(순수 Rust CLI, nixpkgs 가 aarch64-darwin 을 지원한다),
+#     그걸 불러 주는 쪽 — 템플릿과 트리거 — 이 DMS 안에 있어서 같이 빠진다.
+#   - 리눅스의 첫 로그인. matugen 이 아직 한 번도 안 돈 시점.
+#
+# 이 파일이 없으면 ghostty 는 없는 테마를 조용히 넘기지 않고 **설정 에러로 잡는다**.
+# 그러면 색만 기본값으로 뜨는 게 아니라 `+validate-config` 가 통째로 실패하고,
+# apps/rice-term 은 그걸 자기가 넣은 조각 탓으로 읽어 룩 전환을 되돌려 버린다.
+# 즉 이 파일의 첫 번째 일은 색을 정하는 게 아니라, 설정이 항상 유효하도록 만드는
+# 것이다. seed 는 없을 때만 복사하고 복사본에 u+w 를 주므로(../rice-seed-helpers.nix),
+# 리눅스에서 matugen 이 나중에 덮어쓰는 데는 지장이 없다.
+#
+# 덮어써지는 파일이라 apps/rice-save 로 되받아 저장되지 않는다. 이 폴백을 고치려면
+# 레포의 이 파일을 고쳐야 한다 — 니리 쪽 rice/fuzzel-generated.ini 와 같은 규칙이고,
+# 무채색 배경·전경도 거기서 가져왔다. 팔레트가 없을 때의 얼굴은 한 벌이어야 한다.
+
+# 배경·전경·선택은 fuzzel 폴백과 같은 값이다.
+background = #161616
+foreground = #d8d8d8
+cursor-color = #d8d8d8
+cursor-text = #161616
+selection-background = #2f2f2f
+selection-foreground = #ffffff
+
+# ANSI 16 색은 무채색으로 둘 수 없다. ls 나 git diff 가 색으로만 구분하는 것들이
+# 있어서, 회색으로 통일하면 폴백이 아니라 고장이 된다. 그래서 채도만 낮춰
+# 배경과 같은 톤에 얹었다 — 눈에 튀지 않으면서 서로는 구분된다.
+palette = 0=#2f2f2f
+palette = 1=#c26d6d
+palette = 2=#8faa76
+palette = 3=#c9a86a
+palette = 4=#7291b0
+palette = 5=#a684a6
+palette = 6=#6fa39d
+palette = 7=#d8d8d8
+palette = 8=#4a4a4a
+palette = 9=#d98a8a
+palette = 10=#a8c48f
+palette = 11=#e0c286
+palette = 12=#8fadcb
+palette = 13=#c0a0c0
+palette = 14=#8bbdb6
+palette = 15=#ffffff

@@ -19,9 +19,13 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # Padding inside the accordion layout.
 accordion-padding = 30
 
-# New windows tile by default; orientation follows the focused container's shape.
+# New windows tile by default. 'horizontal' rather than 'auto' to sit closer to
+# niri: there the workspace is a row of columns and a new window always lands as
+# a new column to the right. 'auto' picks the orientation from the monitor's
+# aspect ratio, which on a portrait display would stack windows vertically
+# instead. Set it back to 'auto' if that is the behaviour you want per-monitor.
 default-root-container-layout = 'tiles'
-default-root-container-orientation = 'auto'
+default-root-container-orientation = 'horizontal'
 
 # Follow focus with the mouse when switching monitors.
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
@@ -34,17 +38,36 @@ preset = 'qwerty'
 
 # Gaps between windows and screen edges (points).
 [gaps]
-inner.horizontal = 4
-inner.vertical =   4
-outer.left =       2
-outer.bottom =     2
-outer.top =        2
-outer.right =      2
+inner.horizontal = 0
+inner.vertical =   0
+outer.left =       0
+outer.bottom =     0
+outer.top =        0
+outer.right =      0
 
 # ----------------------------------------------------------------------------
 # Main mode — active by default. Modifier is alt (⌥).
+#
+# The layout mirrors the niri session in modules/nixos/niri/rice/config.kdl as
+# far as macOS allows: alt here plays the role of niri's Mod (Super), and
+# alt-ctrl the role of niri's Mod+Ctrl "move, don't focus" family. Where niri
+# has no AeroSpace counterpart (center-column, preset column widths, the hotkey
+# overlay) the binding is simply absent rather than approximated with something
+# that behaves differently.
 # ----------------------------------------------------------------------------
 [mode.main.binding]
+
+# Terminal, as niri's Mod+Return.
+# `open -na` starts a *second* Ghostty process rather than adding a window to
+# the running one — Ghostty's own `+new-window` action is unimplemented on
+# macOS ("not supported on this platform"), and every other route needs
+# Accessibility keystroke injection. Drop the -n to merely focus an existing
+# Ghostty instead of getting a new window.
+alt-enter = 'exec-and-forget open -na Ghostty'
+
+# Close the focused window (niri Mod+Q). Distinct from Cmd-Q, which quits the
+# whole application.
+alt-q = 'close'
 
 # Layout toggles
 alt-slash = 'layout tiles horizontal vertical'      # toggle horizontal/vertical tiles
@@ -56,18 +79,33 @@ alt-j = 'focus down'
 alt-k = 'focus up'
 alt-l = 'focus right'
 
-# Move focused window
+# Move focused window. alt-shift is AeroSpace's own convention; alt-ctrl is the
+# same thing under niri's fingers (Mod+Ctrl+hjkl). Both are live — pick one and
+# the other costs nothing.
 alt-shift-h = 'move left'
 alt-shift-j = 'move down'
 alt-shift-k = 'move up'
 alt-shift-l = 'move right'
+alt-ctrl-h = 'move left'
+alt-ctrl-j = 'move down'
+alt-ctrl-k = 'move up'
+alt-ctrl-l = 'move right'
 
-# Resize
+# Resize. niri's Mod+-/= step the column width by 10%; AeroSpace works in
+# points, and 'smart' resizes along whichever axis the parent container runs.
 alt-minus = 'resize smart -50'
 alt-equal = 'resize smart +50'
 
-# Fullscreen (within the AeroSpace layout, not native macOS fullscreen)
+# Even out the current workspace. Not niri's Mod+R (which cycles the 33/50/66
+# preset column widths — AeroSpace has no preset list), but it is the nearest
+# "put the widths back to something sane" key.
+alt-r = 'balance-sizes'
+
+# Fullscreen (within the AeroSpace layout, not native macOS fullscreen) —
+# closest to niri's Mod+F maximize-column. alt-shift-f is the real thing, as
+# niri's Mod+Shift+F: a native macOS fullscreen Space.
 alt-f = 'fullscreen'
+alt-shift-f = 'macos-native-fullscreen'
 
 # Floating <-> tiling toggle for the focused window
 alt-shift-space = 'layout floating tiling'
@@ -93,6 +131,14 @@ alt-shift-6 = 'move-node-to-workspace 6'
 alt-shift-7 = 'move-node-to-workspace 7'
 alt-shift-8 = 'move-node-to-workspace 8'
 alt-shift-9 = 'move-node-to-workspace 9'
+
+# Step through workspaces without naming one, as niri's Mod+U / Mod+I
+# (focus-workspace-down / -up). u goes toward higher numbers, i toward lower —
+# same direction the niri binds move, so the muscle memory carries over.
+alt-u = 'workspace --wrap-around next'
+alt-i = 'workspace --wrap-around prev'
+alt-ctrl-u = 'move-node-to-workspace --wrap-around next'
+alt-ctrl-i = 'move-node-to-workspace --wrap-around prev'
 
 # Jump back to the previous workspace
 alt-tab = 'workspace-back-and-forth'

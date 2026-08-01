@@ -33,7 +33,8 @@ rebuild:
 apps/rice-switch              # current profile + list      (Mod+Shift+P = next)
 apps/rice-switch frosted      # amoled | frosted | matugen
 apps/rice-wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+Shift+W)
-apps/rice-wall --pick         # pick one through fuzzel                    (Mod+Ctrl+W)
+apps/rice-wall --pick         # pick through fuzzel, fast                  (Mod+Ctrl+W)
+apps/rice-wall --yazi         # pick through yazi, with image previews      (Mod+Alt+W)
 ```
 
 The launcher (fuzzel) and the terminal (ghostty) have no per-profile piece.

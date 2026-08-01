@@ -10,7 +10,7 @@
 # ~/.cache/DankMaterialShell/dms-colors.json 에 떨궈 두므로, 그걸 읽어서 우리가
 # 직접 fuzzel 색을 쓴다.
 #
-# 쓰는 파일은 dank-colors.ini 하나뿐이다. fuzzel.ini 는 맨 위에서 그걸 include
+# 쓰는 파일은 dank-rice.ini 하나뿐이다. fuzzel.ini 는 맨 위에서 그걸 include
 # 하는데, 그 줄은 이 스크립트가 붙인다 — fuzzel 의 include 는 절대 경로만 받고
 # 기본 섹션(첫 [main] 앞)에만 쓸 수 있어서 레포 시드에 넣어둘 수 없다.
 # 형태(폰트/여백/줄 수)와 색을 갈라 두는
@@ -27,7 +27,10 @@ cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/DankMaterialShell"
 palette="$cache/dms-colors.json"
 ini="$cfg/fuzzel/fuzzel.ini"
-gen="$cfg/fuzzel/dank-colors.ini"
+gen="$cfg/fuzzel/dank-rice.ini"
+
+# 창이 차지할 화면 높이의 비율. fuzzel 에는 % 단위가 없어서 줄 수로 환산해야 한다.
+ratio="${RICE_FUZZEL_RATIO:-0.8}"
 
 # ── 팔레트가 갱신되기를 기다린다 ──────────────────────────────────────────
 # rice-wall 이 월페이퍼를 바꾸면 matugen 이 비동기로 돈다. 바로 읽으면 이전
@@ -58,9 +61,9 @@ if [ -f "$ini" ] && ! grep -q "^include=$gen\$" "$ini"; then
 fi
 
 if [ ! -f "$palette" ]; then
-  # 시드된 dank-colors.ini 의 중성 폴백이 그대로 남는다 — 첫 로그인이나 DMS 가
+  # 시드된 dank-rice.ini 의 중성 폴백이 그대로 남는다 — 첫 로그인이나 DMS 가
   # 안 뜬 상태에서 여는 경우다.
-  printf "${YELLOW}팔레트가 아직 없다(%s). dank-colors.ini 의 폴백 색을 그대로 쓴다.${NC}\n" "$palette"
+  printf "${YELLOW}팔레트가 아직 없다(%s). dank-rice.ini 의 폴백 값을 그대로 쓴다.${NC}\n" "$palette"
   exit 0
 fi
 
@@ -78,6 +81,45 @@ fi
 # 0.85 -> "d9". fuzzel 색은 # 없는 RRGGBBAA 라 알파를 직접 붙여야 한다.
 alpha="$(awk -v o="$opacity" 'BEGIN { printf "%02x", int(o * 255 + 0.5) }')"
 
+# ── 높이 → 줄 수 ─────────────────────────────────────────────────────────
+# fuzzel 은 창 높이를 직접 못 정한다. `lines`(표시할 항목 수)만 받고 높이는 거기서
+# 따라 나오므로, 원하는 높이를 역산해서 줄 수로 바꾼다.
+#
+#   높이 = 보더*2 + 세로여백*2 + 프롬프트줄 + 안쪽여백 + 줄수 * 줄높이
+#
+# 값은 fuzzel.ini 에서 읽는다. 여백이나 줄높이를 손보면 계산도 따라오도록.
+# 논리 픽셀 기준이라 출력 스케일은 곱하지 않는다 — niri 가 주는 logical.height 와
+# fuzzel 설정값이 같은 좌표계다.
+# 섹션까지 봐야 한다: `width` 는 [main] 에서는 문자 수, [border] 에서는 픽셀이라
+# 이름만 보고 집으면 45 를 보더 두께로 쓰게 된다.
+read_ini() { # read_ini <section> <key> <default>
+  awk -v sec="$1" -v key="$2" -v def="$3" '
+    /^[[:space:]]*\[/ { cur = $0; gsub(/[][[:space:]]/, "", cur); next }
+    {
+      line = $0
+      sub(/[#;].*/, "", line)
+      if (match(line, "^[[:space:]]*" key "[[:space:]]*=")) {
+        v = line
+        sub("^[[:space:]]*" key "[[:space:]]*=[[:space:]]*", "", v)
+        gsub(/[[:space:]]/, "", v)
+        if (cur == sec && v ~ /^[0-9]+$/) found = v
+      }
+    }
+    END { print (found != "" ? found : def) }
+  ' "$ini" 2>/dev/null
+}
+
+screen_h="$(niri msg --json focused-output 2>/dev/null | jq -r '.logical.height // empty')"
+lines=""
+if [ -n "$screen_h" ]; then
+  border="$(read_ini border width 2)"
+  vpad="$(read_ini main vertical-pad 18)"
+  ipad="$(read_ini main inner-pad 10)"
+  lh="$(read_ini main line-height 24)"
+  lines="$(awk -v h="$screen_h" -v r="$ratio" -v b="$border" -v v="$vpad" -v i="$ipad" -v l="$lh" \
+    'BEGIN { n = int((h * r - 2*b - 2*v - l - i) / l); print (n < 3 ? 3 : n) }')"
+fi
+
 # ── 라이트/다크 ───────────────────────────────────────────────────────────
 mode="$(dms ipc call theme getMode 2>/dev/null | tr -d '"' | tr -d '[:space:]')"
 case "$mode" in light) mode=light ;; *) mode=dark ;; esac
@@ -87,12 +129,13 @@ case "$mode" in light) mode=light ;; *) mode=dark ;; esac
 # 그 위의 강조는 primary — 이 둘은 M3 가 대비를 보장하는 짝이라 어떤 월페이퍼에서도
 # 읽힌다. 무채색 배경에 primary 를 얹는 조합은 톤이 낮은 사진에서 흐려진다.
 mkdir -p "$(dirname "$gen")"
-jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" '
+jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" --arg n "$lines" '
   .colors[$m] as $c
   | def hex(k): ($c[k] | ltrimstr("#"));
     "# 자동 생성 — apps/rice-fuzzel. 직접 고치지 말 것(다음 프로필 전환에 덮어쓴다).",
-    "# 형태는 fuzzel.ini 에서, 색만 여기서.",
+    "# 형태는 fuzzel.ini 에서, 화면에 맞춰 계산되는 값과 색만 여기서.",
     "",
+    (if $n == "" then empty else "[main]", "lines=\($n)", "" end),
     "[border]",
     "radius=\($r)",
     "",
@@ -111,4 +154,4 @@ jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" '
     "border=\(hex("primary"))ff"
 ' "$palette" > "$gen"
 
-printf "${GREEN}fuzzel${NC}     dank-colors.ini (%s, alpha %s, radius %s)\n" "$mode" "$alpha" "$radius"
+printf "${GREEN}fuzzel${NC}     dank-rice.ini (%s, alpha %s, radius %s, lines %s)\n" "$mode" "$alpha" "$radius" "${lines:-그대로}"

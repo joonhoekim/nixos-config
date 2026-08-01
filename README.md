@@ -27,7 +27,8 @@ niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범�
 apps/rice-switch              # 현재 프로필 + 목록          (Mod+Shift+P = 다음 것)
 apps/rice-switch frosted      # amoled | frosted | matugen
 apps/rice-wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+W)
-apps/rice-wall --pick         # fuzzel 로 직접 고르기            (Mod+Ctrl+W)
+apps/rice-wall --pick         # fuzzel 로 고르기 (빠름)          (Mod+Ctrl+W)
+apps/rice-wall --yazi         # yazi 로 미리보기 보며 고르기      (Mod+Alt+W)
 ```
 
 런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어

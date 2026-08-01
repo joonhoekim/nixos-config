@@ -69,12 +69,12 @@ copy "$cfg/ghostty/config"                    "$rice/ghostty.conf"
 copy "$cfg/fuzzel/fuzzel.ini"                 "$rice/fuzzel.ini"
 
 # fuzzel.ini 끝의 include 줄은 rice-fuzzel 이 이 머신의 절대 경로로 붙인 것이라
-# 레포에 들어가면 안 된다. 그 너머의 색(dank-colors.ini)은 파생물이라 아예 저장
-# 하지 않는다.
+# 레포에 들어가면 안 된다. 그 너머의 생성 파일(dank-rice.ini)은 파생물이라 아예
+# 저장하지 않는다.
 # 그 줄을 설명하는 주석까지 같이 지운다. 문구가 두 가지인데(니리 모듈이 시드하며
 # 붙인 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice-fuzzel` 로 시작한다.
 if [ "$check_only" -eq 0 ] && [ -f "$rice/fuzzel.ini" ]; then
-  sed -i -e '/^include=.*dank-colors\.ini$/d' \
+  sed -i -e '/^include=.*dank-rice\.ini$/d' \
          -e '/^# apps\/rice-fuzzel /d' "$rice/fuzzel.ini"
   # 위 삭제로 파일 앞에 남은 빈 줄 정리
   sed -i '/./,$!d' "$rice/fuzzel.ini"

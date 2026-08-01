@@ -24,16 +24,9 @@ DMS 만 오버레이인 이유: `settings.json` 에는 룩과 무관한 머신 �
   버리므로 최상위 병합에 섞을 수 없다. 모니터마다 바를 여러 개 둔 설정에서도
   전부 같은 룩이 되도록 항목별로 병합한다.
 
-터미널(ghostty)과 런처(fuzzel)도 프로필에 조각이 없다.
-
-ghostty 는 DMS/matugen 이 써 주는 `~/.config/ghostty/themes/dankcolors` 를 직접
-읽으므로 색이 이미 따라온다. 남는 건 투명도·패딩 정도라 `../ghostty.conf` 에서
-한 번만 정한다.
-
-fuzzel 은 matugen 템플릿 목록에 못 끼므로 `apps/rice-fuzzel` 이 팔레트 JSON 에서
-직접 색을 만든다. 이때 `settings.popupTransparency` 를 배경 알파로,
-`settings.cornerRadius` 를 테두리 곡률로 쓴다 — 그래서 프로필에 fuzzel 전용 값을
-따로 두지 않아도 룩을 따라간다. 이 두 키를 바꾸면 런처도 같이 바뀐다.
+터미널(ghostty)은 프로필에 조각이 없다. DMS/matugen 이 써 주는
+`~/.config/ghostty/themes/dankcolors` 를 읽으므로 색은 이미 따라온다. 남는 건
+투명도·패딩 정도라 `../ghostty.conf` 에서 한 번만 정한다.
 
 ## 지켜야 할 규칙
 

@@ -107,6 +107,11 @@ binds {
 	Mod+Ctrl+W hotkey-overlay-title="Pick wallpaper" {
 		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall --pick"
 	}
+	// yazi 는 터미널이 필요해서 스크립트가 ghostty 를 하나 띄운다.
+	// 미리보기(kitty 그래픽 프로토콜)를 보면서 고를 때.
+	Mod+Alt+W hotkey-overlay-title="Pick wallpaper (preview)" {
+		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall --yazi"
+	}
 	Mod+Down {
 		focus-window-down
 	}

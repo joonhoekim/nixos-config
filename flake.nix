@@ -124,6 +124,17 @@
               home-manager = {
                 useGlobalPkgs = true;
                 useUserPackages = true;
+                # Rename rather than refuse. home-manager aborts the whole
+                # activation when a file it wants to link already exists as a
+                # real file, and that takes the rebuild down with it — which is
+                # exactly what happened on galaxy-chromebook-1 once DMS had
+                # written ~/.config/gtk-*/settings.ini itself.
+                #
+                # This repo deliberately leaves most of $HOME writable so the
+                # desktop can tune itself, so that collision is a standing risk
+                # rather than a one-off. A backup copy is a better outcome than
+                # a machine that cannot rebuild.
+                backupFileExtension = "hm-bak";
                 # Thread `user` into home-manager modules (separate arg scope
                 # from the system modules' specialArgs).
                 extraSpecialArgs = { inherit user; };

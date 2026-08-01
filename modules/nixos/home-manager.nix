@@ -9,7 +9,13 @@ in
     enableNixpkgsReleaseCheck = false;
     username = "${user}";
     homeDirectory = "/home/${user}";
-    packages = pkgs.callPackage ./packages.nix {};
+    packages = (pkgs.callPackage ./packages.nix {}) ++ [
+      # GTK themes. Nothing in this repo *configures* GTK any more (see the
+      # note where `gtk.enable` used to be) — DMS writes the config files and
+      # needs these to exist to name them.
+      pkgs.adwaita-icon-theme  # "Adwaita" icons; adapts to a dark GTK theme
+      pkgs.gnome-themes-extra  # provides the Adwaita-dark GTK theme
+    ];
     file = shared-files;
     # mkDefault so a host installed at an older release can pin its own (see
     # hosts/nixos/galaxy-chromebook-1). Keep this in sync with the host's
@@ -40,22 +46,25 @@ in
     gtk-theme = "Adwaita-dark";
   };
 
-  gtk = {
-    enable = true;
-    iconTheme = {
-      # adwaita-icon-theme ships only "Adwaita" (no -dark variant); it adapts
-      # to the dark GTK theme on its own.
-      name = "Adwaita";
-      package = pkgs.adwaita-icon-theme;
-    };
-    theme = {
-      name = "Adwaita-dark";
-      package = pkgs.gnome-themes-extra; # provides the Adwaita-dark GTK theme
-    };
-    # From home.stateVersion 26.05 on, gtk4.theme defaults to null instead of
-    # inheriting gtk.theme. Set it explicitly so GTK4 apps stay dark too.
-    gtk4.theme = config.gtk.theme;
-  };
+  # `gtk.enable` used to live here. It was removed because DankMaterialShell
+  # writes the very same files and wins the race half the time:
+  #
+  #   scripts/gtk.sh          `sed -i` on ~/.config/gtk-4.0/gtk.css, which
+  #                           REPLACES a home-manager symlink with a real file,
+  #                           and `rm`s a symlinked gtk-3.0/gtk.css outright
+  #   SettingsData.qml:1605   creates gtk-{3,4}.0/settings.ini when absent, to
+  #                           put its icon theme there
+  #
+  # DMS does skip a settings.ini it cannot write (`[ ! -w ] && continue`), so a
+  # machine whose links are already in place survives — which is why mn56 never
+  # noticed. galaxy-chromebook-1 lost the race once, ended up with four real
+  # files, and every rebuild after that failed with "would be clobbered".
+  #
+  # Handing GTK to DMS is also the consistent choice: the shell already owns
+  # the palette for niri, ghostty and fuzzel, and its gtk-3.0/dank-colors.css
+  # is what makes GTK apps follow the wallpaper. The themes themselves are
+  # still installed from Nix (see home.packages above) so there is something
+  # for DMS to point at.
 
   programs = shared-programs // {};
 }

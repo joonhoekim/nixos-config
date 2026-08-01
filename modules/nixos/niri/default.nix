@@ -136,6 +136,12 @@ in
 
         '' + builtins.readFile ./rice/fuzzel.ini)} "$HOME/.config/fuzzel/fuzzel.ini"
         seed ${./rice/fuzzel-generated.ini} "$HOME/.config/fuzzel/dank-rice.ini"
+
+        # GTK. Seeded rather than home-manager-managed because DMS edits these
+        # in place — see the header of rice/gtk-settings.ini for the whole
+        # story. Both toolkits read the same keys, so one file serves both.
+        seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-3.0/settings.ini"
+        seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-4.0/settings.ini"
       '';
     };
 

@@ -74,6 +74,15 @@
 
     # My shell
     zsh.enable = true;
+
+    # A real dynamic loader at /lib64/ld-linux-x86-64.so.2, replacing the
+    # NixOS stub that aborts with "Could not start dynamically linked
+    # executable". mise fetches generic-linux prebuilt binaries for bun,
+    # temurin java and rustup-init (see modules/shared/programs/cli.nix);
+    # without this they all die at exit 127 the moment mise verifies them.
+    # node survives regardless — mise falls back to compiling it from source
+    # — and go is statically linked, which is why those two alone worked.
+    nix-ld.enable = true;
   };
 
   services = {

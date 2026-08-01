@@ -18,11 +18,17 @@ in
 
     # Materialize the tool versions declared in programs.mise.globalConfig
     # at switch time. `mise install` is idempotent (no-op when nothing is
-    # missing); `|| true` keeps an offline switch from failing. curl is put
-    # on PATH because mise's rust backend shells out to rustup-init, which
-    # needs curl/wget — the activation env doesn't otherwise provide it.
+    # missing). curl is put on PATH because mise's rust backend shells out to
+    # rustup-init, which needs curl/wget — the activation env doesn't
+    # otherwise provide it.
+    #
+    # A failure must not abort the switch (an offline machine would never
+    # rebuild again), but it must not pass silently either: this swallowed a
+    # real breakage once, leaving bun/java/rust uninstalled for as long as it
+    # took to notice `bun` was missing. Warn loudly and carry on.
     activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      PATH="${pkgs.curl}/bin:$PATH" $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
+      PATH="${pkgs.curl}/bin:$PATH" $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install \
+        || echo "WARNING: 'mise install' failed — some tools declared in programs.mise are missing. Run 'mise install' by hand for the error." >&2
     '';
   };
 

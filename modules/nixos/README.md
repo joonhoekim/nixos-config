@@ -8,7 +8,8 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 .
 ├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + GTK 다크 테마 + mise 활성화)
-├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 네비게이션 레이어)
+├── keyboard.nix       # keyd 키 리맵 (한/영, 스페이스 홀드 TouchCursor 레이어)
+├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
 └── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
 ```
@@ -53,32 +54,39 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 필요하다(`hosts/nixos/common.nix`에서 로드).
 
 - **오른쪽 Alt → `hangeul`** — fcitx5-hangul이 이걸 받아 한/영을 토글한다
-- **Caps Lock 홀드 → 네비게이션 레이어** — macOS의 Karabiner 설정을 그대로 포팅한 것.
-  탭하면 평범한 Caps Lock 토글, 홀드하면 vim/neovim 키맵이 뜬다
-
-키 표와 설계 의도는 [`../darwin/config/karabiner/README.md`](../darwin/config/karabiner/README.md)가
-원본이고, 동작만 Linux 대응으로 바뀐다(단어 이동 `⌥←/→` → `Ctrl+←/→`, 줄 끝 `⌘→` → `End`,
-`⌘C/V/Z` → `Ctrl+C/V/Z`).
+- **Caps Lock 홀드 → TouchCursor 네비게이션 레이어** — 윈도우 머신들이 쓰는
+  [TouchCursor](https://github.com/martin-stone/touchcursor)와 같은 배치. `ijkl` 역T 화살표.
+  탭하면 평범한 Caps Lock 토글
 
 | 키 | 동작 | | 키 | 동작 |
 |----|------|-|----|------|
-| `h` `j` `k` `l` | ← ↓ ↑ → | | `/` | 찾기 (`C-f`) |
-| `w` `e` / `b` | 단어 앞/뒤 (`C-→` / `C-←`) | | `n` / `N` | 다음/이전 찾기 (`C-g` / `C-S-g`) |
-| `0` / `$` | 줄 처음 / 끝 (`Home` / `End`) | | `u` / `U` | 실행 취소 / 다시 실행 |
-| `{` / `}` | 문단 위 / 아래 (`C-↑` / `C-↓`) | | `x` / `X` | `Delete` / `Backspace` |
-| `g` / `G` | 문서 처음 / 끝 (`C-Home` / `C-End`) | | `y` / `p` | 복사 / 붙여넣기 |
-| `i` / `m` | PageUp / PageDown | | | |
+| `i` `j` `k` `l` | ↑ ← ↓ → (역T) | | `w` `e` / `b` | 단어 앞/뒤 (`C-→` / `C-←`) |
+| `u` / `o` | 줄 처음 / 끝 (`Home` / `End`) | | `g` / `G` | 문서 처음 / 끝 (`C-Home` / `C-End`) |
+| `h` / `n` | PageUp / PageDown | | `/` | 찾기 (`C-f`) |
+| `p` / `m` | `Backspace` / `Delete` | | `y` | `Insert` |
 
+오른쪽 열이 TouchCursor에 없어서 vim에서 빌려온 것들이다(그쪽이 비워두는 키만 씀).
+
+- **전 바인딩이 unshifted**라 Shift는 통째로 선택 확장에 남는다 — `Caps+Shift+j` = 왼쪽으로
+  선택, `Caps+Shift+o` = 줄 끝까지 선택. vim 레이어는 `$ { } G N`에서 Shift가 커맨드
+  자체였기 때문에 이게 구조적으로 불가능했다 (`G`만 여기서도 같은 이유로 이동 전용이다)
 - 매핑되지 않은 키는 홀드 중에도 **그냥 그 글자**가 입력된다(`[nav]`는 modifier 레이어가
   아니라 평범한 레이어다)
-- 이동 계열은 Shift가 그대로 통과해서 **선택 확장**이 된다 (`Caps+Shift+j` = 아래로 선택)
-- Shift 자체가 커맨드인 키(`$ { } G N X U`)는 composite 레이어 `[nav+shift]`에 있다.
-  composite 레이어는 구성 레이어의 modifier를 출력에서 제거해주기 때문에 `$`가
-  `Shift+End`(선택)가 아니라 `End`(이동)로 나간다. keyd는 composite를 구성 레이어보다
-  **뒤에** 선언할 것을 요구하므로 이것만 `extraConfig`에 들어간다
-- **galaxy-chromebook-1은 예외** — 그 섀시엔 손가락이 기대하는 자리에 Ctrl이 없어서
-  Caps Lock을 레이어 대신 Ctrl로 쓴다([호스트 파일](../../hosts/nixos/galaxy-chromebook-1/default.nix)에서
-  `mkForce`로 덮어씀)
+- **트리거는 항상 Caps Lock** — 윈도우 TouchCursor에서 기본값(스페이스)에서 바꾸는 유일한
+  설정이 이거라 여기서도 맞춘다. 덤으로 방어 로직이 통째로 사라진다: 스페이스 트리거는
+  타이핑 한복판에 있어서 idle 타임아웃(`overloadi`)과 "삼킨 공백을 먼저 뱉기"
+  (`macro(space <key>)`)가 필요한데, Caps Lock은 어차피 안 쓰는 키라 둘 다 필요 없다
+- **galaxy-chromebook-1에는 레이어가 없다** — 그 섀시엔 Caps Lock 키 자체가 없다(그 자리가
+  런처/검색 키, 즉 모디파이어다). 스페이스 트리거로는 가능하지만 그러면 방어 로직이
+  따라붙고, 그 기기는 타이핑보다 웹 브라우징용이라 포기했다. 설정도 따로 없다
+  ([호스트 파일](../../hosts/nixos/galaxy-chromebook-1/default.nix)의 주석 한 덩어리가 전부)
+
+### vim 레이어 (보관)
+
+[`keyboard.nix.vim`](keyboard.nix.vim)에 vim 배치 버전이 import되지 않은 채로 남아 있다.
+`keyboard.nix` 자리에 넣으면 그대로 동작한다. 왜 접었는지, 그리고 OS 레벨 레이어가 vim의
+천장에 닿을 수 없는 이유(모드/문법이 없어서 `d2w` 같은 조합이 성립하지 않는다)는 그 파일
+헤더에 적어뒀다.
 
 리빌드하면 keyd 유닛이 자동으로 재시작된다(nixpkgs 모듈이 `/etc/keyd/*.conf`를
 `restartTriggers`에 걸어둔다). 문법 검증은 `keyd check /etc/keyd/default.conf`,

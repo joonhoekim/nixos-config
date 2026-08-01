@@ -12,8 +12,8 @@
 
   # Caps Lock -> Ctrl used to be set here as a GNOME dconf key, because mutter
   # derives its keymap from org.gnome.desktop.input-sources and ignores
-  # services.xserver.xkb on Wayland. It is now a keyd remap in ./default.nix,
-  # which covers every session including niri.
+  # services.xserver.xkb on Wayland. Dropped rather than ported to keyd: this
+  # chassis has no Caps Lock key. See ./default.nix.
 
   # Brave flags — read by Brave's launcher on every start, so changing them
   # needs a restart of the browser but not a rebuild.

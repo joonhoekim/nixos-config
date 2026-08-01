@@ -4,7 +4,7 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "TouchCursor Navigation Mode [Caps Lock as Trigger Key] (rev 4)",
+                        "description": "Vim/Neovim Navigation Mode [Caps Lock as Trigger Key] (rev 3, parked)",
                         "manipulators": [
                             {
                                 "from": {
@@ -35,15 +35,7 @@
                                 "conditions": [
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
-                                "from": { "key_code": "i", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "up_arrow" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "j", "modifiers": { "optional": ["any"] } },
+                                "from": { "key_code": "h", "modifiers": { "optional": ["any"] } },
                                 "to": [{ "key_code": "left_arrow" }],
                                 "type": "basic"
                             },
@@ -51,8 +43,16 @@
                                 "conditions": [
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
-                                "from": { "key_code": "k", "modifiers": { "optional": ["any"] } },
+                                "from": { "key_code": "j", "modifiers": { "optional": ["any"] } },
                                 "to": [{ "key_code": "down_arrow" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "k", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "key_code": "up_arrow" }],
                                 "type": "basic"
                             },
                             {
@@ -61,65 +61,6 @@
                                 ],
                                 "from": { "key_code": "l", "modifiers": { "optional": ["any"] } },
                                 "to": [{ "key_code": "right_arrow" }],
-                                "type": "basic"
-                            },
-
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "u", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "left_arrow", "modifiers": ["command"] }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "o", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "right_arrow", "modifiers": ["command"] }],
-                                "type": "basic"
-                            },
-
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "h", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "page_up" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "n", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "page_down" }],
-                                "type": "basic"
-                            },
-
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "p", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "delete_or_backspace" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "m", "modifiers": { "optional": ["any"] } },
-                                "to": [{ "key_code": "delete_forward" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
-                                ],
-                                "from": { "key_code": "y", "modifiers": { "optional": ["caps_lock"] } },
-                                "to": [{ "key_code": "insert" }],
                                 "type": "basic"
                             },
 
@@ -152,6 +93,49 @@
                                 "conditions": [
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
+                                "from": { "key_code": "0", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "key_code": "left_arrow", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": {
+                                    "key_code": "4",
+                                    "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "key_code": "right_arrow", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": {
+                                    "key_code": "open_bracket",
+                                    "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "key_code": "up_arrow", "modifiers": ["option"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": {
+                                    "key_code": "close_bracket",
+                                    "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "key_code": "down_arrow", "modifiers": ["option"] }],
+                                "type": "basic"
+                            },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
                                 "from": {
                                     "key_code": "g",
                                     "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
@@ -167,12 +151,78 @@
                                 "to": [{ "key_code": "up_arrow", "modifiers": ["command"] }],
                                 "type": "basic"
                             },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": {
+                                    "key_code": "n",
+                                    "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "key_code": "g", "modifiers": ["command", "shift"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "n", "modifiers": { "optional": ["caps_lock"] } },
+                                "to": [{ "key_code": "g", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
                             {
                                 "conditions": [
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
                                 "from": { "key_code": "slash", "modifiers": { "optional": ["caps_lock"] } },
                                 "to": [{ "key_code": "f", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "u", "modifiers": { "optional": ["caps_lock"] } },
+                                "to": [{ "key_code": "z", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": {
+                                    "key_code": "x",
+                                    "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
+                                },
+                                "to": [{ "key_code": "delete_or_backspace" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "x", "modifiers": { "optional": ["caps_lock"] } },
+                                "to": [{ "key_code": "delete_forward" }],
+                                "type": "basic"
+                            },
+
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "y", "modifiers": { "optional": ["caps_lock"] } },
+                                "to": [{ "key_code": "c", "modifiers": ["command"] }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
+                                ],
+                                "from": { "key_code": "p", "modifiers": { "optional": ["caps_lock"] } },
+                                "to": [{ "key_code": "v", "modifiers": ["command"] }],
                                 "type": "basic"
                             }
                         ]

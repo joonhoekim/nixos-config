@@ -1,0 +1,227 @@
+// niri config — EDITED BY HAND, not generated.
+//
+// This file is the ricing scratchpad. The live copy at ~/.config/niri/config.kdl
+// is a plain writable file: niri watches it and hot-reloads on save, and a
+// broken edit only prints an error while the previous config keeps running.
+// So iterate there, then run `apps/rice-save` to snapshot it back here.
+//
+// The repo copy is a seed + backup, never a source of truth. Nothing in Nix
+// reads it except the activation script that copies it in when the file is
+// *missing* (see ../default.nix) — an existing config is never overwritten.
+//
+// Originally generated from `wayland.windowManager.niri`, which is why the
+// indentation is tabs and the nodes are alphabetical.
+
+// DMS Include Configs
+// DMS writes these fragments itself and expects to be included from here;
+// without the includes its theme never reaches niri's focus ring, borders or
+// wallpaper backdrop. `optional=true` matters: a plain include of a missing
+// file is a hard parse error, which would leave niri unstartable on a machine
+// where DMS has not run yet.
+//
+// dms/layout.kdl is deliberately absent — it carries gaps/border widths that
+// the `layout` block below already owns. Include it only after deleting those.
+//
+// DMS appends further includes under this exact header when a settings tab
+// needs one, so keep the comment line verbatim.
+include "dms/colors.kdl" optional=true
+include "dms/cursor.kdl" optional=true
+include "dms/windowrules.kdl" optional=true
+include "dms/outputs.kdl" optional=true
+include "dms/binds.kdl" optional=true
+include "dms/alttab.kdl" optional=true
+include "dms/wpblur.kdl" optional=true
+
+debug {
+	honor-xdg-activation-with-invalid-serial
+}
+binds {
+	Alt+Print {
+		screenshot-window
+	}
+	Ctrl+Print {
+		screenshot-screen
+	}
+	Mod+1 {
+		focus-workspace 1
+	}
+	Mod+2 {
+		focus-workspace 2
+	}
+	Mod+3 {
+		focus-workspace 3
+	}
+	Mod+4 {
+		focus-workspace 4
+	}
+	Mod+5 {
+		focus-workspace 5
+	}
+	Mod+C {
+		center-column
+	}
+	Mod+Comma {
+		spawn "dms" "ipc" "call" "settings" "toggle"
+	}
+	Mod+Ctrl+Down {
+		move-window-down
+	}
+	Mod+Ctrl+H {
+		move-column-left
+	}
+	Mod+Ctrl+I {
+		move-column-to-workspace-up
+	}
+	Mod+Ctrl+J {
+		move-window-down
+	}
+	Mod+Ctrl+K {
+		move-window-up
+	}
+	Mod+Ctrl+Left {
+		move-column-left
+	}
+	Mod+Ctrl+Right {
+		move-column-right
+	}
+	Mod+Ctrl+U {
+		move-column-to-workspace-down
+	}
+	Mod+Ctrl+Up {
+		move-window-up
+	}
+	Mod+D {
+		spawn "fuzzel"
+	}
+	Mod+Down {
+		focus-window-down
+	}
+	Mod+End {
+		focus-column-last
+	}
+	Mod+Equal {
+		set-column-width "+10%"
+	}
+	Mod+Escape {
+		spawn "dms" "ipc" "call" "powermenu" "toggle"
+	}
+	Mod+F {
+		maximize-column
+	}
+	Mod+H {
+		focus-column-left
+	}
+	Mod+Home {
+		focus-column-first
+	}
+	Mod+I {
+		focus-workspace-up
+	}
+	Mod+J {
+		focus-window-down
+	}
+	Mod+K {
+		focus-window-up
+	}
+	Mod+L {
+		spawn "dms" "ipc" "call" "lock" "lock"
+	}
+	Mod+Left {
+		focus-column-left
+	}
+	Mod+Minus {
+		set-column-width "-10%"
+	}
+	Mod+N {
+		spawn "dms" "ipc" "call" "notifications" "toggle"
+	}
+	Mod+Q {
+		close-window
+	}
+	Mod+R {
+		switch-preset-column-width
+	}
+	Mod+Return hotkey-overlay-title="Open a Terminal" {
+		spawn "alacritty"
+	}
+	Mod+Right {
+		focus-column-right
+	}
+	Mod+S {
+		spawn "dms" "ipc" "call" "control-center" "toggle"
+	}
+	Mod+Shift+E {
+		quit
+	}
+	Mod+Shift+F {
+		fullscreen-window
+	}
+	Mod+Shift+Slash {
+		show-hotkey-overlay
+	}
+	Mod+Shift+Space {
+		toggle-window-floating
+	}
+	Mod+Space {
+		spawn "dms" "ipc" "call" "spotlight" "toggle"
+	}
+	Mod+U {
+		focus-workspace-down
+	}
+	Mod+Up {
+		focus-window-up
+	}
+	Mod+V {
+		spawn "dms" "ipc" "call" "clipboard" "toggle"
+	}
+	Print {
+		screenshot
+	}
+	XF86AudioLowerVolume allow-when-locked=true {
+		spawn "dms" "ipc" "call" "audio" "decrement" "5"
+	}
+	XF86AudioMicMute allow-when-locked=true {
+		spawn "dms" "ipc" "call" "mic" "mute"
+	}
+	XF86AudioMute allow-when-locked=true {
+		spawn "dms" "ipc" "call" "audio" "mute"
+	}
+	XF86AudioRaiseVolume allow-when-locked=true {
+		spawn "dms" "ipc" "call" "audio" "increment" "5"
+	}
+	XF86MonBrightnessDown allow-when-locked=true {
+		spawn "dms" "ipc" "call" "brightness" "decrement" "5"
+	}
+	XF86MonBrightnessUp allow-when-locked=true {
+		spawn "dms" "ipc" "call" "brightness" "increment" "5"
+	}
+}
+input {
+	focus-follows-mouse
+	keyboard {
+		xkb {
+			layout "us"
+		}
+	}
+	touchpad {
+		dwt
+		natural-scroll
+		tap
+	}
+}
+layout {
+	border {
+		width 2
+	}
+	default-column-width {
+		proportion 0.500000
+	}
+	gaps 8
+	preset-column-widths {
+		proportion 0.333330
+		proportion 0.500000
+		proportion 0.666670
+	}
+}
+prefer-no-csd
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"

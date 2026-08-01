@@ -10,10 +10,28 @@
 #
 # Everything here comes from the pinned nixpkgs/home-manager — no extra flake
 # input. That is worth stating because most guides still reach for
-# sodiboo/niri-flake and the AvengeMedia/noctalia-dev flakes: home-manager
-# absorbed `wayland.windowManager.niri` upstream, and nixpkgs now carries
-# `programs.niri`, `programs.dms-shell` and `programs.noctalia`. The flakes only
-# add declarative *shell* settings (see ./home.nix for why we don't need them).
+# sodiboo/niri-flake and the AvengeMedia/noctalia-dev flakes: nixpkgs carries
+# `programs.niri`, `programs.dms-shell` and `programs.noctalia`, and the flakes
+# only add declarative *shell* settings, which this module deliberately does not
+# want (see the seeding block below).
+#
+# ── Installation is declarative, ricing is not ─────────────────────────────
+# This module installs and wires the session. It does NOT own the compositor or
+# shell *settings*. Those live as ordinary writable files in $HOME:
+#
+#   ~/.config/niri/config.kdl            niri, hot-reloaded on save
+#   ~/.config/DankMaterialShell/         DMS, written by its own settings GUI
+#
+# home-manager's `wayland.windowManager.niri.settings` used to generate the
+# first of those. It was dropped on purpose: it makes config.kdl a read-only
+# store symlink, so every keybind tweak costs a full rebuild, and DMS — which
+# appends its own `include` lines to config.kdl from several settings tabs —
+# silently fails against a read-only target.
+#
+# ./rice/ holds a snapshot of both, seeded into $HOME only when the file is
+# missing. Round-trip it with `apps/rice-save`. Once the ricing settles, moving
+# rice/config.kdl back into Nix is a mechanical change; DMS's 21KB settings.json
+# is GUI state and is not worth declaring either way.
 
 let
   cfg = config.local.niri;
@@ -40,17 +58,18 @@ in
         centre, notifications, lock), so exactly one runs at a time — they would
         otherwise fight over the org.freedesktop.Notifications bus name.
 
-        Switching is this one line plus a rebuild; ./home.nix swaps the
-        shell-specific keybinds to match. The unselected shell is NOT installed,
-        so a comparison run means flipping this and rebuilding rather than
-        keeping both on disk.
+        Switching is this one line plus a rebuild. The unselected shell is NOT
+        installed, so a comparison run means flipping this and rebuilding rather
+        than keeping both on disk. The shell-specific keybinds are no longer
+        swapped for you — ./rice/config.kdl carries the DMS ones, so a switch to
+        noctalia means rewriting those binds by hand in ~/.config/niri.
       '';
     };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      # Adds niri to displayManager.sessionPackages (so GDM offers it), ships
+      # Adds niri to displayManager.sessionPackages (so the greeter offers it), ships
       # niri.service for the user manager, and declares xdg.portal.config.niri
       # = gnome+gtk. That portal config is namespaced per desktop, which is why
       # it can coexist with the GNOME session's own portal setup untouched.
@@ -68,11 +87,37 @@ in
         fuzzel
       ];
 
-      home-manager.users.${user} = {
-        imports = [ ./home.nix ];
-        # The HM module lives in a separate arg scope (extraSpecialArgs in
-        # flake.nix), so the shell choice is threaded in explicitly.
-        _module.args.niriShell = cfg.shell;
+      # Seed the ricing files on a machine that has none yet. Deliberately not
+      # home.file / xdg.configFile: those symlink the store and make the target
+      # read-only, which is exactly what this module is avoiding — niri could no
+      # longer be tuned without a rebuild, and DMS's settings GUI writes
+      # atomically (temp file + rename, see Common/SettingsData.qml), so a
+      # symlink there would be replaced by a regular file on its first save.
+      #
+      # `[ -e ]` guards every copy: an existing config is never touched, so a
+      # rebuild mid-ricing cannot clobber unsaved work. Snapshot the other
+      # direction with apps/rice-save.
+      #
+      # Runs after linkGeneration because on the machine this module was written
+      # for, config.kdl is still the home-manager symlink from the previous
+      # generation; the copy has to land after home-manager removes it.
+      # Written as a module function so `lib` here is home-manager's — `lib.hm`
+      # does not exist in the NixOS module scope this file otherwise evaluates
+      # in.
+      home-manager.users.${user} = { lib, ... }: {
+        home.activation.seedNiriRice = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+          seed() { # seed <store-source> <destination>
+            [ -e "$2" ] && return 0
+            $DRY_RUN_CMD mkdir -p "$(dirname "$2")"
+            $DRY_RUN_CMD cp -rT "$1" "$2"
+            # Store paths are read-only; the whole point is a writable copy.
+            $DRY_RUN_CMD chmod -R u+w "$2"
+            echo "seeded $2"
+          }
+          seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
+          seed ${./rice/dms/settings.json} "$HOME/.config/DankMaterialShell/settings.json"
+          seed ${./rice/dms/themes} "$HOME/.config/DankMaterialShell/themes"
+        '';
       };
     }
 

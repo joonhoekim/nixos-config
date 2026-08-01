@@ -12,9 +12,15 @@ NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `galaxy-chromebook-1
 존재하는 머신만 만든다(그 머신에서 생성한 `hardware-configuration.nix`가 필요하다).
 머신별 설정은 [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
 
-데스크톱 환경은 두 호스트 모두 GDM에서 **GNOME / Wayland**(기본)와 **niri**(스크롤
-타일링 + Quickshell 셸) 두 세션을 고를 수 있다. 셸은 `local.niri.shell`로
-DankMaterialShell / Noctalia 중 하나를 고른다 — [modules/nixos/niri](modules/nixos/niri) 참고.
+데스크톱 환경은 두 호스트 모두 greetd/tuigreet에서 **niri**(스크롤 타일링 +
+Quickshell 셸, 기본)와 **GNOME / Wayland**(폴백) 두 세션을 고를 수 있다. 셸은
+`local.niri.shell`로 DankMaterialShell / Noctalia 중 하나를 고른다 —
+[modules/nixos/niri](modules/nixos/niri) 참고.
+
+niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범한 쓰기 가능한
+파일이라 저장하면 niri가 바로 리로드하고, DMS 설정 GUI도 정상 동작한다. 레포의
+[modules/nixos/niri/rice](modules/nixos/niri/rice)는 백업 겸 새 머신용 시드이며
+(없을 때만 복사된다), 살아있는 설정을 되받아 저장하는 건 `apps/rice-save`다.
 
 ## 부트스트랩 — macOS (새 머신 최초 1회)
 

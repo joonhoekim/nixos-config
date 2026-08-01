@@ -10,14 +10,10 @@
     screen-keyboard-enabled = true;
   };
 
-  # Caps Lock -> Ctrl for the GNOME Wayland session. mutter derives its keymap
-  # from these dconf keys, not from services.xserver.xkb — that option (set in
-  # ./default.nix for X11/TTY) is silently ignored on Wayland. Verified on mn56:
-  # xkb.options said ctrl:nocaps while `xkb-options` here was empty and the
-  # remap was simply not happening.
-  dconf.settings."org/gnome/desktop/input-sources" = {
-    xkb-options = [ "ctrl:nocaps" ];
-  };
+  # Caps Lock -> Ctrl used to be set here as a GNOME dconf key, because mutter
+  # derives its keymap from org.gnome.desktop.input-sources and ignores
+  # services.xserver.xkb on Wayland. It is now a keyd remap in ./default.nix,
+  # which covers every session including niri.
 
   # Brave flags — read by Brave's launcher on every start, so changing them
   # needs a restart of the browser but not a rebuild.

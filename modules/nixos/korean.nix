@@ -1,6 +1,7 @@
 # Korean localization for NixOS, ported from the previous machine config:
-# locale, input method (fcitx5 + Hangul), Right Alt -> Hangul remap (keyd),
-# and CJK fonts + fallbacks. All of this is machine-independent.
+# locale, input method (fcitx5 + Hangul), and CJK fonts + fallbacks. All of
+# this is machine-independent. The 한/영 key remap itself lives in
+# ./keyboard.nix with the rest of the keyd config.
 #
 # Imported by hosts/nixos/default.nix.
 { pkgs, ... }:
@@ -20,16 +21,10 @@
     LC_TIME = "ko_KR.UTF-8";
   };
 
-  # keyd — system-wide evdev key remapping. Works in X11, Wayland, and TTY
-  # uniformly because it acts below xkb. Right Alt -> Hangul keysym;
-  # fcitx5-hangul then sees Hangul_Mode and toggles keyboard-us <-> hangul.
-  services.keyd = {
-    enable = true;
-    keyboards.default = {
-      ids = [ "*" ];
-      settings.main.rightalt = "hangeul"; # keyd's name for KEY_HANGEUL (122)
-    };
-  };
+  # 한/영 is Right Alt -> Hangul, remapped by keyd in ./keyboard.nix rather
+  # than here: keyd takes one config per machine, and this box also puts a
+  # navigation layer on Caps Lock. fcitx5-hangul sees the resulting Hangul_Mode
+  # and toggles keyboard-us <-> hangul.
 
   # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {

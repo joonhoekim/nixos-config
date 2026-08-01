@@ -17,8 +17,8 @@ machine-specific setup.
 
 Both hosts offer two sessions at the greetd/tuigreet greeter: **niri**
 (scrollable tiling plus a Quickshell desktop shell, the default) and **GNOME on
-Wayland** (the fallback). Pick the shell with `local.niri.shell` —
-DankMaterialShell or Noctalia; see [modules/nixos/niri](modules/nixos/niri).
+Wayland** (the fallback). The shell is DankMaterialShell; see
+[modules/nixos/niri](modules/nixos/niri).
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI

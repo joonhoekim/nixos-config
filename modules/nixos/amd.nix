@@ -10,8 +10,10 @@
 
 {
   # amdgpu (RDNA3 / 780M) is fully covered by mesa — no extra driver package.
-  # radeonsi also provides VAAPI (H.264/HEVC/AV1 decode), so there is no AMD
-  # counterpart to the Intel host's intel-media-driver.
+  # radeonsi also provides VAAPI (H.264/HEVC/AV1 decode), so nothing has to be
+  # added to hardware.graphics.extraPackages here. Intel iGPUs are the contrast
+  # worth remembering: i915/xe render fine on mesa alone, but VAAPI/QSV video
+  # decode needs pkgs.intel-media-driver (iHD) added explicitly.
   #
   # If OpenCL (ROCm) is ever needed:
   #   hardware.graphics.extraPackages = [ pkgs.rocmPackages.clr.icd ];

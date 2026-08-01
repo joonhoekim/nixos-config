@@ -4,9 +4,8 @@
 # touchscreen. Ported from the standalone config this machine ran before it
 # joined this repo.
 #
-# Unlike ./amd and ./intel this host is ALREADY INSTALLED, so its
-# hardware-configuration.nix is the real generated one (not a placeholder)
-# and its stateVersions are pinned to the release it was installed at.
+# Its stateVersions are pinned to the release it was actually installed at
+# (25.11), which is older than the repo default — see below.
 
 {
   imports = [

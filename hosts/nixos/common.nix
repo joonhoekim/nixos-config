@@ -2,7 +2,7 @@
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
-# host dirs (./mn56, ./intel, ./galaxy-chromebook-1) that import this file.
+# host dirs (./mn56, ./galaxy-chromebook-1) that import this file.
 # Vendor-common layers shared by several hosts live in modules/nixos
 # (e.g. amd.nix).
 
@@ -10,6 +10,9 @@
   imports = [
     # Korean locale, IME (fcitx5-hangul), Right Alt -> Hangul, and CJK fonts.
     ../../modules/nixos/korean.nix
+    # niri session + a Quickshell desktop shell (DMS by default), offered
+    # alongside GNOME at the GDM greeter. Pick the shell with local.niri.shell.
+    ../../modules/nixos/niri
     ../../modules/shared
   ];
 
@@ -33,7 +36,7 @@
 
   time.timeZone = "Asia/Seoul";
 
-  # hostName is set per-host (see ./mn56, ./intel).
+  # hostName is set per-host (see ./mn56, ./galaxy-chromebook-1).
   networking.networkmanager.enable = true;
 
   # Turn on flag for proprietary software
@@ -153,8 +156,9 @@
   };
 
   # GPU / video acceleration. AMD (amdgpu) and modern Intel (i915/xe) are both
-  # covered by mesa out of the box; per-host extraPackages (e.g. Intel VAAPI)
-  # are added in the host dirs.
+  # covered by mesa out of the box. Anything beyond that is per-machine and
+  # goes in the host dir — an Intel box wanting VAAPI/QSV decode adds
+  # intel-media-driver to hardware.graphics.extraPackages there.
   hardware.graphics.enable = true;
 
   # Add docker daemon

@@ -11,7 +11,8 @@
     # Korean locale, IME (fcitx5-hangul), Right Alt -> Hangul, and CJK fonts.
     ../../modules/nixos/korean.nix
     # niri session + a Quickshell desktop shell (DMS by default), offered
-    # alongside GNOME at the GDM greeter. Pick the shell with local.niri.shell.
+    # alongside GNOME at the tuigreet greeter and the default session below.
+    # Pick the shell with local.niri.shell.
     ../../modules/nixos/niri
     ../../modules/shared
   ];
@@ -86,7 +87,7 @@
   };
 
   services = {
-    # ── Desktop: GNOME on Wayland via GDM ──────────────────────────────
+    # ── Desktop: niri on Wayland via greetd/tuigreet ───────────────────
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
@@ -95,9 +96,50 @@
       # GNOME Wayland xkb.options is inert anyway, see that host for why.
       xkb.layout = "us";
     };
-    # GDM defaults to a Wayland session; no extra wayland.enable needed.
-    displayManager.gdm.enable = true;
-    displayManager.defaultSession = "gnome";
+
+    # greetd + tuigreet replaces GDM: a TUI greeter on VT1, with none of the
+    # GNOME stack (gnome-shell, gnome-session) running behind the login screen.
+    #
+    # `--sessions` points at the very same sessionData.desktops derivation GDM
+    # consumed, so both session entries still appear — gnome.desktop comes from
+    # `desktopManager.gnome.enable` and niri.desktop from programs.niri.enable.
+    # Nothing about session *discovery* changes, only the greeter in front of it.
+    #
+    # useTextGreeter rewires the unit's stdio onto /dev/tty1 (TTYReset, VHangup,
+    # VTDisallocate) so kernel/boot messages don't scribble over the TUI.
+    #
+    # Keyring note: the greetd PAM service is `auth substack login` +
+    # `session include login`, i.e. it inherits /etc/pam.d/login wholesale —
+    # and that stack already carries pam_gnome_keyring's auth + session rules.
+    # So gnome-keyring still auto-unlocks at login without GDM. Setting
+    # `security.pam.services.greetd.enableGnomeKeyring` would be a no-op here:
+    # the greetd service sets useDefaultRules = false, which is exactly the
+    # block those generated keyring rules live in.
+    greetd = {
+      enable = true;
+      useTextGreeter = true;
+      settings.default_session.command = lib.concatStringsSep " " [
+        # Top-level `pkgs.tuigreet`, not `pkgs.greetd.tuigreet` — most guides
+        # still show the latter, but `pkgs.greetd` is the greetd derivation
+        # itself in this nixpkgs, not a package set, so that path errors out.
+        "${pkgs.tuigreet}/bin/tuigreet"
+        "--time"
+        "--remember" # prefill the last username
+        "--remember-session" # ...and the session it last launched
+        "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions"
+      ];
+    };
+
+    # Consumed by the assertion in services/display-managers/default.nix, which
+    # requires this to be one of sessionData.sessionNames ("gnome" | "niri").
+    # tuigreet itself does not read it — `--remember-session` is what actually
+    # makes a login land back in niri, from the second login onward.
+    displayManager.defaultSession = "niri";
+
+    # GNOME stays installed but is no longer the default session. It is the
+    # fallback when a niri/Quickshell bump breaks the desktop, and it is the
+    # only thing pulling in gnome-keyring and seahorse — nothing in this repo
+    # declares either directly, so dropping this line silently removes both.
     desktopManager.gnome.enable = true;
 
     # Better support for general peripherals

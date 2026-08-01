@@ -142,6 +142,9 @@ in
         # GTK. Seeded rather than home-manager-managed because DMS edits these
         # in place — see the header of rice/gtk-settings.ini for the whole
         # story. Both toolkits read the same keys, so one file serves both.
+        # This is a *niri* need, not a GNOME one: there is no settings daemon
+        # here to broadcast XSettings, so GTK apps read the file directly.
+        # apps/rice-save takes gtk-3.0 back as the canonical one.
         seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-3.0/settings.ini"
         seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-4.0/settings.ini"
       '';

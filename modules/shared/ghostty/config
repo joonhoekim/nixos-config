@@ -11,7 +11,7 @@ theme = dankcolors
 # p10k 의 파워라인 글리프가 필요해서 Nerd Font 로 지정한다. ghostty 가 심볼
 # 폴백을 내장하긴 하지만, 프롬프트가 통째로 한 폰트에서 나오는 편이 낫다.
 font-family = JetBrainsMono Nerd Font
-font-size = 10
+font-size = 22
 
 window-padding-x = 20
 window-padding-y = 20

@@ -64,6 +64,7 @@ copy() { # copy <live> <repo-relative destination>
 }
 
 copy "$cfg/niri/config.kdl"                   "$rice/config.kdl"
+copy "$cfg/niri/animations.kdl"               "$rice/animations.kdl"
 copy "$cfg/rice/profiles"                     "$rice/profiles"
 copy "$cfg/ghostty/config"                    "$rice/ghostty/config"
 copy "$cfg/ghostty/rices"                     "$rice/ghostty/rices"

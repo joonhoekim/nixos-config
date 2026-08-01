@@ -12,6 +12,11 @@
 // Originally generated from `wayland.windowManager.niri`, which is why the
 // indentation is tabs and the nodes are alphabetical.
 
+// 창 열림/닫힘을 브라운관 전원처럼 만드는 셰이더. 통째로 지우면 니리 기본
+// 애니메이션으로 돌아간다 — optional 이라 없는 게 에러가 아니다. DMS 블록보다
+// 위에 두는 건, DMS 가 자기 include 를 아래 헤더 밑에 이어 붙이기 때문이다.
+include "animations.kdl" optional=true
+
 // DMS Include Configs
 // DMS writes these fragments itself and expects to be included from here;
 // without the includes its theme never reaches niri's focus ring, borders or

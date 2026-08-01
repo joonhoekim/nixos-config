@@ -1,0 +1,126 @@
+// niri 창 열림/닫힘을 브라운관 전원처럼. config.kdl 이 optional 로 include 한다.
+//
+// 파일을 통째로 지우면 니리 기본 애니메이션으로 돌아간다 — include 가 optional 이라
+// 없는 게 에러가 아니다. 저장하면 즉시 반영된다(니리는 include 한 파일도 감시한다).
+//
+// ── 셰이더 규약 ───────────────────────────────────────────────────────────
+// 니리는 애니메이션 안에서만 셰이더를 받는다. 화면 전체에 거는 훅은 26.04 설정
+// 표면에 아예 없다(`screen-shader` 같은 노드가 없다). 그래서 여기서 할 수 있는
+// 건 "창 하나가 열리고 닫히는 동안"뿐이고, 정상 상태 비용은 0 이다.
+//
+// 니리가 감싸는 본문은 이렇다:
+//
+//     varying vec2 niri_v_coords;
+//     uniform vec2 niri_geo_size;
+//     uniform sampler2D niri_tex;
+//     void main() {
+//         vec3 coords_geo = niri_input_to_geo * vec3(niri_v_coords, 1.0);
+//         vec3 size_geo = vec3(niri_geo_size, 1.0);
+//         vec4 color = open_color(coords_geo, size_geo);
+//         gl_FragColor = color;
+//     }
+//
+// 그러니 우리가 정의할 건 open_color / close_color 하나씩이다. coords_geo 는
+// 창 기하 좌표(논리 픽셀, 0..size_geo)이고, 내용은 niri_geo_to_tex 로 텍스처
+// 좌표를 만들어 niri_tex 에서 뽑는다. 진행도는 niri_clamped_progress 다.
+//
+// GLSL ES 1.00 이다(#version 100). texture2D 를 쓰고, #define 은 못 쓴다 —
+// KDL 원시 문자열 안이라 const 로 둔다. 색은 프리멀티플라이드 알파라서
+// vec4(f) 가 곧 "불투명한 흰색 × f" 다.
+//
+// 곡선은 linear 로 둔다. 완급은 셰이더 안에서 구간별로 따로 주기 때문이다.
+
+animations {
+	// 켜짐: 가운데에 가로선이 그어지고(앞 35%), 그 선이 세로로 열린다.
+	// 내용은 열린 만큼의 띠 안에 세로로 눌려 들어가 있다가 제 비율을 찾는다.
+	window-open {
+		duration-ms 260
+		curve "linear"
+		custom-shader r"
+			vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+			    const float SPLIT = 0.35;   // 가로선을 긋는 데 쓰는 앞 구간 비율
+			    const float LINE  = 1.5;    // 선 두께 절반(논리 픽셀)
+			    const float SOFT  = 1.0;    // 가장자리 부드러움(논리 픽셀)
+			    const float FLASH = 0.85;   // 인광체 섬광 세기
+
+			    float p = niri_clamped_progress;
+			    float pw = clamp(p / SPLIT, 0.0, 1.0);
+			    float ph = clamp((p - SPLIT) / (1.0 - SPLIT), 0.0, 1.0);
+
+			    // 둘 다 뒤로 갈수록 느려진다. 선은 튀어나오고 화면은 스르르 열린다.
+			    pw = 1.0 - (1.0 - pw) * (1.0 - pw);
+			    ph = 1.0 - (1.0 - ph) * (1.0 - ph);
+
+			    vec2 c = size_geo.xy * 0.5;
+			    vec2 d = abs(coords_geo.xy - c);
+
+			    float halfW = mix(LINE, c.x, pw);
+			    float halfH = mix(LINE, c.y, ph);
+
+			    // 열린 띠 안에 창 전체를 눌러 넣는다. halfH 가 c.y 가 되면 항등이다.
+			    vec2 g = coords_geo.xy;
+			    g.y = c.y + (g.y - c.y) * (c.y / max(halfH, 0.001));
+
+			    vec3 tex = niri_geo_to_tex * vec3(g, 1.0);
+			    vec4 color = texture2D(niri_tex, tex.st);
+			    color *= step(0.0, g.y) * step(g.y, size_geo.y);
+
+			    float ax = 1.0 - smoothstep(halfW - SOFT, halfW + SOFT, d.x);
+			    float ay = 1.0 - smoothstep(halfH - SOFT, halfH + SOFT, d.y);
+			    float mask = ax * ay;
+			    color *= mask;
+
+			    // 섬광은 선일 때 제일 세고 열리면서 사라진다.
+			    float f = FLASH * (1.0 - p) * (1.0 - p) * mask;
+			    return color * (1.0 - f) + vec4(f);
+			}
+		"
+	}
+
+	// 꺼짐: 세로로 접혀 선이 되고(앞 55%), 선이 가로로 줄어들어 점이 된다.
+	// 마지막에 가운데 점이 잠깐 남았다 사라진다 — 전원 끈 브라운관의 그것.
+	window-close {
+		duration-ms 220
+		curve "linear"
+		custom-shader r"
+			vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+			    const float SPLIT = 0.55;   // 세로로 접는 데 쓰는 앞 구간 비율
+			    const float LINE  = 1.5;
+			    const float SOFT  = 1.0;
+			    const float FLASH = 0.9;
+
+			    float p = niri_clamped_progress;
+			    float ph = clamp(p / SPLIT, 0.0, 1.0);
+			    float pw = clamp((p - SPLIT) / (1.0 - SPLIT), 0.0, 1.0);
+
+			    ph = 1.0 - (1.0 - ph) * (1.0 - ph);
+			    pw = 1.0 - (1.0 - pw) * (1.0 - pw);
+
+			    vec2 c = size_geo.xy * 0.5;
+			    vec2 d = abs(coords_geo.xy - c);
+
+			    float halfH = mix(c.y, LINE, ph);
+			    float halfW = mix(c.x, LINE, pw);
+
+			    vec2 g = coords_geo.xy;
+			    g.y = c.y + (g.y - c.y) * (c.y / max(halfH, 0.001));
+
+			    vec3 tex = niri_geo_to_tex * vec3(g, 1.0);
+			    vec4 color = texture2D(niri_tex, tex.st);
+			    color *= step(0.0, g.y) * step(g.y, size_geo.y);
+
+			    float ax = 1.0 - smoothstep(halfW - SOFT, halfW + SOFT, d.x);
+			    float ay = 1.0 - smoothstep(halfH - SOFT, halfH + SOFT, d.y);
+			    float mask = ax * ay;
+			    color *= mask;
+
+			    // 접힐수록 밝아지다가, 점만 남는 구간에서 한 번 더 탄다.
+			    float f = FLASH * max(ph * 0.5, pw) * mask;
+			    color = color * (1.0 - f) + vec4(f);
+
+			    // 그리고 통째로 꺼진다. 점이 사라지는 마지막 15%.
+			    return color * (1.0 - smoothstep(0.85, 1.0, p));
+			}
+		"
+	}
+}

@@ -23,7 +23,7 @@ macOS와 NixOS 양쪽에서 그대로 쓰는 설정. 대부분의 실제 설정�
 프로그램 이름을 키로 갖는 **평범한 어트리뷰트셋**을 반환해야 한다 — `lib.mkMerge` 썽크를
 반환하면 안 된다(darwin/nixos 쪽에서 `programs = shared // {...}`로 소비하기 때문).
 
-현재 조각: `zsh`, `git`, `cli`, `vim`, `alacritty`, `ssh`, `tmux`.
+현재 조각: `zsh`, `git`, `cli`, `vim`, `ssh`, `tmux`.
 
 새 프로그램을 추가하려면 `programs/`에 파일을 만들고 `home-manager.nix`의 `fragments`
 목록에 넣는다. 키가 겹치지 않으므로 순서는 상관없다.

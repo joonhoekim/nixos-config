@@ -5,7 +5,7 @@
     "",
     "동적 테마의 스위치는 currentThemeName = \"dynamic\" 이다. 이 값일 때만 DMS 가",
     "월페이퍼를 matugen 에 물리고, matugenTemplate* 들이 dms/colors.kdl 과",
-    "alacritty/dank-theme.toml 을 다시 쓴다.",
+    "ghostty/themes/dankcolors 를 다시 쓴다.",
     "",
     "월페이퍼가 없으면 뽑을 색이 없다 — apps/rice-wall 로 하나 고르고 나서 봐야",
     "제 모습이 나온다.",

@@ -15,7 +15,6 @@ let
     ./programs/git.nix
     ./programs/cli.nix
     ./programs/vim.nix
-    ./programs/alacritty.nix
     ./programs/ssh.nix
     ./programs/tmux.nix
   ];

@@ -122,18 +122,24 @@ in
           }
           seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
           seed ${./rice/dms/settings.json} "$HOME/.config/DankMaterialShell/settings.json"
-          seed ${./rice/dms/themes} "$HOME/.config/DankMaterialShell/themes"
 
           # Look profiles, swapped live by apps/rice-switch.
           seed ${./rice/profiles} "$HOME/.config/rice/profiles"
 
           # ...and the pieces the seeded profile is made of, so a fresh machine
           # boots into a coherent look instead of a half-applied one. Only the
-          # starting point: rice-switch overwrites all three from then on, and
-          # the guard means it never re-seeds over a switch you made.
+          # starting point: rice-switch overwrites them from then on, and the
+          # guard means it never re-seeds over a switch you made.
           seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
-          seed ${./rice/profiles/${seedProfile}/alacritty.toml} "$HOME/.config/alacritty/rice.toml"
           seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
+
+          # ghostty is the terminal, and it is configured nowhere else in this
+          # repo on purpose — a one-line config beats a Nix module here, because
+          # the only thing it has to say is "use the palette DMS already
+          # generates". matugen rewrites themes/dankcolors on every wallpaper or
+          # theme change (its matugenTemplateGhostty template), so the terminal
+          # tracks the shell without anything else being declared.
+          seed ${./rice/ghostty.conf} "$HOME/.config/ghostty/config"
         '';
       };
     }

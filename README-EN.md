@@ -36,7 +36,7 @@ apps/rice-wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+
 apps/rice-wall --pick         # pick one through fuzzel                    (Mod+Ctrl+W)
 ```
 
-A profile is three pieces (`niri.kdl` / `dms.json` / `alacritty.toml`). Only the
+A profile is two pieces (`niri.kdl` / `dms.json`). Only the
 DMS piece is an overlay rather than a whole-file swap — `settings.json` also
 holds machine state that has nothing to do with the look, and replacing it
 wholesale would take that with it. The `matugen` profile derives its palette
@@ -146,8 +146,8 @@ sudo nixos-rebuild switch --flake .#mn56      # or .#galaxy-chromebook-1
 `common.nix` declares it, so activation creates `jh` — home directory
 `/home/jh`, zsh as the shell, and the `wheel`/`networkmanager`/`docker` groups.
 But no password is declared anywhere in this repo (`hashedPassword` and
-`initialPassword` are both null), so the account is created **locked**: no GDM
-login, no TTY login, no `su - jh`. Unlock it once as root:
+`initialPassword` are both null), so the account is created **locked**: no
+tuigreet login, no TTY login, no `su - jh`. Unlock it once as root:
 
 ```sh
 passwd jh

@@ -8,15 +8,13 @@
 #
 # 재시작도 리빌드도 없다. 세 소비자가 전부 파일을 감시하기 때문이다:
 #
-#   niri       config.kdl 과 그것이 include 한 파일까지 감시 → 즉시 리로드
-#   DMS        settings.json 에 watchChanges (Common/SettingsData.qml)
-#   alacritty  live config reload가 기본값 (새 창은 확실히 반영)
+#   niri   config.kdl 과 그것이 include 한 파일까지 감시 → 즉시 리로드
+#   DMS    settings.json 에 watchChanges (Common/SettingsData.qml)
 #
-# 프로필은 ~/.config/rice/profiles/<name>/ 에 있고, 각각 세 조각이다:
+# 프로필은 ~/.config/rice/profiles/<name>/ 에 있고, 각각 두 조각이다:
 #
-#   niri.kdl        → ~/.config/niri/profile.kdl        (통째로 교체)
-#   dms.json        → settings.json 에 jq 병합          (오버레이)
-#   alacritty.toml  → ~/.config/alacritty/rice.toml     (통째로 교체)
+#   niri.kdl   → ~/.config/niri/profile.kdl   (통째로 교체)
+#   dms.json   → settings.json 에 jq 병합     (오버레이)
 #
 # DMS 만 오버레이인 이유: settings.json 에는 룩과 무관한 머신 상태(디스플레이
 # 프로필, 위젯 사용 기록 등)가 같이 들어 있어서, 통째로 갈아끼우면 그것까지
@@ -102,12 +100,10 @@ if [ -f "$dir/dms.json" ] && [ -f "$settings" ]; then
   printf "  dms        %s\n" "settings.json (오버레이 병합)"
 fi
 
-# ── alacritty ─────────────────────────────────────────────────────────────
-if [ -f "$dir/alacritty.toml" ]; then
-  mkdir -p "$cfg/alacritty"
-  cp "$dir/alacritty.toml" "$cfg/alacritty/rice.toml"
-  printf "  alacritty  %s\n" "rice.toml"
-fi
+# 터미널은 프로필에 조각을 두지 않는다. ghostty 가 DMS/matugen 이 써 주는
+# themes/dankcolors 를 읽으므로 색은 이미 프로필을 따라온다. 남는 건 투명도와
+# 패딩 정도인데, 그것 때문에 프로필마다 파일을 하나씩 더 두는 건 남는 장사가
+# 아니라고 봤다 — ~/.config/ghostty/config 에서 한 번만 정한다.
 
 mkdir -p "$rice"
 printf '%s\n' "$name" > "$current_file"

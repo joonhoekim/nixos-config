@@ -1,0 +1,257 @@
+#!/bin/sh -e
+#
+# Push the repo's ricing files back over the live ones in ~/.config.
+#
+# apps/rice-save 의 반대 방향이다. 평소에는 이게 필요 없다 — 라이싱은 $HOME 에서
+# 하고 레포로 되받는 흐름이고, 그 방향은 rice-save 하나로 끝난다.
+#
+# 그런데 레포를 먼저 고치는 경우가 있다(다른 머신에서 가져온 커밋, git 에서 되돌린
+# 변경, 여기처럼 셰이더를 레포에서 손본 경우). 그때 리빌드는 도움이 안 된다:
+# modules/shared/rice-seed-helpers.nix 의 seed 가 `[ -e "$2" ] && return 0` 이라,
+# 이미 있는 설정은 절대 안 건드린다. 리싱 도중 리빌드로 저장 안 한 작업이 날아가지
+# 않게 하려고 일부러 그렇게 둔 것이라 그쪽을 고칠 수는 없다. 그래서 손으로 cp 하는
+# 대신 이 스크립트가 있다.
+#
+#   apps/rice-restore                 전부
+#   apps/rice-restore ghostty niri    고른 것만
+#   apps/rice-restore --check         무엇이 덮이는지만 보고 아무것도 안 쓴다
+#   apps/rice-restore --yes           확인을 묻지 않는다 (키 바인딩·스크립트용)
+#
+# 대상은 rice-save 가 저장하는 것과 정확히 같은 집합이다. 한쪽에만 있는 파일이
+# 생기면 왕복이 안 맞으므로, 여기를 고칠 일이 생기면 rice-save 도 같이 봐야 한다:
+#
+#   niri       config.kdl, animations.kdl
+#   profiles   rice/profiles (프로필당 niri.kdl + dms.json — DMS 축이 여기 있다)
+#   ghostty    config, rices/, shaders/
+#   fuzzel     fuzzel.ini
+#   gtk        gtk-3.0 과 gtk-4.0 의 settings.ini (레포에는 파일 하나뿐이다)
+#
+# ghostty 의 themes/ 는 뺐다. rice-save 도 저장하지 않는 쪽인데, 레포에 있는 건
+# 생성기가 없는 곳을 위한 폴백 팔레트일 뿐이라 덮으면 DMS/matugen 이 이 머신에
+# 써 준 진짜 팔레트를 지우게 된다.
+#
+# 덮기 전의 것은 ~/.config/rice/backups/<시각>/ 에 그 자리 그대로 쌓인다. 지우는
+# 건 이 스크립트가 안 한다 — 되돌릴 일이 생기는 건 대개 한참 뒤이고, 텍스트
+# 파일 몇 개라 쌓여도 무게가 없다. 정리는 그냥 그 디렉터리를 지우면 된다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+# rice-save 와 같은 이유로 $0 이 아니라 작업 디렉터리에서 레포를 찾는다 —
+# `nix run .#rice-restore` 로 돌면 $0 은 스토어 안의 읽기 전용 복사본이다.
+repo="${RICE_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
+rice="$repo/modules/nixos/niri/rice"
+gt="$repo/modules/shared/ghostty"
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
+  printf "${RED}Run this from inside the nixos-config checkout, or set RICE_REPO.${NC}\n"
+  exit 1
+fi
+
+all="niri profiles ghostty fuzzel gtk"
+want=""
+check_only=0
+assume_yes=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --check) check_only=1 ;;
+  --yes | -y) assume_yes=1 ;;
+  -*)
+    printf "${RED}알 수 없는 옵션: %s${NC}\n" "$1"
+    exit 1
+    ;;
+  *)
+    case " $all " in
+    *" $1 "*) want="$want $1" ;;
+    *)
+      printf "${RED}알 수 없는 대상: %s${NC}\n" "$1"
+      printf "  %s\n" "$all"
+      exit 1
+      ;;
+    esac
+    ;;
+  esac
+  shift
+done
+[ -n "$want" ] || want="$all"
+
+backup="$cfg/rice/backups/$(date -u +%Y%m%d-%H%M%SZ)"
+
+# 같은 목록을 두 번 돈다: 한 번은 무엇이 덮이는지 보여주려고(mode=report), 확인을
+# 받은 뒤 한 번은 실제로 쓰려고(mode=write). 목록을 두 벌 적으면 반드시 어긋나므로
+# 함수 하나를 모드로 가른다.
+mode="report"
+changed=0
+
+# rice-fuzzel 이 이 머신의 절대 경로로 붙인 include 줄과 그 주석. rice-save 는
+# 저장할 때 이걸 떼므로 레포 파일에는 없고, 라이브에는 항상 있다. 비교할 때도
+# 떼지 않으면 fuzzel.ini 가 영원히 "다름"으로 뜬다. 뒤의 sed 는 그 줄이 맨 위에
+# 있을 때 남는 빈 줄을 지운다 — rice-save 가 하는 정리와 같다.
+fuzzel_live() {
+  sed -e '/^include=.*dank-rice\.ini$/d' -e '/^# apps\/rice-fuzzel /d' | sed '/./,$!d'
+}
+
+item() { # item <레포 원본> <라이브 대상> [비교 전에 라이브를 거를 함수]
+  src="$1"
+  dst="$2"
+  filter="${3:-}"
+  rel="${dst#"$HOME"/}"
+
+  if [ ! -e "$src" ]; then
+    [ "$mode" = report ] && printf "  ${YELLOW}레포에 없음${NC}  %s\n" "${src#"$repo"/}"
+    return 0
+  fi
+
+  # 거르는 건 비교뿐이다. 아래에서 실제로 쓸 때는 레포 파일을 그대로 얹고, 떼인
+  # 줄은 파생물 단계에서 스위처가 다시 붙인다.
+  cmp_dst="$dst"
+  if [ -n "$filter" ] && [ -f "$dst" ]; then
+    cmp_dst="$(mktemp)"
+    "$filter" <"$dst" >"$cmp_dst"
+  fi
+  if diff -rq "$src" "$cmp_dst" >/dev/null 2>&1; then
+    [ "$cmp_dst" = "$dst" ] || rm -f "$cmp_dst"
+    [ "$mode" = report ] && printf "  ${DIM}같음${NC}         ~/%s\n" "$rel"
+    return 0
+  fi
+  [ "$cmp_dst" = "$dst" ] || rm -f "$cmp_dst"
+
+  changed=$((changed + 1))
+  if [ "$mode" = report ]; then
+    if [ -e "$dst" ]; then
+      printf "  ${YELLOW}덮어씀${NC}       ~/%s\n" "$rel"
+    else
+      printf "  ${GREEN}새로 씀${NC}      ~/%s\n" "$rel"
+    fi
+    return 0
+  fi
+
+  # 덮기 전에 그 자리를 백업으로 옮겨 둔다. 새로 쓰는 것(대상이 없던 것)은 백업할
+  # 게 없고, 되돌릴 때도 그냥 지우면 되므로 아래 롤백이 신경 쓰지 않는다.
+  if [ -e "$dst" ]; then
+    mkdir -p "$backup/$(dirname "$rel")"
+    cp -R "$dst" "$backup/$rel"
+  fi
+  mkdir -p "$(dirname "$dst")"
+  # 디렉터리는 지우고 새로 만든다. 그래야 레포에서 사라진 조각이 라이브에 남지
+  # 않는다 — rice-save 가 반대 방향에서 하는 것과 같은 이유다. rm 이 앞에 있으므로
+  # `cp -R` 만으로 GNU 의 `-T` 와 같은 결과가 나온다(BSD 에는 그 플래그가 없다).
+  rm -rf "$dst"
+  cp -R "$src" "$dst"
+  chmod -R u+w "$dst"
+  printf "  ${GREEN}복원${NC}         ~/%s\n" "$rel"
+}
+
+plan() {
+  case " $want " in *" niri "*)
+    item "$rice/config.kdl" "$cfg/niri/config.kdl"
+    item "$rice/animations.kdl" "$cfg/niri/animations.kdl"
+    ;;
+  esac
+  case " $want " in *" profiles "*)
+    item "$rice/profiles" "$cfg/rice/profiles"
+    ;;
+  esac
+  case " $want " in *" ghostty "*)
+    item "$gt/config" "$cfg/ghostty/config"
+    item "$gt/rices" "$cfg/ghostty/rices"
+    item "$gt/shaders" "$cfg/ghostty/shaders"
+    ;;
+  esac
+  case " $want " in *" fuzzel "*)
+    item "$rice/fuzzel.ini" "$cfg/fuzzel/fuzzel.ini" fuzzel_live
+    ;;
+  esac
+  case " $want " in *" gtk "*)
+    item "$rice/gtk-settings.ini" "$cfg/gtk-3.0/settings.ini"
+    item "$rice/gtk-settings.ini" "$cfg/gtk-4.0/settings.ini"
+    ;;
+  esac
+}
+
+printf "${YELLOW}레포 → 라이브${NC} ${DIM}(%s)${NC}\n" "${want# }"
+plan
+
+if [ "$changed" -eq 0 ]; then
+  printf "${GREEN}라이브가 레포와 같다. 덮을 것이 없다.${NC}\n"
+  exit 0
+fi
+if [ "$check_only" -eq 1 ]; then
+  printf "${GREEN}검사만 했다 — %d 개가 다르고, 아무것도 안 썼다.${NC}\n" "$changed"
+  exit 0
+fi
+
+if [ "$assume_yes" -eq 0 ]; then
+  printf "${YELLOW}%d 개를 덮는다. 지금 것은 ~/%s 로 옮겨 둔다. 계속할까? [y/N] ${NC}" \
+    "$changed" "${backup#"$HOME"/}"
+  # 파이프 뒤에서 돌 때는 stdin 이 없다. -e 가 걸려 있으므로 read 의 실패를 여기서
+  # 삼키고, 답이 없으면 아래 case 가 거절로 처리한다.
+  read -r ans </dev/tty 2>/dev/null || ans=""
+  case "$ans" in
+  [yY]*) ;;
+  *)
+    printf "그만둔다.\n"
+    exit 1
+    ;;
+  esac
+fi
+
+mode="write"
+changed=0
+plan
+
+# niri 는 로드할 때만 불평하므로, 깨진 설정을 밀어 넣어도 지금 떠 있는 세션은
+# 멀쩡해 보인다. 다음 로그인에 알게 되는 게 최악이라 여기서 잡는다.
+#
+# 레포의 config.kdl 을 그 자리에서 검증할 수는 없다 — 끝에 있는
+# `include "dms/layout.kdl"` 은 optional 이 아니고 그 파일은 라이브에만 있다.
+# 그래서 순서가 반대다: 먼저 복원하고, 검증에 실패하면 백업에서 되돌린다.
+if command -v niri >/dev/null 2>&1 && [ -f "$cfg/niri/config.kdl" ]; then
+  if ! out="$(niri validate --config "$cfg/niri/config.kdl" 2>&1)"; then
+    printf "${RED}복원한 니리 설정이 유효하지 않다. 백업에서 되돌린다.${NC}\n"
+    printf '%s\n' "$out" | sed 's/^/  /'
+    [ -d "$backup" ] && cp -R "$backup/." "$HOME/"
+    printf "${YELLOW}되돌렸다. 새로 만들어진 파일은 남아 있을 수 있다 — ~/%s 와 비교할 것.${NC}\n" \
+      "${backup#"$HOME"/}"
+    exit 1
+  fi
+fi
+
+printf "${DIM}백업: ~/%s${NC}\n" "${backup#"$HOME"/}"
+
+# ── 파생물 다시 만들기 ────────────────────────────────────────────────────
+# 여기까지는 원본만 되돌렸다. 화면이 읽는 것은 그게 아니라 스위처가 만들어 낸
+# 파생물이다 — rice.conf 는 rices/ 에서, profile.kdl 과 settings.json 은
+# profiles/ 에서 나온다. 그것들을 다시 만들지 않으면 "복원했는데 아무것도 안
+# 바뀐다"가 된다. rice-save 가 그 파생물을 일부러 저장하지 않는 것과 짝이다.
+#
+# 스위처가 실패해도 복원 자체는 이미 끝났으므로 죽이지 않는다. 무엇을 손으로
+# 돌려야 하는지만 알려 준다.
+here="$(dirname "$0")"
+
+case " $want " in *" ghostty "*)
+  term="$(cat "$cfg/rice/term" 2>/dev/null || true)"
+  if [ -n "$term" ]; then
+    "$here/rice-term" "$term" || printf "${YELLOW}rice-term 실패 — 손으로: apps/rice-term %s${NC}\n" "$term"
+  else
+    printf "${DIM}켜 둔 터미널 룩을 모른다 — apps/rice-term 으로 하나 고를 것.${NC}\n"
+  fi
+  ;;
+esac
+
+# fuzzel 도 여기 걸린다. 레포의 fuzzel.ini 에는 include 줄이 없기 때문이다
+# (rice-save 가 이 머신의 절대 경로라서 떼고 저장한다). rice-switch 가 부르는
+# rice-fuzzel 이 그 줄을 다시 붙이고 색 파일도 새로 만든다.
+case " $want " in *" profiles "* | *" fuzzel "*)
+  prof="$(cat "$cfg/rice/current" 2>/dev/null || true)"
+  if ! command -v niri >/dev/null 2>&1; then
+    :
+  elif [ -n "$prof" ]; then
+    "$here/rice-switch" "$prof" || printf "${YELLOW}rice-switch 실패 — 손으로: apps/rice-switch %s${NC}\n" "$prof"
+  else
+    printf "${DIM}켜 둔 프로필을 모른다 — apps/rice-switch 로 하나 고를 것.${NC}\n"
+  fi
+  ;;
+esac
+
+printf "${GREEN}복원 완료.${NC}\n"

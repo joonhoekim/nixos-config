@@ -66,6 +66,7 @@
         "rollback" = mkApp "rollback" system;
         "clean" = mkApp "clean" system;
         "rice-save" = mkApp "rice-save" system;
+        "rice-restore" = mkApp "rice-restore" system;
         "rice-switch" = mkApp "rice-switch" system;
         "rice-wall" = mkApp "rice-wall" system;
         "rice-fuzzel" = mkApp "rice-fuzzel" system;

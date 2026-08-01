@@ -104,6 +104,17 @@ apps/rice-save                                # 마음에 들면 레포로
 
 지금 둘이 어긋났는지 보려면 `apps/rice-save --check` 다.
 
+그래도 레포 쪽을 고쳐야 할 때가 있다 — 다른 머신에서 온 커밋이거나, git 에서
+되돌린 변경이거나, 그냥 편집기가 열어 둔 게 레포 파일이었거나. 그때는 손으로
+`cp` 하지 말고 `apps/rice-restore` 를 쓴다. 덮기 전에 무엇이 달라지는지 보여주고
+(`--check`), 지금 것을 `~/.config/rice/backups/<시각>/` 으로 옮겨 두고, 끝나면
+`rice-term` 을 다시 돌려 `rice.conf` 까지 새로 만든다.
+
+```sh
+apps/rice-restore ghostty --check   # 무엇이 덮이는지만
+apps/rice-restore ghostty           # 확인을 받고 덮는다
+```
+
 ## 새 룩 만들기
 
 셰이더를 새로 짤 필요는 없다. `crt.glsl` 의 `TINT` 한 줄만 바꿔도 호박색

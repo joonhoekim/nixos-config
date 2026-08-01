@@ -24,7 +24,10 @@ niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
 works normally. [modules/nixos/niri/rice](modules/nixos/niri/rice) is a backup
 and a seed for a fresh machine (copied in only when the file is missing);
-`apps/rice-save` snapshots the live config back into it.
+`apps/rice-save` snapshots the live config back into it. `apps/rice-restore` goes
+the other way, for when you edited the repo first or pulled someone else's
+commit — a rebuild will not do it, since the seed only copies when the file is
+missing.
 
 Looks are split into profiles and switching applies instantly — no restart, no
 rebuild:

@@ -65,7 +65,9 @@ copy() { # copy <live> <repo-relative destination>
 
 copy "$cfg/niri/config.kdl"                   "$rice/config.kdl"
 copy "$cfg/rice/profiles"                     "$rice/profiles"
-copy "$cfg/ghostty/config"                    "$rice/ghostty.conf"
+copy "$cfg/ghostty/config"                    "$rice/ghostty/config"
+copy "$cfg/ghostty/rices"                     "$rice/ghostty/rices"
+copy "$cfg/ghostty/shaders"                   "$rice/ghostty/shaders"
 copy "$cfg/fuzzel/fuzzel.ini"                 "$rice/fuzzel.ini"
 
 # fuzzel.ini 끝의 include 줄은 rice-fuzzel 이 이 머신의 절대 경로로 붙인 것이라
@@ -84,6 +86,10 @@ fi
 # rice-switch 가 프로필에서 만들어 낸 파생물이라, 저장하면 "지금 켜 둔 프로필"이
 # 레포에 섞여 들어와 diff 가 지저분해진다. 프로필 내용을 고쳤다면 profiles/ 쪽을
 # 고치고 rice-switch 를 다시 돌리는 게 맞다.
+#
+# ~/.config/ghostty/rice.conf 와 ~/.config/rice/term 도 같은 이유로 뺐다 —
+# rice-term 이 rices/ 에서 복사해 낸 것이다. 터미널 룩을 고쳤다면 rices/ 쪽을
+# 고치자. 위에서 그 디렉터리는 저장한다.
 #
 # DankMaterialShell/settings.json 전체도 뺐다. 21KB 짜리 GUI 상태 덩어리라 저장할
 # 때마다 룩과 무관한 키가 diff 에 섞이는데, 정작 룩은 profiles/*/dms.json 이 이미

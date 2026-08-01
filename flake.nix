@@ -69,6 +69,7 @@
         "rice-switch" = mkApp "rice-switch" system;
         "rice-wall" = mkApp "rice-wall" system;
         "rice-fuzzel" = mkApp "rice-fuzzel" system;
+        "rice-term" = mkApp "rice-term" system;
       };
     in
     {

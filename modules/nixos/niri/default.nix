@@ -105,6 +105,10 @@ in
         }
         seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
 
+        # config.kdl 이 optional 로 include 하는 조각. 창 열림/닫힘 셰이더가
+        # 들어 있고, 지우면 니리 기본 애니메이션으로 돌아간다.
+        seed ${./rice/animations.kdl} "$HOME/.config/niri/animations.kdl"
+
         # Look profiles, swapped live by apps/rice-switch.
         seed ${./rice/profiles} "$HOME/.config/rice/profiles"
 

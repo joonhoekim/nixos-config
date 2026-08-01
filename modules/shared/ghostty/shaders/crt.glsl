@@ -288,8 +288,9 @@ vec3 stripes(vec3 col, vec2 pix) {
     return col * (1.0 - GRILLE * grilleAA * mask);
 }
 
-// 유리 안쪽 — 비네트와 화면 가장자리.
-vec3 bezel(vec3 col, vec2 uv) {
+// 유리 안쪽 — 비네트와 화면 가장자리. edge 는 곡률 안쪽이 1, 바깥이 0 인
+// 마스크다. 색만 쓰면 될 것 같지만 알파에도 같은 마스크가 필요해서 밖으로 낸다.
+vec3 bezel(vec3 col, vec2 uv, out float edge) {
     // uv 가 화면 밖이면 곱이 음수라 pow 가 NaN 을 뱉는다. 하드 컷을 없앤 자리를
     // 여기서 막는다.
     vec2 e = uv * (1.0 - uv.yx);
@@ -298,7 +299,8 @@ vec3 bezel(vec3 col, vec2 uv) {
     // 하드 컷 대신 EDGE_SOFT 픽셀에 걸쳐 죽인다. 덤으로 fwidth 를 쓰는 stripes 가
     // 분기 밖에 있게 되어 미분값이 정의된다.
     vec2 d = min(uv, 1.0 - uv) * iResolution.xy;
-    return col * smoothstep(0.0, EDGE_SOFT, min(d.x, d.y));
+    edge = smoothstep(0.0, EDGE_SOFT, min(d.x, d.y));
+    return col * edge;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -350,10 +352,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     // 대부분은 손대지 않는다. 예전 사인 방식이 피곤했던 건 그 반대였기 때문이다.
     col = modulate(col, humBar, HUM, HUM_LIFT);
 
-    col = bezel(col, uv);
+    float edge;
+    col = bezel(col, uv, edge);
     col *= BRIGHTNESS * TINT;
 
-    // 알파는 1 이다. 곡률로 잘라낸 가장자리가 창 밖으로 비쳐 보이면 유리 안쪽이
-    // 아니라 구멍처럼 보인다 — 그래서 crt.conf 는 background-opacity 도 1 이다.
-    fragColor = vec4(col, 1.0);
+    // 알파는 곡률 안쪽에서만 터미널을 따라간다(glow 와 같은 규칙). 그래야
+    // background-opacity 가 산다.
+    //
+    // 바깥은 1 로 못 박는다. 거기는 셰이더가 검정으로 죽여 둔 자리라, 같이
+    // 투명해지면 유리 안쪽이 아니라 창에 뚫린 구멍으로 보인다 — 반대로 불투명한
+    // 검정으로 남기면 그게 곧 브라운관 베젤이 된다.
+    fragColor = vec4(col, mix(1.0, texture(iChannel0, uv).a, edge));
 }

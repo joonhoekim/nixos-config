@@ -115,6 +115,9 @@ apps/rice-restore ghostty --check   # 무엇이 덮이는지만
 apps/rice-restore ghostty           # 확인을 받고 덮는다
 ```
 
+macOS 에서는 `ghostty` 가 유일한 대상이다. 나머지는 니리 세션 것이라 그쪽에는
+덮을 자리가 없고, 인자 없이 불러도 알아서 이것만 고른다.
+
 ## 새 룩 만들기
 
 셰이더를 새로 짤 필요는 없다. `crt.glsl` 의 `TINT` 한 줄만 바꿔도 호박색

@@ -65,7 +65,7 @@ hosts/darwin/default.nix          ← macOS 진입점 (시스템 레벨 설정)
 └──→ modules/shared (= modules/shared/default.nix)   ← nixpkgs 설정 + overlays
 
 modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
-├─ home-manager.nix   zsh, git, vim, alacritty, ssh, atuin ... (셸/프로그램)
+├─ home-manager.nix   zsh, git, vim, ssh, atuin ... (셸/프로그램)
 ├─ packages.nix       공통 CLI 패키지
 ├─ fonts.nix          공통 폰트 (fonts.packages로 등록)
 ├─ files.nix          공통 dotfile
@@ -154,7 +154,7 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 ## 무엇을 어디서 고치나
 
 - CLI 패키지(양쪽 OS): `modules/shared/packages.nix`
-- 셸/git/vim/alacritty 설정: `modules/shared/home-manager.nix`
+- 셸/git/vim 설정: `modules/shared/home-manager.nix`
 - 폰트: `modules/shared/fonts.nix` (각 호스트의 `fonts.packages`로 등록)
 - GUI 앱(cask): `modules/darwin/casks.nix`
 - macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`

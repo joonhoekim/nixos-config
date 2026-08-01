@@ -31,7 +31,7 @@ apps/rice-wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+
 apps/rice-wall --pick         # fuzzel 로 직접 고르기            (Mod+Ctrl+W)
 ```
 
-한 프로필은 세 조각(`niri.kdl` / `dms.json` / `alacritty.toml`)이고, DMS 쪽만
+한 프로필은 두 조각(`niri.kdl` / `dms.json`)이고, DMS 쪽만
 전체 교체가 아니라 오버레이 병합이다 — `settings.json`에는 룩과 무관한 머신
 상태가 섞여 있어서 통째로 갈면 그것까지 날아간다. `matugen` 프로필은 월페이퍼에서
 색을 뽑아 셸·니리 보더·터미널 팔레트를 한 번에 맞춘다.
@@ -135,7 +135,7 @@ sudo nixos-rebuild switch --flake .#mn56      # 또는 .#galaxy-chromebook-1
 계정을 선언하므로 activation이 `jh`를 만들어준다 — 홈 디렉토리 `/home/jh`, 셸 zsh,
 `wheel`/`networkmanager`/`docker` 그룹까지 전부. 하지만 비밀번호는 레포 어디에도 선언돼
 있지 않아서(`hashedPassword`/`initialPassword` 전부 null) 계정이 **잠긴 상태**로 생긴다.
-GDM 로그인도, TTY 로그인도, `su - jh`도 안 된다. root로 한 번 풀어준다:
+tuigreet 로그인도, TTY 로그인도, `su - jh`도 안 된다. root로 한 번 풀어준다:
 
 ```sh
 passwd jh

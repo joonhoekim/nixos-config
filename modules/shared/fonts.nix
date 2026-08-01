@@ -13,7 +13,7 @@ with pkgs; [
   # Nerd Fonts (patched with extra glyphs/icons)
   nerd-fonts.jetbrains-mono   # primary coding font (matches nixpkgs jetbrains-mono)
   nerd-fonts.hack
-  nerd-fonts.meslo-lg         # alacritty family "MesloLGS Nerd Font" (+ powerlevel10k)
+  nerd-fonts.meslo-lg         # "MesloLGS Nerd Font" — powerlevel10k's reference font
   nerd-fonts.symbols-only     # glyph-only fallback for any non-patched font
 
   # Coverage / emoji

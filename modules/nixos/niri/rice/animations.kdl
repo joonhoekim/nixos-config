@@ -20,9 +20,17 @@
 //         gl_FragColor = color;
 //     }
 //
-// 그러니 우리가 정의할 건 open_color / close_color 하나씩이다. coords_geo 는
-// 창 기하 좌표(논리 픽셀, 0..size_geo)이고, 내용은 niri_geo_to_tex 로 텍스처
-// 좌표를 만들어 niri_tex 에서 뽑는다. 진행도는 niri_clamped_progress 다.
+// 그러니 우리가 정의할 건 open_color / close_color 하나씩이다. 내용은
+// niri_geo_to_tex 로 텍스처 좌표를 만들어 niri_tex 에서 뽑고, 진행도는
+// niri_clamped_progress 다.
+//
+// **coords_geo 는 0..1 로 정규화돼 있다. 픽셀이 아니다.**
+// 이름과 짝이 되는 size_geo 가 논리 픽셀이라 픽셀 좌표라고 착각하기 쉬운데,
+// 실측으로 확인했다 — step(1.5, coords_geo.x) 를 칠해 보니 창 전체가 한 색이었다.
+// 픽셀로 가정하면 중심을 size_geo/2 (≈1000) 로 잡게 되고, 그러면 마스크가 항상
+// 0 이라 애니메이션 내내 창이 아예 안 그려진다. 증상이 "셰이더가 무시된다"가
+// 아니라 "창이 사라진다"로 나오므로 원인을 찾기 어렵다.
+// 그래서 픽셀 단위로 정하고 싶은 값(선 두께 등)은 size_geo 로 나눠 쓴다.
 //
 // GLSL ES 1.00 이다(#version 100). texture2D 를 쓰고, #define 은 못 쓴다 —
 // KDL 원시 문자열 안이라 const 로 둔다. 색은 프리멀티플라이드 알파라서
@@ -38,10 +46,10 @@ animations {
 		curve "linear"
 		custom-shader r"
 			vec4 open_color(vec3 coords_geo, vec3 size_geo) {
-			    const float SPLIT = 0.35;   // 가로선을 긋는 데 쓰는 앞 구간 비율
-			    const float LINE  = 1.5;    // 선 두께 절반(논리 픽셀)
-			    const float SOFT  = 1.0;    // 가장자리 부드러움(논리 픽셀)
-			    const float FLASH = 0.85;   // 인광체 섬광 세기
+			    const float SPLIT   = 0.35;   // 가로선을 긋는 데 쓰는 앞 구간 비율
+			    const float LINE_PX = 1.5;    // 선 두께 절반(논리 픽셀)
+			    const float SOFT_PX = 1.0;    // 가장자리 부드러움(논리 픽셀)
+			    const float FLASH   = 0.85;   // 인광체 섬광 세기
 
 			    float p = niri_clamped_progress;
 			    float pw = clamp(p / SPLIT, 0.0, 1.0);
@@ -51,22 +59,25 @@ animations {
 			    pw = 1.0 - (1.0 - pw) * (1.0 - pw);
 			    ph = 1.0 - (1.0 - ph) * (1.0 - ph);
 
-			    vec2 c = size_geo.xy * 0.5;
-			    vec2 d = abs(coords_geo.xy - c);
+			    // 픽셀로 정한 값을 정규화 좌표로 옮긴다. 창 크기가 달라도 선
+			    // 두께는 같게 보여야 한다.
+			    vec2 sz   = max(size_geo.xy, vec2(1.0));
+			    vec2 line = vec2(LINE_PX) / sz;
+			    vec2 soft = vec2(SOFT_PX) / sz;
 
-			    float halfW = mix(LINE, c.x, pw);
-			    float halfH = mix(LINE, c.y, ph);
+			    vec2 d = abs(coords_geo.xy - 0.5);
+			    float halfW = mix(line.x, 0.5, pw);
+			    float halfH = mix(line.y, 0.5, ph);
 
-			    // 열린 띠 안에 창 전체를 눌러 넣는다. halfH 가 c.y 가 되면 항등이다.
+			    // 열린 띠 안에 창 전체를 눌러 넣는다. halfH 가 0.5 면 항등이다.
 			    vec2 g = coords_geo.xy;
-			    g.y = c.y + (g.y - c.y) * (c.y / max(halfH, 0.001));
+			    g.y = 0.5 + (g.y - 0.5) * (0.5 / max(halfH, 0.00001));
 
-			    vec3 tex = niri_geo_to_tex * vec3(g, 1.0);
-			    vec4 color = texture2D(niri_tex, tex.st);
-			    color *= step(0.0, g.y) * step(g.y, size_geo.y);
+			    vec4 color = texture2D(niri_tex, (niri_geo_to_tex * vec3(g, 1.0)).st);
+			    color *= step(0.0, g.y) * step(g.y, 1.0);
 
-			    float ax = 1.0 - smoothstep(halfW - SOFT, halfW + SOFT, d.x);
-			    float ay = 1.0 - smoothstep(halfH - SOFT, halfH + SOFT, d.y);
+			    float ax = 1.0 - smoothstep(halfW - soft.x, halfW + soft.x, d.x);
+			    float ay = 1.0 - smoothstep(halfH - soft.y, halfH + soft.y, d.y);
 			    float mask = ax * ay;
 			    color *= mask;
 
@@ -84,10 +95,10 @@ animations {
 		curve "linear"
 		custom-shader r"
 			vec4 close_color(vec3 coords_geo, vec3 size_geo) {
-			    const float SPLIT = 0.55;   // 세로로 접는 데 쓰는 앞 구간 비율
-			    const float LINE  = 1.5;
-			    const float SOFT  = 1.0;
-			    const float FLASH = 0.9;
+			    const float SPLIT   = 0.55;   // 세로로 접는 데 쓰는 앞 구간 비율
+			    const float LINE_PX = 1.5;
+			    const float SOFT_PX = 1.0;
+			    const float FLASH   = 0.9;
 
 			    float p = niri_clamped_progress;
 			    float ph = clamp(p / SPLIT, 0.0, 1.0);
@@ -96,21 +107,22 @@ animations {
 			    ph = 1.0 - (1.0 - ph) * (1.0 - ph);
 			    pw = 1.0 - (1.0 - pw) * (1.0 - pw);
 
-			    vec2 c = size_geo.xy * 0.5;
-			    vec2 d = abs(coords_geo.xy - c);
+			    vec2 sz   = max(size_geo.xy, vec2(1.0));
+			    vec2 line = vec2(LINE_PX) / sz;
+			    vec2 soft = vec2(SOFT_PX) / sz;
 
-			    float halfH = mix(c.y, LINE, ph);
-			    float halfW = mix(c.x, LINE, pw);
+			    vec2 d = abs(coords_geo.xy - 0.5);
+			    float halfH = mix(0.5, line.y, ph);
+			    float halfW = mix(0.5, line.x, pw);
 
 			    vec2 g = coords_geo.xy;
-			    g.y = c.y + (g.y - c.y) * (c.y / max(halfH, 0.001));
+			    g.y = 0.5 + (g.y - 0.5) * (0.5 / max(halfH, 0.00001));
 
-			    vec3 tex = niri_geo_to_tex * vec3(g, 1.0);
-			    vec4 color = texture2D(niri_tex, tex.st);
-			    color *= step(0.0, g.y) * step(g.y, size_geo.y);
+			    vec4 color = texture2D(niri_tex, (niri_geo_to_tex * vec3(g, 1.0)).st);
+			    color *= step(0.0, g.y) * step(g.y, 1.0);
 
-			    float ax = 1.0 - smoothstep(halfW - SOFT, halfW + SOFT, d.x);
-			    float ay = 1.0 - smoothstep(halfH - SOFT, halfH + SOFT, d.y);
+			    float ax = 1.0 - smoothstep(halfW - soft.x, halfW + soft.x, d.x);
+			    float ay = 1.0 - smoothstep(halfH - soft.y, halfH + soft.y, d.y);
 			    float mask = ax * ay;
 			    color *= mask;
 

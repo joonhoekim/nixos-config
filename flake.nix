@@ -65,6 +65,7 @@
         "build" = mkApp "build" system;
         "rollback" = mkApp "rollback" system;
         "clean" = mkApp "clean" system;
+        "rice-save" = mkApp "rice-save" system;
       };
     in
     {

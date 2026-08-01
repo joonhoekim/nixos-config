@@ -15,10 +15,16 @@ since it needs that machine's generated `hardware-configuration.nix`. See
 [NixOS — first build](#nixos--first-build-on-a-new-machine) for the
 machine-specific setup.
 
-Both hosts offer two sessions at the GDM greeter: **GNOME on Wayland** (the
-default) and **niri** (scrollable tiling plus a Quickshell desktop shell). Pick
-the shell with `local.niri.shell` — DankMaterialShell or Noctalia; see
-[modules/nixos/niri](modules/nixos/niri).
+Both hosts offer two sessions at the greetd/tuigreet greeter: **niri**
+(scrollable tiling plus a Quickshell desktop shell, the default) and **GNOME on
+Wayland** (the fallback). Pick the shell with `local.niri.shell` —
+DankMaterialShell or Noctalia; see [modules/nixos/niri](modules/nixos/niri).
+
+niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
+files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
+works normally. [modules/nixos/niri/rice](modules/nixos/niri/rice) is a backup
+and a seed for a fresh machine (copied in only when the file is missing);
+`apps/rice-save` snapshots the live config back into it.
 
 ## Bootstrap — macOS (first run on a new machine)
 

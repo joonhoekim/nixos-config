@@ -4,8 +4,10 @@
 #
 #   apps/rice-wall                    전체에서 무작위
 #   apps/rice-wall mountain           그 이름이 경로에 들어간 것 중에서 무작위
-#   apps/rice-wall --pick             fuzzel 로 경로 목록에서 직접 고르기
+#   apps/rice-wall --pick [pattern]   fuzzel 로 경로 목록에서 고르기 (빠름)
+#   apps/rice-wall --yazi [pattern]   yazi 로 미리보기 보면서 고르기
 #   apps/rice-wall --list [pattern]   후보만 출력
+#   apps/rice-wall --categories       카테고리 목록
 #   apps/rice-wall /path/to/img.jpg   그 파일로 지정
 #
 # 실제 적용은 DMS 에 맡긴다(`dms ipc call wallpaper set`). 직접 파일을 쓰지
@@ -45,6 +47,30 @@ case "${1:-}" in
   --pick|-p)
     # fuzzel 은 니리 세션의 폴백 런처로 이미 깔려 있다(modules/nixos/niri).
     pick="$(filtered "${2:-}" | fuzzel --dmenu --prompt 'wallpaper> ' || true)"
+    [ -z "$pick" ] && { printf "${DIM}취소됨.${NC}\n"; exit 0; }
+    ;;
+  --yazi|-y)
+    # 미리보기를 보면서 고르는 쪽. yazi 는 ghostty 안에서 kitty 그래픽 프로토콜을
+    # 잡으므로(TERM_PROGRAM=ghostty -> Adapter Kgp) 썸네일이 인라인으로 뜬다.
+    # 다른 터미널이면 sixel 이나 chafa 로 알아서 낮춰 잡는다.
+    #
+    # 키바인드로 부르면 stdin 이 터미널이 아니다. 그때는 ghostty 를 하나 띄우고
+    # 그 안에서 자기 자신을 다시 실행한다 — 고른 뒤의 처리까지 전부 그 안에서
+    # 끝나야 결과를 주고받을 일이 없다.
+    if [ ! -t 0 ]; then
+      exec ghostty -e "$0" --yazi "${2:-}"
+    fi
+    chooser="$(mktemp)"
+    trap 'rm -f "$chooser"' EXIT
+    # 패턴을 줬으면 그 디렉토리에서 시작한다. walls/<category>/ 구조라 카테고리
+    # 이름이 그대로 하위 디렉토리 이름인 경우가 대부분이다.
+    start="$root"
+    if [ -n "${2:-}" ]; then
+      match="$(find "$root" -type d -iname "*$2*" 2>/dev/null | head -1)"
+      [ -n "$match" ] && start="$match"
+    fi
+    yazi --chooser-file="$chooser" "$start"
+    pick="$(head -1 "$chooser" 2>/dev/null || true)"
     [ -z "$pick" ] && { printf "${DIM}취소됨.${NC}\n"; exit 0; }
     ;;
   --categories|-c)

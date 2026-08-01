@@ -8,6 +8,18 @@
 
 {
   # Locale: English UI, Korean regional formats.
+  #
+  # LC_TIME is the exception: it used to be ko_KR, which made anything that
+  # renders a date do it in Korean — `date` printing "2026. 08. 01. (토)", and
+  # DankMaterialShell's bar clock showing 토 / 오후 next to its English labels,
+  # since Qt takes day names and the 12h-vs-24h choice from this category.
+  #
+  # en_DK is the standard way out: an English locale (Sat, August) whose LC_TIME
+  # is ISO 8601 — d_fmt "%Y-%m-%d", t_fmt "%T", empty am_pm. So messages and
+  # names stay English and searchable, and dates stop being US-ordered.
+  #
+  # Everything listed here is generated automatically: i18n.supportedLocales
+  # defaults to the union of defaultLocale and these values.
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "ko_KR.UTF-8";
@@ -18,7 +30,7 @@
     LC_NUMERIC = "ko_KR.UTF-8";
     LC_PAPER = "ko_KR.UTF-8";
     LC_TELEPHONE = "ko_KR.UTF-8";
-    LC_TIME = "ko_KR.UTF-8";
+    LC_TIME = "en_DK.UTF-8"; # English names, ISO YYYY-MM-DD, 24-hour
   };
 
   # 한/영 is Right Alt -> Hangul, remapped by keyd in ./keyboard.nix rather

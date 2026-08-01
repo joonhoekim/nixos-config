@@ -1,4 +1,4 @@
-{ pkgs, user, ... }:
+{ lib, pkgs, user, ... }:
 
 # Galaxy Chromebook 1 — Intel, fanless 2-in-1 with a Wacom stylus and a
 # touchscreen. Ported from the standalone config this machine ran before it
@@ -17,15 +17,23 @@
   networking.hostName = "galaxy-chromebook-1";
 
   # Caps Lock -> Ctrl. This machine only: the Chromebook chassis has no Ctrl
-  # where the fingers expect one. It used to sit in ../common.nix and applied
-  # to every host, which was never the intent.
+  # where the fingers expect one, so it gives up the Caps Lock navigation layer
+  # that modules/nixos/keyboard.nix puts on every other host.
   #
-  # This knob covers X11 sessions and (with console.useXkbConfig) the TTY. It
-  # does NOT reach a GNOME Wayland session — mutter builds its keymap from
-  # org.gnome.desktop.input-sources, so the dconf half in ./home.nix is what
-  # actually does the work there. Both are kept: they cover different sessions,
-  # and this host is expected to see more than one.
-  services.xserver.xkb.options = "ctrl:nocaps";
+  # This replaces the pair of xkb-level remaps that used to live here and in
+  # ./home.nix (services.xserver.xkb.options + the GNOME dconf key). Each of
+  # those reached exactly one session type and niri reached neither, since it
+  # builds its keymap from its own config. keyd sits below all of them.
+  #
+  # `layer(control)` and not `overload(control, capslock)`: with an overload,
+  # holding this key and then clicking the mouse emits a Caps Lock toggle on
+  # release, because keyd never sees the click that was supposed to cancel the
+  # tap. Plain Ctrl, no tap action, is what ctrl:nocaps did anyway.
+  #
+  # To get the nav layer back here *and* keep Ctrl, make the layer a modifier
+  # layer instead: `[nav:C]` in modules/nixos/keyboard.nix, at the cost of
+  # unbound keys becoming Ctrl combos rather than typing their letter.
+  services.keyd.keyboards.default.settings.main.capslock = lib.mkForce "layer(control)";
 
   # This machine's EFI NVRAM carries more than one "Linux Boot Manager" entry,
   # left over from an install on a partition that no longer exists. The

@@ -59,7 +59,7 @@ shared-packages ++ [
   bandwhich       # per-process network usage
 
   # Input / display / session diagnostics. Mostly earn their keep when a
-  # remap (keyd, see korean.nix) or a Wayland-vs-Xwayland difference misbehaves.
+  # remap (keyd, see keyboard.nix) or a Wayland-vs-Xwayland difference misbehaves.
   wev             # Wayland event viewer (keys, pointer, touch)
   xev             # X11 event viewer (for Xwayland apps)
   evtest          # raw evdev events per /dev/input/event*
@@ -94,7 +94,7 @@ shared-packages ++ [
   # Casks with no Linux counterpart stay macOS-only on purpose: iterm2 and
   # sol (macOS-only terminal/launcher — GNOME's overview covers the latter),
   # aerospace (tiling WM), karabiner-elements (keyd handles remaps here, see
-  # korean.nix), eul / stats (macOS menu-bar monitors — btop/bottom above),
+  # keyboard.nix), eul / stats (macOS menu-bar monitors — btop/bottom above),
   # and iina (mpv above is the same engine).
   ghostty                    # terminal (cask "ghostty")
   zed-editor                 # editor (cask "zed")

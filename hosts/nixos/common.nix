@@ -8,8 +8,10 @@
 
 {
   imports = [
-    # Korean locale, IME (fcitx5-hangul), Right Alt -> Hangul, and CJK fonts.
+    # Korean locale, IME (fcitx5-hangul), and CJK fonts.
     ../../modules/nixos/korean.nix
+    # keyd remaps: Right Alt -> Hangul, and a nav layer on held Caps Lock.
+    ../../modules/nixos/keyboard.nix
     # niri session + DankMaterialShell, offered alongside GNOME at the
     # tuigreet greeter and set as the default session below.
     ../../modules/nixos/niri
@@ -30,7 +32,7 @@
     # linuxPackages_latest keeps recent CPUs/GPUs (Ryzen 7840HS, Intel
     # 14900HX / 285H) well-supported.
     kernelPackages = pkgs.linuxPackages_latest;
-    # uinput is required by keyd (Right Alt -> Hangul remap; see korean.nix).
+    # uinput is required by keyd (see modules/nixos/keyboard.nix).
     kernelModules = [ "uinput" ];
   };
 
@@ -90,9 +92,9 @@
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
-      # Layout only. Per-machine key remaps (e.g. Caps Lock -> Ctrl on
-      # galaxy-chromebook-1) belong in the host dirs, not here — and under
-      # GNOME Wayland xkb.options is inert anyway, see that host for why.
+      # Layout only. Key remaps go through keyd (modules/nixos/keyboard.nix),
+      # not xkb.options: niri and GNOME both build their keymaps themselves and
+      # ignore what is set here, so an xkb-level remap only reaches X11 apps.
       xkb.layout = "us";
     };
 

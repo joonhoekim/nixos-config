@@ -26,6 +26,23 @@ works normally. [modules/nixos/niri/rice](modules/nixos/niri/rice) is a backup
 and a seed for a fresh machine (copied in only when the file is missing);
 `apps/rice-save` snapshots the live config back into it.
 
+Looks are split into profiles and switching applies instantly — no restart, no
+rebuild:
+
+```sh
+apps/rice-switch              # current profile + list      (Mod+Shift+P = next)
+apps/rice-switch frosted      # amoled | frosted | matugen
+apps/rice-wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+Shift+W)
+apps/rice-wall --pick         # pick one through fuzzel                    (Mod+Ctrl+W)
+```
+
+A profile is three pieces (`niri.kdl` / `dms.json` / `alacritty.toml`). Only the
+DMS piece is an overlay rather than a whole-file swap — `settings.json` also
+holds machine state that has nothing to do with the look, and replacing it
+wholesale would take that with it. The `matugen` profile derives its palette
+from the wallpaper and pushes it to the shell, niri's borders and the terminal
+in one go.
+
 ## Bootstrap — macOS (first run on a new machine)
 
 Applying this config enables `nix-command` and `flakes` system-wide (via

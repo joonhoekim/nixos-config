@@ -20,4 +20,22 @@ with pkgs; [
   noto-fonts
   noto-fonts-color-emoji
   font-awesome
+
+  # ── UI / ricing ────────────────────────────────────────────────────────
+  # DankMaterialShell does NOT need these: it bundles Inter, FiraCode Nerd
+  # Font and Material Symbols under share/quickshell/dms/assets/fonts and
+  # loads them with Qt FontLoader, which bypasses fontconfig entirely. So
+  # `fc-match Inter` failing does not mean the shell is falling back.
+  #
+  # They are installed anyway so *everything else* can use the same faces —
+  # GTK apps, the terminal, and DMS's own greeter mode, which runs before the
+  # user session and reads fontconfig rather than the bundled assets.
+  inter
+  material-symbols
+  nerd-fonts.fira-code
+
+  # Alternates worth having on hand while ricing; swapping a profile's font
+  # is then a settings change instead of a rebuild.
+  nerd-fonts.caskaydia-cove   # Cascadia Code + Nerd glyphs
+  geist-font                  # Vercel's UI/mono pair
 ]

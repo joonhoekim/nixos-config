@@ -35,6 +35,12 @@
 
 let
   cfg = config.local.niri;
+
+  # Which of ./rice/profiles/* a machine with no config yet starts on. This is
+  # only a seed — apps/rice-switch owns the choice from the first switch on, and
+  # nothing re-reads this value afterwards. Not an option because a NixOS option
+  # would imply the profile is declarative, which is the opposite of the point.
+  seedProfile = "amoled";
 in
 {
   options.local.niri = {
@@ -117,6 +123,17 @@ in
           seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
           seed ${./rice/dms/settings.json} "$HOME/.config/DankMaterialShell/settings.json"
           seed ${./rice/dms/themes} "$HOME/.config/DankMaterialShell/themes"
+
+          # Look profiles, swapped live by apps/rice-switch.
+          seed ${./rice/profiles} "$HOME/.config/rice/profiles"
+
+          # ...and the pieces the seeded profile is made of, so a fresh machine
+          # boots into a coherent look instead of a half-applied one. Only the
+          # starting point: rice-switch overwrites all three from then on, and
+          # the guard means it never re-seeds over a switch you made.
+          seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
+          seed ${./rice/profiles/${seedProfile}/alacritty.toml} "$HOME/.config/alacritty/rice.toml"
+          seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
         '';
       };
     }

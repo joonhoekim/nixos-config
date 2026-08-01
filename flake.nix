@@ -66,6 +66,8 @@
         "rollback" = mkApp "rollback" system;
         "clean" = mkApp "clean" system;
         "rice-save" = mkApp "rice-save" system;
+        "rice-switch" = mkApp "rice-switch" system;
+        "rice-wall" = mkApp "rice-wall" system;
       };
     in
     {

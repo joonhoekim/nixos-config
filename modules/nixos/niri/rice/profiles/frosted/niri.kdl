@@ -1,0 +1,38 @@
+// frosted — 넓은 갭, 큰 곡률, 깊은 그림자. 창 사이로 배경이 보이는 룩.
+//
+// 유리 느낌의 핵심인 블러는 여기가 아니라 DMS 쪽이다(dms.json 의 blurEnabled).
+// niri 자체에는 블러가 없고, 셸이 자기 레이어를 블러 처리한다. 이 파일이 하는
+// 일은 그 블러가 보일 여백을 만들어 주는 것이다 — 갭이 좁으면 배경이 안 보여서
+// 블러를 켜도 티가 안 난다.
+
+layout {
+    gaps 14
+
+    // 보더를 끄고 포커스 링만 남긴다. 곡률이 큰 창에서는 얇은 보더가 계단처럼
+    // 보이는데, 포커스 링은 활성 창에만 그려져서 그 노이즈가 덜하다.
+    border {
+        off
+    }
+
+    focus-ring {
+        width 2
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 4
+        offset x=0 y=6
+        color "#00000080"
+    }
+}
+
+overview {
+    zoom 0.5
+    backdrop-color "#0b0b0f"
+}
+
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+}

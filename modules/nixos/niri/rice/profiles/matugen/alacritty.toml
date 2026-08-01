@@ -1,0 +1,14 @@
+# matugen 프로필의 alacritty 조각. apps/rice-switch 가 ~/.config/alacritty/rice.toml
+# 로 복사한다. 색은 여기 없다 — DMS/matugen 이 dank-theme.toml 에 따로 쓰고,
+# alacritty.toml 이 둘 다 import 한다.
+# 살짝만 투명. 팔레트가 월페이퍼에 묻히지 않을 정도로만.
+
+[window]
+opacity = 0.94
+
+[window.padding]
+x = 20
+y = 20
+
+[font]
+size = 10

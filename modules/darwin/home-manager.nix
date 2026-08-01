@@ -51,6 +51,11 @@ in
     # of refusing to overwrite them on first activation.
     backupFileExtension = "backup";
     users.${user} = { pkgs, config, lib, ... }:{
+      # 터미널 라이싱(셰이더 포함). NixOS 쪽 home-manager 도 같은 모듈을 쓴다 —
+      # ghostty 는 여기서 cask 로 깔리고(./casks.nix), custom-shader 는 문서상
+      # 모든 플랫폼이라 조각을 한 벌만 둔다. 자세한 건 그 모듈의 머리말.
+      imports = [ ../shared/ghostty.nix ];
+
       home = {
         enableNixpkgsReleaseCheck = false;
         packages = pkgs.callPackage ./packages.nix {};

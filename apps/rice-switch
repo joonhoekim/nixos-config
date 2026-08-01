@@ -29,7 +29,15 @@ profiles="$rice/profiles"
 
 rice_kind="프로필"
 rice_current_file="$rice/current"
-rice_list() { find "$profiles" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort; }
+# find -printf 은 GNU 확장이다. 이 스크립트는 리눅스 전용이지만, 짝인 rice-term 이
+# macOS 에서도 돌아야 해서 같은 모양으로 맞춰 둔다.
+rice_list() {
+  for d in "$profiles"/*/; do
+    [ -d "$d" ] || continue
+    d="${d%/}"
+    printf '%s\n' "${d##*/}"
+  done | sort
+}
 
 if [ ! -d "$profiles" ]; then
   printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$profiles"

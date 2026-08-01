@@ -36,7 +36,7 @@ apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
 
 터미널 룩은 **프로필과 별개 축**이다. 색은 어차피 프로필을 따라오므로(아래) 엮을
 이유가 없고, 그래서 프로필을 바꿔도 셰이더는 그대로 남는다. 자세한 건
-[modules/nixos/niri/rice/ghostty/README.md](modules/nixos/niri/rice/ghostty/README.md).
+[modules/shared/ghostty/README.md](modules/shared/ghostty/README.md).
 
 런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
 주는 팔레트를 직접 읽고, fuzzel은 `apps/rice-fuzzel`이 그 팔레트에서 색을 만들어

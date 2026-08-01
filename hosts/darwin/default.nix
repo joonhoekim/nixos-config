@@ -112,7 +112,12 @@
       };
 
       dock = {
-        autohide = false;
+        autohide = true;
+        # Snappy reveal: no dwell time before it slides out, and a short
+        # animation. Both are floats macOS reads as seconds — 0.5/1.0 are the
+        # stock values, which feel sluggish next to a tiling WM.
+        autohide-delay = 0.0;
+        autohide-time-modifier = 0.2;
         show-recents = false;
         launchanim = true;
         orientation = "right";

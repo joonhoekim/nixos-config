@@ -68,6 +68,7 @@
         "rice-save" = mkApp "rice-save" system;
         "rice-switch" = mkApp "rice-switch" system;
         "rice-wall" = mkApp "rice-wall" system;
+        "rice-fuzzel" = mkApp "rice-fuzzel" system;
       };
     in
     {

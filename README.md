@@ -30,6 +30,10 @@ apps/rice-wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+
 apps/rice-wall --pick         # fuzzel 로 직접 고르기            (Mod+Ctrl+W)
 ```
 
+런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
+주는 팔레트를 직접 읽고, fuzzel은 `apps/rice-fuzzel`이 그 팔레트에서 색을 만들어
+넣는다 — 투명도와 곡률은 활성 프로필의 값을 그대로 쓴다.
+
 한 프로필은 두 조각(`niri.kdl` / `dms.json`)이고, DMS 쪽만
 전체 교체가 아니라 오버레이 병합이다 — `settings.json`에는 룩과 무관한 머신
 상태가 섞여 있어서 통째로 갈면 그것까지 날아간다. `matugen` 프로필은 월페이퍼에서

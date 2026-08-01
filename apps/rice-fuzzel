@@ -1,0 +1,114 @@
+#!/bin/sh -e
+#
+# fuzzel 을 DMS 팔레트에 맞춘다.
+#
+#   apps/rice-fuzzel              지금 팔레트로 다시 만든다
+#   apps/rice-fuzzel --wait       팔레트 파일이 갱신될 때까지 잠깐 기다렸다가
+#
+# DMS 의 matugen 템플릿 목록은 소스에 하드코딩돼 있어서(Common/Theme.qml) fuzzel
+# 을 끼워 넣을 수 없다. 대신 DMS 는 뽑아낸 팔레트를 통째로
+# ~/.cache/DankMaterialShell/dms-colors.json 에 떨궈 두므로, 그걸 읽어서 우리가
+# 직접 fuzzel 색을 쓴다.
+#
+# 쓰는 파일은 dank-colors.ini 하나뿐이다. fuzzel.ini 는 맨 위에서 그걸 include
+# 하는데, 그 줄은 이 스크립트가 붙인다 — fuzzel 의 include 는 절대 경로만 받고
+# 기본 섹션(첫 [main] 앞)에만 쓸 수 있어서 레포 시드에 넣어둘 수 없다.
+# 형태(폰트/여백/줄 수)와 색을 갈라 두는
+# 이유는 niri 나 ghostty 와 같다 — 손으로 고치는 파일과 기계가 쓰는 파일이 섞이면
+# 한쪽이 다른 쪽을 덮어쓴다.
+#
+# 투명도와 곡률은 활성 프로필의 dms.json 에서 그대로 가져온다. fuzzel 은 팝업이니
+# popupTransparency 를, 곡률은 cornerRadius 를 쓴다 — 프로필에 fuzzel 전용 조각을
+# 만들지 않아도 되는 건 이 두 값이 이미 같은 뜻이기 때문이다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; DIM='\033[2m'; NC='\033[0m'
+
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/DankMaterialShell"
+palette="$cache/dms-colors.json"
+ini="$cfg/fuzzel/fuzzel.ini"
+gen="$cfg/fuzzel/dank-colors.ini"
+
+# ── 팔레트가 갱신되기를 기다린다 ──────────────────────────────────────────
+# rice-wall 이 월페이퍼를 바꾸면 matugen 이 비동기로 돈다. 바로 읽으면 이전
+# 팔레트가 나오므로, 파일이 새로 쓰일 때까지 최대 8초 기다린다. 그 안에 안 되면
+# (matugen 프로필이 아니거나 이미 최신이거나) 그냥 지금 값으로 진행한다.
+if [ "${1:-}" = "--wait" ]; then
+  [ -f "$palette" ] && before="$(stat -c %Y "$palette" 2>/dev/null || echo 0)" || before=0
+  i=0
+  while [ "$i" -lt 16 ]; do
+    now="$(stat -c %Y "$palette" 2>/dev/null || echo 0)"
+    [ "$now" -gt "$before" ] && break
+    sleep 0.5
+    i=$((i + 1))
+  done
+fi
+
+# ── include 배선 ──────────────────────────────────────────────────────────
+# fuzzel 의 include 는 (1) 절대 경로만 받고 (2) 기본 섹션 전용이다. 파일 끝에
+# 붙이면 마지막 섹션 안으로 들어가서 "[colors].include: not a valid option" 으로
+# 죽는다 — 폴백 런처가 안 뜨는 최악의 실패라, 반드시 첫 줄에 넣는다.
+# 시드에 못 넣는 것도 (1) 때문이다: 홈 경로는 머신마다 다르다.
+if [ -f "$ini" ] && ! grep -q "^include=$gen\$" "$ini"; then
+  tmp="$(mktemp)"
+  printf '# apps/rice-fuzzel 이 붙임. 기본 섹션이어야 해서 맨 위다.\ninclude=%s\n\n' "$gen" > "$tmp"
+  cat "$ini" >> "$tmp"
+  mv "$tmp" "$ini"
+  printf "${DIM}  include 줄을 fuzzel.ini 맨 위에 추가했다${NC}\n"
+fi
+
+if [ ! -f "$palette" ]; then
+  # 시드된 dank-colors.ini 의 중성 폴백이 그대로 남는다 — 첫 로그인이나 DMS 가
+  # 안 뜬 상태에서 여는 경우다.
+  printf "${YELLOW}팔레트가 아직 없다(%s). dank-colors.ini 의 폴백 색을 그대로 쓴다.${NC}\n" "$palette"
+  exit 0
+fi
+
+# ── 프로필에서 형태 값 ────────────────────────────────────────────────────
+profile="$(cat "$cfg/rice/current" 2>/dev/null || echo "")"
+pfile="$cfg/rice/profiles/$profile/dms.json"
+
+opacity=1
+radius=12
+if [ -f "$pfile" ]; then
+  opacity="$(jq -r '.settings.popupTransparency // 1' "$pfile")"
+  radius="$(jq -r '.settings.cornerRadius // 12' "$pfile")"
+fi
+
+# 0.85 -> "d9". fuzzel 색은 # 없는 RRGGBBAA 라 알파를 직접 붙여야 한다.
+alpha="$(awk -v o="$opacity" 'BEGIN { printf "%02x", int(o * 255 + 0.5) }')"
+
+# ── 라이트/다크 ───────────────────────────────────────────────────────────
+mode="$(dms ipc call theme getMode 2>/dev/null | tr -d '"' | tr -d '[:space:]')"
+case "$mode" in light) mode=light ;; *) mode=dark ;; esac
+
+# ── 생성 ──────────────────────────────────────────────────────────────────
+# Material You 롤을 fuzzel 의 슬롯에 대응시킨다. selection 은 primary_container,
+# 그 위의 강조는 primary — 이 둘은 M3 가 대비를 보장하는 짝이라 어떤 월페이퍼에서도
+# 읽힌다. 무채색 배경에 primary 를 얹는 조합은 톤이 낮은 사진에서 흐려진다.
+mkdir -p "$(dirname "$gen")"
+jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" '
+  .colors[$m] as $c
+  | def hex(k): ($c[k] | ltrimstr("#"));
+    "# 자동 생성 — apps/rice-fuzzel. 직접 고치지 말 것(다음 프로필 전환에 덮어쓴다).",
+    "# 형태는 fuzzel.ini 에서, 색만 여기서.",
+    "",
+    "[border]",
+    "radius=\($r)",
+    "",
+    "[colors]",
+    "background=\(hex("surface_container"))\($a)",
+    "text=\(hex("on_surface"))ff",
+    "message=\(hex("on_surface_variant"))ff",
+    "prompt=\(hex("primary"))ff",
+    "placeholder=\(hex("outline"))ff",
+    "input=\(hex("on_surface"))ff",
+    "match=\(hex("primary"))ff",
+    "selection=\(hex("primary_container"))ff",
+    "selection-text=\(hex("on_primary_container"))ff",
+    "selection-match=\(hex("primary"))ff",
+    "counter=\(hex("outline"))ff",
+    "border=\(hex("primary"))ff"
+' "$palette" > "$gen"
+
+printf "${GREEN}fuzzel${NC}     dank-colors.ini (%s, alpha %s, radius %s)\n" "$mode" "$alpha" "$radius"

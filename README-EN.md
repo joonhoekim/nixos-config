@@ -8,12 +8,17 @@ The darwin configurations are keyed by **architecture**, not hostname:
 `aarch64-darwin` (Apple Silicon) and `x86_64-darwin` (Intel). Use that name as
 the flake target — e.g. `.#aarch64-darwin`.
 
-The NixOS configurations are keyed by **hostname** — `mn56`, `intel` and
-`galaxy-chromebook-1` (all `x86_64-linux`). Use that name as the flake target —
-e.g. `.#mn56`. See [NixOS — first build](#nixos--first-build-on-a-new-machine)
-for the machine-specific setup.
+The NixOS configurations are keyed by **hostname** — `mn56` and
+`galaxy-chromebook-1` (both `x86_64-linux`). Use that name as the flake target —
+e.g. `.#mn56`. A host directory only exists for a machine that actually exists,
+since it needs that machine's generated `hardware-configuration.nix`. See
+[NixOS — first build](#nixos--first-build-on-a-new-machine) for the
+machine-specific setup.
 
-All three hosts run **GNOME on Wayland** (GDM).
+Both hosts offer two sessions at the GDM greeter: **GNOME on Wayland** (the
+default) and **niri** (scrollable tiling plus a Quickshell desktop shell). Pick
+the shell with `local.niri.shell` — DankMaterialShell or Noctalia; see
+[modules/nixos/niri](modules/nixos/niri).
 
 ## Bootstrap — macOS (first run on a new machine)
 
@@ -71,12 +76,12 @@ The flakes-enabling step above applies on NixOS too (the first flake command
 needs `--extra-experimental-features 'nix-command flakes'`). On top of that,
 three things are machine-specific and must be set **before** the first build:
 
-1. **Provide this machine's hardware config.** `mn56` and `intel` ship a
-   *placeholder* `hosts/nixos/<host>/hardware-configuration.nix` — committed so
-   the tree resolves, but deliberately missing `fileSystems` so an un-replaced
-   placeholder fails loudly instead of building an unbootable system. Generate
-   the real one on the target machine and overwrite it (`galaxy-chromebook-1`
-   is an already-installed machine and carries its real one):
+1. **Provide this machine's hardware config.** Every registered host (`mn56`,
+   `galaxy-chromebook-1`) carries the real
+   `hosts/nixos/<host>/hardware-configuration.nix` generated on that machine.
+   When adding a new machine, produce this file **before** creating the host
+   directory — committing an empty placeholder only breaks evaluation at the
+   `fileSystems` assertion and buys nothing:
 
    ```sh
    # on an existing NixOS install:
@@ -89,7 +94,7 @@ three things are machine-specific and must be set **before** the first build:
    It pins your root/boot filesystems, swap, initrd modules, and CPU microcode,
    so it can't be shared between machines.
 
-2. **Pick the host.** Hosts are keyed by hostname (`mn56`, `intel`,
+2. **Pick the host.** Hosts are keyed by hostname (`mn56`,
    `galaxy-chromebook-1`). To add another, create `hosts/nixos/<name>/`
    (importing `../common.nix` plus its own `hardware-configuration.nix`) and
    register it in `flake.nix`'s `mkNixosHost` list. Keep the flake attribute
@@ -104,13 +109,13 @@ three things are machine-specific and must be set **before** the first build:
 Then build:
 
 ```sh
-sudo nixos-rebuild switch --flake .#mn56      # or .#intel, .#galaxy-chromebook-1
+sudo nixos-rebuild switch --flake .#mn56      # or .#galaxy-chromebook-1
 # once flakes are enabled and the hostname matches a host: nix run .#build-switch
 ```
 
-> `nix flake check` evaluates the NixOS hosts too, so it fails at the
-> `fileSystems` assertion until a real hardware-configuration.nix is in place.
-> That's expected and doesn't affect `build-switch`.
+> `nix flake check` evaluates the NixOS hosts too, so every registered host
+> needs its real hardware-configuration.nix for it to pass. Leaving a
+> placeholder host around breaks it at the `fileSystems` assertion.
 
 ### Right after the first switch
 
@@ -147,7 +152,7 @@ nix run .#build-switch          # build the new generation and activate it
 - **macOS** → builds + activates `darwinConfigurations.<arch>` (e.g. `aarch64-darwin`).
 - **NixOS** → activates `nixosConfigurations.<hostname>`. The host is taken from
   `hostname`; override it before the first switch with
-  `nix run .#build-switch -- --host mn56` (or `--host intel`).
+  `nix run .#build-switch -- --host mn56`.
 - **Don't prefix it with `sudo`.** The script builds as your user, then calls
   `sudo` only for the activation step. Running the whole thing as root breaks
   git ownership checks on the repo.

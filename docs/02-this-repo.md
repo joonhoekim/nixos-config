@@ -11,7 +11,7 @@
 `outputs`가 만드는 네 가지:
 
 - `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
-- `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`/`intel`)
+- `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
 - `apps.<system>.{build-switch, build, rollback, clean}` → `apps/<name>` (`nix run`의 실체)
 - `devShells`
 
@@ -139,24 +139,15 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 치환(`apply`)·비밀키 부트스트랩(`*-keys`)·disko 포맷·`install` 앱은 **전부 제거**했다.
 머신마다 다른 값은 한 곳, 각 호스트의 `hardware-configuration.nix`에만 모인다.
 
-- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`, `.intel`). 각
-  `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관 설정) + 자기
-  `hardware-configuration.nix`를 import한다.
-- `hardware-configuration.nix`는 커밋된 **PLACEHOLDER**다. 해당 머신에서
-  `nixos-generate-config --show-hardware-config`로 생성해 교체한 뒤 빌드한다. 교체 전엔
-  `fileSystems` 미정의로 빌드가 **일부러 실패**한다 — 잘못된 디스크로 빌드하는 사고 방지.
+- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`,
+  `.galaxy-chromebook-1`). 각 `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관
+  설정) + 자기 `hardware-configuration.nix`를 import한다.
+- `hardware-configuration.nix`는 **그 머신에서 생성한 진짜 파일**이어야 한다. 해당
+  머신에서 `nixos-generate-config --show-hardware-config`로 뽑아 커밋한다. 그래서 호스트
+  디렉토리는 실제로 존재하는 머신만 만든다 — 빈 placeholder를 커밋해두면 `fileSystems`
+  미정의로 평가가 깨질 뿐 얻는 게 없다.
 - CPU 마이크로코드·initrd 모듈·디스크 UUID는 이 파일이 자동으로 담으므로, AMD/Intel 머신
   차이는 여기서 흡수된다. GPU(amdgpu / i915·xe)는 mesa로 공통 처리.
-
-### `nix flake check`는 여전히 NixOS 쪽에서 멈춘다
-
-`flake check`는 darwin뿐 아니라 `nixosConfigurations`까지 평가하는데, 위 placeholder 때문에
-`fileSystems` assertion에서 멈춘다(의도된 안전장치). 일상 사용(`build-switch`)에는 영향이 없고,
-빨갛게 나오는 건 `flake check`뿐이다. darwin 설정만 검증하려면:
-
-```bash
-nix eval --raw '.#darwinConfigurations.aarch64-darwin.config.system.build.toplevel.drvPath'
-```
 
 ---
 

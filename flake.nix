@@ -105,9 +105,11 @@
 
       # NixOS hosts are keyed by hostname (not arch) so multiple physical
       # machines can share ./hosts/nixos/common.nix while each pins its own
-      # hardware-configuration.nix. Build with e.g.:
+      # hardware-configuration.nix. Only machines that actually exist are
+      # listed: a host entry is worth nothing without that machine's real
+      # hardware-configuration.nix, and a placeholder one only breaks
+      # `nix flake check`. Build with e.g.:
       #   nixos-rebuild switch --flake .#mn56
-      #   nixos-rebuild switch --flake .#intel
       #   nixos-rebuild switch --flake .#galaxy-chromebook-1
       nixosConfigurations = let
         mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
@@ -129,7 +131,6 @@
         };
       in {
         mn56 = mkNixosHost ./hosts/nixos/mn56;
-        intel = mkNixosHost ./hosts/nixos/intel;
         galaxy-chromebook-1 = mkNixosHost ./hosts/nixos/galaxy-chromebook-1;
       };
   };

@@ -47,9 +47,14 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 ## 호스트 추가하기
 
 호스트는 아키텍처가 아니라 **hostname**으로 키잉된다. 현재 `mn56`(Firebat MN56, Ryzen
-7840HS), `intel`, `galaxy-chromebook-1` 셋이 있고, 새 호스트는 이들을 그대로 따라 하면
+7840HS)와 `galaxy-chromebook-1` 둘이 있고, 새 호스트는 이들을 그대로 따라 하면
 된다. CPU 벤더가 아니라 **머신 이름**으로 짓는다 — 같은 칩을 쓰는 기기가 둘 이상이면
-`amd` 같은 이름은 바로 무너진다.
+`amd`나 `intel` 같은 이름은 바로 무너진다.
+
+호스트 디렉토리는 **실제로 존재하는 머신**만 만든다. 그 머신에서 생성한 진짜
+`hardware-configuration.nix` 없이는 호스트 항목이 아무 쓸모가 없고, placeholder를
+커밋해두면 `nix flake check`만 깨진다. 예전에 있던 `intel` 호스트가 정확히 그 상태여서
+제거했다.
 
 벤더 공통 설정(예: AMD의 `radeontop`/전력 관리 주석)은 호스트 디렉토리가 아니라
 [`amd.nix`](amd.nix) 같은 모듈에 두고 여러 호스트가 import한다. 호스트 디렉토리에는

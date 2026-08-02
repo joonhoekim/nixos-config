@@ -99,15 +99,19 @@
   };
 
   # Korean / CJK fonts (merged with the general fonts in hosts/nixos).
+  #
+  # The shared set — D2Coding Nerd Font, Sarasa Gothic, Noto Sans CJK,
+  # Pretendard, and the plain Noto/emoji faces — moved to
+  # modules/shared/fonts.nix, because macOS turned out to need it too: it had
+  # no Hangul face of its own to lend a terminal. What is left here is what
+  # only this side wants.
   fonts.packages = with pkgs; [
-    noto-fonts
-    noto-fonts-cjk-sans
     noto-fonts-cjk-serif
-    noto-fonts-color-emoji
     nanum
     nanum-gothic-coding # Korean monospace (Nanum Gothic Coding)
-    d2coding            # Korean monospace (Naver D2Coding)
-    pretendard
+    d2coding            # unpatched "D2Coding" — the family name the fallbacks
+                        # below ask for. The Nerd patch is a different family
+                        # ("D2CodingLigature Nerd Font"), so it can't stand in.
   ];
 
   # Make sure apps fall back to Korean-capable fonts.

@@ -11,6 +11,20 @@ theme = dankcolors
 # p10k 의 파워라인 글리프가 필요해서 Nerd Font 로 지정한다. ghostty 가 심볼
 # 폴백을 내장하긴 하지만, 프롬프트가 통째로 한 폰트에서 나오는 편이 낫다.
 font-family = JetBrainsMono Nerd Font
+
+# 한글. JetBrainsMono 에 한글이 없어서, 이 줄이 없으면 OS 가 아무 폰트나 집는다
+# — 맥에서는 PCMyungjo(명조)로 떨어져 한글만 획이 따로 놀았다. 어느 얼굴이
+# 뽑히는지는 `ghostty +show-face --string=한글` 로 볼 수 있다.
+#
+# ghostty 는 font-family 를 여러 번 적으면 위에서부터 폴백 순서로 읽는다. 앞줄에
+# 있는 글자는 앞줄이 그리므로, 라틴은 그대로 JetBrainsMono 다.
+#
+# D2Coding 을 고른 건 한글 폭이 라틴의 정확히 2 배라서다 — 터미널의 열이
+# 안 밀린다. 이름의 Ligature 는 D2Coding 쪽 배포판 구분이고, Nerd 패치본은
+# 그 갈래에만 있다. 대안은 sarasa-gothic 의 `Sarasa Mono K` 인데, 그쪽은
+# Nerd 글리프가 없다.
+font-family = D2CodingLigature Nerd Font
+
 font-size = 22
 
 window-padding-x = 20

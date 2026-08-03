@@ -68,6 +68,25 @@
       connect-timeout = 10;          # default 5s
     };
 
+    # Store housekeeping. `systemd-boot.configurationLimit` above only trims
+    # the *boot menu*; it does not drop the profile generations, and a
+    # generation that still exists is a GC root. Without this the store grows
+    # monotonically until the 42-generation cap is reached (it sat at 56G / 28
+    # generations before this was added).
+    #
+    # `dates`/`options` are the systemd-timer spelling — hosts/darwin uses
+    # `interval` with a launchd calendar attrset for the same effect.
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
+
+    # Hardlink identical files across the store. Runs as its own timer rather
+    # than `settings.auto-optimise-store`, which does the same work inline on
+    # every build and slows them down.
+    optimise.automatic = true;
+
     package = pkgs.nix;
     extraOptions = ''
       experimental-features = nix-command flakes

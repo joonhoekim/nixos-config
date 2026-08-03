@@ -29,7 +29,7 @@ uniform float time; // 셰이더가 걸린 시점부터의 초. 이 한 줄이 �
 // ── crt.frag 와 같은 값들 ─────────────────────────────────────────────────
 #define CURVE       0.10
 #define EDGE_SOFT   1.5
-#define VIGNETTE    0.30
+#define VIGNETTE    0.06
 #define FOCUS       0.32
 #define ABERRATION  3.0
 #define BLOOM       0.55

@@ -17,10 +17,12 @@ since it needs that machine's generated `hardware-configuration.nix`. See
 [NixOS — first build](#nixos--first-build-on-a-new-machine) for the
 machine-specific setup.
 
-Both hosts offer two sessions at the greetd/tuigreet greeter: **niri**
-(scrollable tiling plus a Quickshell desktop shell, the default) and **GNOME on
-Wayland** (the fallback). The shell is DankMaterialShell; see
-[modules/nixos/niri](modules/nixos/niri).
+Both hosts offer three sessions at the greetd/tuigreet greeter: **niri**
+(scrollable tiling, the default), **Hyprland** (uwsm-managed), and **GNOME on
+Wayland** (the fallback). The first two run the same Quickshell desktop shell,
+DankMaterialShell; see [modules/nixos/niri](modules/nixos/niri) and
+[modules/nixos/hyprland](modules/nixos/hyprland). Hyprland is there for the one
+thing niri cannot do: an output-wide shader (`decoration:screen_shader`).
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI

@@ -216,6 +216,44 @@ hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall 
 
 
 -------------------
+---- 화면 셰이더 ----
+-------------------
+
+-- 이 세션이 존재하는 이유. 렌더링이 끝난 화면 한 장에 프래그먼트 셰이더를 한 번
+-- 더 거는 훅이고, 니리에는 이게 없다. 셋을 순환한다:
+--
+--   끔 → crt.frag(정지) → crt-motion.frag(그레인 + 험 바)
+--
+-- 세 번째는 `time` 유니폼을 쓰므로 데미지 트래킹을 꺼야 한다 — 그때부터 화면은
+-- 아무것도 안 바뀌어도 매 프레임 통째로 다시 그려진다. 그래서 이 토글이 셰이더와
+-- debug:damage_tracking 을 같이 움직인다. 자세한 건 shaders/crt-motion.frag 머리말.
+--
+-- 로그인 직후는 항상 꺼짐이다. 룩이지 설정이 아니고, 배터리로 도는 기기에서는
+-- 켜는 순간을 손이 정하는 편이 낫다.
+local shaders = os.getenv("HOME") .. "/.config/hypr/shaders/"
+local CRT = {
+    { shader = "",                           damage = 2 }, -- 끔 (2 = full, 하이프랜드 기본값)
+    { shader = shaders .. "crt.frag",        damage = 2 },
+    { shader = shaders .. "crt-motion.frag", damage = 0 },
+}
+local crt = 1
+
+hl.bind(mod .. " + SHIFT + C", function()
+    crt = crt % #CRT + 1
+    -- 먼저 떼고 → 트래킹을 맞추고 → 다시 건다. 순서가 뒤집히면 time 을 쓰는
+    -- 셰이더가 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸
+    -- 경고 오버레이 + time 고정으로 갚는다. 덤으로 매번 파일을 다시 읽으므로
+    -- 셰이더를 고치고 두 번 돌리면 그대로 반영된다.
+    hl.config({ decoration = { screen_shader = "" } })
+    hl.config({ debug = { damage_tracking = CRT[crt].damage } })
+    hl.config({ decoration = { screen_shader = CRT[crt].shader } })
+end)
+-- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다:
+--   hyprctl keyword decoration:screen_shader ~/.config/hypr/shaders/crt.frag
+--   hyprctl keyword decoration:screen_shader ""
+
+
+-------------------
 ---- DMS 조각 ----
 -------------------
 

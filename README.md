@@ -45,6 +45,11 @@ apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
 이유가 없고, 그래서 프로필을 바꿔도 셰이더는 그대로 남는다. 자세한 건
 [modules/shared/ghostty/README.md](modules/shared/ghostty/README.md).
 
+같은 브라운관을 **화면 전체**에 거는 건 Hyprland 세션에서만 된다 — `Mod+Shift+C`가
+끔 → 정지 → 움직임(그레인·험 바) 셋을 순환한다. 움직이는 쪽은 데미지 트래킹을 꺼야
+해서 배터리를 먹으니, 기본은 꺼짐이다
+([modules/nixos/hyprland/rice/shaders](modules/nixos/hyprland/rice/shaders)).
+
 런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
 주는 팔레트를 직접 읽고, fuzzel은 `apps/rice-fuzzel`이 그 팔레트에서 색을 만들어
 넣는다 — 투명도와 곡률은 활성 프로필의 값을 그대로 쓴다.

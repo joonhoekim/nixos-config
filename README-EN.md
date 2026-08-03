@@ -22,7 +22,8 @@ Both hosts offer three sessions at the greetd/tuigreet greeter: **niri**
 Wayland** (the fallback). The first two run the same Quickshell desktop shell,
 DankMaterialShell; see [modules/nixos/niri](modules/nixos/niri) and
 [modules/nixos/hyprland](modules/nixos/hyprland). Hyprland is there for the one
-thing niri cannot do: an output-wide shader (`decoration:screen_shader`).
+thing niri cannot do: an output-wide shader (`decoration:screen_shader`) —
+`Mod+Shift+C` cycles the CRT off → static → animated, off at every login.
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI

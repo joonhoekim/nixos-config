@@ -24,6 +24,15 @@
 # niri remains services.displayManager.defaultSession; tuigreet's
 # --remember-session is what actually decides where a login lands.
 #
+# ── The shader ─────────────────────────────────────────────────────────────
+# ./rice/shaders holds two ports of the terminal's CRT (see
+# modules/shared/ghostty/shaders/crt.glsl), and Mod+Shift+C cycles off → static
+# → animated. Two files rather than one because Hyprland cannot damage-track a
+# shader that reads `time`: the animated one only works with
+# debug:damage_tracking = 0, which redraws the whole screen every frame. The
+# keybind moves both settings together; the static one leaves damage tracking
+# alone and costs nothing on an idle screen.
+#
 # ── Installation is declarative, ricing is not ─────────────────────────────
 # Same split as ../niri: this module installs and wires the session, and the
 # *settings* live as ordinary writable files under $HOME, seeded from ./rice
@@ -100,6 +109,10 @@ in
         # 뜨기 전에도 hyprland.lua 의 require 가 뭔가를 찾게 하려는 것이다.
         # (require 자체는 pcall 로 감싸 뒀으니 없어도 세션은 뜬다.)
         seed ${./rice/dms} "$HOME/.config/hypr/dms"
+
+        # 화면 셰이더. hyprland.lua 의 Mod+Shift+C 가 절대 경로로 집어 든다 —
+        # decoration:screen_shader 는 경로만 받고 ~ 를 풀지 않는다.
+        seed ${./rice/shaders} "$HOME/.config/hypr/shaders"
 
         # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty.nix
         # 가 이미 같은 파일을 $HOME 에 깔아 두고, 그것들은 컴포지터를 안 가린다.

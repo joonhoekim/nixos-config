@@ -275,6 +275,15 @@
   virtualisation.docker = {
     enable = true;
     logDriver = "json-file";
+    # json-file has no rotation of its own — a container that logs steadily
+    # will grow /var/lib/docker/containers until the root filesystem is full,
+    # with nothing in the unit or the journal to hint at where the space went.
+    # These are daemon-wide defaults; a container can still override them with
+    # its own --log-opt.
+    daemon.settings.log-opts = {
+      max-size = "10m";
+      max-file = "3";
+    };
   };
 
   users.users = {

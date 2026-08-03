@@ -1,0 +1,38 @@
+i915: let eDP panels advertise modes smaller than their fixed mode
+
+i915 prunes every mode on an eDP connector whose resolution differs from the
+panel's fixed mode, so a 4K laptop panel offers 3840x2160 and nothing else.
+On a UHD 620 driving 3840x2160 that is a problem: there is no way to ask the
+GPU to composite fewer pixels.
+
+The hardware and the rest of the driver already do what we want. When a
+smaller mode is accepted, intel_panel_compute_config() overwrites
+adjusted_mode with the panel's fixed mode — so the eDP link still runs at the
+panel's native timing — while crtc_state->pipe_src keeps the requested size,
+and pch_panel_fitting() programs the panel fitter to scale pipe_src up to
+adjusted_mode. Only the mode list check stands in the way.
+
+So relax that check from "differs" to "larger". Modes bigger than the panel
+are still rejected, and the existing refresh-rate check is untouched, which
+keeps intel_panel_compute_config()'s own +/-1 Hz guard meaningful.
+
+Pair this with video=eDP-1:<smaller mode> to actually get an extra entry in
+the list; the EDID of a fixed panel normally supplies only its native timing.
+
+Not upstream — local to this machine.
+
+--- a/drivers/gpu/drm/i915/display/intel_panel.c
++++ b/drivers/gpu/drm/i915/display/intel_panel.c
+@@ -404,10 +404,10 @@
+ 	if (!fixed_mode)
+ 		return MODE_OK;
+ 
+-	if (mode->hdisplay != fixed_mode->hdisplay)
++	if (mode->hdisplay > fixed_mode->hdisplay)
+ 		return MODE_PANEL;
+ 
+-	if (mode->vdisplay != fixed_mode->vdisplay)
++	if (mode->vdisplay > fixed_mode->vdisplay)
+ 		return MODE_PANEL;
+ 
+ 	if (drm_mode_vrefresh(mode) != drm_mode_vrefresh(fixed_mode))

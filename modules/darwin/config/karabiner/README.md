@@ -67,7 +67,7 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
   vim의 `hjkl`은 홈로우 일직선이지만 위/아래(`k`/`j`)에 공간적 근거가 없다.
 - **`wasd`**: 게임 배치 그대로라 역시 외울 게 없고, 왼손이 통째로 비어 있었다.
 - **등속 이동**: Karabiner의 `mouse_key`에는 가속 곡선이 없어서 누르는 내내 같은 속도다
-  (`700`, 저속은 `100`). NixOS 쪽에는 램프가 있었지만 이 제약에 맞춰 걷어냈다 — 같은
+  (`3000`, 저속은 `500`). NixOS 쪽에는 램프가 있었지만 이 제약에 맞춰 걷어냈다 — 같은
   레이어가 머신마다 다르게 구는 값을 치를 만큼 편하지 않았다는 게 실사용 결론이다.
   전체 배율은 프로파일의 `mouse_key_xy_scale`로도 조정할 수 있다.
 - **조합은 없다**: 이 레이어는 단발 키만 보낸다. `d2w`나 `ci"` 같은 조합은 키 입력을
@@ -79,9 +79,9 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
   다르게 처리할 수 있다.
 - **실기 확인 필요**: 리눅스에서 검증할 수 없었던 게 둘이다. (1) `vertical_wheel` /
   `horizontal_wheel`의 부호 방향 — `q`가 아래로 스크롤되면 `q`/`e`의 부호를 맞바꾼다.
-  (2) `mouse_key`의 `700`/`100`은 NixOS 쪽 700/100 px/s와 **의도만** 맞춰둔 값이다.
-  Karabiner의 단위는 `mouse_key_xy_scale`과 Retina 포인트 환산을 거치므로 체감이 다르면
-  두 값을 같은 비율로 올리면 된다.
+  (2) 포인터 속도는 실기에서 맞췄다. NixOS 쪽 700/100 px/s와 숫자를 맞췄던 초기값
+  `700`/`100`은 macOS에서 체감이 너무 느려, 실기에서 올려 `3000`/`500`으로 확정했다.
+  Karabiner의 단위는 Retina 포인트 환산을 거치므로 두 OS의 숫자가 갈리는 건 정상이다.
 
 ## 기타 규칙 (레이어와 무관)
 
@@ -95,6 +95,17 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
 2. JSON 유효성 확인: `python3 -m json.tool karabiner.json > /dev/null`
 3. darwin/home-manager 리빌드로 `~/.config/karabiner/karabiner.json`에 배포한다.
 4. Karabiner-Elements가 파일 변경을 감지해 자동 리로드한다. (안 되면 앱에서 프로파일 재선택)
+
+값을 여러 번 시험해야 할 때는 리빌드를 돌릴 필요가 없다. 심링크를 걷어내고 복사본을 두면
+Karabiner가 저장 즉시 리로드하므로, 그 자리에서 숫자만 바꿔 가며 체감을 볼 수 있다.
+
+```sh
+rm ~/.config/karabiner/karabiner.json          # nix store 심링크 제거
+cp karabiner.json ~/.config/karabiner/         # 쓰기 가능한 복사본
+chmod u+w ~/.config/karabiner/karabiner.json
+# ...편집·체감 반복. 정해지면 이 리포 파일에 값을 옮기고
+rm ~/.config/karabiner/karabiner.json && build-switch   # 심링크 원상복구
+```
 
 키를 추가할 때는 아래 형태를 복사해 `key_code`와 `to`만 바꾸면 된다.
 

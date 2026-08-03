@@ -131,7 +131,7 @@
                                     "key_code": "w",
                                     "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
                                 },
-                                "to": [{ "mouse_key": { "y": -100 } }],
+                                "to": [{ "mouse_key": { "y": -500 } }],
                                 "type": "basic"
                             },
                             {
@@ -142,7 +142,7 @@
                                     "key_code": "a",
                                     "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
                                 },
-                                "to": [{ "mouse_key": { "x": -100 } }],
+                                "to": [{ "mouse_key": { "x": -500 } }],
                                 "type": "basic"
                             },
                             {
@@ -153,7 +153,7 @@
                                     "key_code": "s",
                                     "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
                                 },
-                                "to": [{ "mouse_key": { "y": 100 } }],
+                                "to": [{ "mouse_key": { "y": 500 } }],
                                 "type": "basic"
                             },
                             {
@@ -164,7 +164,7 @@
                                     "key_code": "d",
                                     "modifiers": { "mandatory": ["shift"], "optional": ["caps_lock"] }
                                 },
-                                "to": [{ "mouse_key": { "x": 100 } }],
+                                "to": [{ "mouse_key": { "x": 500 } }],
                                 "type": "basic"
                             },
                             {
@@ -195,7 +195,7 @@
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
                                 "from": { "key_code": "w", "modifiers": { "optional": ["caps_lock"] } },
-                                "to": [{ "mouse_key": { "y": -700 } }],
+                                "to": [{ "mouse_key": { "y": -3000 } }],
                                 "type": "basic"
                             },
                             {
@@ -203,7 +203,7 @@
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
                                 "from": { "key_code": "a", "modifiers": { "optional": ["caps_lock"] } },
-                                "to": [{ "mouse_key": { "x": -700 } }],
+                                "to": [{ "mouse_key": { "x": -3000 } }],
                                 "type": "basic"
                             },
                             {
@@ -211,7 +211,7 @@
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
                                 "from": { "key_code": "s", "modifiers": { "optional": ["caps_lock"] } },
-                                "to": [{ "mouse_key": { "y": 700 } }],
+                                "to": [{ "mouse_key": { "y": 3000 } }],
                                 "type": "basic"
                             },
                             {
@@ -219,7 +219,7 @@
                                     { "name": "touchcursor_mode", "type": "variable_if", "value": 1 }
                                 ],
                                 "from": { "key_code": "d", "modifiers": { "optional": ["caps_lock"] } },
-                                "to": [{ "mouse_key": { "x": 700 } }],
+                                "to": [{ "mouse_key": { "x": 3000 } }],
                                 "type": "basic"
                             },
                             {

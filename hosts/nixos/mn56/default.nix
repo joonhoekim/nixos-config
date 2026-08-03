@@ -77,6 +77,24 @@
     "${config.systemd.package}/lib/systemd/systemd-sleep suspend-then-hibernate"
   ];
 
+  # ── Drive health monitoring ──────────────────────────────────────────
+  # modules/nixos/packages.nix already ships smartmontools, but that is only
+  # the `smartctl` CLI — it tells you nothing unless you remember to go look.
+  # smartd polls in the background and shouts (wall + syslog) when an
+  # attribute crosses a threshold, which is the half that was missing.
+  #
+  # Worth having on this box specifically: the NVMe idles at ~64 °C in this
+  # small passive chassis. Wear is still at percentage_used 0%, so this is
+  # about catching a trend, not a current problem.
+  #
+  # Kept here rather than in ../common.nix on purpose: with autodetect and no
+  # supported device, smartd fails to start, and galaxy-chromebook-1's storage
+  # has not been checked for SMART support. Move it up once it has.
+  services.smartd = {
+    enable = true;
+    autodetect = true;
+  };
+
   # Chassis quirks go here. Nothing is guessed before the machine has actually
   # booted — wireless firmware (MT7922 / RTL8852BE, depending on the unit) is
   # already covered by enableRedistributableFirmware, which the generated

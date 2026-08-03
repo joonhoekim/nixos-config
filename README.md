@@ -50,6 +50,18 @@ apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
 해서 배터리를 먹으니, 기본은 꺼짐이다
 ([modules/nixos/hyprland/rice/shaders](modules/nixos/hyprland/rice/shaders)).
 
+```sh
+apps/rice-crt                 # 현재 것과 목록
+apps/rice-crt crt             # 전환 (--next 는 키바인드와 같은 순환)
+apps/rice-crt --reload        # .frag 값을 고쳐 가며 맞출 때
+apps/rice-crt off             # 탈출구
+```
+
+셰이더를 거는 길은 `hyprctl eval` 뿐이다 — 이 세션은 `hyprland.lua`로 설정하는데
+lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드와 이 스크립트는
+둘 다 "지금 걸려 있는 것"을 컴포지터에게 물어서 다음을 고르므로, 어느 쪽으로 바꿔도
+서로 어긋나지 않는다.
+
 런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
 주는 팔레트를 직접 읽고, fuzzel은 `apps/rice-fuzzel`이 그 팔레트에서 색을 만들어
 넣는다 — 투명도와 곡률은 활성 프로필의 값을 그대로 쓴다.

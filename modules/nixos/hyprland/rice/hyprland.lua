@@ -238,21 +238,36 @@ local CRT = {
     { shader = shaders .. "crt.frag",        damage = 2 },
     { shader = shaders .. "crt-motion.frag", damage = 0 },
 }
-local crt = 1
 
 hl.bind(mod .. " + SHIFT + C", function()
-    crt = crt % #CRT + 1
+    -- 다음 것은 *지금 걸려 있는 것*에서 고른다. 여기에 카운터를 두면 밖에서 바꾼
+    -- 순간(apps/rice-crt) 둘이 어긋나고, 낡은 카운터로 고른 "다음"은 엉뚱한 데로
+    -- 뛴다. 걸려 있는 셰이더는 컴포지터가 이미 알고 있으니 그쪽이 유일한 진실이다.
+    -- 목록에 없는 값이 걸려 있으면(손으로 eval 했거나 새 셰이더) 처음으로 돌아간다.
+    local now = hl.get_config("decoration:screen_shader")
+    local i = 1
+    for n, s in ipairs(CRT) do
+        if s.shader == now then
+            i = n
+            break
+        end
+    end
+    local nxt = CRT[i % #CRT + 1]
+
     -- 먼저 떼고 → 트래킹을 맞추고 → 다시 건다. 순서가 뒤집히면 time 을 쓰는
     -- 셰이더가 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸
     -- 경고 오버레이 + time 고정으로 갚는다. 덤으로 매번 파일을 다시 읽으므로
-    -- 셰이더를 고치고 두 번 돌리면 그대로 반영된다.
+    -- 셰이더를 고치고 세 바퀴(= 셋이니 세 번) 돌리면 제자리로 오면서 반영된다.
+    -- 값을 맞춰 가는 중이라면 그 편보다 `apps/rice-crt --reload` 가 낫다.
     hl.config({ decoration = { screen_shader = "" } })
-    hl.config({ debug = { damage_tracking = CRT[crt].damage } })
-    hl.config({ decoration = { screen_shader = CRT[crt].shader } })
+    hl.config({ debug = { damage_tracking = nxt.damage } })
+    hl.config({ decoration = { screen_shader = nxt.shader } })
 end)
--- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다:
---   hyprctl keyword decoration:screen_shader ~/.config/hypr/shaders/crt.frag
---   hyprctl keyword decoration:screen_shader ""
+-- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다. `hyprctl keyword` 는 못 쓴다 —
+-- lua 설정에서는 파서가 통째로 거절한다("keyword can't work with non-legacy
+-- parsers. Use eval."). 남는 길은 eval 뿐이고, 그걸 감싼 게 rice-crt 다:
+--   apps/rice-crt off | crt | crt-motion | --next | --reload
+--   hyprctl eval 'hl.config({decoration={screen_shader=""}})'
 
 
 -------------------

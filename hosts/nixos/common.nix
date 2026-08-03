@@ -236,6 +236,35 @@
     memoryPercent = 50;
   };
 
+  # ...and tune the VM for it. Both kernel defaults assume swap is a slow
+  # rotating disk, which is exactly what zram is not.
+  #
+  # swappiness 60 -> 180: the default rations swap-outs because each one used
+  # to cost a seek. A zram page-out is a zstd compression at RAM speed, so
+  # trading anonymous pages for page cache is nearly free and should be the
+  # kernel's *preferred* move under pressure. 200 is the ceiling (raised from
+  # 100 in 5.8 specifically for this case).
+  #
+  # page-cluster 3 -> 0: 3 means "read 2^3 = 8 pages per swap-in". Readahead
+  # amortises seek latency on a disk; on zram there is no seek, so the 7 extra
+  # pages are 7 extra decompressions that usually go unused.
+  #
+  # This does not endanger the hibernate image: zram0 sits at priority 5 and
+  # the nvme swap partition at -1, so zram always fills first and the disk is
+  # only touched once zram is exhausted (see ./mn56 for the resume setup).
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 180;
+    "vm.page-cluster" = 0;
+  };
+
+  # /tmp is not a separate mount here — it is a plain directory on the ext4
+  # root, so anything left behind survives reboots and accumulates forever.
+  # Clear it at boot instead.
+  #
+  # Deliberately not `boot.tmp.useTmpfs`: the nix daemon builds in /tmp, and a
+  # RAM-backed one turns any large build into an out-of-space failure.
+  boot.tmp.cleanOnBoot = true;
+
   # GPU / video acceleration. AMD (amdgpu) and modern Intel (i915/xe) are both
   # covered by mesa out of the box. Anything beyond that is per-machine and
   # goes in the host dir — an Intel box wanting VAAPI/QSV decode adds

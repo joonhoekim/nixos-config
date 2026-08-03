@@ -74,6 +74,22 @@ shared-packages ++ [
   inxi            # one-shot system summary
   acpi            # battery / thermal zones
   lm_sensors      # `sensors` — read all temp sensors
+  # Storage health. `sensors` only ever shows an SSD's *current* temperature;
+  # these two read the drive's own logs, which is what actually answers
+  # "has it ever been too hot?" — nvme-cli for the NVMe-only fields
+  # (Warning/Critical Composite Temperature Time, Thermal Management T1/T2
+  # throttle counts, percentage_used), smartctl for the same SMART data over
+  # SATA and USB bridges, which nvme-cli cannot reach. Both want root.
+  #
+  # Both stay Linux-only on purpose. nvme-cli has no choice — it drives the
+  # Linux NVME_IOCTL_ADMIN_CMD ioctl, and nixpkgs marks it platforms.linux, so
+  # putting it in ../shared would break the darwin build. smartmontools does
+  # build on aarch64-darwin, but Apple Silicon keeps the internal SSD behind
+  # the ANS controller and exposes no NVMe admin passthrough, so smartctl reads
+  # nothing there beyond external USB/Thunderbolt drives. Keeping the pair
+  # together here beats splitting the explanation across two files.
+  nvme-cli        # `nvme smart-log /dev/nvme0`
+  smartmontools   # `smartctl -a /dev/nvme0`
   powertop        # power-usage analyzer + tuning suggestions
   s-tui           # TUI: stress + temperature + frequency graphs
   stress-ng       # stress tester (useful to verify thermal behavior)

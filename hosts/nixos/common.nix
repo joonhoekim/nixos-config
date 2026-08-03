@@ -12,6 +12,9 @@
     ../../modules/nixos/korean.nix
     # keyd remaps: Right Alt -> Hangul, and a nav layer on held Caps Lock.
     ../../modules/nixos/keyboard.nix
+    # The pointer half of that layer — keyd cannot move a pointer, so the
+    # left hand goes out as sentinel keys and this daemon drives the cursor.
+    ../../modules/nixos/pointer
     # niri session + DankMaterialShell, offered alongside GNOME at the
     # tuigreet greeter and set as the default session below.
     ../../modules/nixos/niri

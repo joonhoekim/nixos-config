@@ -8,10 +8,11 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 .
 ├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + GTK 다크 테마 + mise 활성화)
-├── keyboard.nix       # keyd 키 리맵 (한/영, 스페이스 홀드 TouchCursor 레이어)
+├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 홀드 레이어)
 ├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
-└── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
+├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
+└── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
 ```
 
 시스템 레벨 설정(부팅, 데스크톱, 서비스, 유저 계정)은 이 디렉토리가 아니라
@@ -54,22 +55,30 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 필요하다(`hosts/nixos/common.nix`에서 로드).
 
 - **오른쪽 Alt → `hangeul`** — fcitx5-hangul이 이걸 받아 한/영을 토글한다
-- **Caps Lock 홀드 → TouchCursor 네비게이션 레이어** — 윈도우 머신들이 쓰는
-  [TouchCursor](https://github.com/martin-stone/touchcursor)와 같은 배치. `ijkl` 역T 화살표.
-  탭하면 평범한 Caps Lock 토글
+- **Caps Lock 홀드 → 손 하나씩 나눠 쓰는 레이어** — 오른손은 윈도우 머신들이 쓰는
+  [TouchCursor](https://github.com/martin-stone/touchcursor)와 같은 커서 배치(`ijkl` 역T
+  화살표), 왼손은 마우스. 탭하면 평범한 Caps Lock 토글
 
-| 키 | 동작 | | 키 | 동작 |
+| 오른손 | 동작 | | 왼손 (마우스) | 동작 |
 |----|------|-|----|------|
-| `i` `j` `k` `l` | ↑ ← ↓ → (역T) | | `w` `e` / `b` | 단어 앞/뒤 (`C-→` / `C-←`) |
-| `u` / `o` | 줄 처음 / 끝 (`Home` / `End`) | | `g` / `G` | 문서 처음 / 끝 (`C-Home` / `C-End`) |
-| `h` / `n` | PageUp / PageDown | | `/` | 찾기 (`C-f`) |
-| `p` / `m` | `Backspace` / `Delete` | | `y` | `Insert` |
+| `i` `j` `k` `l` | ↑ ← ↓ → (역T) | | `w` `a` `s` `d` | 포인터 ↑ ← ↓ → |
+| `u` / `o` | 줄 처음 / 끝 (`Home` / `End`) | | `⇧`+`wasd` | 같은 방향, 저속 |
+| `h` / `n` | PageUp / PageDown | | `q` / `e` | 휠 위 / 아래 |
+| `p` / `m` | `Backspace` / `Delete` | | `⇧q` / `⇧e` | 좌 / 우 스크롤 |
+| `y` | `Insert` | | `f` / `r` | 왼쪽 / 오른쪽 클릭 |
+| `/` | 찾기 (`C-f`) | | `8` `9` `0` | 왼쪽 / 가운데 / 오른쪽 버튼 |
 
-오른쪽 열이 TouchCursor에 없어서 vim에서 빌려온 것들이다(그쪽이 비워두는 키만 씀).
+클릭이 두 벌이다. `f`/`r`은 조향하는 손 안에 있어서 마우스 전체가 한 손으로 끝나고,
+`8`/`9`/`0`은 반대 손이 놀고 있을 때 쓴다(가운데 버튼은 이쪽에만 있다). `f`와 `8`은 같은
+센티넬로 나가므로 데몬은 둘이 있다는 걸 모른다.
 
-- **전 바인딩이 unshifted**라 Shift는 통째로 선택 확장에 남는다 — `Caps+Shift+j` = 왼쪽으로
-  선택, `Caps+Shift+o` = 줄 끝까지 선택. vim 레이어는 `$ { } G N`에서 Shift가 커맨드
-  자체였기 때문에 이게 구조적으로 불가능했다 (`G`만 여기서도 같은 이유로 이동 전용이다)
+왼손에는 원래 vim에서 빌려온 `w`/`e`/`b`(단어 이동)와 `g`/`G`(문서 처음·끝)가 있었고,
+마우스에 자리를 내주면서 없앴다. 포인터 쪽 구현은 [아래](#포인터-pointer) 참고.
+
+- **오른손 바인딩이 전부 unshifted**라 Shift는 통째로 선택 확장에 남는다 —
+  `Caps+Shift+j` = 왼쪽으로 선택, `Caps+Shift+o` = 줄 끝까지 선택. vim 레이어는
+  `$ { } G N`에서 Shift가 커맨드 자체였기 때문에 이게 구조적으로 불가능했다.
+  왼손에서만 Shift가 의미를 갖고(저속·가로 스크롤), 그건 keyd가 아니라 데몬이 해석한다
 - 매핑되지 않은 키는 홀드 중에도 **그냥 그 글자**가 입력된다(`[nav]`는 modifier 레이어가
   아니라 평범한 레이어다)
 - **트리거는 항상 Caps Lock** — 윈도우 TouchCursor에서 기본값(스페이스)에서 바꾸는 유일한
@@ -80,6 +89,43 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
   런처/검색 키, 즉 모디파이어다). 스페이스 트리거로는 가능하지만 그러면 방어 로직이
   따라붙고, 그 기기는 타이핑보다 웹 브라우징용이라 포기했다. 설정도 따로 없다
   ([호스트 파일](../../hosts/nixos/galaxy-chromebook-1/default.nix)의 주석 한 덩어리가 전부)
+
+### 포인터 (pointer)
+
+**keyd는 포인터를 움직이지 못한다.** 아는 키 이름 319개 중 마우스는 `leftmouse` /
+`middlemouse` / `rightmouse`와 `scroll{up,down,left,right}`이 전부고, REL_X/REL_Y를 내보내는
+액션이 없다. 그래서 `keyboard.nix`의 왼손은 **비어 있는 F키 센티넬**로만 나가고
+([`pointer/`](pointer/))의 데몬이 그걸 포인터로 바꾼다.
+
+| 센티넬 | 키 | | 센티넬 | 키 |
+|---|---|-|---|---|
+| `F13`~`F16` | `w` `a` `s` `d` | | `F19` | `f`, `8` (왼쪽 클릭) |
+| `F17` `F18` | `q` `e` | | `F24` | `r`, `0` (오른쪽 클릭) |
+| | | | `F22` | `9` (가운데 클릭) |
+
+- **읽기** — keyd의 출력 장치(`keyd virtual keyboard`)를 grab 없이 구독한다. 센티넬은 앱에도
+  같이 도달하는데, **높은 F키는 보이는 것만큼 비어 있지 않다.** 기본 `us` 키맵이 F13~F18에
+  `XF86Tools`/`XF86Launch5-9`, F20에 `XF86AudioMicMute`, F21~F23에 터치패드 토글을 얹고,
+  평범한 심볼로 남는 건 **F19와 F24뿐**이다. 초안에서 가운데 버튼이 F20에 앉는 바람에 클릭할
+  때마다 마이크가 음소거됐다 — niri가 `XF86AudioMicMute`를 잡고 있다
+  ([`niri/rice/config.kdl`](niri/rice/config.kdl)). 그래서 평범한 둘은 제일 많이 쓰는 두 버튼에
+  주고, F20/F21/F23은 아예 피했다. 옮기기 전에 확인:
+  `xkbcli compile-keymap --layout us | grep FK`
+- **쓰기** — 자기 uinput 포인터 하나. 이동·휠·버튼이 **같은 장치**로 나가야 "`8`을 잡은 채
+  `wasd`로 드래그"가 한 덩어리로 도착한다
+- **Shift를 데몬이 직접 본다** — keyd `[nav+shift]` 조합 레이어로 하면 안 된다. keyd는 키가
+  *내려가는 순간* 바인딩을 확정하므로, 이미 눌려 있는 `w`를 나중에 느리게 만들 수 없다.
+  오버슈트를 Shift로 잡는 게 저속 모드의 존재 이유라서 이 차이가 결정적이다
+- **가속은 없다** — 700 px/s 등속, Shift를 누르면 100 px/s. 램프(200 → 1800 px/s)를 넣었다가
+  뺐다: macOS의 Karabiner `mouse_key`는 가속 자체가 안 되니 유지하면 같은 레이어가
+  머신마다 다르게 굴고, 정작 써보니 그 값을 치를 만큼 편하지도 않았다. 대각선은 벡터를
+  정규화해서 `w+d`가 √2배 빨라지지 않는다
+- **멈춤 방지** — 올라오지 않는 센티넬은 이동 15초 / 버튼 60초에 강제로 놓는다. root로 도는
+  합성 포인터라 무한 이동이나 눌린 채 남은 버튼이 곧바로 시스템을 못 쓰게 만든다
+
+속도 상수는 [`pointer/pointerd.py`](pointer/pointerd.py) 상단에 모여 있다. 숫자를 바꿔볼
+때는 리빌드 대신 유닛을 세우고 파일을 직접 실행하면 된다(파일 헤더에 명령 있음).
+상태는 `systemctl status pointerd`, 로그는 `journalctl -u pointerd`.
 
 ### vim 레이어 (보관)
 

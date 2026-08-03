@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# Snapshot the live niri / DankMaterialShell config back into the repo.
+# Snapshot the live niri / Hyprland / DankMaterialShell config back into the repo.
 #
 # These files are NOT managed by Nix (see modules/nixos/niri/default.nix): they
 # are ordinary writable files so that niri can hot-reload on save and the DMS
@@ -27,6 +27,8 @@ repo="${RICE_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
 rice="$repo/modules/nixos/niri/rice"
 # 터미널 라이싱은 두 플랫폼이 공유하므로 니리 밑이 아니라 shared 에 있다.
 gt="$repo/modules/shared/ghostty"
+# 하이프랜드 세션은 자기 모듈 밑에 자기 라이싱을 들고 있다.
+hy="$repo/modules/nixos/hyprland/rice"
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
@@ -175,6 +177,18 @@ fi
 copy "$cfg/niri/config.kdl"                   "$rice/config.kdl"
 copy "$cfg/niri/animations.kdl"               "$rice/animations.kdl"
 copy "$cfg/rice/profiles"                     "$rice/profiles"
+
+# 하이프랜드. 니리와 같은 이유로 Nix 가 관리하지 않는다
+# (modules/nixos/hyprland/default.nix 의 seed). hyprland.lua 는 저장하면 컴포지터가
+# 바로 다시 읽고, shaders/ 는 apps/rice-crt 로 값을 고쳐 가며 맞추는 자리라 둘 다
+# 라이브 쪽이 원본이다. 이 두 줄이 없던 동안 레포와 라이브가 조용히 갈라졌다.
+#
+# ~/.config/hypr/dms 는 뺐다. DMS 가 settings.json 에서 매번 새로 만들어 내는
+# 파생물이라 저장해 봐야 다음 DMS 실행이 덮는 diff 소음만 남는다 — 아래에서
+# ~/.config/niri/dms/*.kdl 를 뺀 것과 같은 이유다.
+copy "$cfg/hypr/hyprland.lua"                 "$hy/hyprland.lua"
+copy "$cfg/hypr/shaders"                      "$hy/shaders"
+
 copy "$cfg/ghostty/config"                    "$gt/config"
 copy "$cfg/ghostty/rices"                     "$gt/rices"
 copy "$cfg/ghostty/shaders"                   "$gt/shaders"

@@ -19,5 +19,6 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 시스템 레벨 설정(nix-darwin 옵션, macOS defaults, homebrew 블록)은 이 디렉토리가 아니라
 [`../../hosts/darwin/default.nix`](../../hosts/darwin/default.nix)에 있다.
 
-darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다 — `.#aarch64-darwin`,
-`.#x86_64-darwin`. 자세한 건 저장소 루트 [README](../../README.md) 참고.
+darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다 — 현재는 `.#aarch64-darwin`
+하나뿐이다(인텔 Mac은 nixpkgs 26.11에서 지원 중단으로 제외). 자세한 건 저장소 루트
+[README](../../README.md) 참고.

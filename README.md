@@ -4,8 +4,10 @@
 
 macOS(nix-darwin + home-manager)와 NixOS를 위한 개인 Nix 설정.
 
-darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다: `aarch64-darwin`(Apple
-Silicon), `x86_64-darwin`(Intel). 이 이름을 flake 타겟으로 쓴다 — 예: `.#aarch64-darwin`.
+darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다: 현재는 `aarch64-darwin`(Apple
+Silicon)뿐이다. 이 이름을 flake 타겟으로 쓴다 — 예: `.#aarch64-darwin`. 인텔 Mac
+(`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 — 되살리려면 26.05 darwin
+브랜치에 고정한 별도 nixpkgs input이 필요하다.
 
 NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `galaxy-chromebook-1`(둘 다
 `x86_64-linux`). 이 이름을 flake 타겟으로 쓴다 — 예: `.#mn56`. 호스트 디렉토리는 실제로

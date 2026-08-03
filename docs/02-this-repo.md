@@ -27,7 +27,7 @@
 
 ```nix
 linuxSystems  = [ "x86_64-linux" "aarch64-linux" ];
-darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
+darwinSystems = [ "aarch64-darwin" ];  # 인텔 Mac은 nixpkgs 26.11에서 지원 중단
 # macOS: darwin.lib.darwinSystem + ./hosts/darwin
 # Linux: nixpkgs.lib.nixosSystem  + ./hosts/nixos
 ```

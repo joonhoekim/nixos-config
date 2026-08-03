@@ -4,9 +4,11 @@
 
 Personal Nix configuration for macOS (nix-darwin + home-manager) and NixOS.
 
-The darwin configurations are keyed by **architecture**, not hostname:
-`aarch64-darwin` (Apple Silicon) and `x86_64-darwin` (Intel). Use that name as
-the flake target — e.g. `.#aarch64-darwin`.
+The darwin configurations are keyed by **architecture**, not hostname; right now
+`aarch64-darwin` (Apple Silicon) is the only one. Use that name as the flake
+target — e.g. `.#aarch64-darwin`. Intel Macs (`x86_64-darwin`) are dropped,
+since nixpkgs 26.11 removed support; reviving one means a separate nixpkgs
+input pinned to the 26.05 darwin branch.
 
 The NixOS configurations are keyed by **hostname** — `mn56` and
 `galaxy-chromebook-1` (both `x86_64-linux`). Use that name as the flake target —

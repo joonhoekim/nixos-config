@@ -40,7 +40,13 @@
     let
       user = "jh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
-      darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
+      # Apple Silicon only. Nixpkgs 26.11 dropped x86_64-darwin outright — its
+      # legacyPackages now `throw` on evaluation — so listing it here does not
+      # produce a degraded Intel config, it makes `darwinConfigurations` and
+      # every forAllSystems output fail to evaluate at all. If an Intel Mac
+      # ever needs to be served, it wants its own nixpkgs input pinned to the
+      # 26.05 darwin branch (supported until end of 2026), not a line here.
+      darwinSystems = [ "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
         default = with pkgs; mkShell {

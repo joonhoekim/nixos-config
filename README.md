@@ -14,9 +14,12 @@ NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `galaxy-chromebook-1
 존재하는 머신만 만든다(그 머신에서 생성한 `hardware-configuration.nix`가 필요하다).
 머신별 설정은 [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
 
-데스크톱 환경은 두 호스트 모두 greetd/tuigreet에서 **niri**(스크롤 타일링 +
-Quickshell 셸, 기본)와 **GNOME / Wayland**(폴백) 두 세션을 고를 수 있다. 셸은
-DankMaterialShell이다 — [modules/nixos/niri](modules/nixos/niri) 참고.
+데스크톱 환경은 두 호스트 모두 greetd/tuigreet에서 세 세션을 고를 수 있다 —
+**niri**(스크롤 타일링, 기본), **Hyprland**(uwsm 세션), **GNOME / Wayland**(폴백).
+앞의 둘은 같은 Quickshell 셸(DankMaterialShell)을 쓴다 —
+[modules/nixos/niri](modules/nixos/niri),
+[modules/nixos/hyprland](modules/nixos/hyprland) 참고. Hyprland가 따로 있는 건
+니리에 화면 전체 셰이더 훅이 없기 때문이다(`decoration:screen_shader`).
 
 niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범한 쓰기 가능한
 파일이라 저장하면 niri가 바로 리로드하고, DMS 설정 GUI도 정상 동작한다. 레포의

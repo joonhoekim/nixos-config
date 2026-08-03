@@ -8,9 +8,11 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 .
 ├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + GTK 다크 테마 + mise 활성화)
+├── hyprland/          # Hyprland 세션 (uwsm) + 같은 셸, 라이싱 시드
 ├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 홀드 레이어)
 ├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
+├── niri/              # niri 세션 + DankMaterialShell, 라이싱 시드
 ├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
 └── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
 ```
@@ -20,9 +22,11 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 
 ## 데스크톱 환경
 
-모든 NixOS 호스트가 **GNOME / Wayland** 기준이다. GDM으로 로그인하고 기본 세션은 `gnome`.
-`services.xserver.enable`이 켜져 있지만 이건 Xwayland와 xkb 설정을 위한 것이지 X11 세션을
-쓰기 위한 게 아니다.
+로그인은 greetd/tuigreet이고, 세션은 셋이다 — [`niri/`](niri)(기본),
+[`hyprland/`](hyprland)(uwsm), 그리고 폴백인 **GNOME / Wayland**. 앞의 둘은 같은 셸
+(DankMaterialShell)을 공유하고, 셸을 어느 세션에 붙이는지는 각 모듈이 systemd
+`wantedBy`로 정한다. `services.xserver.enable`이 켜져 있지만 이건 Xwayland와 xkb 설정을
+위한 것이지 X11 세션을 쓰기 위한 게 아니다.
 
 GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않는다. 다크 모드만
 `home-manager.nix`에서 dconf(`org/gnome/desktop/interface`)로 잡고, 같은 파일의 `gtk`

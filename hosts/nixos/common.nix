@@ -18,6 +18,10 @@
     # niri session + DankMaterialShell, offered alongside GNOME at the
     # tuigreet greeter and set as the default session below.
     ../../modules/nixos/niri
+    # ...and a Hyprland session next to it, running the same shell. It exists
+    # for what niri cannot do — an output-wide shader — so it is a peer of the
+    # niri session, not a replacement.
+    ../../modules/nixos/hyprland
     ../../modules/shared
   ];
 
@@ -91,7 +95,7 @@
   };
 
   services = {
-    # ── Desktop: niri on Wayland via greetd/tuigreet ───────────────────
+    # ── Desktop: Wayland sessions via greetd/tuigreet ──────────────────
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
@@ -105,8 +109,10 @@
     # GNOME stack (gnome-shell, gnome-session) running behind the login screen.
     #
     # `--sessions` points at the very same sessionData.desktops derivation GDM
-    # consumed, so both session entries still appear — gnome.desktop comes from
-    # `desktopManager.gnome.enable` and niri.desktop from programs.niri.enable.
+    # consumed, so every session entry still appears — gnome.desktop comes from
+    # `desktopManager.gnome.enable`, niri.desktop from programs.niri.enable, and
+    # hyprland{,-uwsm}.desktop from programs.hyprland.enable (the package
+    # provides both; take the uwsm one, see modules/nixos/hyprland).
     # Nothing about session *discovery* changes, only the greeter in front of it.
     #
     # useTextGreeter rewires the unit's stdio onto /dev/tty1 (TTYReset, VHangup,
@@ -135,7 +141,8 @@
     };
 
     # Consumed by the assertion in services/display-managers/default.nix, which
-    # requires this to be one of sessionData.sessionNames ("gnome" | "niri").
+    # requires this to be one of sessionData.sessionNames
+    # ("gnome" | "niri" | "hyprland" | "hyprland-uwsm").
     # tuigreet itself does not read it — `--remember-session` is what actually
     # makes a login land back in niri, from the second login onward.
     displayManager.defaultSession = "niri";

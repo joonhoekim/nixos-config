@@ -89,11 +89,39 @@ in
     #
     # The instance name is the compositor's desktop entry ID: the entry runs
     # `uwsm start -e -D Hyprland hyprland.desktop`, and uwsm names its units
-    # after that argument (uwsm's own example-units file spells this exact
-    # target out). Confirm on the machine with:
-    #   systemctl --user list-units 'wayland-session@*'
+    # after that argument. Confirm on the machine with:
+    #   systemctl --user list-units 'wayland-wm@*'
+    #
+    # ── 왜 wayland-session@….target 이 아니라 wayland-wm@….service 인가 ──────
+    # 저 target 에 걸면 DMS 는 영영 안 뜬다. 세션 로그에 그대로 나온다:
+    #
+    #   wayland-session@hyprland.desktop.target: Found ordering cycle:
+    #     dms.service/start after graphical-session.target/verify-active
+    #     after wayland-session@hyprland.desktop.target/start - after dms.service
+    #   Job dms.service/start deleted to break ordering cycle
+    #
+    # 고리의 세 변은 이렇다:
+    #
+    #   1. target 은 자기가 Wants 하는 유닛에 암묵적으로 After 를 붙인다. 서비스와
+    #      달리 target 만의 기본 동작이다(systemd.target(5) — DefaultDependencies
+    #      가 no 가 아니면 Wants/Requires 를 After 로 보강한다). 그래서
+    #      wantedBy 를 걸어 준 순간 target 이 dms.service 뒤로 밀린다.
+    #   2. dms.service 는 자기 유닛에 After=graphical-session.target 을 들고 있다.
+    #   3. uwsm 의 wayland-session@.target 은 Before=graphical-session.target 이다.
+    #
+    # systemd 는 고리를 끊으려고 셋 중 하나를 지우는데, 하필 dms.service 의 시작
+    # 작업을 지운다. 그래서 "에러도 없고 유닛은 enabled 인데 화면에 셸이 없는"
+    # 상태가 된다.
+    #
+    # wayland-wm@….service 는 서비스라 1 번 규칙이 없다 — 고리가 안 생긴다.
+    # 순서도 맞는다: 저 서비스가 dms 를 끌어오고, dms 는 자기 After 대로
+    # graphical-session.target 이 올라온 뒤에 뜬다. ../niri 가 niri.service 에
+    # 거는 것과 같은 모양이고, 이쪽이 우연이 아니라 이유가 있었던 셈이다.
+    #
+    # 종료는 이 줄과 무관하다. dms.service 의 PartOf=graphical-session.target 이
+    # 이미 로그아웃 때 같이 내린다.
     systemd.user.services = lib.mkIf config.programs.dms-shell.enable {
-      dms.wantedBy = [ "wayland-session@hyprland.desktop.target" ];
+      dms.wantedBy = [ "wayland-wm@hyprland.desktop.service" ];
     };
 
     # Seed the ricing files on a machine that has none yet. Same rules as

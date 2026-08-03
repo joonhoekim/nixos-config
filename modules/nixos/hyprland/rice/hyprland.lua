@@ -194,7 +194,9 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 local shot = "hyprshot --silent --output-folder ~/Pictures/Screenshots -m "
 hl.bind("Print", hl.dsp.exec_cmd(shot .. "region"))
 hl.bind("CTRL + Print", hl.dsp.exec_cmd(shot .. "output"))
-hl.bind("ALT + Print", hl.dsp.exec_cmd(shot .. "window"))
+-- `-m window` 만 주면 hyprshot 이 창을 고르라고 기다린다. 니리의
+-- screenshot-window 는 묻지 않고 지금 창을 찍으므로 active 를 덧붙인다.
+hl.bind("ALT + Print", hl.dsp.exec_cmd(shot .. "window -m active"))
 
 -- 미디어/밝기. locked=true 는 잠금 화면에서도 먹으라는 뜻이다(니리의
 -- allow-when-locked), repeating=true 는 누르고 있으면 반복.

@@ -226,18 +226,50 @@ hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall 
 --
 --   끔 → crt.frag(정지) → crt-motion.frag(그레인 + 험 바)
 --
--- 세 번째는 `time` 유니폼을 쓰므로 데미지 트래킹을 꺼야 한다 — 그때부터 화면은
--- 아무것도 안 바뀌어도 매 프레임 통째로 다시 그려진다. 그래서 이 토글이 셰이더와
--- debug:damage_tracking 을 같이 움직인다. 자세한 건 shaders/crt-motion.frag 머리말.
+-- ── 셰이더에 딸려 오는 두 축 ──────────────────────────────────────────────
+-- 하나로 보이지만 둘이고, 서로 다른 조건에 묶인다. 한동안 이 둘을 하나로 묶어
+-- 두는 바람에 증상이 둘 다 남았다 — docs/postmortems/2026-08-04-hyprland-crt.md.
 --
--- 로그인 직후는 항상 꺼짐이다. 룩이지 설정이 아니고, 배터리로 도는 기기에서는
--- 켜는 순간을 손이 정하는 편이 낫다.
+-- debug:damage_tracking — 프레임을 그릴 때 *어디를* 그리는가
+--   기준은 `time` 이 아니라 **셰이더가 자기 픽셀 밖을 읽는가** 다. 이 CRT 들은
+--   전부 읽는다: curve() 는 배럴 왜곡이라 가장자리에서 수십 px 어긋난 곳을,
+--   gun() 은 색수차로 ±3 px 를, bloom() 은 5 px 반경에 16 탭을 읽는다. 바뀐
+--   사각형만 다시 합성하면 그 바깥 이웃이 낡아서 움직이는 것 둘레에 잔상이 남고,
+--   stripes() 의 fwidth() 는 사각형 경계에서 불연속이라 스캔라인 세기가 사각형
+--   모양으로 갈린다. 그래서 셰이더가 걸리면 무조건 0 이다.
+--
+-- debug:vfr — 프레임을 *그릴지 말지*
+--   VFR 이 켜져 있으면 데미지가 없을 때 프레임을 아예 안 그린다. time 을 쓰는
+--   셰이더는 거기서 멈춰서, 마우스를 움직여야 험 바가 한 칸 흐른다. 이쪽 기준은
+--   `time` 이 맞다 — 정지 셰이더는 화면이 바뀔 때만 다시 그리면 충분하고(실측:
+--   damage 0 + vfr 켬으로 잔상 없음), 끄면 정지 화면을 주사율대로 다시 그리는
+--   순수한 낭비가 된다.
+--
+-- 배터리 비용은 damage_tracking 이 아니라 이 vfr 쪽에 붙어 있다. 그래서 값을
+-- 치르는 건 crt-motion 하나뿐이고, 그걸 켜는 건 알고 켜는 것이다 — 노트북이라고
+-- 따로 갈라 두지 않는다.
+--
+-- 로그인 직후부터 걸린다(아래 apply_crt 호출). 끄려면 Mod+Shift+C 로 off 까지
+-- 돌리거나 `apps/rice-crt off`. 그때 두 축 모두 하이프랜드 기본값으로 돌아간다.
+-- 이 파일을 저장할 때마다 다시 걸리므로, off 로 둔 채 여기를 고치면 도로 켜진다.
 local shaders = os.getenv("HOME") .. "/.config/hypr/shaders/"
 local CRT = {
-    { shader = "",                           damage = 2 }, -- 끔 (2 = full, 하이프랜드 기본값)
-    { shader = shaders .. "crt.frag",        damage = 2 },
-    { shader = shaders .. "crt-motion.frag", damage = 0 },
+    { shader = "",                           vfr = true  }, -- 끔 (탈출구)
+    { shader = shaders .. "crt.frag",        vfr = true  }, -- 정지 — 놀 때는 안 그린다
+    { shader = shaders .. "crt-motion.frag", vfr = false }, -- 그레인 + 험 바 — 계속 그린다
 }
+
+-- 먼저 떼고 → 두 축을 맞추고 → 다시 건다. 순서가 뒤집히면 time 을 쓰는 셰이더가
+-- 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸 경고 오버레이 +
+-- time 고정으로 갚는다. apps/rice-crt 도 같은 순서다.
+local function apply_crt(entry)
+    local on = entry.shader ~= ""
+    hl.config({ decoration = { screen_shader = "" } })
+    hl.config({ debug = { damage_tracking = on and 0 or 2, vfr = entry.vfr } })
+    hl.config({ decoration = { screen_shader = entry.shader } })
+end
+
+apply_crt(CRT[3])
 
 hl.bind(mod .. " + SHIFT + C", function()
     -- 다음 것은 *지금 걸려 있는 것*에서 고른다. 여기에 카운터를 두면 밖에서 바꾼
@@ -252,16 +284,9 @@ hl.bind(mod .. " + SHIFT + C", function()
             break
         end
     end
-    local nxt = CRT[i % #CRT + 1]
-
-    -- 먼저 떼고 → 트래킹을 맞추고 → 다시 건다. 순서가 뒤집히면 time 을 쓰는
-    -- 셰이더가 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸
-    -- 경고 오버레이 + time 고정으로 갚는다. 덤으로 매번 파일을 다시 읽으므로
-    -- 셰이더를 고치고 세 바퀴(= 셋이니 세 번) 돌리면 제자리로 오면서 반영된다.
-    -- 값을 맞춰 가는 중이라면 그 편보다 `apps/rice-crt --reload` 가 낫다.
-    hl.config({ decoration = { screen_shader = "" } })
-    hl.config({ debug = { damage_tracking = nxt.damage } })
-    hl.config({ decoration = { screen_shader = nxt.shader } })
+    -- 매번 파일을 다시 읽으므로 셰이더를 고치고 세 바퀴(= 셋이니 세 번) 돌리면
+    -- 제자리로 오면서 반영된다. 값을 맞춰 가는 중이라면 `apps/rice-crt --reload`.
+    apply_crt(CRT[i % #CRT + 1])
 end)
 -- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다. `hyprctl keyword` 는 못 쓴다 —
 -- lua 설정에서는 파서가 통째로 거절한다("keyword can't work with non-legacy

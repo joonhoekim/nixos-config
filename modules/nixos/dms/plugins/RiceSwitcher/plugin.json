@@ -1,0 +1,14 @@
+{
+    "id": "riceSwitcher",
+    "name": "Rice",
+    "description": "라이싱 축(프로필 · 화면 셰이더 · 터미널 · 월페이퍼)을 런처에서 바로 고른다",
+    "version": "1.0.0",
+    "author": "jh",
+    "icon": "palette",
+    "type": "launcher",
+    "capabilities": ["launcher", "command-execution"],
+    "component": "./RiceSwitcherLauncher.qml",
+    "trigger": ":",
+    "requires": ["jq"],
+    "permissions": ["settings_read"]
+}

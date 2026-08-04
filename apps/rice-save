@@ -200,7 +200,28 @@ copy "$cfg/DankMaterialShell/plugins/RiceSwitcher" "$dm/plugins/RiceSwitcher"
 copy "$cfg/ghostty/config"                    "$gt/config"
 copy "$cfg/ghostty/rices"                     "$gt/rices"
 copy "$cfg/ghostty/shaders"                   "$gt/shaders"
-copy "$cfg/fuzzel/fuzzel.ini"                 "$rice/fuzzel.ini"
+# fuzzel.ini 는 걸러서 옮긴다. 맨 위의 include 줄은 rice-fuzzel 이 이 머신의 절대
+# 경로로 붙인 것이라 레포에 들어가면 안 되고(fuzzel 의 include 는 절대 경로만
+# 받는다), 그 너머의 dank-rice.ini 는 파생물이라 아예 저장하지 않는다.
+#
+# 줄을 설명하는 주석까지 같이 지운다. 문구가 두 가지인데(니리 모듈이 시드하며 붙인
+# 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice-fuzzel` 로 시작한다.
+#
+# 거르는 자리가 여기인 것이 중요하다. 예전에는 복사한 *뒤에* 레포 파일을 sed -i 로
+# 손봤는데, 그러면 --check 가 걸러지기 전의 라이브 파일을 레포와 비교해서 언제나
+# "differs" 라고 답했다 — 실제로 저장하면 아무것도 안 바뀌는데도. 걸러진 것을
+# 비교해야 --check 가 진실을 말한다. sed -i 를 안 쓰는 김에 macOS 의 BSD sed 문제도
+# 같이 없어진다(그쪽은 -i 에 인자를 요구한다).
+if [ -f "$cfg/fuzzel/fuzzel.ini" ]; then
+  fz="$(mktemp)"
+  sed -e '/^include=.*dank-rice\.ini$/d' \
+      -e '/^# apps\/rice-fuzzel /d' "$cfg/fuzzel/fuzzel.ini" |
+    sed '/./,$!d' >"$fz" # 삭제로 파일 앞에 남은 빈 줄 정리
+  copy "$fz" "$rice/fuzzel.ini"
+  rm -f "$fz"
+else
+  copy "$cfg/fuzzel/fuzzel.ini" "$rice/fuzzel.ini" # skip (absent) 를 위해
+fi
 
 # GTK. 이건 GNOME 용이 아니라 **니리 용**이다: 니리 세션에는 XSettings 를 방송하는
 # 데몬이 없어서 GTK 앱이 이 파일을 직접 읽는다. GNOME 쪽 경로는 따로 있다
@@ -227,20 +248,6 @@ fi
 if [ "$check_only" -eq 0 ] && [ -f "$rice/gtk-settings.ini" ] &&
   ! grep -q '^# ~/.config/gtk-3.0/settings.ini' "$rice/gtk-settings.ini"; then
   printf "  ${YELLOW}주의${NC}       gtk-settings.ini 의 머리말이 사라졌다 (DMS 가 파일을 새로 만든 듯) — git diff 에서 되살릴 것\n"
-fi
-
-# fuzzel.ini 끝의 include 줄은 rice-fuzzel 이 이 머신의 절대 경로로 붙인 것이라
-# 레포에 들어가면 안 된다. 그 너머의 생성 파일(dank-rice.ini)은 파생물이라 아예
-# 저장하지 않는다.
-# 그 줄을 설명하는 주석까지 같이 지운다. 문구가 두 가지인데(니리 모듈이 시드하며
-# 붙인 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice-fuzzel` 로 시작한다.
-# 라이브 파일이 있을 때만 — 즉 방금 복사한 것만 손본다. 그래야 fuzzel 이 없는
-# 머신(macOS)에서 BSD sed 가 `-i` 인자 없는 GNU 문법에 걸려 죽지 않는다.
-if [ "$check_only" -eq 0 ] && [ -f "$cfg/fuzzel/fuzzel.ini" ] && [ -f "$rice/fuzzel.ini" ]; then
-  sed -i -e '/^include=.*dank-rice\.ini$/d' \
-         -e '/^# apps\/rice-fuzzel /d' "$rice/fuzzel.ini"
-  # 위 삭제로 파일 앞에 남은 빈 줄 정리
-  sed -i '/./,$!d' "$rice/fuzzel.ini"
 fi
 
 # ~/.config/niri/profile.kdl 과 ~/.config/rice/current 는 일부러 뺐다. 둘 다

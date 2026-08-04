@@ -51,30 +51,43 @@
   # this is driven from the shell: `systemctl hibernate`. logind's polkit
   # default already allows it for the active local session, no sudo needed.
 
-  # ── Suspend → hibernate after 3h ─────────────────────────────────────
+  # ── Any suspend → straight to disk ───────────────────────────────────
   # This box only supports s2idle (dmesg: "ACPI: PM: (supports S0 S4 S5)" —
-  # no S3), so a plain suspend keeps drawing real power. Hand the session over
-  # to disk once it is clearly not coming back soon.
+  # no S3), and s2idle on this chassis is not trustworthy. On 2026-08-03 a
+  # suspend entered s2idle and never came out: the journal stops dead at
+  # "PM: suspend entry (s2idle)" with no matching exit, no hibernation image
+  # was ever written (next boot: "PM: Image not found (code -22)", and no
+  # HibernateLocation EFI variable), and the AX200 came back wedged —
+  # "CSR_RESET = 0x10" then "probe with driver iwlwifi failed with error -110"
+  # across six warm reboots. Only a full power-off cleared the card, because a
+  # warm reset leaves the M.2 rails up.
   #
-  # systemd-sleep's suspend-then-hibernate suspends, arms the RTC wake alarm
-  # (/sys/class/rtc/rtc0/wakealarm exists here), wakes on expiry and hibernates.
-  # With no battery in the chassis the delay is the only trigger, so
-  # HibernateDelaySec is the whole policy (HibernateOnACPower only applies to
-  # battery systems, and SuspendEstimationSec is never reached).
-  systemd.sleep.settings.Sleep.HibernateDelaySec = "3h";
-
-  # …and route *every* plain suspend into that path. GNOME's power menu calls
-  # logind's SuspendWithFlags (checked: gnome-session links only that symbol,
-  # not SuspendThenHibernate), which starts systemd-suspend.service, and
-  # nothing in logind.conf remaps it — SleepOperation= only governs the "sleep"
-  # action, which GNOME never asks for. The two upstream units differ solely in
-  # the systemd-sleep verb, so swapping the verb here makes the menu item, the
-  # suspend key and `systemctl suspend` all behave as suspend-then-hibernate.
-  # NixOS emits this as a drop-in over the upstream unit; the empty first
-  # element resets its ExecStart.
+  # This machine is only ever asked to hibernate anyway, once by hand at the
+  # end of the day. So skip s2idle entirely rather than transit through it:
+  # the earlier suspend-then-hibernate setup suspended first and armed an RTC
+  # alarm to hibernate 3h later, which meant the fragile leg ran unattended.
+  # Going straight to disk removes that leg, and HibernateDelaySec with it —
+  # it governs nothing once suspend-then-hibernate is out of the picture.
+  #
+  # The override is what keeps the s2idle path unreachable. The session here is
+  # niri + DankMaterialShell, and dms' power menu "Suspend" runs `systemctl
+  # suspend`: Services/SessionService.qml picks systemctl over loginctl in
+  # powerManagerCommand(), and customPowerActionSuspend is empty. That pulls in
+  # suspend.target, which is Requires=systemd-suspend.service. The idle timeout
+  # lands on the same unit — IdleService calls suspendWithBehavior() with
+  # acSuspendBehavior, and that setting is Suspend (0). The upstream suspend and
+  # hibernate units differ solely in the systemd-sleep verb, so swapping the
+  # verb here makes the menu item, the suspend key and `systemctl suspend` all
+  # hibernate instead. NixOS emits this as a drop-in over the upstream unit; the
+  # empty first element resets its ExecStart.
+  #
+  # What this does NOT cover: systemd-suspend-then-hibernate.service is its own
+  # unit and is left untouched. Setting dms' suspend behaviour to
+  # SuspendThenHibernate (2) would run `systemctl suspend-then-hibernate` and
+  # reach s2idle again, so leave acSuspendBehavior alone.
   systemd.services.systemd-suspend.serviceConfig.ExecStart = [
     ""
-    "${config.systemd.package}/lib/systemd/systemd-sleep suspend-then-hibernate"
+    "${config.systemd.package}/lib/systemd/systemd-sleep hibernate"
   ];
 
   # ── Drive health monitoring ──────────────────────────────────────────

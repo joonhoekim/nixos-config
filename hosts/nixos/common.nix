@@ -22,6 +22,9 @@
     # for what niri cannot do — an output-wide shader — so it is a peer of the
     # niri session, not a replacement.
     ../../modules/nixos/hyprland
+    # DMS plugins shared by both sessions. The shell itself is enabled in
+    # ../../modules/nixos/niri; this is only what sits on top of it.
+    ../../modules/nixos/dms
     ../../modules/shared
   ];
 

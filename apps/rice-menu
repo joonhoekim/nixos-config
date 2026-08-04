@@ -1,0 +1,123 @@
+#!/bin/sh -e
+#
+# 라이싱 축 전부를 한 창에서 고르기 위한 뒤판. DMS 런처 플러그인이 이걸 읽고 쓴다.
+#
+#   apps/rice-menu                    축과 값 전부를 JSON 으로 (stdout)
+#   apps/rice-menu profile amoled     그 축을 그 값으로
+#   apps/rice-menu shader --reload    지금 걸린 셰이더를 파일에서 다시 읽는다
+#   apps/rice-menu wall pick          월페이퍼 고르기 창
+#
+# ── 왜 스크립트가 하나 더 필요한가 ────────────────────────────────────────
+# 축마다 스위처가 이미 하나씩 있다(rice-switch / rice-term / rice-crt / rice-wall).
+# 그것들은 저마다 인터페이스가 조금씩 다르다 — 셋은 `--list`/`--current` 를 갖는
+# 목록형이고 월페이퍼는 애초에 목록이 아니라 동작이며, 셰이더는 하이프랜드 세션
+# 에서만 존재한다. 플러그인(QML)이 그 차이를 알아야 할 이유가 없고, 알게 두면
+# 스위처를 고칠 때마다 QML 도 같이 고쳐야 한다.
+#
+# 그래서 차이를 여기서 흡수하고 플러그인에는 한 가지 모양만 준다. 축 하나 =
+# { id, label, icon, current, values[], actions[] }. 새 축이 생겨도 QML 은 그대로다.
+#
+# ── 값의 출처는 여전히 각 스위처다 ────────────────────────────────────────
+# 목록도 현재값도 여기서 따로 계산하지 않고 스위처에게 묻는다. 특히 셰이더의
+# 현재값은 파일이 아니라 컴포지터가 알고 있고(apps/rice-crt 머리말), 그 판단을
+# 복제하면 두 곳이 어긋난다.
+#
+# ── 경로 ──────────────────────────────────────────────────────────────────
+# 플러그인은 이 파일을 $HOME/nixos-config/apps/rice-menu 로 직접 부른다. 스토어
+# 경로가 아닌 건 키바인드들과 같은 이유다(../modules/nixos/niri/rice/config.kdl 의
+# ricing 주석): 리싱 중에는 스크립트 자체를 자주 고치는데, 그때마다 rebuild 를
+# 하고 싶지 않다.
+
+here="$(dirname "$0")"
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+# 셰이더 축은 하이프랜드 세션에만 있다. rice-crt 가 스스로 거절하기는 하지만,
+# 니리에서 목록에 뜨기만 하고 누르면 실패하는 것보다 아예 안 보이는 게 낫다.
+has_hypr() {
+	[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1
+}
+
+# ── 적용 ──────────────────────────────────────────────────────────────────
+# 인자가 있으면 고르는 게 아니라 거는 것이다. 각 스위처의 출력(색 코드 포함)은
+# 그대로 흘려보낸다 — 플러그인이 실패를 토스트로 보여줄 때 그 마지막 줄을 쓴다.
+if [ $# -gt 0 ]; then
+	axis="$1"
+	value="${2:-}"
+
+	case "$axis" in
+	profile) exec "$here/rice-switch" "$value" ;;
+	term) exec "$here/rice-term" "$value" ;;
+	shader)
+		has_hypr || {
+			printf '하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.\n' >&2
+			exit 1
+		}
+		exec "$here/rice-crt" "$value"
+		;;
+	wall)
+		case "$value" in
+		random) exec "$here/rice-wall" ;;
+		pick) exec "$here/rice-wall" --pick ;;
+		yazi) exec "$here/rice-wall" --yazi ;;
+		*)
+			printf '월페이퍼 동작이 아니다: %s\n' "$value" >&2
+			exit 1
+			;;
+		esac
+		;;
+	*)
+		printf '그런 축은 없다: %s\n' "$axis" >&2
+		exit 1
+		;;
+	esac
+fi
+
+# ── 목록 ──────────────────────────────────────────────────────────────────
+# 축 하나를 JSON 객체 하나로. 값 목록은 stdin 으로 받는다(한 줄에 하나).
+# jq -R 은 줄을 문자열로 읽고, inputs 가 나머지 줄 전부를 가져온다.
+axis() { # axis <id> <label> <icon> <current> <actions-json>   < 값목록
+	jq -Rn \
+		--arg id "$1" --arg label "$2" --arg icon "$3" --arg cur "$4" \
+		--argjson actions "${5:-[]}" \
+		'{ id: $id, label: $label, icon: $icon, current: $cur,
+		   values: [inputs], actions: $actions }'
+}
+
+# 스위처가 아직 시드되지 않은 머신에서는 --list 가 죽는다. 축 하나가 없다고 창이
+# 안 뜨면 곤란하므로, 조용히 빼고 나머지를 준다.
+try_axis() { # try_axis <id> <label> <icon> <스위처> <actions-json>
+	sw="$here/$4"
+	[ -x "$sw" ] || return 0
+	list="$("$sw" --list 2>/dev/null)" || return 0
+	[ -n "$list" ] || return 0
+	cur="$("$sw" --current 2>/dev/null || echo '')"
+	printf '%s\n' "$list" | axis "$1" "$2" "$3" "$cur" "$5"
+}
+
+{
+	try_axis profile "프로필" palette rice-switch
+
+	if has_hypr; then
+		# --reload 는 값이 아니라 동작이라 values 가 아니라 actions 다. 셰이더 값을
+		# 고쳐 가며 맞추는 자리에서 제일 자주 누르게 되는 것이므로 목록 맨 앞에 둔다.
+		try_axis shader "화면 셰이더" blur_on rice-crt '[
+			{ "value": "--reload", "label": "다시 읽기",
+			  "comment": "지금 걸린 셰이더를 파일에서 다시 읽는다 (값 튜닝용)" }
+		]'
+	fi
+
+	try_axis term "터미널" terminal rice-term
+
+	# 월페이퍼는 목록이 아니다 — 후보가 수백 장이고 고르는 UI 를 이미 갖고 있다
+	# (fuzzel / yazi). 그래서 값 없이 동작만 셋.
+	if [ -d "${RICE_WALLPAPERS:-$HOME/Pictures/Wallpapers}" ]; then
+		printf '' | axis wall "월페이퍼" wallpaper "" '[
+			{ "value": "random", "label": "무작위",
+			  "comment": "전체에서 하나 (apps/rice-wall)" },
+			{ "value": "pick",   "label": "고르기…",
+			  "comment": "fuzzel 로 경로 목록에서" },
+			{ "value": "yazi",   "label": "미리보기로 고르기…",
+			  "comment": "yazi 로 그림을 보면서" }
+		]'
+	fi
+} | jq -s '{ axes: . }'

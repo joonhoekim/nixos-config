@@ -78,6 +78,7 @@
         "rice-fuzzel" = mkApp "rice-fuzzel" system;
         "rice-term" = mkApp "rice-term" system;
         "rice-crt" = mkApp "rice-crt" system;
+        "rice-menu" = mkApp "rice-menu" system;
       };
     in
     {

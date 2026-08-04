@@ -79,6 +79,7 @@
         "rice-term" = mkApp "rice-term" system;
         "rice-crt" = mkApp "rice-crt" system;
         "rice-menu" = mkApp "rice-menu" system;
+        "rice-knobs" = mkApp "rice-knobs" system;
       };
     in
     {

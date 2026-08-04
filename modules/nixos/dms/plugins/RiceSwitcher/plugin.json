@@ -8,7 +8,8 @@
     "type": "launcher",
     "capabilities": ["launcher", "command-execution"],
     "component": "./RiceSwitcherLauncher.qml",
+    "settings": "./RiceSwitcherSettings.qml",
     "trigger": ":",
     "requires": ["jq"],
-    "permissions": ["settings_read"]
+    "permissions": ["settings_read", "settings_write"]
 }

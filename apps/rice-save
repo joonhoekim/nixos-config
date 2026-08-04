@@ -1,6 +1,7 @@
 #!/bin/sh -e
 #
-# Snapshot the live niri / Hyprland / DankMaterialShell config back into the repo.
+# Snapshot the live ricing config back into the repo — niri / Hyprland / DMS on
+# Linux, sketchybar / wezterm / rift helpers / WorkspacePeek on macOS.
 #
 # These files are NOT managed by Nix (see modules/nixos/niri/default.nix): they
 # are ordinary writable files so that niri can hot-reload on save and the DMS
@@ -31,6 +32,9 @@ gt="$repo/modules/shared/ghostty"
 hy="$repo/modules/nixos/hyprland/rice"
 # DMS 플러그인은 두 세션이 같이 쓰므로 어느 컴포지터 밑도 아니다.
 dm="$repo/modules/nixos/dms"
+# macOS 라이싱(바·터미널·헬퍼). 리눅스에서는 아래 copy 들이 "skip (absent)" 로
+# 알아서 비켜 간다 — 이 스크립트는 양쪽에서 같은 명령으로 돌아야 한다.
+dr="$repo/modules/darwin/rice"
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
@@ -200,6 +204,27 @@ copy "$cfg/DankMaterialShell/plugins/RiceSwitcher" "$dm/plugins/RiceSwitcher"
 copy "$cfg/ghostty/config"                    "$gt/config"
 copy "$cfg/ghostty/rices"                     "$gt/rices"
 copy "$cfg/ghostty/shaders"                   "$gt/shaders"
+
+# ── macOS 라이싱 ──────────────────────────────────────────────────────────
+# modules/darwin/rice 가 시드하는 것들. 시드는 *없을 때만* 복사하므로 레포 쪽을
+# 고쳐도 이미 설정이 있는 머신에는 안 들어가고(그건 apps/rice-restore 의 몫),
+# 반대로 $HOME 에서 다듬은 것을 레포로 되받을 길이 여기 없으면 아예 없었다.
+#
+# 리눅스에서는 넷 다 없으므로 "skip (absent)" 로 지나간다.
+copy "$cfg/sketchybar"                        "$dr/sketchybar"
+copy "$cfg/wezterm"                           "$dr/wezterm"
+# rift 키바인딩이 부르는 헬퍼(monocle.sh 등). rift 의 config.toml 은 여기 없다 —
+# 그쪽은 modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 레포가 원본이고,
+# 되받을 것이 없다.
+copy "$cfg/rice/bin"                          "$dr/bin"
+# WorkspacePeek. WallpaperPeek 은 config.json 에 레이아웃만 있고 핫키·경로가
+# 소스에 박혀 있어서 왕복 대상이 아니다 — modules/darwin/rice/peek/README.md.
+copy "$cfg/workspacepeek/config.json"         "$dr/workspacepeek/config.json"
+#
+# borders/bordersrc 는 일부러 뺐다. apps/rice-colors 가 벽지 색으로 통째로 다시
+# 쓰는 파생물이라, 되받으면 그때 걸려 있던 벽지의 색이 레포에 박힌다. 레포의 것은
+# wal 을 한 번도 안 돌린 머신을 위한 폴백이고, 모양(width/style)을 바꾸려면
+# rice-colors 안의 그 블록을 고쳐야 한다. ghostty 의 themes/ 를 빼는 것과 같은 이유.
 # fuzzel.ini 는 걸러서 옮긴다. 맨 위의 include 줄은 rice-fuzzel 이 이 머신의 절대
 # 경로로 붙인 것이라 레포에 들어가면 안 되고(fuzzel 의 include 는 절대 경로만
 # 받는다), 그 너머의 dank-rice.ini 는 파생물이라 아예 저장하지 않는다.

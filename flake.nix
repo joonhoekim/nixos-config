@@ -34,9 +34,16 @@
       url = "github:nikitabobko/homebrew-tap";
       flake = false;
     };
+    # rift (tiling WM). Not in nixpkgs — upstream ships a universal binary via
+    # this tap's *formula*, not a cask, so it lands in homebrew.brews rather
+    # than homebrew.casks (modules/darwin/brews.nix).
+    acsandmann-tap = {
+      url = "github:acsandmann/homebrew-tap";
+      flake = false;
+    };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, home-manager, nixpkgs } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, acsandmann-tap, home-manager, nixpkgs } @inputs:
     let
       user = "jh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -80,6 +87,7 @@
         "rice-crt" = mkApp "rice-crt" system;
         "rice-menu" = mkApp "rice-menu" system;
         "rice-knobs" = mkApp "rice-knobs" system;
+        "rice-colors" = mkApp "rice-colors" system;
       };
     in
     {
@@ -107,6 +115,10 @@
                   # machine never needs an imperative `brew tap` (which fails
                   # on a not-yet-writable /opt/homebrew/Library/Taps).
                   "nikitabobko/homebrew-tap" = nikitabobko-tap;
+                  # rift, same reasoning. Brew refers to this tap as
+                  # `acsandmann/tap` (the `homebrew-` prefix is implicit), which
+                  # is the spelling modules/darwin/brews.nix uses.
+                  "acsandmann/homebrew-tap" = acsandmann-tap;
                 };
                 # Allow imperative `brew tap`/`brew install` to coexist with Nix.
                 mutableTaps = true;

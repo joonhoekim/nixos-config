@@ -19,9 +19,11 @@ in
 
   homebrew = {
     enable = true;
-    # nikitabobko/tap (aerospace) is managed declaratively via nix-homebrew
-    # in flake.nix, so no `homebrew.taps` entry is needed here.
+    # nikitabobko/tap (aerospace) and acsandmann/tap (rift) are managed
+    # declaratively via nix-homebrew in flake.nix, so no `homebrew.taps` entry
+    # is needed here.
     casks = pkgs.callPackage ./casks.nix {};
+    brews = pkgs.callPackage ./brews.nix {};
     # onActivation.cleanup = "uninstall";
 
     # These app IDs are from using the mas CLI app

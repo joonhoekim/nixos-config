@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# 창 테두리. rift 가 자기 자식으로 이걸 실행한다(rift.toml 의 run_on_start) —
+# 그래야 ax_focus 가 rift 의 접근성 신뢰를 물려받는다. 자세한 건 거기 주석.
+#
+# ── 이 파일은 두 번 쓰인다 ────────────────────────────────────────────────
+# 처음엔 modules/darwin/rice 가 시드하고, 그 뒤로는 apps/rice-colors 가 팔레트가
+# 바뀔 때마다 이 파일을 통째로 다시 쓴다. 그래서 여기 손으로 넣은 색은 다음
+# rice-colors 실행에서 사라진다 — 모양(width/style)은 남는다. 색을 고정하고
+# 싶으면 rice-colors 쪽의 borders 블록을 고쳐야 한다.
+#
+# 아래 값은 wal 을 한 번도 안 돌린 새 머신이 보게 되는 색이다.
+
+exec borders \
+	style=round \
+	width=5.0 \
+	hidpi=on \
+	ax_focus=on \
+	active_color="glow(0xffb4befe)" \
+	inactive_color=0xff45475a \
+	blacklist="Sol"

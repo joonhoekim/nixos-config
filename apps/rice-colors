@@ -1,0 +1,219 @@
+#!/bin/sh -e
+#
+# 벽지에서 팔레트를 뽑고, 그 색을 쓰는 것들에 밀어 넣는다. macOS 전용.
+#
+#   apps/rice-colors                    현재 데스크톱 배경화면에서
+#   apps/rice-colors ~/Pictures/x.jpg   그 이미지에서
+#   apps/rice-colors --light            밝은 변형으로
+#   apps/rice-colors --reload           wal 은 다시 안 돌리고 지금 팔레트만 재적용
+#   apps/rice-colors --backend colorz   추출 백엔드 바꾸기
+#
+# ── 왜 스크립트가 필요한가 ────────────────────────────────────────────────
+# pywal 은 색을 ~/.cache/wal/ 에 쓰기만 하고 끝난다. 훅 같은 건 없다. 그래서
+# "누가 그 색을 다시 읽게 만드는가"는 전부 이쪽 몫이고, 소비자마다 방법이 다르다:
+#
+#   sketchybar   --reload. 설정이 셸 스크립트라 colors.sh 를 다시 source 한다.
+#   jankyborders 이미 떠 있는 인스턴스에 인자를 다시 넘기면 그게 곧 재설정이다
+#                (upstream: "invoking a new borders instance with any
+#                combination of the available options will update the
+#                properties of the already running instance"). 재시작 아님.
+#   wezterm      아무것도 안 해도 된다. wezterm.lua 가 colors.json 을 감시
+#                목록에 넣어 뒀다(add_to_config_reload_watch_list).
+#
+# ghostty 는 일부러 빠져 있다. 터미널 팔레트는 다른 축(apps/rice-term +
+# modules/shared/ghostty.nix)이 갖고 있고, 생성기 둘이 같은 테마 파일을 쓰면
+# 다음 룩 전환에서 색이 되돌아간다.
+#
+# ── NixOS 에서는 ──────────────────────────────────────────────────────────
+# 안 쓴다. 거기서 같은 일을 하는 건 DMS + matugen 이고, 그쪽은 벽지를 바꾸면
+# (apps/rice-wall) 셸·니리 보더·터미널이 알아서 따라온다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+if [ "$(uname -s)" != "Darwin" ]; then
+	printf "${RED}이건 macOS 전용이다. NixOS 에서는 apps/rice-wall 을 쓴다.${NC}\n"
+	exit 1
+fi
+
+cache="$HOME/.cache/wal"
+
+mode=""       # --light 면 -l
+backend=""
+reload_only=false
+image=""
+
+# 밝기 모드는 기억해 둔다. 벽지 감시자(launchd.user.agents.wal-watch)는 플래그
+# 없이 이걸 부르는데, 그때 라이트 모드로 맞춰 둔 걸 매번 다크로 되돌리면
+# "벽지만 바꿨는데 테마가 튄다"가 된다.
+appearance_file="$HOME/.cache/wal/appearance"
+[ "$(cat "$appearance_file" 2>/dev/null)" = "light" ] && mode="-l"
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--light | -l) mode="-l" ;;
+	--dark | -d) mode="" ;;
+	--reload | -r) reload_only=true ;;
+	--backend | -b)
+		shift
+		backend="$1"
+		;;
+	-*)
+		printf "${RED}알 수 없는 옵션: %s${NC}\n" "$1"
+		exit 1
+		;;
+	*) image="$1" ;;
+	esac
+	shift
+done
+
+# 인자가 없으면 지금 깔려 있는 배경화면을 쓴다. macOS 는 이걸 API 로만
+# 내놓아서 osascript 를 거쳐야 한다.
+if [ "$reload_only" = false ] && [ -z "$image" ]; then
+	image="$(osascript -e 'tell application "System Events" to tell current desktop to get picture as text' 2>/dev/null || true)"
+	if [ -z "$image" ] || [ ! -f "$image" ]; then
+		printf "${RED}현재 배경화면을 알아내지 못했다. 이미지 경로를 직접 줘라.${NC}\n"
+		printf "${DIM}  apps/rice-colors ~/Pictures/Wallpapers/foo.jpg${NC}\n"
+		exit 1
+	fi
+	printf "${DIM}현재 배경화면에서: %s${NC}\n" "$image"
+fi
+
+if [ "$reload_only" = false ]; then
+	[ -f "$image" ] || { printf "${RED}그런 파일이 없다: %s${NC}\n" "$image"; exit 1; }
+
+	if ! command -v wal >/dev/null 2>&1; then
+		printf "${RED}wal 이 없다. pywal16 이 홈 패키지에 있는지 확인하고 리빌드해라${NC}\n"
+		printf "${DIM}  (modules/darwin/rice/default.nix)${NC}\n"
+		exit 1
+	fi
+
+	# -n: 벽지는 건드리지 않는다. 이미 그 이미지가 깔려 있는 게 보통이고,
+	#     pywal 의 macOS 벽지 설정은 여러 디스플레이를 제대로 못 다룬다.
+	# -s: 터미널 시퀀스를 안 보낸다. 열려 있는 ghostty 창의 색을 wal 이
+	#     가로채면 rice-term 이 고른 룩과 싸운다.
+	# -t: 터미널 타이틀도 안 건드린다.
+	if [ -n "$backend" ]; then
+		# shellcheck disable=SC2086
+		wal -i "$image" -n -s -t -q $mode --backend "$backend"
+	else
+		# shellcheck disable=SC2086
+		wal -i "$image" -n -s -t -q $mode
+	fi
+	printf "${GREEN}팔레트:${NC} %s\n" "${image##*/}"
+
+	mkdir -p "$(dirname "$appearance_file")"
+	[ "$mode" = "-l" ] && printf 'light' >"$appearance_file" || printf 'dark' >"$appearance_file"
+else
+	[ -f "$cache/colors.sh" ] || {
+		printf "${RED}%s 가 없다. --reload 는 이미 뽑아 둔 팔레트가 있을 때만 쓴다.${NC}\n" "$cache/colors.sh"
+		exit 1
+	}
+fi
+
+# shellcheck disable=SC1091
+. "$cache/colors.sh"
+
+# ── sketchybar ────────────────────────────────────────────────────────────
+if command -v sketchybar >/dev/null 2>&1; then
+	if sketchybar --reload >/dev/null 2>&1; then
+		printf "  ${DIM}sketchybar 다시 읽음${NC}\n"
+	else
+		printf "  ${YELLOW}sketchybar 가 안 떠 있다${NC}\n"
+	fi
+fi
+
+# ── jankyborders ──────────────────────────────────────────────────────────
+#
+# ── 왜 color4 를 안 쓰나 ──────────────────────────────────────────────────
+# 예전엔 color4/color8 를 고정으로 썼다. pywal 의 색 번호는 *색상* 슬롯이지
+# 밝기 슬롯이 아니라서, 어두운 벽지에서는 color4 가 배경과 거의 같은 밝기로
+# 나온다 — 테두리가 있는데 안 보이는 상태가 되고, 그건 "테두리가 꺼졌나"로
+# 오해하기 딱 좋다.
+#
+# 그래서 16색을 휘도순으로 줄 세우고 위에서 몇 번째를 쓴다. 어떤 벽지에서든
+# 배경보다 확실히 밝은 색이 걸린다. 계수(299/587/114)는 그냥 밝기가 아니라
+# 사람 눈이 느끼는 밝기 — 같은 값이어도 초록이 파랑보다 훨씬 밝게 보인다.
+luminance_ranked() {
+	i=0
+	while [ "$i" -le 15 ]; do
+		eval "hex=\${color$i:-}"
+		i=$((i + 1))
+		[ -n "$hex" ] || continue
+		h="${hex#\#}"
+		# 0x 접두사는 POSIX 산술이 보장한다. `16#ab` 쪽은 bash/ksh 확장이라
+		# /bin/sh 가 dash 인 환경에서 깨진다.
+		r=$((0x$(printf '%s' "$h" | cut -c1-2)))
+		g=$((0x$(printf '%s' "$h" | cut -c3-4)))
+		b=$((0x$(printf '%s' "$h" | cut -c5-6)))
+		printf '%d %s\n' $((299 * r + 587 * g + 114 * b)) "$h"
+		# 중복 제거가 여기 붙어 있는 게 중요하다. pywal16 은 색 1..7 을 9..15 에
+		# 거의 그대로 복제해서, 안 걷어내면 16줄 중 절반이 짝이다. 그러면 "n번째와
+		# n-1번째"가 사실상 같은 색이 되어 활성/비활성 테두리가 구별이 안 된다.
+	done | sort -n | awk '!seen[$2]++'
+}
+
+ranked="$(luminance_ranked)"
+count="$(printf '%s\n' "$ranked" | wc -l | tr -d ' ')"
+
+# 양 끝에서 하나씩. 두 테두리가 하는 일이 반대라 뽑는 자리도 반대여야 한다:
+#   활성   — 벽지 위에서 확실히 보여야 한다 → 밝은 쪽
+#   비활성 — 있는 건 알겠는데 눈에 안 걸려야 한다 → 배경 바로 위
+#
+# 활성은 맨 위가 아니라 위에서 세 번째다. 제일 밝은 색은 거의 늘 흰색에 가까워서
+# 무슨 벽지를 깔든 테두리가 똑같아진다 — 벽지의 성격이 남는 자리가 조금 아래다.
+# 비활성도 맨 아래가 아닌 두 번째: 맨 아래는 대개 배경 그 자체라 안 보인다.
+active_hex="$(printf '%s\n' "$ranked" | awk -v n="$count" 'NR == (n >= 4 ? n - 2 : n) { print $2 }')"
+inactive_hex="$(printf '%s\n' "$ranked" | awk -v n="$count" 'NR == (n >= 4 ? 2 : 1) { print $2 }')"
+active_hex="${active_hex:-${color4#\#}}"
+inactive_hex="${inactive_hex:-${color8#\#}}"
+
+active="glow(0xff${active_hex})"
+inactive="0xff${inactive_hex}"
+
+# rift 가 자기 자식으로 띄우는 스크립트를 다시 쓴다. 다음 로그인에도 같은 색으로
+# 뜨게 하려면 이게 필요하다 — 아래의 라이브 갱신은 지금 떠 있는 인스턴스에만
+# 먹고, 재시작하면 이 파일의 내용으로 돌아간다.
+bordersrc="$HOME/.config/borders/bordersrc"
+if [ -f "$bordersrc" ]; then
+	mkdir -p "$(dirname "$bordersrc")"
+	cat >"$bordersrc" <<BORDERSRC
+#!/bin/sh
+# apps/rice-colors 가 자동 생성한다. 손으로 고쳐도 다음 실행에 덮인다 —
+# 모양을 바꾸려면 그 스크립트의 이 블록을 고쳐라.
+exec borders \\
+	style=round \\
+	width=5.0 \\
+	hidpi=on \\
+	ax_focus=on \\
+	active_color="$active" \\
+	inactive_color=$inactive \\
+	blacklist="Sol"
+BORDERSRC
+	chmod +x "$bordersrc"
+fi
+
+# 그리고 지금 떠 있는 인스턴스에 즉시 반영. borders 는 이미 실행 중일 때 인자를
+# 다시 받으면 그걸 재설정으로 처리한다.
+#
+# ── pgrep 가드가 반드시 있어야 한다 ───────────────────────────────────────
+# "이미 실행 중일 때"가 조건의 전부가 아니다. 안 떠 있을 때 같은 명령을 부르면
+# borders 는 실패하는 게 아니라 **자기가 그 데몬이 되어 포그라운드로 눌러앉는다.**
+# 그러면 이 스크립트가 영영 안 끝나고, 벽지 감시자가 부른 경우엔 감시 루프까지
+# 통째로 멈춘다 — 다음 벽지 변경부터 아무 일도 안 일어난다.
+#
+# 안 떠 있는 건 정상 상태다. borders 는 rift 가 run_on_start 에서 띄우므로
+# (modules/darwin/config/rift.toml), rift 가 없으면 borders 도 없는 게 맞다.
+# 그때는 위에서 다시 쓴 bordersrc 로 충분하다 — 다음에 rift 가 뜰 때 그 색으로
+# 시작한다.
+if pgrep -x borders >/dev/null 2>&1; then
+	borders active_color="$active" inactive_color="$inactive" >/dev/null 2>&1 &
+	printf "  ${DIM}borders %s / %s${NC}\n" "$active" "$inactive"
+else
+	printf "  ${DIM}borders 는 안 떠 있다 — bordersrc 에 적어 뒀다 (rift 가 띄운다)${NC}\n"
+fi
+
+# ── wezterm ───────────────────────────────────────────────────────────────
+# 손댈 게 없다. 설정이 colors.json 을 감시하고 있어서 열린 창들이 알아서 바뀐다.
+[ -f "$HOME/.config/wezterm/wezterm.lua" ] && printf "  ${DIM}wezterm 은 알아서 따라온다${NC}\n"
+
+printf "${DIM}ghostty 는 이 축이 아니다 — 터미널 룩은 apps/rice-term.${NC}\n"

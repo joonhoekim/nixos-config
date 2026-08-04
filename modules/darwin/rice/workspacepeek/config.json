@@ -1,0 +1,201 @@
+{
+  "capture": {
+    "displayIndex": 0,
+    "excludingDesktopWindows": false,
+    "imageScaleDivisor": 3,
+    "onScreenWindowsOnly": true,
+    "showsCursor": false
+  },
+  "colors": {
+    "fallback": {
+      "background": "#280d2a",
+      "color0": "#280d2a",
+      "color1": "#642c66",
+      "color13": "#aa80a8",
+      "color15": "#f2c4e1",
+      "color2": "#6d346e",
+      "color3": "#744271",
+      "color4": "#804482",
+      "color5": "#8e568c",
+      "color6": "#9c5f9d",
+      "color7": "#f2c4e1",
+      "color8": "#541f57",
+      "foreground": "#f2c4e1"
+    },
+    "roles": {
+      "focusedBubbleBackground": "color13",
+      "focusedBubbleGlyph": "background",
+      "focusedThumbnailLabel": "color7",
+      "selectedThumbnailLabel": "color4",
+      "selectedThumbnailRing": "color4",
+      "title": "color7",
+      "unfocusedBubbleBackground": "color8",
+      "unfocusedBubbleGlyph": "color15",
+      "unselectedThumbnailRing": "color2"
+    },
+    "useWalColors": true,
+    "walColorsPath": "~/.cache/wal/colors.json"
+  },
+  "glyphs": {
+    "appGlyphs": {
+      "Activity Monitor": "󰄨",
+      "Brave Browser": "󰖟",
+      "Bruno": "󰛮",
+      "Claude": "󰚩",
+      "Code": "󰨞",
+      "DBeaver": "󰆼",
+      "Discord": "󰙯",
+      "Finder": "󰀶",
+      "Firefox": "󰈹",
+      "Ghostty": "󰊠",
+      "Google Chrome": "󰋯",
+      "IINA": "󰕧",
+      "Mail": "󰇮",
+      "Messages": "󰍡",
+      "Notes": "󰠮",
+      "Notion": "󰎚",
+      "Postman": "󰛮",
+      "Redis Insight": "󰑙",
+      "Safari": "󰀹",
+      "Slack": "󰙱",
+      "System Settings": "󰒓",
+      "WezTerm": "󰆅",
+      "Xcode": "󰀵",
+      "Zed": "󰅩",
+      "Zen": "󰈹",
+      "iTerm2": "󰆅"
+    },
+    "defaultGlyph": "󰘔"
+  },
+  "hotkey": {
+    "consumeEvent": true,
+    "triggerKey": "w",
+    "triggerModifiers": [
+      "option",
+      "control"
+    ]
+  },
+  "hud": {
+    "badge": {
+      "bubbleSize": 26,
+      "cornerRadius": 5,
+      "fontSize": 15,
+      "glyphXOffset": 0,
+      "glyphYOffset": 0,
+      "insetX": 10,
+      "insetY": 10,
+      "maxApps": 5,
+      "selBorderWidth": 3,
+      "selGlowOpacity": 0.9,
+      "selGlowRadius": 12,
+      "showTitle": true,
+      "spacing": 5,
+      "titleFontSize": 18,
+      "titleText": "workspaces"
+    },
+    "containerCornerRadius": 16,
+    "contentPadding": 16,
+    "glyphFontNames": [
+      "sketchybar-app-font",
+      "JetBrainsMono Nerd Font",
+      "JetBrainsMonoNL Nerd Font"
+    ],
+    "gridColumnSpacing": 12,
+    "gridRowSpacing": 12,
+    "maxPerRow": 5,
+    "thumbnail": {
+      "backgroundAlpha": 0.6,
+      "cornerRadius": 10,
+      "focusedIndicator": "* ",
+      "focusedRingBorderWidth": 1.5,
+      "hoverAlpha": 0.1,
+      "hoverDuration": 0.1,
+      "imageCornerRadius": 7,
+      "imageHeight": 130,
+      "imageInset": 8,
+      "labelFontNames": [
+        "JetBrainsMonoNL Nerd Font Mono",
+        "JetBrainsMono Nerd Font Mono",
+        "JetBrainsMono-Regular"
+      ],
+      "labelFontSize": 13,
+      "labelHeight": 28,
+      "labelTopSpacing": 0,
+      "labelUnfocusedAlpha": 0.8,
+      "placeholderAlpha": 0.4,
+      "placeholderCornerRadius": 6,
+      "unselectedRingAlpha": 0.6,
+      "unselectedRingBorderWidth": 0,
+      "width": 220
+    },
+    "titleBottomPadding": 14,
+    "titleFontNames": [
+      "JetBrainsMono Nerd Font",
+      "JetBrainsMonoNL Nerd Font"
+    ],
+    "titleTopPadding": 14
+  },
+  "logging": {
+    "prefix": "WorkspacePeek"
+  },
+  "loginItem": {
+    "registerOnLaunch": true
+  },
+  "navigation": {
+    "downKeyCode": 125,
+    "escapeKeyCode": 53,
+    "leftKeyCode": 123,
+    "numberSelectionStartsAt": 1,
+    "returnKeyCode": 36,
+    "rightKeyCode": 124,
+    "upKeyCode": 126
+  },
+  "paths": {
+    "screenshotCacheDirectory": "~/.cache/workspacepeek"
+  },
+  "windowManager": {
+    "aerospaceBinaryCandidates": [
+      "/opt/homebrew/bin/aerospace",
+      "/usr/local/bin/aerospace",
+      "/usr/bin/aerospace"
+    ],
+    "aerospaceFocusedWorkspaceArguments": [
+      "list-workspaces",
+      "--focused"
+    ],
+    "aerospaceListWindowsArguments": [
+      "list-windows",
+      "--all",
+      "--format",
+      "%{workspace}|%{app-name}"
+    ],
+    "aerospaceListWorkspacesArguments": [
+      "list-workspaces",
+      "--all"
+    ],
+    "aerospaceSwitchWorkspaceArguments": [
+      "workspace",
+      "{workspace}"
+    ],
+    "aerospaceWindowSeparator": "|",
+    "backend": "auto",
+    "includeEmptyWorkspaces": false,
+    "pgrepPath": "/usr/bin/pgrep",
+    "riftBinaryCandidates": [
+      "/opt/homebrew/bin/rift-cli",
+      "/usr/local/bin/rift-cli"
+    ],
+    "riftNumericWorkspaceIndexOffset": -1,
+    "riftProcessName": "rift",
+    "riftQueryWorkspacesArguments": [
+      "query",
+      "workspaces"
+    ],
+    "riftSwitchWorkspaceArguments": [
+      "execute",
+      "workspace",
+      "switch",
+      "{index}"
+    ]
+  }
+}

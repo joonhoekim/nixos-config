@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "acsandmann-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785807314,
+        "narHash": "sha256-V1IuvyXNtVhEtTioCol9gGUcBLF2hgZ2zLa3WWHPzvI=",
+        "owner": "acsandmann",
+        "repo": "homebrew-tap",
+        "rev": "d05e38e990a1c3f5198fe43543924a75129a79dd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "acsandmann",
+        "repo": "homebrew-tap",
+        "type": "github"
+      }
+    },
     "brew-src": {
       "flake": false,
       "locked": {
@@ -77,11 +93,11 @@
     "homebrew-cask": {
       "flake": false,
       "locked": {
-        "lastModified": 1785507641,
-        "narHash": "sha256-IJguz6sg+91CnpZACm2BPOvV+tuLUtry/zQZQr5A8Q8=",
+        "lastModified": 1785850184,
+        "narHash": "sha256-I/vrmFnjSWZOIletGyNfYdNWFZeL6r82STKt64FtR5k=",
         "owner": "homebrew",
         "repo": "homebrew-cask",
-        "rev": "93b56380f279482aa07abee811b9dde30652e787",
+        "rev": "a85a7c1770803d9a32d0e858b352367ecded6ad7",
         "type": "github"
       },
       "original": {
@@ -158,6 +174,7 @@
     },
     "root": {
       "inputs": {
+        "acsandmann-tap": "acsandmann-tap",
         "darwin": "darwin",
         "home-manager": "home-manager",
         "homebrew-bundle": "homebrew-bundle",

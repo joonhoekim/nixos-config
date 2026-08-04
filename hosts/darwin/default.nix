@@ -6,6 +6,7 @@
     ../../modules/darwin/default-apps.nix
     ../../modules/darwin/eul.nix
     ../../modules/darwin/ios.nix
+    ../../modules/darwin/rice
     ../../modules/shared
   ];
 
@@ -52,11 +53,33 @@
   # via per-user LaunchAgents instead.
   launchd.user.agents = {
     # Tiling WM — keep it alive so a crash/quit relaunches it.
-    aerospace = {
-      command = "/Applications/AeroSpace.app/Contents/MacOS/AeroSpace";
+    #
+    # rift replaced AeroSpace here. AeroSpace itself is still installed (see
+    # modules/darwin/casks.nix) and its config still lives in this repo; only
+    # the login agent moved. That is the escape hatch: if rift misbehaves,
+    # `open -a AeroSpace` puts the old WM back this second, no rebuild. Kill
+    # rift first (`launchctl bootout gui/$UID/org.nixos.rift`) — two tiling
+    # WMs fighting over the same windows is worse than either alone.
+    #
+    # The binary comes from a brew formula (modules/darwin/brews.nix), so this
+    # is /opt/homebrew, not /nix/store. `path` matters: rift's run_on_start
+    # hooks shell out to `rift-cli` (sibling in /opt/homebrew/bin) and to
+    # `sketchybar` (nix store, reached via systemPath), and a LaunchAgent
+    # inherits none of a login shell's PATH.
+    rift = {
+      command = "/opt/homebrew/bin/rift";
+      path = [ "/opt/homebrew/bin" config.environment.systemPath ];
       serviceConfig = {
         RunAtLoad = true;
         KeepAlive = true;
+        # Not optional in practice. Without these, rift's output goes nowhere:
+        # the first time it refused to start (see
+        # docs/postmortems/2026-08-04-macos-rift-sketchybar.md) the reason was
+        # printed to a stdout nobody was reading, and the only visible symptom
+        # was a WM that silently did not run. run_on_start failures are the
+        # same shape — a hook that never fires leaves no trace at all.
+        StandardOutPath = "/tmp/rift.log";
+        StandardErrorPath = "/tmp/rift.log";
       };
     };
     # Menu-bar system monitor — start at login, but respect a manual quit.
@@ -121,7 +144,12 @@
         autohide-time-modifier = 0.2;
         show-recents = false;
         launchanim = true;
-        orientation = "right";
+        # Bottom, not right. The scrolling layout in rift moves windows
+        # horizontally, so a right-edge Dock sits exactly where columns enter
+        # and leave the screen — every reveal collides with the strip. At the
+        # bottom it only ever eats vertical space, which the layout has to
+        # spare. (This was "right" while AeroSpace tiled in both directions.)
+        orientation = "bottom";
         tilesize = 48;
         mru-spaces = false;           # don't reorder Spaces by recent use
         minimize-to-application = true;
@@ -171,12 +199,36 @@
         EnableStandardClickToShowDesktop = false;
       };
 
-      # Mission Control — recommended for AeroSpace multi-monitor use.
-      # true = one Space spans all displays (i.e. "Displays have separate
-      # Spaces" is OFF). Requires a logout to take effect.
+      # Mission Control > "Displays have separate Spaces".
+      #
+      #   false = each display gets its own Spaces (macOS default)
+      #   true  = one Space spans every display
+      #
+      # This is a hard requirement of the window manager, and the two WMs this
+      # repo has used want OPPOSITE values. AeroSpace wanted `true`, which is
+      # what this line said until rift replaced it. rift refuses to start
+      # otherwise — not a degraded mode, an immediate exit:
+      #
+      #   Rift detected that the macOS setting "Displays have separate Spaces"
+      #   is disabled. Rift currently requires this setting to be enabled.
+      #
+      # And because the LaunchAgent has KeepAlive, that exit becomes a crash
+      # loop that looks like "rift just doesn't run" — `launchctl print
+      # gui/$UID/org.nixos.rift` showing `last exit code = 1` is the tell.
+      # Running /opt/homebrew/bin/rift in a terminal prints the reason; the
+      # agent's stdout goes nowhere.
+      #
+      # So: leave this at `false` for as long as rift is the WM. Flipping it
+      # back is part of reverting to AeroSpace, not an independent knob.
+      #
+      # A logout is required either way — the value lands in
+      # com.apple.spaces immediately, but WindowServer only reads it at login.
+      # rift's own check reads the preference, so it will start before the
+      # logout while windows still behave the old way.
+      #
       # (The companion "Automatically rearrange Spaces" toggle is handled
       # above via dock.mru-spaces = false.)
-      spaces.spans-displays = true;
+      spaces.spans-displays = false;
 
       menuExtraClock = {
         Show24Hour = true;
@@ -198,6 +250,19 @@
           DSDontWriteUSBStores = true;          # no .DS_Store on USB drives
         };
       };
+
+      # sketchybar draws at the top of the screen, in the same strip as the
+      # macOS menu bar — so by default you get both, stacked and clipping each
+      # other. The usual fix is to auto-hide Apple's:
+      #
+      #   NSGlobalDomain._HIHideMenuBar = true;   (add to NSGlobalDomain above)
+      #
+      # Left off deliberately. Auto-hide is a whole-system behaviour change
+      # (the menu bar then slides in on hover, which on a notched display also
+      # moves where full-screen apps put their controls), and it is not
+      # something a status-bar experiment should decide on your behalf. Turn it
+      # on once the bar earns its place.
+
     };
 
     # "Select next source in Input menu" → F18 (so Karabiner can drive

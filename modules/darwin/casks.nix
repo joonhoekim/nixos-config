@@ -16,10 +16,20 @@ _:
   "sol"                # launcher / command palette (replaces Raycast)
 
   # Terminals
-  "ghostty"
+  "ghostty"            # daily driver
+  # Secondary terminal. `wezterm@nightly` rather than `wezterm`: upstream's
+  # last tagged stable is the 2024-02 build, which predates several macOS
+  # releases; the nightly cask is what the project actually keeps current.
+  # Config (and the pywal palette wiring) is in modules/darwin/rice/wezterm.
+  "wezterm@nightly"
 
   # Window manager / Keyboard / System utilities
-  "aerospace"          # tiling window manager (from nikitabobko/tap)
+  #
+  # NOTE: the tiling WM is now rift, which is a brew *formula* and therefore
+  # lives in ./brews.nix, not here. AeroSpace stays installed as the fallback —
+  # it no longer starts at login (hosts/darwin/default.nix), so it costs
+  # nothing until `open -a AeroSpace`. Drop this line once rift has proven out.
+  "aerospace"          # tiling window manager (from nikitabobko/tap), stand-by
   "karabiner-elements"
   "eul"
 
@@ -27,6 +37,8 @@ _:
   "google-chrome"
   "brave-browser"
   "firefox@developer-edition"
+  "zen"                # Firefox-based, arc-like workspaces (cask token is
+                       # "zen"; it was renamed from "zen-browser" upstream)
 
   # Communication Tools
   # "discord"

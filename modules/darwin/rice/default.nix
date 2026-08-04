@@ -128,7 +128,22 @@ in
   # sketchybar falls back to its own default lookup, ~/.config/sketchybar/
   # sketchybarrc, which is what the activation script below seeds.
   services.sketchybar = {
-    enable = true;
+    # Off. The bar drew six things and five of them were already in the macOS
+    # menu bar — clock, battery, CPU (eul), input source, focused app. The one
+    # that was not, the rift workspace indicator, now comes from rift itself
+    # (`[settings.ui.menu_bar]` in modules/darwin/config/rift.toml), which
+    # costs no extra process and no Screen Recording grant.
+    #
+    # Aliasing the real menu extras into sketchybar does work — verified, they
+    # render — but it only mirrors their *picture*; clicking them needs an
+    # accessibility helper, and the app menus on the left cannot be aliased at
+    # all. Reproducing what macOS gives for free would have meant two
+    # permissions on ad-hoc-signed store binaries, both of which break
+    # silently on a nixpkgs bump.
+    #
+    # Everything below is left intact rather than deleted: flipping this back
+    # to true restores the bar exactly as it was.
+    enable = false;
 
     # The LaunchAgent's PATH is built from this list plus environment.systemPath
     # — it inherits nothing from a login shell. Every binary a plugin shells out
@@ -261,8 +276,14 @@ in
       # rift 는 일부러 여기 없다. 재시작하면 열려 있는 창이 전부 다시 타일링돼서
       # 작업 중이면 방해가 크고, rift 는 hot_reload 로 설정 파일을 스스로
       # 지켜본다. 리빌드가 안 먹은 것 같으면 Alt+Ctrl+R.
-      $DRY_RUN_CMD /bin/launchctl kickstart -k \
-        "gui/$(/usr/bin/id -u)/org.nixos.sketchybar" 2>/dev/null || true
+      # 바를 끈 상태(services.sketchybar.enable = false)에서는 이 줄이 없다 —
+      # 있지도 않은 에이전트를 깨우려다 실패하는 명령이 switch 마다 돌 이유가 없다.
+      # 여기서 `config` 는 바깥 모듈의 것(nix-darwin)이다. 안쪽 람다가 가리는 것은
+      # `lib` 뿐이라 그대로 닿는다.
+      ${lib.optionalString config.services.sketchybar.enable ''
+        $DRY_RUN_CMD /bin/launchctl kickstart -k \
+          "gui/$(/usr/bin/id -u)/org.nixos.sketchybar" 2>/dev/null || true
+      ''}
     '';
   };
 }

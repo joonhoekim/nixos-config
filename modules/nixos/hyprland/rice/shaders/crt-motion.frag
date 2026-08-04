@@ -29,38 +29,73 @@ uniform sampler2D tex;
 uniform vec2 screen_size;
 uniform float time; // 셰이더가 걸린 시점부터의 초. 이 한 줄이 위의 대가를 부른다.
 
+// ── 포인터 ────────────────────────────────────────────────────────────────
+// 문서에 없는 유니폼들이다. 0.56 의 renderToOutputInternal() 이 스크린 셰이더에
+// 넘긴다(src/render/OpenGL.cpp). 전부 debug:damage_tracking = 0 을 요구하는데,
+// 이 파일은 어차피 꺼야 하므로 **추가 비용이 없다**. 조사 기록은 _temp/ricing/.
+//
+// 좌표는 0..1 정규화, 이 모니터 로컬, 곡률을 먹기 전 텍스처 좌표계다. 그래서
+// curve() 를 통과한 uv 와 그대로 비교하는 것이 맞는다.
+uniform vec2  pointer_position;
+
+// 클릭 이력. index 0 이 가장 최근이고, 새 클릭이 들어올 때마다 앞으로 밀린다
+// (OpenGL.cpp 의 addLastPressToHistory). times 는 그 클릭 이후 흐른 **실제 초**라
+// 아래 ANIM_SPEED 와 무관하다.
+//
+// 크기는 둘 다 32 다 (macros.hpp 의 POINTER_PRESSED_HISTORY_LENGTH). 위치 쪽에는
+// 하이프랜드 버그가 하나 있는데, 결과적으로 이 선언에 영향이 없다:
+//
+//   shader->setUniform2fv(SHADER_POINTER_PRESSED_POSITIONS, pressedPos.size(), ...)
+//   //                                       ↑ vec2 개수(32)가 아니라 float 개수(64)
+//
+// glUniform2fv 의 count 는 vec2 개수라, 64 를 넘기면 128 float 를 읽으려 든다 —
+// 버퍼에는 64 개뿐이니 하이프랜드 쪽에서 자기 버퍼 밖을 읽는다(0.56.1 과 main 둘
+// 다 그렇다). 다만 **넘치는 원소는 에러가 아니라 무시된다**(OpenGL ES 3.0:
+// "values for all array elements beyond the end of the array will be ignored"),
+// 그래서 [32] 로 선언하면 앞의 32 개가 그대로 들어오고 나머지는 버려진다.
+// [32] 로 걸어 두고 debug:gl_debugging = true 로 확인했다 — GL 에러 없음.
+uniform vec2  pointer_pressed_positions[32];
+uniform float pointer_pressed_times[32];
+
 #define TAU 6.2831853
 
 // ── crt.frag 와 같은 값들 ─────────────────────────────────────────────────
-#define CURVE       0.10
+// 여기를 고치면 ./crt.frag 도 같이 고쳐야 한다. 하이프랜드의 스크린 셰이더는
+// 전처리를 안 거쳐서 #include 가 없다 — applyScreenShader() 가 파일을 그대로
+// createProgram() 에 넘긴다. 공유할 방법이 없어서 복제다.
+#define CURVE       0.10              // @0..0.3
 #define EDGE_SOFT   1.5
-#define VIGNETTE    0.06
-#define FOCUS       0.32
-#define ABERRATION  3.0
-#define BLOOM       0.55
-#define BLOOM_PX    5.0
-#define BLOOM_CUT   0.22
-#define BLOOM_KNEE  0.28
+#define VIGNETTE    0.06              // @0..0.5
+#define FOCUS       0.32              // @0..0.6
+#define FOCUS_NEAR  0.28              // @0..1
+#define FOCUS_RADIUS 0.13              // @0.02..0.4
+#define ABERRATION  3.0               // @0..8
+#define BLOOM       0.32              // @0..1
+#define BLOOM_PX    5.0               // @1..16
+#define BLOOM_CUT   0.45              // @0..1
+#define BLOOM_KNEE  0.25              // @0.01..0.6
 #define BLOOM_TAPS  16
-#define SCAN_PX     4.0
-#define SCAN_DEPTH  0.12
-#define GRILLE      0.06
+#define BLOOM_KEEP  0.35              // @0..1
+#define SCAN_PX     4.0               // @2..8
+#define SCAN_DEPTH  0.12              // @0..0.5
+#define GRILLE      0.06              // @0..0.3
 #define GRILLE_PX   3.0
-#define BRIGHTNESS  1.12
+#define CONTRAST    1.08              // @0.6..2
+#define BRIGHTNESS  1.12              // @0.6..1.8
 #define TINT        vec3(1.0)
 
 // ── 움직임 ────────────────────────────────────────────────────────────────
 // 시간에 걸린 것 전부의 속도. 아래 GRAIN_HZ 와 HUM_SPEED 에 곱해지므로 이 한 줄만
 // 바꾸면 움직임 전체가 같은 비율로 느려지고 빨라진다.
-#define ANIM_SPEED  0.45
+#define ANIM_SPEED  0.45              // @0.05..2
 
 // 아날로그 그레인. 세기, 덩어리 크기(픽셀), 새 무늬를 뽑는 초당 횟수.
 // grainAt() 이 저주파 성분을 빼기 때문에 GRAIN_PX 는 질감만 정하고 화면 전체가
 // 밝아졌다 어두워지는 깜박임과는 무관하다. GRAIN_HZ 가 높은 것도 그래서다 —
 // 사람이 깜박임에 제일 민감한 3~15Hz 대역을 피한다.
-#define GRAIN       0.030
+#define GRAIN       0.030             // @0..0.15
 #define GRAIN_PX    1.5
-#define GRAIN_HZ    40.0
+#define GRAIN_HZ    40.0              // @5..60
 
 // 잡티를 어디에 얹을지의 배분. 더하기만 쓰면 밝은 곳에서 묻히고, 곱하기만 쓰면
 // 검정에서 사라진다(검정 × 무엇이든 검정). 섞어야 화면 전체에 고르게 얹힌다.
@@ -74,11 +109,30 @@ uniform float time; // 셰이더가 걸린 시점부터의 초. 이 한 줄이 �
 //
 // 터미널(순검정 배경)보다 값이 낮다. 데스크톱은 벽지와 창으로 이미 밝아서 같은
 // 세기면 띠가 훨씬 도드라진다.
-#define HUM_LIFT    0.015  // 띠 안에서 검정이 뜨는 양 — 이게 있어야 보인다
-#define HUM         0.04   // 띠 안에서 밝은 픽셀이 더 밝아지는 비율
-#define HUM_GLOW    1.2    // 띠 안에서 블룸이 번지는 비율
-#define HUM_WIDTH   0.10   // 띠 높이(화면 높이 비율)
-#define HUM_SPEED   0.25   // 초당 몇 화면분 내려가는지
+#define HUM_LIFT    0.015             // @0..0.1 띠 안에서 검정이 뜨는 양 — 이게 있어야 보인다
+#define HUM         0.04              // @0..0.3 띠 안에서 밝은 픽셀이 더 밝아지는 비율
+#define HUM_GLOW    1.2               // @0..4 띠 안에서 블룸이 번지는 비율
+#define HUM_WIDTH   0.10              // @0.02..0.4 띠 높이(화면 높이 비율)
+#define HUM_SPEED   0.25              // @0..1 초당 몇 화면분 내려가는지
+
+// 클릭 리플 — 누른 자리에서 퍼져 나가는 링 하나. 험 바와 같은 문법으로 얹으므로
+// 값의 뜻도 같다(GAIN 은 밝은 픽셀의 몫, LIFT 는 검정의 몫, GLOW 는 블룸 배율).
+//
+// 브라운관에서 이게 어색하지 않은 건 전자빔이 지나간 자리가 순간 밝아지는 것과
+// 문법이 같아서다. 실제 브라운관에 클릭이라는 개념은 없지만, 화면이 무언가에
+// 반응해 한 번 밝아지는 것 자체는 이 유리가 늘 하는 일이다.
+//
+// 시간은 pointer_pressed_times 에서 오고 그건 실제 초라, ANIM_SPEED 를 안 먹는다.
+// 입력에 대한 반응이 화면 애니메이션 속도를 따라가면 손과 어긋나서 늦게 느껴진다.
+#define RIPPLE_SEC  0.55              // @0.1..2 한 번이 사라지기까지의 초
+#define RIPPLE_MAX  0.20              // @0.02..0.6 다 퍼졌을 때의 반지름(화면 높이 비율)
+#define RIPPLE_W    0.030             // @0.005..0.15 링의 두께. 얇을수록 물결, 두꺼울수록 번쩍임이 된다
+#define RIPPLE_GAIN 0.35              // @0..1.5
+#define RIPPLE_LIFT 0.05              // @0..0.3
+#define RIPPLE_GLOW 1.5               // @0..4
+// 최근 몇 개까지 겹쳐 볼지. 이력은 32 개지만 RIPPLE_SEC 안에 그만큼 누를 일이
+// 없고, 루프는 픽셀마다 도는 비용이다.
+#define RIPPLE_TAPS  6
 
 
 vec2 curve(vec2 uv) {
@@ -112,7 +166,47 @@ float grainAt(vec2 p, float seed) {
     return vnoise(p / GRAIN_PX, seed) - vnoise(p / (GRAIN_PX * 4.0), seed + 7.0);
 }
 
-vec3 gun(vec2 uv, vec2 px) {
+// 화면비를 곱해 두지 않으면 가로로 늘어난 타원이 된다. 기준을 세로로 잡는 건
+// 반지름 값들이 모니터를 바꿔도 같은 크기로 보이게 하려는 것이다. ./crt.frag 의
+// focusAt() 과 같은 이유이고, 아래 ripples() 도 같은 보정을 쓴다.
+vec2 aspect() {
+    return vec2(screen_size.x / screen_size.y, 1.0);
+}
+
+// 이 픽셀에서 쓸 초점 흐림. 커서 둘레만 조인다 (./crt.frag 의 같은 함수).
+float focusAt(vec2 uv) {
+    vec2 d = (uv - pointer_position) * aspect();
+    float near = exp(-dot(d, d) / (FOCUS_RADIUS * FOCUS_RADIUS));
+    return mix(FOCUS, FOCUS * FOCUS_NEAR, near);
+}
+
+// 최근 클릭들이 이 픽셀에 남기는 세기의 합. 0 이면 아무 일도 없다.
+float ripples(vec2 uv) {
+    float acc = 0.0;
+    vec2  a   = aspect();
+
+    for (int i = 0; i < RIPPLE_TAPS; i++) {
+        float age = pointer_pressed_times[i];
+        // 한 번도 안 누른 자리는 컴포지터가 뜬 뒤로 흐른 시간이 들어와서 아주 크다.
+        // 그래서 별도의 "비어 있음" 표시가 없어도 이 한 줄로 걸러진다.
+        if (age > RIPPLE_SEC) continue;
+
+        float k = age / RIPPLE_SEC;             // 0 → 1
+        float r = length((uv - pointer_pressed_positions[i]) * a);
+
+        // 반지름만 자라고 두께는 유지한다. 두께까지 같이 키우면 링이 아니라
+        // 점점 커지는 원반이 되어, 화면 절반이 밝아지는 순간이 생긴다.
+        //
+        // pow(x, 2.0) 이 아니라 곱하기다. GLSL 의 pow 는 밑이 음수면 정의되지
+        // 않는데, 여기 밑은 링 안쪽에서 음수다 — 험 바가 같은 자리에서 같은
+        // 이유로 곱하기를 쓴다.
+        float e = (r - k * RIPPLE_MAX) / RIPPLE_W;
+        acc += exp(-e * e) * (1.0 - k);
+    }
+    return acc;
+}
+
+vec3 gun(vec2 uv, vec2 px, float focus) {
     vec2 drift = (uv - 0.5) * ABERRATION * px * 2.0;
     vec3 sharp = vec3(
         texture(tex, uv + drift).r,
@@ -126,7 +220,7 @@ vec3 gun(vec2 uv, vec2 px) {
               + texture(tex, uv + vec2( r.x, -r.y)).rgb
               + texture(tex, uv + vec2(-r.x,  r.y)).rgb;
 
-    return mix(sharp, soft * 0.25, FOCUS);
+    return mix(sharp, soft * 0.25, focus);
 }
 
 vec3 bloom(vec2 uv, vec2 px) {
@@ -182,12 +276,22 @@ void main() {
     float humD   = min(humY, 1.0 - humY);
     float humBar = exp(-(humD * humD) / (HUM_WIDTH * HUM_WIDTH));
 
-    // 블룸 쪽을 훨씬 세게 민다. 띠가 지날 때 밝은 것 둘레가 확 번지는 게
-    // 브라운관에서 실제로 눈에 띄는 부분이다.
-    float humGlow = 1.0 + HUM_GLOW * humBar;
+    // 최근 클릭들. 험 바와 같은 자리에 얹히므로 여기서 같이 구해 둔다.
+    float rip = ripples(uv);
 
-    vec3 col = gun(uv, px);
-    col += bloom(uv, px) * BLOOM * humGlow;
+    // 블룸 쪽을 훨씬 세게 민다. 띠가 지날 때 밝은 것 둘레가 확 번지는 게
+    // 브라운관에서 실제로 눈에 띄는 부분이다. 리플도 같은 배율을 탄다 — 누른
+    // 자리에서 밝은 것들이 한 번 확 번지는 게 링 자체보다 먼저 눈에 들어온다.
+    float humGlow = 1.0 + HUM_GLOW * humBar + RIPPLE_GLOW * rip;
+
+    vec3 col = gun(uv, px, focusAt(uv));
+
+    // 밝은 픽셀은 자기 밝기를 지키고, 번짐은 둘레의 어두운 픽셀에만 얹힌다.
+    // 험 바와 리플이 미는 것도 이 문 뒤에 있다 — 흰 창 위에서 띠가 지날 때
+    // 화면이 통째로 잘려 나가는 것을 막는다.
+    float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+    col += bloom(uv, px) * BLOOM * humGlow * (1.0 - smoothstep(BLOOM_KEEP, 1.0, lum));
+
     col  = stripes(col, pix);
 
     // 그레인은 GRAIN_HZ 로 계단을 밟되, 계단 사이를 smoothstep 으로 이어 붙인다.
@@ -201,6 +305,12 @@ void main() {
 
     // 띠 밖은 humBar 가 0 이라 아무 일도 일어나지 않는다.
     col = modulate(col, humBar, HUM, HUM_LIFT);
+    col = modulate(col, rip, RIPPLE_GAIN, RIPPLE_LIFT);
+
+    // 명암은 더하기(블룸·그레인·리플)가 전부 끝난 뒤여야 한다. 들어 올린 검정을
+    // 도로 누르는 것이 목적이라, 앞에 두면 아무 일도 안 한 셈이 된다. max() 는
+    // 그레인이 검정 근처를 음수로 밀 수 있어서다 — pow(음수, 소수)는 NaN 이다.
+    col = pow(max(col, 0.0), vec3(CONTRAST));
 
     col  = bezel(col, uv);
     col *= BRIGHTNESS * TINT;

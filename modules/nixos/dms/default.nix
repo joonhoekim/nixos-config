@@ -25,6 +25,17 @@
 # 플러그인은 파일만 놓아서는 안 뜬다. DMS 가 `enabled: true` 를 봐야 로드한다
 # (PluginService.qml 의 SettingsData.getPluginSetting(id, "enabled", false)).
 # 그 값은 settings.json 이 아니라 plugin_settings.json 이라는 별도 파일에 산다.
+#
+# ── plugin.json 을 고쳤으면 셸을 재시작해야 한다 ───────────────────────────
+# QML 은 저장하는 즉시 반영된다(DMS 가 플러그인 폴더를 감시한다). **매니페스트는
+# 아니다.** `dms ipc call plugins reload <id>` 는 컴포넌트만 다시 읽고,
+# plugin-scan 도 이미 아는 매니페스트는 건너뛴다. 그래서 manifest 에 키를 새로
+# 넣으면(예: settings) 파일에는 있는데 DMS 는 모르는 상태가 되고, 증상은 "설정
+# 패널이 있는데 플러그인 목록만 보인다"로 나타난다 — 실제로 한 번 겪었다.
+#
+#   dms restart
+#
+# 값 조절이나 QML 손보는 동안에는 필요 없다. plugin.json 을 건드렸을 때만이다.
 
 let
   pluginDir = "$HOME/.config/DankMaterialShell/plugins";

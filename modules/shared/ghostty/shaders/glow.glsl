@@ -13,16 +13,16 @@
 
 #define TAU 6.2831853
 
-#define BLOOM       0.70
-#define BLOOM_PX    6.0
-#define BLOOM_CUT   0.30
-#define BLOOM_KNEE  0.28
+#define BLOOM       0.70              // @0..1.5
+#define BLOOM_PX    6.0               // @1..16
+#define BLOOM_CUT   0.30              // @0..1
+#define BLOOM_KNEE  0.28              // @0.01..0.6
 
 // 3 픽셀이면 한 주기에 표본이 세 개뿐이라 모아레가 된다. crt.glsl 과 같은 4.
-#define SCAN_PX     4.0
-#define SCAN_DEPTH  0.08
+#define SCAN_PX     4.0               // @2..8
+#define SCAN_DEPTH  0.08              // @0..0.5
 
-#define BRIGHTNESS  1.06
+#define BRIGHTNESS  1.06              // @0.6..1.8
 
 // 골든앵글 나선 16탭. 반경을 sqrt 로 잡아야 표본이 면적에 고르게 퍼진다.
 vec3 bloom(vec2 uv, vec2 px) {

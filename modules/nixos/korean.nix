@@ -35,8 +35,26 @@
 
   # 한/영 is Right Alt -> Hangul, remapped by keyd in ./keyboard.nix rather
   # than here: keyd takes one config per machine, and this box also puts a
-  # navigation layer on held Caps Lock. fcitx5-hangul sees the resulting
-  # Hangul_Mode and toggles keyboard-us <-> hangul.
+  # navigation layer on held Caps Lock.
+  #
+  # The full chain, since it crosses three keycode namespaces and every one of
+  # them names the key differently:
+  #
+  #   keyd `rightalt = hangeul`  ->  evdev KEY_HANGEUL (122)
+  #     -> xkb <HNGL>, which is keycode 130 (evdev + 8)
+  #     -> keysym `Hangul`, from symbols/pc — its only section, pc105, so every
+  #        layout including a bare `us` carries it
+  #     -> fcitx5 Hotkey/TriggerKeys -> toggle keyboard-us <-> hangul
+  #
+  # To check a hop rather than guess at it: `sudo evtest` on the *keyd virtual
+  # keyboard* device for the first, and fcitx5's own key log for the last —
+  #
+  #   gdbus call --session --dest org.fcitx.Fcitx5 --object-path /controller \
+  #     --method org.fcitx.Fcitx.Controller1.SetLogRule "keytrace=5"
+  #   journalctl --user -fu 'app-org.fcitx.Fcitx5@autostart.service'
+  #
+  # which prints `KeyEvent: Key(Hangul ...) keycode: 130` when the key lands.
+  # Pass "" to SetLogRule to turn it back off; it is very noisy.
 
   # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {
@@ -51,14 +69,22 @@
         qt6Packages.fcitx5-configtool   # GUI configurator
       ];
       # Declarative profile — adds Hangul to the active input-method group.
-      # NOTE: fcitx5 reads ~/.config/fcitx5/* before /etc/xdg/fcitx5/*. After
-      # rebuilding, remove user-local overrides for these to take effect.
+      # NOTE: fcitx5 reads ~/.config/fcitx5/* before /etc/xdg/fcitx5/*, and it
+      # *writes* ~/.config/fcitx5/profile itself on startup. So everything below
+      # is a seed for a machine that has no user-local copy yet; on one that
+      # does, delete ~/.config/fcitx5/{profile,config} once after rebuilding or
+      # none of it takes effect. (i18n.inputMethod.fcitx5.ignoreUserConfig would
+      # make this unconditional, at the cost of fcitx5 never persisting anything
+      # — including whatever the config GUI writes. Not worth it here.)
       settings = {
         inputMethod = {
           "Groups/0" = {
             Name = "Default";
             "Default Layout" = "us";
-            DefaultIM = "hangul"; # start in Hangul; Right Alt toggles to EN
+            # Which IM the toggle turns *on*. Not the startup state: fcitx5's
+            # Behavior/ActiveByDefault is false, so a text field opens inactive
+            # — that is, on Items/0, English — and 한/영 activates this one.
+            DefaultIM = "hangul";
           };
           "Groups/0/Items/0" = {
             Name = "keyboard-us";
@@ -68,11 +94,58 @@
             Name = "hangul";
             Layout = "us"; # use US physical layout while in Hangul IM
           };
-          "Groups/0/Items/2" = {
-            Name = "keyboard-kr";
-            Layout = "";
-          };
+          # Exactly two entries, and that is load-bearing — see the
+          # EnumerateWithTriggerKeys note below. A third one used to sit here:
+          #
+          #   "Groups/0/Items/2" = { Name = "keyboard-kr"; Layout = ""; };
+          #
+          # It bought nothing. keyboard-kr is an xkb layout, not an engine; the
+          # `kr` layout is US QWERTY with a couple of extra keys, so selecting
+          # it types Latin exactly like keyboard-us does. Hangul comes from the
+          # hangul *engine* above, never from the layout. All it did was give
+          # the trigger key a third state that looks identical to the first.
           GroupOrder."0" = "Default";
+        };
+
+        # Written to /etc/xdg/fcitx5/config. There was no such file at all
+        # before — every hotkey came from fcitx5's compiled-in defaults.
+        #
+        # EnumerateWithTriggerKeys is the one that matters. fcitx5's
+        # Instance::trigger() branches like this (src/lib/fcitx/instance.cpp):
+        #
+        #   if (!enumerateWithTriggerKeys() || (firstTrigger_ && isActive()) ||
+        #       (enumerateSkipFirst() && inputMethodList().size() <= 2))
+        #     toggle(ic);
+        #   else
+        #     enumerate(ic, true);
+        #
+        # Left at its default (true), the trigger key can fall through to
+        # enumerate() — cycling forward through the group rather than flipping
+        # between two states. With the old three-entry group that meant
+        # keyboard-us → hangul → keyboard-kr, and since two of those three type
+        # Latin, 한/영 behaved as if it were half broken. Setting this false
+        # makes trigger() unconditionally toggle(), which is what a 한/영 key
+        # is supposed to do.
+        globalOptions = {
+          # "False", not false. The nixpkgs module renders this file with a
+          # bare `lib.generators.toINI {}`, which spells a Nix bool `false`,
+          # and fcitx5 only ever accepts "True"/"False" — case-sensitively,
+          # falling back to the compiled-in default on anything else
+          # (unmarshallOption(bool), src/lib/fcitx-config/marshallfunction.cpp).
+          # A bool here therefore reads as "correct config that does nothing".
+          # Same reason the hangul addon block below is quoted.
+          Hotkey.EnumerateWithTriggerKeys = "False";
+
+          # Pinned rather than inherited, so an upstream change to the defaults
+          # cannot quietly take the 한/영 key away. Hangul is the keysym keyd
+          # produces from Right Alt (see ./keyboard.nix); Control+space is kept
+          # deliberately as an escape hatch for when the Hangul path itself is
+          # what is being debugged. Zenkaku_Hankaku is in the stock list too and
+          # is dropped here — nothing on this machine emits it.
+          "Hotkey/TriggerKeys" = {
+            "0" = "Hangul";
+            "1" = "Control+space";
+          };
         };
         addons = {
           hangul = {

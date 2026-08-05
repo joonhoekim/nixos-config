@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, ... }:
+{ config, pkgs, user, ... }:
 
 let
   # 벽지가 바뀌면 팔레트를 다시 뽑는 감시자. launchd.user.agents.wal-watch 가
@@ -84,25 +84,40 @@ print(url[len("file://"):])
   '';
 in
 
-# macOS ricing: the status bar, the window borders, and the colour generator
-# that feeds both.
+# macOS ricing: the window borders and the colour generator that feeds them.
 #
 # The window manager itself is not here — rift is a brew formula plus a login
 # agent (modules/darwin/brews.nix, hosts/darwin/default.nix) and its keymap is
 # a declarative symlink (modules/darwin/config/rift.toml). This module owns the
 # parts whose *look* is meant to be tuned by eye.
 #
+# ── There is no status bar here, and that was a decision ──────────────────
+# sketchybar lived in this module until 2026-08-05. It drew six things and five
+# of them were already in the macOS menu bar — clock, battery, CPU (eul), input
+# source, focused app. The one that was not, the rift workspace indicator, now
+# comes from rift itself (`[settings.ui.menu_bar]` in
+# modules/darwin/config/rift.toml): no extra process, no Screen Recording
+# grant, nothing to re-approve when a nixpkgs bump changes a hash.
+#
+# Replacing the whole menu bar was the alternative, and it does not work.
+# Aliasing the real menu extras into sketchybar renders them — verified — but
+# it only mirrors their *picture*; clicking one needs an accessibility helper,
+# and the app menus on the left cannot be aliased at all. Two TCC grants on
+# ad-hoc-signed store binaries, to reproduce what macOS gives for free.
+#
+# So: macOS keeps its menu bar. `git log -- modules/darwin/rice/sketchybar`
+# has the config if it ever earns its place back.
+#
 # ── Installation is declarative, ricing is not ────────────────────────────
 # Same split the niri module makes on the NixOS side (modules/nixos/niri):
 # nix installs the services and starts them, but the files they read live as
-# ordinary writable files in $HOME, seeded from ./sketchybar and ./wezterm only
-# when missing. A bar is built by nudging a padding value and looking at it;
-# behind a store symlink every nudge costs a rebuild, and sketchybar's own
-# `--reload` would be reloading a read-only file it cannot have written.
+# ordinary writable files in $HOME, seeded from the directories below only when
+# missing. A border width or a gap is settled by nudging it and looking; behind
+# a store symlink every nudge costs a rebuild.
 #
-# So ./sketchybar here is a starting point, not the live config. Once seeded,
-# ~/.config/sketchybar is the original. There is no rice-save for it yet — copy
-# it back by hand if a look is worth keeping.
+# So the trees here are starting points, not the live config. Once seeded,
+# ~/.config is the original — `apps/rice-save` carries changes back to the repo
+# and `apps/rice-restore` pushes the repo the other way.
 #
 # ── Where the colours come from ───────────────────────────────────────────
 # pywal (`wal`) reads a wallpaper and writes a 16-colour palette to
@@ -110,51 +125,17 @@ in
 # cache and falls back to a built-in palette when it is absent (a fresh machine
 # has never run `wal`):
 #
-#   sketchybar   ~/.config/sketchybar/colors.sh sources ~/.cache/wal/colors.sh
-#   jankyborders apps/rice-colors pushes new args into the running instance
-#   wezterm      ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
+#   jankyborders  apps/rice-colors pushes new args into the running instance
+#   wezterm       ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
+#   WorkspacePeek reads ~/.cache/wal/colors.json itself (useWalColors)
 #
-# `apps/rice-colors <image>` runs wal and then pokes all three. Ghostty is
+# `apps/rice-colors <image>` runs wal and then pokes them. Ghostty is
 # deliberately not in that list: its palette is owned by the other ricing axis
 # (modules/shared/ghostty.nix + apps/rice-term), and having two generators
 # write the same theme file is how you get a look that flips back on the next
 # switch.
 
 {
-  # ── Status bar ───────────────────────────────────────────────────────────
-  # `config` is left at its default (empty) on purpose. Setting it would make
-  # nix-darwin pass `--config <store path>`, pinning sketchybarrc to the store
-  # — the exact read-only outcome the header above is avoiding. Empty means
-  # sketchybar falls back to its own default lookup, ~/.config/sketchybar/
-  # sketchybarrc, which is what the activation script below seeds.
-  services.sketchybar = {
-    # Off. The bar drew six things and five of them were already in the macOS
-    # menu bar — clock, battery, CPU (eul), input source, focused app. The one
-    # that was not, the rift workspace indicator, now comes from rift itself
-    # (`[settings.ui.menu_bar]` in modules/darwin/config/rift.toml), which
-    # costs no extra process and no Screen Recording grant.
-    #
-    # Aliasing the real menu extras into sketchybar does work — verified, they
-    # render — but it only mirrors their *picture*; clicking them needs an
-    # accessibility helper, and the app menus on the left cannot be aliased at
-    # all. Reproducing what macOS gives for free would have meant two
-    # permissions on ad-hoc-signed store binaries, both of which break
-    # silently on a nixpkgs bump.
-    #
-    # Everything below is left intact rather than deleted: flipping this back
-    # to true restores the bar exactly as it was.
-    enable = false;
-
-    # The LaunchAgent's PATH is built from this list plus environment.systemPath
-    # — it inherits nothing from a login shell. Every binary a plugin shells out
-    # to has to be reachable one of those two ways.
-    #
-    # jq: the plugins parse `sketchybar --query` output and pmset/system_profiler
-    # JSON. The rest of the plugins' tools (pmset, osascript, sw_vers) are macOS
-    # built-ins under /usr/bin, which systemPath already carries.
-    extraPackages = with pkgs; [ jq ];
-  };
-
   # ── Window borders ───────────────────────────────────────────────────────
   # NOT `services.jankyborders`, deliberately. That module gives borders its own
   # LaunchAgent, and a LaunchAgent is its own responsible process as far as
@@ -199,7 +180,6 @@ in
       pkgs.fswatch
       pkgs.pywal16
       pkgs.jankyborders
-      config.services.sketchybar.package
       pkgs.coreutils
       config.environment.systemPath
     ];
@@ -218,8 +198,8 @@ in
     home.packages = with pkgs; [
       # pywal16 rather than pywal: same `wal` command and the same
       # ~/.cache/wal/ layout, but the maintained fork — it emits all 16 colours
-      # (upstream pywal only really varies 8) which is what the sketchybar
-      # palette and wezterm's brights below actually consume.
+      # (upstream pywal only really varies 8) which is what wezterm's brights
+      # and the border luminance ranking in apps/rice-colors consume.
       #
       # The nixpkgs wrapper already puts imagemagick on its PATH, so the
       # default backend works with nothing else installed.
@@ -232,11 +212,6 @@ in
     # rebuild mid-ricing never clobbers unsaved work — see the helper's header.
     home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${import ../../shared/rice-seed-helpers.nix}
-
-      # sketchybarrc + colors.sh + plugins/, as one tree. sketchybar re-execs
-      # plugins on every update, so they must stay executable — `seed` chmods
-      # u+w but the store copy's +x survives the cp.
-      seed ${./sketchybar} "$HOME/.config/sketchybar"
 
       # wezterm. Secondary terminal (ghostty is the daily one), here mostly
       # because it can read pywal's JSON directly and reload itself.
@@ -259,31 +234,14 @@ in
       # 앱의 기본값에 덮이지 않는다.
       seed ${./workspacepeek/config.json} "$HOME/.config/workspacepeek/config.json"
 
-      # ── 시드한 설정을 실제로 읽히기 ────────────────────────────────────
-      # 이 순서 때문에 필요하다: 한 번의 switch 안에서 시스템 활성화가 먼저
-      # 돌아 sketchybar LaunchAgent 를 띄우고, home-manager 활성화(위의 seed)는
-      # 그 몇 분 뒤에 돈다. 그래서 새 머신의 첫 switch 에서 sketchybar 는
-      # ~/.config/sketchybar 가 아직 없는 상태로 뜬다.
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 넷 다 그럴 필요가 없기
+      # 때문이다. wezterm 은 자기 설정 파일을 지켜보고, bordersrc 와 rice/bin 은
+      # 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며, WorkspacePeek 은
+      # 애초에 파일이 없을 때만 시드가 일어난다(= 첫 실행 전이다).
       #
-      # 그리고 그건 `sketchybar --reload` 로 안 고쳐진다. 시작할 때 설정 파일을
-      # 못 찾은 sketchybar 는 다시 읽을 경로를 갖고 있지 않아서, --reload 가
-      # 성공하면서 아무것도 안 바뀐다 — 바는 기본값(height 25, 아이템 0개)으로
-      # 남고 에러는 어디에도 안 뜬다. 실제로 한 번 겪었다.
-      #
-      # 그래서 리로드가 아니라 재시작이다. 바가 다시 뜨는 데 드는 비용은
-      # 눈에 안 띄는 수준이고, switch 마다 홈 쪽 설정이 확실히 반영된다.
-      #
-      # rift 는 일부러 여기 없다. 재시작하면 열려 있는 창이 전부 다시 타일링돼서
+      # rift 도 일부러 없다. 재시작하면 열려 있는 창이 전부 다시 타일링돼서
       # 작업 중이면 방해가 크고, rift 는 hot_reload 로 설정 파일을 스스로
       # 지켜본다. 리빌드가 안 먹은 것 같으면 Alt+Ctrl+R.
-      # 바를 끈 상태(services.sketchybar.enable = false)에서는 이 줄이 없다 —
-      # 있지도 않은 에이전트를 깨우려다 실패하는 명령이 switch 마다 돌 이유가 없다.
-      # 여기서 `config` 는 바깥 모듈의 것(nix-darwin)이다. 안쪽 람다가 가리는 것은
-      # `lib` 뿐이라 그대로 닿는다.
-      ${lib.optionalString config.services.sketchybar.enable ''
-        $DRY_RUN_CMD /bin/launchctl kickstart -k \
-          "gui/$(/usr/bin/id -u)/org.nixos.sketchybar" 2>/dev/null || true
-      ''}
     '';
   };
 }

@@ -58,31 +58,12 @@ auto_focus_blacklist = [
 
 hot_reload = true
 
-# ── sketchybar wiring ─────────────────────────────────────────────────────
-# rift has its own menu-bar workspace indicator (disabled below) but sketchybar
-# is the bar this machine actually draws, so rift has to tell it when to
-# repaint. `rift-cli subscribe` registers a long-lived listener; the command it
-# runs gets RIFT_* env vars (see the upstream rift.default.toml header for the
-# full list).
-#
-# The trigger names here must match the `--add event` lines in
-# ~/.config/sketchybar/sketchybarrc, seeded from modules/darwin/rice/sketchybar.
-# Nothing enforces that across the two files — if the workspace indicator goes
-# stale, a name drifted.
-#
-# No RIFT_* values are forwarded, deliberately. sketchybar's rift_spaces item
-# treats these purely as "ask again" pokes and reads the real state back from
-# `rift-cli query workspaces`. Passing the event payload instead would make the
-# indicator correct only for workspaces you switched to *while sketchybar was
-# already listening* — wrong after a bar reload, wrong on a cold start.
-# The `command -v` guard matters once the bar is off (which it is by default —
-# see services.sketchybar in modules/darwin/rice). Without it these fire on
-# every workspace change with sketchybar not installed, and each one appends a
-# "command not found" to /tmp/rift.log until the disk notices.
+# Nothing subscribes to rift's events any more. There used to be two
+# `rift-cli subscribe` listeners here, poking sketchybar to repaint its
+# workspace indicator; the bar is gone and rift draws that indicator itself
+# now (see [settings.ui.menu_bar] below). `git log -- modules/darwin/rice` has
+# the wiring if another consumer ever wants it.
 run_on_start = [
-  "rift-cli subscribe cli --event workspace_changed --command sh --args -c --args 'command -v sketchybar >/dev/null 2>&1 && sketchybar --trigger rift_workspace_changed'",
-  "rift-cli subscribe cli --event windows_changed --command sh --args -c --args 'command -v sketchybar >/dev/null 2>&1 && sketchybar --trigger rift_windows_changed'",
-
   # Window borders, started as a CHILD of rift rather than as their own
   # LaunchAgent. This is not tidiness — it is what makes `ax_focus=on` work.
   #
@@ -162,11 +143,10 @@ invert_horizontal = false
 propagate_to_workspace_swipe = true
 
 [settings.layout.gaps.outer]
-# The top gap is not decoration — it is the strip sketchybar draws in.
-# modules/darwin/rice/sketchybar/sketchybarrc sets `height=32`; this leaves it
-# that plus a hair. Change one and change the other, or windows slide under the
-# bar (or a dead band appears above them).
-top = 38
+# This was 38 while sketchybar drew a 32pt bar of its own up there. macOS
+# already keeps windows clear of its own menu bar, so with the bar gone that
+# number was 32 points of dead band above every window. Symmetric now.
+top = 6
 left = 6
 bottom = 6
 right = 6
@@ -176,19 +156,13 @@ horizontal = 6
 vertical = 6
 
 [settings.ui.menu_bar]
-# rift draws its own workspace indicator in the macOS menu bar.
-#
-# This was off while sketchybar owned a bar of its own — two indicators
-# competing for the same few points of menu-bar width. It is on now because
-# the workspace indicator turned out to be the *only* thing that bar was
-# providing that macOS does not already give: the clock, battery, CPU and
-# input source were all duplicates of menu extras, and the app menus could
-# not be reproduced at all without an accessibility helper.
-#
-# So the trade went the other way. macOS keeps its menu bar, and the one
-# genuinely missing piece comes from the window manager itself — no extra
-# process, no Screen Recording grant, nothing to re-approve when nixpkgs
-# bumps a hash.
+# rift draws its own workspace indicator in the macOS menu bar. This is the
+# whole reason there is no status bar on this machine: the indicator turned
+# out to be the *only* thing sketchybar was providing that macOS does not
+# already give (clock, battery, CPU and input source were all duplicates of
+# menu extras, and the app menus cannot be reproduced without an accessibility
+# helper). Getting it from the window manager costs no extra process and no
+# TCC grant. See the header of modules/darwin/rice/default.nix.
 enabled = true
 # Empty workspaces are hidden. Nine slots of mostly-dead numbers is what
 # makes a menu-bar indicator get ignored, and macOS truncates the whole thing
@@ -222,8 +196,9 @@ haptic_pattern = "level_change"
 [virtual_workspaces]
 enabled = true
 # Nine, as AeroSpace had. Indices are 0-based, so Alt+1 targets index 0 —
-# hence the names below, which are what sketchybar displays. The digit you
-# press and the label you see match; only the internal index is off by one.
+# hence the names below, which are what the menu-bar indicator displays. The
+# digit you press and the label you see match; only the internal index is off
+# by one.
 default_workspace_count = 9
 workspace_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 auto_assign_windows = true
@@ -363,14 +338,16 @@ move2 = "Alt + Ctrl"
 "move2 + Up" = { move_window_to_display = { selector = "up" } }
 "move2 + Down" = { move_window_to_display = { selector = "down" } }
 
-# ── Alt+Ctrl 계열은 피커들과 나눠 쓴다 ───────────────────────────────────
-# Option+Ctrl+Q 와 Option+Ctrl+W 는 rift 가 아니라 두 오버레이 앱이 가져간다
-# (WallpaperPeek / WorkspacePeek — modules/darwin/rice/peek/README.md).
+# ── Option+Ctrl+W 는 rift 것이 아니다 ────────────────────────────────────
+# WorkspacePeek 오버레이가 가져간다 (modules/darwin/rice/peek/README.md).
 #
-# 여기에 그 두 키를 절대 바인딩하지 말 것. 둘 다 CGEvent tap 을 쓰기 때문에
-# 겹치면 에러가 아니라 "먼저 등록한 쪽이 먹는" 경쟁이 되고, 로그인 순서에 따라
-# 결과가 달라진다. 원래 그 앱들이 쓰던 Option+Q 가 아래 close_window 와 겹쳐서
-# 실제로 그렇게 됐고, 그래서 피커들을 이 계열로 옮겼다.
+# 여기에 그 키를 바인딩하지 말 것. 양쪽 다 CGEvent tap 을 쓰기 때문에 겹치면
+# 에러가 아니라 "먼저 등록한 쪽이 먹는" 경쟁이 되고, 로그인 순서에 따라 결과가
+# 달라진다. 원래 그 앱이 쓰던 Option+W 계열이 실제로 그렇게 됐고, 그래서 이
+# 계열로 옮겼다.
+#
+# Option+Ctrl+Q 는 비어 있다. WallpaperPeek 이 쓰던 자리인데 그 앱은 걷어냈다
+# (손쉬운 사용 권한을 줘도 이벤트 탭이 안 생겨서 핫키가 끝내 안 먹었다).
 
 # Layout engine of the active workspace, live. "scrolling" is the niri one.
 "Alt + Ctrl + 1" = { set_workspace_layout = { mode = "traditional" } }

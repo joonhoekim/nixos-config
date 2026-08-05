@@ -12,13 +12,14 @@
 # pywal 은 색을 ~/.cache/wal/ 에 쓰기만 하고 끝난다. 훅 같은 건 없다. 그래서
 # "누가 그 색을 다시 읽게 만드는가"는 전부 이쪽 몫이고, 소비자마다 방법이 다르다:
 #
-#   sketchybar   --reload. 설정이 셸 스크립트라 colors.sh 를 다시 source 한다.
 #   jankyborders 이미 떠 있는 인스턴스에 인자를 다시 넘기면 그게 곧 재설정이다
 #                (upstream: "invoking a new borders instance with any
 #                combination of the available options will update the
 #                properties of the already running instance"). 재시작 아님.
 #   wezterm      아무것도 안 해도 된다. wezterm.lua 가 colors.json 을 감시
 #                목록에 넣어 뒀다(add_to_config_reload_watch_list).
+#   WorkspacePeek 역시 아무것도 안 해도 된다. 오버레이를 띄울 때마다
+#                colors.json 을 새로 읽는다(useWalColors).
 #
 # ghostty 는 일부러 빠져 있다. 터미널 팔레트는 다른 축(apps/rice-term +
 # modules/shared/ghostty.nix)이 갖고 있고, 생성기 둘이 같은 테마 파일을 쓰면
@@ -112,15 +113,6 @@ fi
 
 # shellcheck disable=SC1091
 . "$cache/colors.sh"
-
-# ── sketchybar ────────────────────────────────────────────────────────────
-if command -v sketchybar >/dev/null 2>&1; then
-	if sketchybar --reload >/dev/null 2>&1; then
-		printf "  ${DIM}sketchybar 다시 읽음${NC}\n"
-	else
-		printf "  ${YELLOW}sketchybar 가 안 떠 있다${NC}\n"
-	fi
-fi
 
 # ── jankyborders ──────────────────────────────────────────────────────────
 #

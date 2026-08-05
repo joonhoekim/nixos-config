@@ -96,7 +96,6 @@
     "containerCornerRadius": 16,
     "contentPadding": 16,
     "glyphFontNames": [
-      "sketchybar-app-font",
       "JetBrainsMono Nerd Font",
       "JetBrainsMonoNL Nerd Font"
     ],

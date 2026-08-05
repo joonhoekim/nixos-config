@@ -298,6 +298,37 @@ hl.bind(mod .. " + CTRL + right", hl.dsp.window.move({ monitor = "r" }))
 hl.bind(mod .. " + CTRL + up", hl.dsp.window.move({ monitor = "u" }))
 hl.bind(mod .. " + CTRL + down", hl.dsp.window.move({ monitor = "d" }))
 
+-- 이웃과 합치기 / 떼기. rift 의 Mod+Ctrl+E(consume_or_expel_window)와 니리의
+-- consume-or-expel-window-right 자리다. 세 WM 에서 같은 키가 같은 일을 한다.
+--
+-- 하이프랜드에는 그 하나짜리 액션이 없다. layoutmsg 로 쪼개져 있고, 둘 중 뭘
+-- 부를지는 지금 상태를 보고 여기서 정해야 한다:
+--
+--   consume   다음 컬럼의 맨 위 창 하나를 이 컬럼으로 끌어온다
+--   promote   활성 창을 컬럼에서 빼내 바로 오른쪽에 새 컬럼으로 둔다
+--
+-- **`expel` 이 아니라 `promote` 다.** 이름은 expel 이 짝처럼 보이지만, 그건
+-- 포커스가 어디 있든 컬럼 **맨 아래** 창을 뱉는다(니리 문서도 expel-window-
+-- from-column 을 "the bottom window" 라고 적는다). 골라서 빼내는 건 promote 뿐
+-- 이다. 좌표를 재서 확인했다 — docs/hyprland-binds.md 의 layoutmsg 표.
+--
+-- 컬럼 판별은 x 좌표다. 같은 컬럼의 창들은 x 가 정확히 같고 컬럼끼리는 다르다.
+-- 띄운 창은 이 계산에서 빼야 아무 데나 걸쳐 있는 플로팅 하나가 판정을 뒤집지
+-- 않는다.
+--
+-- 왕복이 완전하지는 않다. promote 로 나간 창은 맨 오른쪽 컬럼이 되므로 다시
+-- 누르면 `no next column` 이다 — 가져올 다음 컬럼이 없으니 맞는 대답이다.
+-- 되돌리려면 왼쪽 컬럼을 잡고 누르면 된다. 니리의 방향성도 같다.
+hl.bind(mod .. " + CTRL + E", function()
+    local act = hl.get_active_window()
+    if not act or act.floating then return end
+    local siblings = 0
+    for _, w in ipairs(hl.get_workspace_windows(act.workspace)) do
+        if not w.floating and w.at.x == act.at.x then siblings = siblings + 1 end
+    end
+    hl.dispatch(hl.dsp.layout(siblings > 1 and "promote" or "consume"))
+end)
+
 -- 마우스. 니리엔 없지만 하이프랜드에선 관용이고, 띄운 창을 다룰 때 편하다.
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })

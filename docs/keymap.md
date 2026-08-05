@@ -82,8 +82,14 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 | 키 | 무엇 | hypr | niri | rift |
 |---|---|:--:|:--:|:--:|
 | `Mod+Ctrl+IKJL` + 화살표 | 창을 옆 모니터로 | • | • | • |
+| `Mod+Ctrl+E` | 이웃과 합치기 / 떼기 | • | • | • |
 | `Mod+Ctrl+R` | 설정 다시 읽기 | — | — | • |
 | `Mod+Ctrl+1`..`4` | 레이아웃 모드 | — | — | • |
+
+`Mod+Ctrl+E` 는 지금 컬럼 상태를 보고 뒤집힌다 — 혼자면 옆 창을 데려와 한 컬럼에
+쌓고, 이미 쌓여 있으면 활성 창만 빼내 제 컬럼으로 돌려놓는다. 합치는 방향은 셋 다
+오른쪽이다. rift 와 니리는 이걸 액션 하나로 갖고 있고, 하이프랜드에만 없어서
+`consume`/`promote` 를 상태로 갈라 부르는 함수를 뒀다.
 
 ### 티어 밖 — 한쪽에만 있는 것
 
@@ -95,7 +101,6 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 | `Mod+Z` | 이 space 를 rift 관리에서 빼기 | rift |
 | `Mod+/` | 방향 토글 | rift |
 | `Mod+,` | 스택 토글 | rift |
-| `Mod+Ctrl+E` | 이웃과 합치기 / 떼기 | rift |
 | `Mod+Ctrl+Space` | 플로팅 창으로 포커스 | rift |
 | `Mod+Ctrl+W` | WorkspacePeek 오버레이 | macOS |
 | `Print` `Ctrl+Print` `Alt+Print` | 영역 / 화면 / 창 스크린샷 | 리눅스 |

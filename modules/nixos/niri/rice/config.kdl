@@ -69,15 +69,11 @@ binds {
 	// 위에서 감싸는 두 자리다. 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다.
 	Mod+U { focus-workspace-up; }
 	Mod+O { focus-workspace-down; }
-	// 직전 워크스페이스. rift 와 하이프랜드에는 걸어 뒀는데 여기만 비어 있다 —
-	// `focus-workspace-previous` 가 니리 기본 설정에 없어서 이름이 맞는지
-	// 확인하지 못했다. 니리는 모르는 액션을 만나면 설정 전체를 거부하고, 그건
-	// 로그인이 안 된다는 뜻이라 추측으로 넣을 자리가 아니다. 리눅스에서:
-	//
-	//   niri msg action | grep workspace-previous
-	//
-	// 이름이 나오면 아래 줄의 주석을 풀고 `niri validate` 로 확인할 것.
-	// Mod+Tab { focus-workspace-previous; }
+	// 직전 워크스페이스. 이름이 니리 기본 설정에 없어서 한동안 주석으로 두고
+	// 있었다 — 니리는 모르는 액션에 설정 전체를 거부하고 그건 로그인이 안 된다는
+	// 뜻이라 추측으로 넣을 자리가 아니었다. `niri msg action --help` 에 있고
+	// `niri validate` 도 통과한다(2026-08-06, 니리 실기).
+	Mod+Tab { focus-workspace-previous; }
 
 	Mod+1 { focus-workspace 1; }
 	Mod+2 { focus-workspace 2; }

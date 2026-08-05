@@ -53,7 +53,7 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 | `Mod+J` `Mod+L` `←` `→` | 포커스 왼 / 오른 | • | • | • |
 | `Mod+U` `Mod+O` | 워크스페이스 뒤로 / 앞으로 | • | • | • |
 | `Mod+1`..`9` | 워크스페이스 N | • | • | • |
-| `Mod+Tab` | 직전 워크스페이스 | ⚠ | ⚠ | • |
+| `Mod+Tab` | 직전 워크스페이스 | • | • | • |
 | `Mod+Return` | 터미널 (ghostty) | • | • | • |
 | `Mod+D` | 런처 (fuzzel) | • | • | — |
 | `Mod+E` | 오버뷰 | • | • | • |
@@ -81,7 +81,7 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 
 | 키 | 무엇 | hypr | niri | rift |
 |---|---|:--:|:--:|:--:|
-| `Mod+Ctrl+IKJL` + 화살표 | 창을 옆 모니터로 | ⚠ | • | • |
+| `Mod+Ctrl+IKJL` + 화살표 | 창을 옆 모니터로 | • | • | • |
 | `Mod+Ctrl+R` | 설정 다시 읽기 | — | — | • |
 | `Mod+Ctrl+1`..`4` | 레이아웃 모드 | — | — | • |
 
@@ -138,48 +138,38 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 | rift `join_window` ×4 + `unjoin` | `Mod+Ctrl+E` 하나 | `consume_or_expel_window` 가 둘 다 한다 |
 | rift `Alt+M` monocle | `Mod+R` | 다른 둘의 폭 프리셋 자리와 같은 키로 |
 
-## 아직 확인 안 된 것 ⚠
+## 검증 기록
 
-이 키맵은 **macOS에서 작성됐다.** rift는 여기서 전부 눌러 확인했고 — 설정을 다시
-읽힌 뒤 `rift-cli execute config get` 으로 67개 키가 전부 등록된 것까지 봤다 —
-리눅스 쪽 둘은 그럴 수가 없었다. 표의 `⚠` 세 칸이 그것이다.
+이 키맵은 **macOS에서 작성됐고**, rift는 거기서 전부 눌러 확인했다 — 설정을 다시
+읽힌 뒤 `rift-cli execute config get` 으로 67개 키가 전부 등록된 것까지 봤다.
+리눅스 쪽 셋은 그럴 수가 없어 `⚠` 로 남겨 뒀었고, **2026-08-06 갤럭시 크롬북에서
+하이프랜드 0.56.1 실기로 확인했다.** 셋 다 쓰인 대로 동작한다.
 
-**1. 하이프랜드 — 모니터 이동 (`Mod+Ctrl+IKJL`)**
+세 번 다 **똑같은 함정**에 걸렸다. 틀린 문법과 "지금은 대상이 없음"이 같은 에러를
+돌려준다. 다음에 이 표를 다시 검증할 사람을 위해 적어 둔다.
 
-`hl.dsp.window.move({ monitor = "l" })` 의 인자 이름을 확인하지 못했다. 이 레포가
-검증한 인자 목록에 `monitor` 가 없다. 하이프랜드 바인드는 **틀려도 조용하다** —
-종료 코드 0으로 아무 일도 안 하는 그 실패가 이 레포 포스트모템의 절반이다.
+| 확인한 것 | 처음 나온 답 | 실제 |
+|---|---|---|
+| `monitor = "l"/"r"/"u"/"d"` | `Invalid monitor / monitor doesn't exist` | 맞다. 옆에 모니터가 **없을 때**도 같은 메시지다 |
+| `workspace = "previous"` | `Bad workspace` | 맞다. 직전 워크스페이스가 **아직 없을 때**도 같은 메시지다 |
+| niri `focus-workspace-previous` | 기본 설정에 없음 | 있다. `niri msg action --help` 에 나오고 `niri validate` 통과 |
 
-```sh
-hyprctl dispatch 'hl.dsp.window.move({ monitor = "l" })'
-```
+**모니터 방향은 모니터를 두 대 붙이고 확인할 것.** 한 대뿐이면 네 방향이 전부
+실패하니 아무것도 증명되지 않는다. 헤드리스로 대신하려면 **위치부터 봐야 한다** —
+`hyprctl output create headless` 는 기존 모니터 안쪽에 얹히는 수가 있고, 겹친
+배치에서는 어느 방향으로도 "옆"이 아니라 결과가 한 대일 때와 똑같다. 그리고
+`hyprctl keyword` 로는 못 옮긴다(lua 설정에서는 `eval` 뿐). 실물 두 대가 제일 싸다.
 
-`ok` 가 나오고 창이 실제로 옆 모니터로 갔으면 그대로 두면 되고, `error:` 가 나오면
-인자 이름이 다른 것이다(하이프랜드 원형은 `movewindow mon:l`).
-
-**2. 하이프랜드 — 직전 워크스페이스 (`Mod+Tab`)**
-
-`hl.dsp.focus({ workspace = "previous" })`. `previous` 는 하이프랜드 문법이지만 이
-레포가 확인한 workspace 인자는 `e±1` 과 번호뿐이다.
-
-```sh
-hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })'
-```
-
-**3. 니리 — 직전 워크스페이스 (`Mod+Tab`)**
-
-`focus-workspace-previous` 가 니리 기본 설정에 없어서 이름을 확인하지 못했다.
-니리는 **모르는 액션을 만나면 설정 전체를 거부하고**, 그건 로그인이 안 된다는
-뜻이다. 하이프랜드가 조용히 실패하는 것과 달리 여기서 틀리면 세션이 안 뜬다 —
-그래서 이 줄만 주석으로 넣어 뒀다.
+**직전 워크스페이스는 한 번 옮겼다 온 뒤에 확인할 것.**
 
 ```sh
-niri msg action | grep workspace-previous   # 이름 확인
-niri validate                               # 주석 풀고 검증
+hyprctl dispatch 'hl.dsp.focus({ workspace = 5 })'
+hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })'   # ok, 그리고 실제로 돌아온다
 ```
 
-리눅스에서 처음 로그인하면 이 셋부터 확인할 것. 끝나면 이 절과 표의 `⚠` 를
-지우면 된다.
+철자는 `previous` 하나뿐이다. `prev` 는 `ok` 를 돌려주면서 아무 일도 안 하고
+(하이프랜드에서 `ok` 는 동작했다는 뜻이 아니다 — hyprland-binds.md 함정 2),
+`previous_per_monitor` 는 `Bad workspace` 다.
 
 ## 손이 기억을 갈아엎는 동안
 

@@ -109,13 +109,19 @@ pin  pseudo  resize  set_prop  signal  swap  tag  toggle_swallow
 
 ```lua
 hl.dsp.focus({ direction = "l"/"r"/"u"/"d" })   -- 축약형도 먹는다
-hl.dsp.focus({ workspace = "e+1" })             -- 또는 번호
+hl.dsp.focus({ workspace = "e+1" })             -- 또는 번호, 또는 "previous"
 hl.dsp.focus({ window = "address:0x..." })      -- 위치 키워드가 아니라 셀렉터다
 hl.dsp.window.move({ direction = ... })         -- focus 와 같은 값
 hl.dsp.window.move({ workspace = "e+1" })
+hl.dsp.window.move({ monitor = "l"/"r"/"u"/"d" })  -- full word 도, 이름·id·"current"·"+1"/"-1" 도
 hl.dsp.window.fullscreen({ mode = "fullscreen"/"maximized", action = "toggle" })
 hl.dsp.window.float({ action = "toggle" })
 ```
+
+**`window.move` 의 에러 메시지에 나오는 인자 목록은 불완전하다.** 틀린 인자를
+주면 `Expected one of: direction, x+y(+relative), workspace, into_group,
+out_of_group` 이 나오는데 `monitor` 가 빠져 있다. 실제로는 받는다(검증함). 저
+목록을 "쓸 수 있는 것 전부"로 읽으면 멀쩡한 바인드를 지우게 된다.
 
 ### `layoutmsg` — 스크롤링 레이아웃 전용
 
@@ -252,6 +258,21 @@ hl.dsp.layout("colresize zzz")               -> ok                          ← 
 
 **6. `hyprctl keyword` 는 안 된다.** `eval` 만 된다. CRT 셰이더처럼 자주 만지는
 값은 `apps/rice-crt` 가 그 `eval` 을 감싸 두었다.
+
+**7. `error:` 가 "문법이 틀렸다"는 뜻은 아니다.** 인자를 맞게 줬는데 지금 그
+대상이 없을 뿐일 때도 같은 메시지가 나온다. 맞는 바인드를 틀렸다고 판정하게 되는
+자리라, 위 1~6 과 반대 방향의 함정이다.
+
+```
+window.move({monitor="r"})       -> Invalid monitor / …   ← 오른쪽에 모니터가 없을 때도 이것
+focus({workspace="previous"})    -> Bad workspace         ← 직전 워크스페이스가 아직 없을 때도 이것
+```
+
+둘 다 상태를 먼저 만들어 놓고 눌러야 판정이 된다. 모니터 방향은 **두 대를 겹치지
+않게** 붙인 상태에서, `previous` 는 워크스페이스를 한 번 옮겼다 온 뒤에.
+겹쳐 놓은 모니터는 한 대와 결과가 같으므로 헤드리스로 확인할 때 특히 조심할 것
+(`hyprctl output create headless` 는 기존 모니터 안쪽에 얹히는 수가 있고,
+`hyprctl keyword` 로는 못 옮긴다 — 함정 6).
 
 ## 뺀 것
 

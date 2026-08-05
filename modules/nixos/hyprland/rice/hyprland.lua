@@ -239,10 +239,16 @@ hl.bind(mod .. " + R", hl.dsp.layout("colresize +conf"))
 -- 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다. 니리·rift 도 같은 두 키다.
 hl.bind(mod .. " + U", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + O", hl.dsp.focus({ workspace = "e+1" }))
--- 직전 워크스페이스. ⚠ 미검증 — 이 레포가 확인한 workspace 인자는 `e±1` 과
--- 번호뿐이고 `previous` 는 하이프랜드 문법이지 눌러 본 적이 없다. 틀려도 조용히
--- 아무 일도 안 한다:
+-- 직전 워크스페이스. 검증함 (2026-08-06, 0.56.1) — 2↔5↔7 왕복까지 봤다.
 --
+-- 철자는 `previous` 여야 한다. `prev` 는 `ok` 를 돌려주면서 아무 일도 안 하고,
+-- `previous_per_monitor` 는 `Bad workspace` 다.
+--
+-- 세션에 직전 워크스페이스가 아직 없을 때도 `Bad workspace` 가 나온다. 문법이
+-- 틀렸을 때와 메시지가 같으니, 이 한 줄로 확인할 거면 워크스페이스를 한 번
+-- 옮겼다 온 뒤에 해야 한다:
+--
+--   hyprctl dispatch 'hl.dsp.focus({ workspace = 5 })'
 --   hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })'
 hl.bind(mod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
 for i = 1, 9 do
@@ -273,18 +279,16 @@ end
 ------------------------------------------------------------------------
 -- 티어 3 — Mod+CTRL: 모니터를 넘는다, WM 에게 말한다
 ------------------------------------------------------------------------
--- ⚠ 아래 네 줄은 **미검증이다.** 이 레포에서 확인한 인자 모양 목록
--- (docs/hyprland-binds.md 의 "쓸 수 있는 것")에 monitor 키가 없다. 이 파일은
--- 맥에서 고쳐졌고 하이프랜드 세션에서 눌러 본 적이 없다.
+-- 검증함 (2026-08-06, 0.56.1, eDP-1 + DP-1 실기). `monitor` 는 방향 약자
+-- l/r/u/d 와 full word(left/right/up/down)를 받고, 창이 실제로 넘어간다.
+-- 이름·id·`current`·`+1`/`-1` 도 같이 받는다.
 --
--- 하이프랜드의 바인드는 틀려도 조용하다 — 종료 코드 0 으로 아무 일도 안 하는
--- 그 실패 방식이 이 레포 포스트모템의 절반이다. 리눅스에서 처음 로그인하면
--- 이 한 줄로 먼저 확인할 것:
---
---   hyprctl dispatch 'hl.dsp.window.move({ monitor = "l" })'
---
--- `ok` 가 나오고 창이 실제로 옆 모니터로 갔으면 그대로 두면 되고, `error:` 가
--- 나오면 인자 이름이 다른 것이다(하이프랜드 원형은 `movewindow mon:l`).
+-- 옆에 모니터가 없는 방향은 `Invalid monitor / monitor doesn't exist` 다. 이게
+-- 문법 오류처럼 보이는 게 함정이다 — 모니터가 하나뿐이면 네 방향이 전부 저
+-- 메시지를 돌려주고, **겹쳐 배치된 모니터도 마찬가지다.** 헤드리스 출력을
+-- 만들어 확인할 거면 위치부터 봐야 한다. `hyprctl output create headless` 는
+-- 기존 모니터 안쪽에 얹히는 수가 있고, 그 배치에서는 어느 방향으로도 "옆"이
+-- 아니다. `hyprctl keyword` 로는 못 옮긴다(lua 설정에서는 `eval` 뿐).
 hl.bind(mod .. " + CTRL + J", hl.dsp.window.move({ monitor = "l" }))
 hl.bind(mod .. " + CTRL + L", hl.dsp.window.move({ monitor = "r" }))
 hl.bind(mod .. " + CTRL + I", hl.dsp.window.move({ monitor = "u" }))

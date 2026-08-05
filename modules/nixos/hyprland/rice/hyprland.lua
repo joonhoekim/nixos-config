@@ -31,8 +31,18 @@ hl.config({
     input = {
         kb_layout = "us",
 
-        -- 니리의 focus-follows-mouse.
-        follow_mouse = 1,
+        -- 클릭해야 포커스가 간다. 세 WM 모두 같게 뒀다(니리는
+        -- focus-follows-mouse 줄을 뺐고, rift 는 focus_follows_mouse = false).
+        --
+        -- 호버 포커스와 키보드 타일러는 누가 주도권을 갖는지에 대해 서로 다른
+        -- 답을 갖고 있다. 포인터는 마지막으로 놓아둔 자리에 그대로 있으면서도
+        -- 포커스에 대한 권리를 계속 주장한다 — 키보드로 옮겨 간 창에 타이핑을
+        -- 시작하면 첫 타가 커서가 얹혀 있던 엉뚱한 창으로 들어갈 수 있고,
+        -- 배경 창 위에서 스크롤하면 포커스를 통째로 빼앗긴다.
+        --
+        -- 반대 방향(키보드로 포커스를 옮기면 커서가 따라오는 것)은 rift 쪽에서
+        -- 켜 두었다. 하이프랜드에 같은 설정은 없다.
+        follow_mouse = 0,
 
         touchpad = {
             natural_scroll = true,
@@ -135,6 +145,16 @@ hl.env("QT_QPA_PLATFORM", "wayland")
 -- 그대로 나온다.
 local mod = "SUPER"
 
+-- 세 티어가 전부다. rift 와 니리도 같은 세 티어이고, macOS 만 mod 가 Alt 다
+-- (Cmd 는 시스템이 가져간다). 전체 표는 docs/keymap.md.
+--
+--   Mod          간다, 연다
+--   Mod + SHIFT  창을 데리고 간다
+--   Mod + CTRL   모니터를 넘는다, WM 자신에게 말한다
+--
+-- 예전엔 이동이 Mod+CTRL 이었다. 그 자리를 SHIFT 로 옮긴 건 CTRL 티어를
+-- 비우기 위해서다 — 모니터 이동을 넣을 자리가 없었다.
+
 -- 프로그램
 hl.bind(mod .. " + Return", hl.dsp.exec_cmd("ghostty"))
 -- 셸이 안 뜬 상태(베타 업데이트, 잘못된 설정)에서도 터미널을 열 수 있는 길.
@@ -146,35 +166,56 @@ hl.bind(mod .. " + space", hl.dsp.exec_cmd("dms ipc call spotlight toggle"))
 hl.bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"))
 hl.bind(mod .. " + N", hl.dsp.exec_cmd("dms ipc call notifications toggle"))
 hl.bind(mod .. " + S", hl.dsp.exec_cmd("dms ipc call control-center toggle"))
-hl.bind(mod .. " + comma", hl.dsp.exec_cmd("dms ipc call settings toggle"))
 hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
-hl.bind(mod .. " + L", hl.dsp.exec_cmd("dms ipc call lock lock"))
-hl.bind(mod .. " + SHIFT + slash", hl.dsp.exec_cmd("dms ipc call keybinds toggle hyprland"))
--- 니리엔 없던 것. 셸이 하이프랜드에서만 주는 오버뷰다.
-hl.bind(mod .. " + O", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
+-- 치트시트. 셸이 이 파일을 읽어서 만든다. H 는 IJKL 이 왼쪽을 J 로 가져가면서
+-- 통째로 빈 자리가 됐고, Help 로 읽힌다. rift 에는 대응물이 없다 —
+-- 그쪽 치트시트는 docs/keymap.md 다.
+hl.bind(mod .. " + H", hl.dsp.exec_cmd("dms ipc call keybinds toggle hyprland"))
+-- 오버뷰. 예전엔 Mod+O 였는데 그 자리는 이제 워크스페이스 앞으로 가기다.
+-- rift 는 같은 키에서 macOS 미션 컨트롤을 연다.
+hl.bind(mod .. " + E", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
+--
+-- 버린 것 둘:
+--   Mod+L      잠금. IJKL 이 오른쪽을 L 로 가져갔다. 잠금은 Mod+Escape 의
+--              파워메뉴에 있고, 거기엔 잘못 눌렀을 때 되돌릴 기회까지 있다.
+--   Mod+comma  DMS 설정 GUI. 런처에서 이름으로 부르면 된다. rift 는 이 자리를
+--              toggle_stack 으로 쓴다.
+--
+-- Mod+SHIFT+E 는 로그아웃(`uwsm stop`)이었다. Mod+SHIFT+F / Mod+SHIFT+space 와
+-- 손 모양이 겹쳐서 오타 한 번이면 세션이 통째로 날아가는 자리라 뺐다. 다시 걸 일이
+-- 있으면 **hl.dsp.exit() 이 아니라** `uwsm stop` 이다 — uwsm 세션에서 컴포지터를
+-- 직접 죽이면 클라이언트 밑에서 바닥을 빼는 꼴이라 유닛들이 어중간하게 남는다.
 
 -- 창
 hl.bind(mod .. " + Q", hl.dsp.window.close())
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind(mod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mod .. " + SHIFT + space", hl.dsp.window.float({ action = "toggle" }))
--- Mod+Shift+E 는 로그아웃(`uwsm stop`)이었다. Mod+Shift+F / Mod+Shift+space 와
--- 손 모양이 겹쳐서 오타 한 번이면 세션이 통째로 날아가는 자리라 뺐다. 로그아웃은
--- Mod+Escape 의 파워메뉴로 하면 되고, 거기엔 되돌릴 기회가 있다. 다시 걸 일이
--- 있으면 **hl.dsp.exit() 이 아니라** `uwsm stop` 이다 — uwsm 세션에서 컴포지터를
--- 직접 죽이면 클라이언트 밑에서 바닥을 빼는 꼴이라 유닛들이 어중간하게 남는다.
 
--- 포커스. 컬럼 사이는 layout 메시지("focus")로 간다 — 끝에서 감싸 돌고,
--- 옆 모니터로 새지 않는다. 컬럼 *안*의 위아래는 평범한 방향 포커스다.
-hl.bind(mod .. " + H", hl.dsp.layout("focus l"))
+------------------------------------------------------------------------
+-- 티어 1 — Mod: 간다
+------------------------------------------------------------------------
+-- 방향은 IJKL, 화살표와 같은 역T자다:
+--
+--         I                 ↑
+--    J    K    L        ←   ↓   →
+--
+-- hjkl 이 아니다. hjkl 은 한 줄에 늘어선 네 개일 뿐 모양이 없다 — vim 유산이지
+-- 공간이 아니고, 창 관리는 공간 작업이다. 화살표는 어느 티어에서든 같은 동작에
+-- 같이 걸려 있다. IJKL 이 흉내내는 대상이기도 하고, K 가 "위"에서 "아래"로
+-- 뒤집힌 걸 손이 익히는 동안의 안전망이기도 하다.
+--
+-- 컬럼 사이(J/L)는 layout 메시지로 간다 — 끝에서 감싸 돌고, 옆 모니터로 새지
+-- 않는다. 컬럼 *안*의 위아래(I/K)는 평범한 방향 포커스다.
+hl.bind(mod .. " + J", hl.dsp.layout("focus l"))
+hl.bind(mod .. " + L", hl.dsp.layout("focus r"))
 hl.bind(mod .. " + left", hl.dsp.layout("focus l"))
 hl.bind(mod .. " + right", hl.dsp.layout("focus r"))
--- 니리 설정에 Mod+L 로 오른쪽 가기가 없는 건 그 자리가 잠금이라서다. 여기서도
--- 그대로 둔다.
-hl.bind(mod .. " + J", hl.dsp.focus({ direction = "d" }))
-hl.bind(mod .. " + K", hl.dsp.focus({ direction = "u" }))
-hl.bind(mod .. " + down", hl.dsp.focus({ direction = "d" }))
+hl.bind(mod .. " + I", hl.dsp.focus({ direction = "u" }))
+hl.bind(mod .. " + K", hl.dsp.focus({ direction = "d" }))
 hl.bind(mod .. " + up", hl.dsp.focus({ direction = "u" }))
+hl.bind(mod .. " + down", hl.dsp.focus({ direction = "d" }))
+
 -- 니리의 focus-column-first/last 를 Mod+Home/End 로 옮겨 뒀었지만 둘 다 죽은
 -- 바인드였다. focus 의 `window` 는 위치 키워드가 아니라 창 셀렉터(class:, title:,
 -- address:)라서 "first"/"last" 는 아무것도 못 찾고 경고만 찍는다. 스크롤링
@@ -182,34 +223,76 @@ hl.bind(mod .. " + up", hl.dsp.focus({ direction = "u" }))
 -- 방향으로 읽어서 leftmost/rightmost/last 가 전부 l/r 과 똑같이 한 칸만 가고,
 -- 그 한 칸은 끝에서 감싸 돌기까지 한다. 되살리려면 hl.get_windows() 로 컬럼을
 -- 직접 훑는 함수를 써야 하고, 동작을 확인한 형태가 docs/hyprland-binds.md 에 있다.
+
 -- 니리의 center-column 자리. 정확히 같지는 않다 — 이건 활성 컬럼을 화면 안에
 -- 완전히 넣는 것이고, 가운데 정렬은 위의 focus_fit_method 가 정한다.
 hl.bind(mod .. " + C", hl.dsp.layout("fit_into_view"))
-
--- 이동
-hl.bind(mod .. " + CTRL + H", hl.dsp.layout("swapcol l"))
-hl.bind(mod .. " + CTRL + left", hl.dsp.layout("swapcol l"))
-hl.bind(mod .. " + CTRL + right", hl.dsp.layout("swapcol r"))
-hl.bind(mod .. " + CTRL + J", hl.dsp.window.move({ direction = "d" }))
-hl.bind(mod .. " + CTRL + K", hl.dsp.window.move({ direction = "u" }))
-hl.bind(mod .. " + CTRL + down", hl.dsp.window.move({ direction = "d" }))
-hl.bind(mod .. " + CTRL + up", hl.dsp.window.move({ direction = "u" }))
 
 -- 컬럼 폭
 hl.bind(mod .. " + equal", hl.dsp.layout("colresize +0.1"))
 hl.bind(mod .. " + minus", hl.dsp.layout("colresize -0.1"))
 -- 니리의 switch-preset-column-width. 목록은 위 explicit_column_widths 다.
+-- rift 에는 이 동작이 아예 없어서 그쪽은 같은 키에 monocle 스크립트가 걸린다.
 hl.bind(mod .. " + R", hl.dsp.layout("colresize +conf"))
 
--- 워크스페이스. 니리는 세로로 쌓이고 하이프랜드는 번호가 붙을 뿐, U/I 가
--- 아래/위라는 감각은 같다.
-hl.bind(mod .. " + U", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mod .. " + I", hl.dsp.focus({ workspace = "e-1" }))
-hl.bind(mod .. " + CTRL + U", hl.dsp.window.move({ workspace = "e+1" }))
-hl.bind(mod .. " + CTRL + I", hl.dsp.window.move({ workspace = "e-1" }))
-for i = 1, 5 do
+-- 워크스페이스. U 가 뒤로, O 가 앞으로 — I 를 위에서 감싸는 두 자리다.
+-- 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다. 니리·rift 도 같은 두 키다.
+hl.bind(mod .. " + U", hl.dsp.focus({ workspace = "e-1" }))
+hl.bind(mod .. " + O", hl.dsp.focus({ workspace = "e+1" }))
+-- 직전 워크스페이스. ⚠ 미검증 — 이 레포가 확인한 workspace 인자는 `e±1` 과
+-- 번호뿐이고 `previous` 는 하이프랜드 문법이지 눌러 본 적이 없다. 틀려도 조용히
+-- 아무 일도 안 한다:
+--
+--   hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })'
+hl.bind(mod .. " + Tab", hl.dsp.focus({ workspace = "previous" }))
+for i = 1, 9 do
     hl.bind(mod .. " + " .. i, hl.dsp.focus({ workspace = i }))
 end
+
+------------------------------------------------------------------------
+-- 티어 2 — Mod+SHIFT: 창을 데리고 간다
+------------------------------------------------------------------------
+-- 규칙 하나가 네 묶음에 그대로 걸린다: 방향, 워크스페이스 앞뒤, 워크스페이스
+-- 번호, 그리고 큰 형제가 있는 창 상태 두 개(위의 F/space).
+hl.bind(mod .. " + SHIFT + J", hl.dsp.layout("swapcol l"))
+hl.bind(mod .. " + SHIFT + L", hl.dsp.layout("swapcol r"))
+hl.bind(mod .. " + SHIFT + left", hl.dsp.layout("swapcol l"))
+hl.bind(mod .. " + SHIFT + right", hl.dsp.layout("swapcol r"))
+hl.bind(mod .. " + SHIFT + I", hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "d" }))
+hl.bind(mod .. " + SHIFT + up", hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
+
+hl.bind(mod .. " + SHIFT + U", hl.dsp.window.move({ workspace = "e-1" }))
+hl.bind(mod .. " + SHIFT + O", hl.dsp.window.move({ workspace = "e+1" }))
+-- 창을 워크스페이스 N 으로. rift 에만 있던 것이고, 여기 자리는 비어 있었다.
+for i = 1, 9 do
+    hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
+end
+
+------------------------------------------------------------------------
+-- 티어 3 — Mod+CTRL: 모니터를 넘는다, WM 에게 말한다
+------------------------------------------------------------------------
+-- ⚠ 아래 네 줄은 **미검증이다.** 이 레포에서 확인한 인자 모양 목록
+-- (docs/hyprland-binds.md 의 "쓸 수 있는 것")에 monitor 키가 없다. 이 파일은
+-- 맥에서 고쳐졌고 하이프랜드 세션에서 눌러 본 적이 없다.
+--
+-- 하이프랜드의 바인드는 틀려도 조용하다 — 종료 코드 0 으로 아무 일도 안 하는
+-- 그 실패 방식이 이 레포 포스트모템의 절반이다. 리눅스에서 처음 로그인하면
+-- 이 한 줄로 먼저 확인할 것:
+--
+--   hyprctl dispatch 'hl.dsp.window.move({ monitor = "l" })'
+--
+-- `ok` 가 나오고 창이 실제로 옆 모니터로 갔으면 그대로 두면 되고, `error:` 가
+-- 나오면 인자 이름이 다른 것이다(하이프랜드 원형은 `movewindow mon:l`).
+hl.bind(mod .. " + CTRL + J", hl.dsp.window.move({ monitor = "l" }))
+hl.bind(mod .. " + CTRL + L", hl.dsp.window.move({ monitor = "r" }))
+hl.bind(mod .. " + CTRL + I", hl.dsp.window.move({ monitor = "u" }))
+hl.bind(mod .. " + CTRL + K", hl.dsp.window.move({ monitor = "d" }))
+hl.bind(mod .. " + CTRL + left", hl.dsp.window.move({ monitor = "l" }))
+hl.bind(mod .. " + CTRL + right", hl.dsp.window.move({ monitor = "r" }))
+hl.bind(mod .. " + CTRL + up", hl.dsp.window.move({ monitor = "u" }))
+hl.bind(mod .. " + CTRL + down", hl.dsp.window.move({ monitor = "d" }))
 
 -- 마우스. 니리엔 없지만 하이프랜드에선 관용이고, 띄운 창을 다룰 때 편하다.
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -237,6 +320,9 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("dms ipc call brightness decrem
 -- 리싱 스크립트. exec_cmd 는 sh -c 를 거치므로 $HOME 이 풀린다.
 -- 프로필 전환은 두 세션이 반씩 나눠 갖는다 — 니리 조각(profile.kdl)은 여기서
 -- 아무 일도 안 하고, DMS 조각(색·투명도·둥글기)은 그대로 적용된다.
+--
+-- 이 묶음은 티어 규칙 밖이다. 리눅스 전용이고 방향키도 워크스페이스도 아니라
+-- 어느 티어와도 실제로 부딪히지 않는다.
 hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-switch --next"))
 hl.bind(mod .. " + SHIFT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall"))
 hl.bind(mod .. " + CTRL + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall --pick"))

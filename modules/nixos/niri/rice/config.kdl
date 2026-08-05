@@ -234,6 +234,20 @@ input {
 			layout "us"
 		}
 	}
+	// 휠 클릭 + 드래그 = 스크롤. 누르고 움직이지 않은 채 떼면 휠 클릭은 그대로
+	// 나가지만 눌린 순간이 아니라 뗀 순간에 나가고, 미들 드래그(패닝)는 스크롤
+	// 로 먹혀 사라진다. scroll-button-lock 은 클릭 한 번을 스크롤 모드 토글로
+	// 바꿔 휠 클릭을 죽이므로 켜지 않는다.
+	//
+	// 하이프랜드 쪽은 같은 설정을 hl.device 로 장치를 짚어서 건다(전역이
+	// 터치패드까지 끌고 가서). 니리는 mouse/touchpad 가 애초에 갈라져 있어
+	// 그럴 필요가 없는 대신, 이 블록이 ../pointer 의 가상 포인터에도 걸린다 —
+	// Caps+9 를 누른 채 wasd 로 젓는 것도 스크롤이 된다. 그 손은 q/e 로 이미
+	// 휠을 갖고 있으니 잃는 건 키보드 마우스의 미들 드래그뿐이다.
+	mouse {
+		scroll-method "on-button-down"
+		scroll-button 274
+	}
 	touchpad {
 		dwt
 		natural-scroll

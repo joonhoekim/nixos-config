@@ -42,6 +42,25 @@ hl.config({
     },
 })
 
+-- 휠 클릭을 누른 채 마우스를 움직이면 스크롤(libinput 의 on-button-down).
+-- 누르고 움직이지 않은 채 떼면 휠 클릭은 그대로 나가되, 눌린 순간이 아니라 뗀
+-- 순간에 나간다 — libinput 이 스크롤이냐 클릭이냐를 릴리즈까지 유보하기 때문
+-- 이다. 그 대가로 미들 드래그(패닝)는 전부 스크롤로 먹혀서 사라진다.
+--
+-- input 전역이 아니라 장치별로 거는 이유: input.scroll_method 는 터치패드에도
+-- 걸리는데 input.touchpad 에는 이를 되돌릴 scroll_method 가 없다(0.56 스텁의
+-- HL.ConfigOpt.Input.Touchpad 참고). 이 파일이 노트북에 심기는 순간 두 손가락
+-- 스크롤이 조용히 죽는다. 마우스를 바꾸면 이름도 바꿔야 하고, 이름은
+-- `hyprctl devices` 의 mice 절에 있다.
+--
+-- scroll_button_lock 은 켜지 않는다. 켜면 클릭 한 번이 스크롤 모드 토글이 되어
+-- 휠 클릭 자체가 없어진다 — 이 설정으로 지키려던 것이 그것이다.
+hl.device({
+    name = "compx-2.4g-receiver-mouse",
+    scroll_method = "on_button_down",
+    scroll_button = 274, -- BTN_MIDDLE
+})
+
 -- 세 손가락 가로 스와이프로 워크스페이스 전환.
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 

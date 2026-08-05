@@ -91,21 +91,27 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
 
 ## 수정 방법
 
-1. `karabiner.json`을 편집한다.
-2. JSON 유효성 확인: `python3 -m json.tool karabiner.json > /dev/null`
-3. darwin/home-manager 리빌드로 `~/.config/karabiner/karabiner.json`에 배포한다.
-4. Karabiner-Elements가 파일 변경을 감지해 자동 리로드한다. (안 되면 앱에서 프로파일 재선택)
-
-값을 여러 번 시험해야 할 때는 리빌드를 돌릴 필요가 없다. 심링크를 걷어내고 복사본을 두면
-Karabiner가 저장 즉시 리로드하므로, 그 자리에서 숫자만 바꿔 가며 체감을 볼 수 있다.
+`~/.config/karabiner/karabiner.json` 을 직접 고친다. 설정 GUI 로 고쳐도 되고, 파일을
+열어 고쳐도 된다. Karabiner 가 저장 즉시 리로드하므로 그 자리에서 체감을 본다.
+정해졌으면 레포로 되받는다:
 
 ```sh
-rm ~/.config/karabiner/karabiner.json          # nix store 심링크 제거
-cp karabiner.json ~/.config/karabiner/         # 쓰기 가능한 복사본
-chmod u+w ~/.config/karabiner/karabiner.json
-# ...편집·체감 반복. 정해지면 이 리포 파일에 값을 옮기고
-rm ~/.config/karabiner/karabiner.json && build-switch   # 심링크 원상복구
+python3 -m json.tool ~/.config/karabiner/karabiner.json > /dev/null   # JSON 유효성
+apps/rice-save karabiner    # 라이브 → 레포
+git diff                    # 확인하고 커밋
 ```
+
+**되받기 전에는 이 레포에 아무것도 안 들어간다.** 라이브가 원본이라, 안 하면 다음
+머신에는 옛 키맵이 깔린다.
+
+반대 방향(다른 머신에서 온 커밋을 이 머신에 밀어 넣기)은 `apps/rice-restore karabiner`
+다. 복원 뒤 유저 서버를 다시 띄우는 것까지 그쪽이 한다.
+
+> 2026-08-06 까지 이 파일은 `modules/darwin/files.nix` 가 거는 읽기 전용 스토어
+> 심링크였다. 그래서 여기에는 "심링크를 지우고 → 복사본을 두고 → 다 되면 되돌리고
+> build-switch" 라는 우회 절차가 적혀 있었다. 설정 GUI 가 저장할 수 없는 자리에
+> 파일을 두었던 것이 원인이고, 지금은 다른 라이싱 파일과 같은 시드 방식이라 그
+> 우회가 곧 기본 동작이 되었다.
 
 키를 추가할 때는 아래 형태를 복사해 `key_code`와 `to`만 바꾸면 된다.
 

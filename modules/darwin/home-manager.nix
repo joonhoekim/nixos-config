@@ -2,7 +2,9 @@
 
 let
   sharedFiles = import ../shared/files.nix { inherit config pkgs; };
-  additionalFiles = import ./files.nix { inherit user config pkgs; };
+  # ./files.nix 는 없다. macOS 쪽에 심링크로 걸던 셋(karabiner.json,
+  # aerospace.toml, rift 의 config.toml)이 2026-08-06 에 전부 시드로 옮겨
+  # 갔고(./rice), 그러고 나니 파일에 남는 항목이 하나도 없었다.
 in
 {
   imports = [
@@ -61,10 +63,7 @@ in
       home = {
         enableNixpkgsReleaseCheck = false;
         packages = pkgs.callPackage ./packages.nix {};
-        file = lib.mkMerge [
-          sharedFiles
-          additionalFiles
-        ];
+        file = sharedFiles;
         stateVersion = "23.11";
 
         # Materialize the tool versions declared in programs.mise.globalConfig

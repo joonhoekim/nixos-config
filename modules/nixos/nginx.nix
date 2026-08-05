@@ -49,10 +49,25 @@ in
 {
   environment.systemPackages = [
     nginxEtc
-    # For local dev certificates. A mkcert cert is only trusted on the machine
-    # whose CA issued it, so one carried in from another box shows a browser
-    # warning here until it is reissued locally.
+
+    # Local dev certificates. A mkcert cert is only trusted on the machine
+    # whose CA issued it, so one carried in from another box warns here until
+    # it is reissued locally.
     pkgs.mkcert
+    # certutil, which is how `mkcert -install` reaches a trust store on this
+    # system. Its other route — dropping a PEM in /usr/local/share/ca-certificates
+    # and running update-ca-certificates — does not exist on NixOS, so without
+    # this mkcert generates certificates that nothing ends up trusting.
+    #
+    # This covers Chrome and Firefox, which read the user NSS database at
+    # ~/.pki/nssdb, and that is what local development actually needs.
+    # It does *not* cover OpenSSL consumers (curl, node), which read the system
+    # bundle. Making those trust it means declaring the CA in
+    # security.pki.certificateFiles, which under flakes has to be a path inside
+    # this repo — i.e. publishing a trust anchor to a public GitHub repo. Not
+    # worth it for `curl -k`; set SSL_CERT_FILE / NODE_EXTRA_CA_CERTS ad hoc if
+    # a one-off needs it.
+    pkgs.nssTools
   ];
 
   # Directories the app repo's script writes into. Deliberately not

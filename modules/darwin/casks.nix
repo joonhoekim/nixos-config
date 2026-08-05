@@ -31,7 +31,12 @@ _:
   # nothing until `open -a AeroSpace`. Drop this line once rift has proven out.
   "aerospace"          # tiling window manager (from nikitabobko/tap), stand-by
   "karabiner-elements"
-  "eul"
+  # eul(메뉴바 시스템 모니터)은 stats와 완전히 겹친다 — stats가 CPU/메모리/디스크/
+  # 네트워크에 더해 센서·배터리·GPU까지 보여주고 설정 UI도 낫다. 아래 "Utility
+  # Tools"의 stats 하나로 통일. 되살리려면 이 줄과 함께
+  # modules/darwin/eul.nix import, hosts/darwin/default.nix의 eul LaunchAgent를
+  # 같이 살려야 한다.
+  # "eul"
 
   # Browsers
   "google-chrome"
@@ -48,7 +53,8 @@ _:
   # "zoom"
 
   # Utility Tools
-  "stats"
+  "stats"              # 메뉴바 시스템 모니터 (eul 대체). 로그인 실행은
+                       # hosts/darwin/default.nix의 LaunchAgent가 담당한다.
   # "syncthing"
   # "1password"
   # "rectangle"

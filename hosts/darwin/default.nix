@@ -4,7 +4,10 @@
   imports = [
     ../../modules/darwin/home-manager.nix
     ../../modules/darwin/default-apps.nix
-    ../../modules/darwin/eul.nix
+    # eul은 stats로 대체됐다 (modules/darwin/casks.nix 참고). 모듈 파일 자체는
+    # 남겨두되 import 하지 않는다 — 되돌릴 때 이 줄과 아래 eul LaunchAgent,
+    # casks.nix의 "eul" 항목을 함께 살리면 된다.
+    # ../../modules/darwin/eul.nix
     ../../modules/darwin/ios.nix
     ../../modules/darwin/rice
     ../../modules/shared
@@ -83,12 +86,29 @@
       };
     };
     # Menu-bar system monitor — start at login, but respect a manual quit.
-    eul = {
-      command = "/Applications/eul.app/Contents/MacOS/eul";
+    #
+    # Stats replaced eul here: same job, strictly more of it (sensors, GPU,
+    # battery health), so running both just duplicated the menu bar. eul's
+    # cask and its defaults module are commented out too; see
+    # modules/darwin/casks.nix.
+    #
+    # Stats does have its own "Start at login" toggle, but it registers a
+    # SMAppService login item that the app rewrites from its own preferences —
+    # exactly the kind of state this repo keeps declarative. Driving it from
+    # launchd matches every other GUI app here and survives a reinstall.
+    # If the in-app toggle ever gets flipped on as well, the second launch is
+    # a no-op: Stats is a single-instance app.
+    stats = {
+      command = "/Applications/Stats.app/Contents/MacOS/Stats";
       serviceConfig.RunAtLoad = true;
     };
 
-    # Workspace-switcher overlay (Option+Ctrl+W). Same shape as eul: start it,
+    # eul = {
+    #   command = "/Applications/eul.app/Contents/MacOS/eul";
+    #   serviceConfig.RunAtLoad = true;
+    # };
+
+    # Workspace-switcher overlay (Option+Ctrl+W). Same shape as stats: start it,
     # but a manual quit stays quit.
     #
     # It has to be here because the app registers no Login Item of its own —
@@ -284,7 +304,7 @@
       # No _HIHideMenuBar here. It was left off while sketchybar was competing
       # for the same strip, and now there is nothing to compete: the menu bar
       # is where rift draws its workspace indicator
-      # ([settings.ui.menu_bar] in modules/darwin/config/rift.toml), so hiding
+      # ([settings.ui.menu_bar] in modules/darwin/rice/rift/config.toml), so hiding
       # it would hide the one thing this setup added to it.
 
     };

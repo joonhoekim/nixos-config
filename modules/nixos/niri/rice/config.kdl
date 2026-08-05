@@ -41,65 +41,122 @@ include "dms/wpblur.kdl" optional=true
 debug {
 	honor-xdg-activation-with-invalid-serial
 }
+// 세 티어가 전부다. 하이프랜드와 rift 도 같은 세 티어이고, macOS 만 Mod 가 Alt
+// 다(Cmd 는 시스템이 가져간다). 전체 표는 docs/keymap.md.
+//
+//   Mod         간다, 연다
+//   Mod+Shift   창을 데리고 간다
+//   Mod+Ctrl    모니터를 넘는다, WM 에게 말한다
+//
+// 방향은 IJKL, 화살표와 같은 역T자다:
+//
+//         I                 ↑
+//    J    K    L        ←   ↓   →
+//
+// 화살표는 어느 티어에서든 같은 동작에 같이 걸려 있다.
 binds {
-	Alt+Print {
-		screenshot-window
-	}
-	Ctrl+Print {
-		screenshot-screen
-	}
-	Mod+1 {
-		focus-workspace 1
-	}
-	Mod+2 {
-		focus-workspace 2
-	}
-	Mod+3 {
-		focus-workspace 3
-	}
-	Mod+4 {
-		focus-workspace 4
-	}
-	Mod+5 {
-		focus-workspace 5
-	}
-	Mod+C {
-		center-column
-	}
-	Mod+Comma {
-		spawn "dms" "ipc" "call" "settings" "toggle"
-	}
-	Mod+Ctrl+Down {
-		move-window-down
-	}
-	Mod+Ctrl+H {
-		move-column-left
-	}
-	Mod+Ctrl+I {
-		move-column-to-workspace-up
-	}
-	Mod+Ctrl+J {
-		move-window-down
-	}
-	Mod+Ctrl+K {
-		move-window-up
-	}
-	Mod+Ctrl+Left {
-		move-column-left
-	}
-	Mod+Ctrl+Right {
-		move-column-right
-	}
-	Mod+Ctrl+U {
-		move-column-to-workspace-down
-	}
-	Mod+Ctrl+Up {
-		move-window-up
-	}
-	Mod+D {
-		spawn "fuzzel"
-	}
-	// ── ricing ─────────────────────────────────────────────────────────
+	// ── 티어 1 — Mod: 간다 ─────────────────────────────────────────────
+	Mod+J { focus-column-left; }
+	Mod+L { focus-column-right; }
+	Mod+Left { focus-column-left; }
+	Mod+Right { focus-column-right; }
+	Mod+I { focus-window-up; }
+	Mod+K { focus-window-down; }
+	Mod+Up { focus-window-up; }
+	Mod+Down { focus-window-down; }
+
+	// 워크스페이스는 세로로 쌓인다. U 가 뒤로(위), O 가 앞으로(아래) — I 를
+	// 위에서 감싸는 두 자리다. 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다.
+	Mod+U { focus-workspace-up; }
+	Mod+O { focus-workspace-down; }
+	// 직전 워크스페이스. rift 와 하이프랜드에는 걸어 뒀는데 여기만 비어 있다 —
+	// `focus-workspace-previous` 가 니리 기본 설정에 없어서 이름이 맞는지
+	// 확인하지 못했다. 니리는 모르는 액션을 만나면 설정 전체를 거부하고, 그건
+	// 로그인이 안 된다는 뜻이라 추측으로 넣을 자리가 아니다. 리눅스에서:
+	//
+	//   niri msg action | grep workspace-previous
+	//
+	// 이름이 나오면 아래 줄의 주석을 풀고 `niri validate` 로 확인할 것.
+	// Mod+Tab { focus-workspace-previous; }
+
+	Mod+1 { focus-workspace 1; }
+	Mod+2 { focus-workspace 2; }
+	Mod+3 { focus-workspace 3; }
+	Mod+4 { focus-workspace 4; }
+	Mod+5 { focus-workspace 5; }
+	Mod+6 { focus-workspace 6; }
+	Mod+7 { focus-workspace 7; }
+	Mod+8 { focus-workspace 8; }
+	Mod+9 { focus-workspace 9; }
+
+	Mod+Return hotkey-overlay-title="Open a Terminal" { spawn "ghostty"; }
+	// 셸이 안 뜬 상태에서도 뭔가를 열 수 있는 폴백 런처.
+	Mod+D { spawn "fuzzel"; }
+	// 오버뷰. 하이프랜드는 같은 키에서 DMS 오버뷰를, rift 는 macOS 미션
+	// 컨트롤을 연다. 니리 기본값은 Mod+O 인데 그 자리는 여기서 워크스페이스
+	// 앞으로 가기다 — 세 WM 을 맞추는 쪽을 골랐다. repeat=false 는 니리 기본
+	// 설정을 따른 것으로, 누르고 있을 때 토글이 연달아 터지는 걸 막는다.
+	Mod+E repeat=false { toggle-overview; }
+	// 치트시트. H 는 IJKL 이 왼쪽을 J 로 가져가면서 빈 자리가 됐고, Help 로
+	// 읽힌다. rift 에는 대응물이 없다 — 그쪽 치트시트는 docs/keymap.md 다.
+	Mod+H { show-hotkey-overlay; }
+
+	Mod+Q { close-window; }
+	Mod+F { maximize-column; }
+	Mod+C { center-column; }
+	Mod+Equal { set-column-width "+10%"; }
+	Mod+Minus { set-column-width "-10%"; }
+	Mod+R { switch-preset-column-width; }
+
+	// DMS
+	Mod+Space { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
+	Mod+V { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
+	Mod+N { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+	Mod+S { spawn "dms" "ipc" "call" "control-center" "toggle"; }
+	Mod+Escape { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
+
+	// ── 티어 2 — Mod+Shift: 창을 데리고 간다 ───────────────────────────
+	Mod+Shift+J { move-column-left; }
+	Mod+Shift+L { move-column-right; }
+	Mod+Shift+Left { move-column-left; }
+	Mod+Shift+Right { move-column-right; }
+	Mod+Shift+I { move-window-up; }
+	Mod+Shift+K { move-window-down; }
+	Mod+Shift+Up { move-window-up; }
+	Mod+Shift+Down { move-window-down; }
+
+	Mod+Shift+U { move-column-to-workspace-up; }
+	Mod+Shift+O { move-column-to-workspace-down; }
+
+	Mod+Shift+1 { move-column-to-workspace 1; }
+	Mod+Shift+2 { move-column-to-workspace 2; }
+	Mod+Shift+3 { move-column-to-workspace 3; }
+	Mod+Shift+4 { move-column-to-workspace 4; }
+	Mod+Shift+5 { move-column-to-workspace 5; }
+	Mod+Shift+6 { move-column-to-workspace 6; }
+	Mod+Shift+7 { move-column-to-workspace 7; }
+	Mod+Shift+8 { move-column-to-workspace 8; }
+	Mod+Shift+9 { move-column-to-workspace 9; }
+
+	Mod+Shift+F { fullscreen-window; }
+	Mod+Shift+Space { toggle-window-floating; }
+
+	// ── 티어 3 — Mod+Ctrl: 모니터를 넘는다 ─────────────────────────────
+	Mod+Ctrl+J { move-column-to-monitor-left; }
+	Mod+Ctrl+L { move-column-to-monitor-right; }
+	Mod+Ctrl+I { move-column-to-monitor-up; }
+	Mod+Ctrl+K { move-column-to-monitor-down; }
+	Mod+Ctrl+Left { move-column-to-monitor-left; }
+	Mod+Ctrl+Right { move-column-to-monitor-right; }
+	Mod+Ctrl+Up { move-column-to-monitor-up; }
+	Mod+Ctrl+Down { move-column-to-monitor-down; }
+
+	// ── 티어 밖 — 리눅스 전용 ──────────────────────────────────────────
+	// 방향키도 워크스페이스도 아니라 어느 티어와도 실제로 부딪히지 않는다.
+	Print { screenshot; }
+	Ctrl+Print { screenshot-screen; }
+	Alt+Print { screenshot-window; }
+
 	// 레포의 스크립트를 직접 부른다. niri 의 spawn 은 $HOME 을 확장하지 않아서
 	// sh -c 를 한 겹 씌운다. 스크립트를 PATH 에 올리지 않는 건, 리싱 중에는
 	// 스크립트 자체도 자주 고치게 되는데 그때마다 rebuild 하고 싶지 않아서다.
@@ -124,111 +181,34 @@ binds {
 	Mod+Shift+R hotkey-overlay-title="Rice menu" {
 		spawn "dms" "ipc" "call" "spotlight" "toggleQuery" ":"
 	}
-	Mod+Down {
-		focus-window-down
-	}
-	Mod+End {
-		focus-column-last
-	}
-	Mod+Equal {
-		set-column-width "+10%"
-	}
-	Mod+Escape {
-		spawn "dms" "ipc" "call" "powermenu" "toggle"
-	}
-	Mod+F {
-		maximize-column
-	}
-	Mod+H {
-		focus-column-left
-	}
-	Mod+Home {
-		focus-column-first
-	}
-	Mod+I {
-		focus-workspace-up
-	}
-	Mod+J {
-		focus-window-down
-	}
-	Mod+K {
-		focus-window-up
-	}
-	Mod+L {
-		spawn "dms" "ipc" "call" "lock" "lock"
-	}
-	Mod+Left {
-		focus-column-left
-	}
-	Mod+Minus {
-		set-column-width "-10%"
-	}
-	Mod+N {
-		spawn "dms" "ipc" "call" "notifications" "toggle"
-	}
-	Mod+Q {
-		close-window
-	}
-	Mod+R {
-		switch-preset-column-width
-	}
-	Mod+Return hotkey-overlay-title="Open a Terminal" {
-		spawn "ghostty"
-	}
-	Mod+Right {
-		focus-column-right
-	}
-	Mod+S {
-		spawn "dms" "ipc" "call" "control-center" "toggle"
-	}
-	Mod+Shift+E {
-		quit
-	}
-	Mod+Shift+F {
-		fullscreen-window
-	}
-	Mod+Shift+Slash {
-		show-hotkey-overlay
-	}
-	Mod+Shift+Space {
-		toggle-window-floating
-	}
-	Mod+Space {
-		spawn "dms" "ipc" "call" "spotlight" "toggle"
-	}
-	Mod+U {
-		focus-workspace-down
-	}
-	Mod+Up {
-		focus-window-up
-	}
-	Mod+V {
-		spawn "dms" "ipc" "call" "clipboard" "toggle"
-	}
-	Print {
-		screenshot
-	}
-	XF86AudioLowerVolume allow-when-locked=true {
-		spawn "dms" "ipc" "call" "audio" "decrement" "5"
-	}
-	XF86AudioMicMute allow-when-locked=true {
-		spawn "dms" "ipc" "call" "mic" "mute"
-	}
-	XF86AudioMute allow-when-locked=true {
-		spawn "dms" "ipc" "call" "audio" "mute"
-	}
-	XF86AudioRaiseVolume allow-when-locked=true {
-		spawn "dms" "ipc" "call" "audio" "increment" "5"
-	}
-	XF86MonBrightnessDown allow-when-locked=true {
-		spawn "dms" "ipc" "call" "brightness" "decrement" "5"
-	}
-	XF86MonBrightnessUp allow-when-locked=true {
-		spawn "dms" "ipc" "call" "brightness" "increment" "5"
-	}
+
+	XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
+	XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+	XF86AudioMute allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
+	XF86AudioMicMute allow-when-locked=true { spawn "dms" "ipc" "call" "mic" "mute"; }
+	XF86MonBrightnessUp allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "increment" "5"; }
+	XF86MonBrightnessDown allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "decrement" "5"; }
+
+	// 버린 것:
+	//   Mod+L         잠금. IJKL 이 오른쪽을 L 로 가져갔다. 잠금은 Mod+Escape 의
+	//                 파워메뉴에 있고, 거기엔 되돌릴 기회까지 있다.
+	//   Mod+Comma     DMS 설정 GUI. 런처에서 이름으로 부르면 된다.
+	//   Mod+Shift+E   `quit`. Mod+E(오버뷰)와 Mod+Shift+F 사이에 끼어 있어서
+	//                 오타 한 번이면 세션이 통째로 날아간다. 하이프랜드 쪽은
+	//                 같은 이유로 이미 빼 뒀다. 로그아웃은 파워메뉴로.
+	//   Mod+Home/End  focus-column-first/last. 하이프랜드에는 이 동작 자체가
+	//                 없어서(docs/hyprland-binds.md) 세 곳을 맞추려면 여기만
+	//                 남길 수 없었다.
 }
 input {
-	focus-follows-mouse
+	// focus-follows-mouse 를 뺐다. 세 WM 모두 클릭해야 포커스가 가도록 맞췄다
+	// (하이프랜드 `follow_mouse = 0`, rift `focus_follows_mouse = false`).
+	//
+	// 호버 포커스와 키보드 타일러는 누가 주도권을 갖는지에 대해 답이 다르다.
+	// 포인터는 마지막으로 놓아둔 자리에 그대로 있으면서 포커스에 대한 권리를
+	// 계속 주장한다 — 키보드로 옮겨 간 창에 타이핑을 시작하면 첫 타가 커서가
+	// 얹혀 있던 엉뚱한 창으로 들어갈 수 있고, 배경 창 위에서 스크롤하면
+	// 포커스를 통째로 빼앗긴다.
 	keyboard {
 		xkb {
 			layout "us"

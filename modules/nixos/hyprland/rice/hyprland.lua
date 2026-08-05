@@ -139,9 +139,11 @@ hl.bind(mod .. " + Q", hl.dsp.window.close())
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind(mod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mod .. " + SHIFT + space", hl.dsp.window.float({ action = "toggle" }))
--- 로그아웃. **hl.dsp.exit() 이 아니다** — uwsm 세션에서 컴포지터를 직접 죽이면
--- 클라이언트 밑에서 바닥을 빼는 꼴이라 유닛들이 어중간한 상태로 남는다.
-hl.bind(mod .. " + SHIFT + E", hl.dsp.exec_cmd("uwsm stop"))
+-- Mod+Shift+E 는 로그아웃(`uwsm stop`)이었다. Mod+Shift+F / Mod+Shift+space 와
+-- 손 모양이 겹쳐서 오타 한 번이면 세션이 통째로 날아가는 자리라 뺐다. 로그아웃은
+-- Mod+Escape 의 파워메뉴로 하면 되고, 거기엔 되돌릴 기회가 있다. 다시 걸 일이
+-- 있으면 **hl.dsp.exit() 이 아니라** `uwsm stop` 이다 — uwsm 세션에서 컴포지터를
+-- 직접 죽이면 클라이언트 밑에서 바닥을 빼는 꼴이라 유닛들이 어중간하게 남는다.
 
 -- 포커스. 컬럼 사이는 layout 메시지("focus")로 간다 — 끝에서 감싸 돌고,
 -- 옆 모니터로 새지 않는다. 컬럼 *안*의 위아래는 평범한 방향 포커스다.
@@ -154,8 +156,13 @@ hl.bind(mod .. " + J", hl.dsp.focus({ direction = "d" }))
 hl.bind(mod .. " + K", hl.dsp.focus({ direction = "u" }))
 hl.bind(mod .. " + down", hl.dsp.focus({ direction = "d" }))
 hl.bind(mod .. " + up", hl.dsp.focus({ direction = "u" }))
-hl.bind(mod .. " + Home", hl.dsp.focus({ window = "first" }))
-hl.bind(mod .. " + End", hl.dsp.focus({ window = "last" }))
+-- 니리의 focus-column-first/last 를 Mod+Home/End 로 옮겨 뒀었지만 둘 다 죽은
+-- 바인드였다. focus 의 `window` 는 위치 키워드가 아니라 창 셀렉터(class:, title:,
+-- address:)라서 "first"/"last" 는 아무것도 못 찾고 경고만 찍는다. 스크롤링
+-- 레이아웃에 끝 컬럼으로 뛰는 메시지도 없다 — layoutmsg("focus ...") 는 첫 글자만
+-- 방향으로 읽어서 leftmost/rightmost/last 가 전부 l/r 과 똑같이 한 칸만 가고,
+-- 그 한 칸은 끝에서 감싸 돌기까지 한다. 되살리려면 hl.get_windows() 로 컬럼을
+-- 직접 훑는 함수를 써야 하고, 동작을 확인한 형태가 docs/hyprland-binds.md 에 있다.
 -- 니리의 center-column 자리. 정확히 같지는 않다 — 이건 활성 컬럼을 화면 안에
 -- 완전히 넣는 것이고, 가운데 정렬은 위의 focus_fit_method 가 정한다.
 hl.bind(mod .. " + C", hl.dsp.layout("fit_into_view"))

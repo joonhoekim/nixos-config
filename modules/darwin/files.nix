@@ -18,7 +18,7 @@ let
   # hot_reload watches this path, but a switch replaces the symlink rather than
   # the file under it — press Alt+Ctrl+R if a rebuild seems to change nothing.
   #
-  # Declarative rather than seeded (which is how sketchybar and the terminal
+  # Declarative rather than seeded (which is how the borders and the terminal
   # looks are handled, see modules/darwin/rice) because this file is a keymap,
   # not a look: there is nothing to tune by eye, and losing it to an unbacked
   # $HOME would cost every binding.

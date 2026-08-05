@@ -63,9 +63,9 @@
     #
     # The binary comes from a brew formula (modules/darwin/brews.nix), so this
     # is /opt/homebrew, not /nix/store. `path` matters: rift's run_on_start
-    # hooks shell out to `rift-cli` (sibling in /opt/homebrew/bin) and to
-    # `sketchybar` (nix store, reached via systemPath), and a LaunchAgent
-    # inherits none of a login shell's PATH.
+    # hook shells out to `borders` (nix store, reached via systemPath) and its
+    # keybindings reach `rift-cli` (sibling in /opt/homebrew/bin) — and a
+    # LaunchAgent inherits none of a login shell's PATH.
     rift = {
       command = "/opt/homebrew/bin/rift";
       path = [ "/opt/homebrew/bin" config.environment.systemPath ];
@@ -85,6 +85,36 @@
     # Menu-bar system monitor — start at login, but respect a manual quit.
     eul = {
       command = "/Applications/eul.app/Contents/MacOS/eul";
+      serviceConfig.RunAtLoad = true;
+    };
+
+    # Workspace-switcher overlay (Option+Ctrl+W). Same shape as eul: start it,
+    # but a manual quit stays quit.
+    #
+    # It has to be here because the app registers no Login Item of its own —
+    # its install.sh builds and signs the bundle and stops there. Nothing was
+    # starting it, so after every reboot the hotkey did nothing while the app
+    # looked perfectly installed.
+    #
+    # nix does not install this one; it is a Swift .app built imperatively
+    # (modules/darwin/rice/peek/README.md). On a machine where it has not been
+    # built yet this agent fails once at login and is never retried — which is
+    # the behaviour we want, not a restart loop. `command -v` cannot guard a
+    # LaunchAgent, and KeepAlive would turn the absence into one.
+    #
+    # Launching the bundle's Mach-O directly, rather than `open -a`, is
+    # deliberate and was verified rather than assumed: the app is ad-hoc signed
+    # (TeamIdentifier not set), and TCC entries for ad-hoc binaries are keyed to
+    # the cdhash, so it was worth checking that a launchd start still resolves
+    # the Accessibility grant. It does — CGGetEventTapList shows the same
+    # enabled event tap either way. `open -a` would exit immediately and leave
+    # launchd thinking the job finished, which is a worse fit for RunAtLoad.
+    workspacepeek = {
+      command = "/Applications/WorkspacePeek.app/Contents/MacOS/WorkspacePeek";
+      # Reaches rift-cli — the overlay asks rift for the workspace list every
+      # time it opens (config.json: windowManager.backend = "auto"). Without
+      # this the overlay draws but finds no workspaces.
+      path = [ "/opt/homebrew/bin" config.environment.systemPath ];
       serviceConfig.RunAtLoad = true;
     };
   };
@@ -251,17 +281,11 @@
         };
       };
 
-      # sketchybar draws at the top of the screen, in the same strip as the
-      # macOS menu bar — so by default you get both, stacked and clipping each
-      # other. The usual fix is to auto-hide Apple's:
-      #
-      #   NSGlobalDomain._HIHideMenuBar = true;   (add to NSGlobalDomain above)
-      #
-      # Left off deliberately. Auto-hide is a whole-system behaviour change
-      # (the menu bar then slides in on hover, which on a notched display also
-      # moves where full-screen apps put their controls), and it is not
-      # something a status-bar experiment should decide on your behalf. Turn it
-      # on once the bar earns its place.
+      # No _HIHideMenuBar here. It was left off while sketchybar was competing
+      # for the same strip, and now there is nothing to compete: the menu bar
+      # is where rift draws its workspace indicator
+      # ([settings.ui.menu_bar] in modules/darwin/config/rift.toml), so hiding
+      # it would hide the one thing this setup added to it.
 
     };
 

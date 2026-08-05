@@ -7,7 +7,7 @@
 |---|---|
 | 하이프랜드 | `modules/nixos/hyprland/rice/hyprland.lua` |
 | 니리 | `modules/nixos/niri/rice/config.kdl` |
-| rift | `modules/darwin/config/rift.toml` |
+| rift | `modules/darwin/rice/rift/config.toml` |
 
 하이프랜드에서 **무엇을** 부를 수 있는지(디스패처 이름, 인자 모양, 검증한 것과
 안 한 것)는 별개 문서다 — [hyprland-binds.md](hyprland-binds.md).

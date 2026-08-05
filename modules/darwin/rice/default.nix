@@ -87,16 +87,17 @@ in
 # macOS ricing: the window borders and the colour generator that feeds them.
 #
 # The window manager itself is not here — rift is a brew formula plus a login
-# agent (modules/darwin/brews.nix, hosts/darwin/default.nix) and its keymap is
-# a declarative symlink (modules/darwin/config/rift.toml). This module owns the
-# parts whose *look* is meant to be tuned by eye.
+# agent (modules/darwin/brews.nix, hosts/darwin/default.nix). Its keymap IS
+# here as of 2026-08-06 (./rift/config.toml, seeded like everything else in
+# this module); before that it was a read-only store symlink, which broke the
+# moment rift's own "settings" item started opening it in an editor.
 #
 # ── There is no status bar here, and that was a decision ──────────────────
 # sketchybar lived in this module until 2026-08-05. It drew six things and five
-# of them were already in the macOS menu bar — clock, battery, CPU (eul), input
+# of them were already in the macOS menu bar — clock, battery, CPU (stats), input
 # source, focused app. The one that was not, the rift workspace indicator, now
 # comes from rift itself (`[settings.ui.menu_bar]` in
-# modules/darwin/config/rift.toml): no extra process, no Screen Recording
+# modules/darwin/rice/rift/config.toml): no extra process, no Screen Recording
 # grant, nothing to re-approve when a nixpkgs bump changes a hash.
 #
 # Replacing the whole menu bar was the alternative, and it does not work.
@@ -145,7 +146,7 @@ in
   #
   # Instead rift spawns borders itself, from ~/.config/borders/bordersrc, and
   # the child inherits rift's trust. See the run_on_start block in
-  # modules/darwin/config/rift.toml for the whole reasoning, and ./borders for
+  # modules/darwin/rice/rift/config.toml for the whole reasoning, and ./borders for
   # the seeded script.
   #
   # The package still has to be installed for that script to find `borders`.
@@ -210,8 +211,26 @@ in
     # home.file / xdg.configFile: those symlink the store and make the target
     # read-only. `seed` copies only when the destination is missing, so a
     # rebuild mid-ricing never clobbers unsaved work — see the helper's header.
-    home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    # linkGeneration 뒤에 두는 건 아래 unstore 때문이다. 이전 세대의 심링크를
+    # 걷어내는 건 home-manager 도 하는데, 그게 seed 보다 나중에 돌면 방금 심은
+    # 진짜 파일을 보고 판단하게 된다. 순서를 못 박아 두면 그 경우가 아예 없다.
+    home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" "linkGeneration" ] ''
       ${import ../../shared/rice-seed-helpers.nix}
+
+      # ── 심링크에서 시드로 넘어오는 한 번을 위한 것 ──────────────────────
+      # 아래 셋(karabiner.json, aerospace.toml, rift 의 config.toml)은
+      # 2026-08-06 까지 modules/darwin/files.nix 가 거는 읽기 전용 스토어
+      # 심링크였다. seed 의 존재 검사는 링크도 "있음"으로 보므로, 걷어내지
+      # 않으면 그 머신들에는 영영 안 심긴다.
+      #
+      # 스토어를 가리키는 링크일 때만 지운다. 평범한 파일이면 이미 손댄
+      # 설정이고, 스토어 밖을 가리키는 링크라면 일부러 그렇게 둔 것이다 —
+      # 둘 다 건드리면 안 된다.
+      unstore() { # unstore <path>
+        case "$(readlink "$1" 2>/dev/null)" in
+          /nix/store/*) $DRY_RUN_CMD rm -f "$1"; echo "unlinked store symlink $1" ;;
+        esac
+      }
 
       # wezterm. Secondary terminal (ghostty is the daily one), here mostly
       # because it can read pywal's JSON directly and reload itself.
@@ -221,9 +240,32 @@ in
       # 때마다 apps/rice-colors 가 다시 쓴다.
       seed ${./borders} "$HOME/.config/borders"
 
-      # rift 키바인딩이 부르는 헬퍼들. ~/.config/rift 가 아니라 여기 두는 이유:
-      # 그쪽은 config.toml 이 home-manager 심링크로 들어가 있어서 seed 의 디렉터리
-      # 존재 검사와 부딪힌다.
+      # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
+      # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
+      unstore "$HOME/.config/rift/config.toml"
+      seed ${./rift/config.toml} "$HOME/.config/rift/config.toml"
+
+      # Karabiner 의 키맵. 여기 셋 중 심링크가 제일 안 맞던 자리다 — 설정 GUI 가
+      # 저장할 때마다 조용히 실패했고, ./karabiner/README.md 에는 그걸 우회하는
+      # 절차("심링크 지우고 → 복사본 두고 → 다 되면 되돌리고 build-switch")가
+      # 아예 문서로 적혀 있었다. 그 우회가 지금은 그냥 기본 동작이다.
+      #
+      # 디렉터리가 아니라 파일 하나만 심는 이유: ~/.config/karabiner 에는 앱이
+      # 만드는 assets/ 와 automatic_backups/ 가 같이 산다. 통째로 다루면 그것까지
+      # 레포가 관리하게 된다.
+      unstore "$HOME/.config/karabiner/karabiner.json"
+      seed ${./karabiner/karabiner.json} "$HOME/.config/karabiner/karabiner.json"
+
+      # AeroSpace 의 설정. rift 로 옮겨 간 뒤로 로그인에 뜨지 않지만 `open -a
+      # AeroSpace` 폴백은 그대로라 설정도 유효하다. rift 가 완전히 자리 잡으면
+      # 이 줄과 ./aerospace 를 casks.nix 의 항목과 함께 지우면 된다.
+      unstore "$HOME/.config/aerospace/aerospace.toml"
+      seed ${./aerospace/aerospace.toml} "$HOME/.config/aerospace/aerospace.toml"
+
+      # rift 키바인딩이 부르는 헬퍼들. ~/.config/rift 가 아니라 여기 두는 이유는
+      # 원래 위 심링크와 부딪혀서였는데 그 제약은 사라졌다. 그래도 그대로 두는
+      # 건 rift/config.toml 이 이 경로를 박아서 부르기 때문이다 — 옮기려면 키맵과
+      # 같이 옮겨야 하고, 그건 이 변경과 별개다.
       seed ${./bin} "$HOME/.config/rice/bin"
 
       # WorkspacePeek(Option+Ctrl+W) 설정. 앱 자체는 nix 가 안 깐다 — Swift 로
@@ -234,14 +276,19 @@ in
       # 앱의 기본값에 덮이지 않는다.
       seed ${./workspacepeek/config.json} "$HOME/.config/workspacepeek/config.json"
 
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 넷 다 그럴 필요가 없기
-      # 때문이다. wezterm 은 자기 설정 파일을 지켜보고, bordersrc 와 rice/bin 은
-      # 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며, WorkspacePeek 은
-      # 애초에 파일이 없을 때만 시드가 일어난다(= 첫 실행 전이다).
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 일곱 다 그럴 필요가 없기
+      # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고, bordersrc 와
+      # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
+      # WorkspacePeek·rift·AeroSpace 는 애초에 파일이 없을 때만 시드가
+      # 일어난다(= 아직 아무도 안 읽었다).
       #
-      # rift 도 일부러 없다. 재시작하면 열려 있는 창이 전부 다시 타일링돼서
-      # 작업 중이면 방해가 크고, rift 는 hot_reload 로 설정 파일을 스스로
-      # 지켜본다. 리빌드가 안 먹은 것 같으면 Alt+Ctrl+R.
+      # 심링크에서 넘어오는 그 한 번만 예외인데, 그때도 감시자가 새로 생긴 파일을
+      # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R, Karabiner 는 설정 앱에서
+      # 프로파일을 다시 고르면 된다.
+      #
+      # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice-restore 는
+      # rm+cp 로 덮어서 감시가 걸려 있던 아이노드를 날리므로, 그쪽은 복원 뒤에
+      # 명시적으로 reload 를 부른다.
     '';
   };
 }

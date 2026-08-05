@@ -30,7 +30,7 @@ cd WorkspacePeek && ./install.sh
 핫키가 무반응인데 앱은 설치돼 있어서 원인을 찾기 어려운 종류다.
 
 `hosts/darwin/default.nix` 의 `launchd.user.agents.workspacepeek` 이 그 몫을
-한다(eul 과 같은 모양: 로그인에 띄우되 손으로 종료하면 그대로 둔다).
+한다(stats 와 같은 모양: 로그인에 띄우되 손으로 종료하면 그대로 둔다).
 
 ```sh
 launchctl print gui/$(id -u)/org.nixos.workspacepeek | grep state   # 떠 있나
@@ -52,7 +52,7 @@ launchctl kickstart -k gui/$(id -u)/org.nixos.workspacepeek         # 다시 띄
 
 그래서 `Alt+Ctrl` 계열로 옮겼다. rift 쪽에서 이 계열은 방향키·hjkl·U/I·숫자 1..4 만
 쓰고 있어서 자리가 넉넉하고, 앞으로 피커를 더 붙여도 같은 계열 안에서 해결된다.
-그 규칙은 `../../config/rift.toml` 맨 아래에도 적어 뒀다.
+그 규칙은 `../rift/config.toml` 맨 아래에도 적어 뒀다.
 
 ## 설정은 전부 선언적이다
 

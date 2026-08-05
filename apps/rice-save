@@ -1,7 +1,7 @@
 #!/bin/sh -e
 #
 # Snapshot the live ricing config back into the repo — niri / Hyprland / DMS on
-# Linux, wezterm / rift helpers / WorkspacePeek on macOS.
+# Linux, wezterm / rift / Karabiner / AeroSpace / WorkspacePeek on macOS.
 #
 # These files are NOT managed by Nix (see modules/nixos/niri/default.nix): they
 # are ordinary writable files so that niri can hot-reload on save and the DMS
@@ -212,9 +212,16 @@ copy "$cfg/ghostty/shaders"                   "$gt/shaders"
 #
 # 리눅스에서는 셋 다 없으므로 "skip (absent)" 로 지나간다.
 copy "$cfg/wezterm"                           "$dr/wezterm"
-# rift 키바인딩이 부르는 헬퍼(monocle.sh 등). rift 의 config.toml 은 여기 없다 —
-# 그쪽은 modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 레포가 원본이고,
-# 되받을 것이 없다.
+# rift 의 키맵. 2026-08-06 까지는 여기 없었다 — modules/darwin/files.nix 가 거는
+# 읽기 전용 스토어 심링크라 레포가 원본이었고 되받을 것이 없었다. 이제 시드라
+# 라이브가 원본이고, 커밋 전에 이걸 안 돌리면 손본 바인딩이 그대로 날아간다.
+copy "$cfg/rift/config.toml"                  "$dr/rift/config.toml"
+# Karabiner 는 설정 GUI 로 고치는 일이 많다. 되받는 길이 없던 동안에는 GUI 로 한
+# 변경이 저장조차 안 됐다 — 그게 이걸 옮긴 이유다.
+copy "$cfg/karabiner/karabiner.json"          "$dr/karabiner/karabiner.json"
+# AeroSpace. rift 폴백용이라 손댈 일은 드물지만 왕복은 나머지와 같다.
+copy "$cfg/aerospace/aerospace.toml"          "$dr/aerospace/aerospace.toml"
+# rift 키바인딩이 부르는 헬퍼(monocle.sh 등).
 copy "$cfg/rice/bin"                          "$dr/bin"
 copy "$cfg/workspacepeek/config.json"         "$dr/workspacepeek/config.json"
 #

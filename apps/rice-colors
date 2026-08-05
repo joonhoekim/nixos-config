@@ -194,7 +194,7 @@ fi
 # 통째로 멈춘다 — 다음 벽지 변경부터 아무 일도 안 일어난다.
 #
 # 안 떠 있는 건 정상 상태다. borders 는 rift 가 run_on_start 에서 띄우므로
-# (modules/darwin/config/rift.toml), rift 가 없으면 borders 도 없는 게 맞다.
+# (modules/darwin/rice/rift/config.toml), rift 가 없으면 borders 도 없는 게 맞다.
 # 그때는 위에서 다시 쓴 bordersrc 로 충분하다 — 다음에 rift 가 뜰 때 그 색으로
 # 시작한다.
 if pgrep -x borders >/dev/null 2>&1; then

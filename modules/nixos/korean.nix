@@ -56,6 +56,59 @@
   # which prints `KeyEvent: Key(Hangul ...) keycode: 130` when the key lands.
   # Pass "" to SetLogRule to turn it back off; it is very noisy.
 
+  # nixpkgs gates every Wayland IME flag for Electron/Chromium apps behind this
+  # one variable — its wrappers end with
+  #
+  #   ${NIXOS_OZONE_WL:+${WAYLAND_DISPLAY:+--ozone-platform-hint=auto
+  #     --enable-features=WaylandWindowDecorations
+  #     --enable-wayland-ime=true --wayland-text-input-version=3}}
+  #
+  # and it was never set here, so VS Code came up as a native Wayland window
+  # (hyprctl clients: xwayland false) with none of them. Setting it is what
+  # nixpkgs intends for a Wayland session, and Brave already carried the same
+  # flags by hand in hosts/nixos/galaxy-chromebook-1/home.nix — that file's
+  # brave-flags.conf is now redundant, but harmless, and stays for its touch-UI
+  # flag.
+  #
+  # Read the next part before concluding anything about what this fixed. The
+  # variable was first set while chasing the Hangul-drop bug in
+  # docs/postmortems/2026-08-05-vscode-terminal-hangul.md, which makes it very
+  # easy to mistake for the fix. It was not.
+  #
+  #   verified    the flags do reach Chromium with it set — they appear in
+  #               /proc/<pid>/cmdline, and `code` prints a "not in the list of
+  #               known options, but still passed to Electron/Chromium" warning
+  #               for each one (that warning is normal, not a failure)
+  #   verified    Hangul input worked in VS Code both before and after
+  #   NOT tested  which text-input version Chromium negotiates, either way
+  #   NOT tested  whether this changes the Hangul dropping at all. The one
+  #               impression that it "seemed reduced" was uncontrolled — no
+  #               measurement, and not even the same phrase before and after —
+  #               and was withdrawn on reflection. The dropping turned out to be
+  #               fully explained by a scheduling bug inside the xterm.js bundle,
+  #               with no role for this flag in the mechanism.
+  #
+  # An earlier version of this comment asserted that Chromium defaults to
+  # text-input-v1 and that Hyprland does not implement it. The second half is
+  # simply false here, and it is one command to check:
+  #
+  #   wayland-info | grep text_input
+  #   #  interface: 'zwp_text_input_manager_v1', version: 1, name: 20
+  #   #  interface: 'zwp_text_input_manager_v3', version: 1, name: 21
+  #
+  # Hyprland offers both. So "no version could be negotiated" was never a
+  # sound explanation for anything.
+  #
+  # Kept because it is the configuration nixpkgs intends, not because it was
+  # shown to fix a symptom. If it ever needs to justify itself, the experiment
+  # is in the postmortem.
+  #
+  # Session variable, so it needs a logout — not just a rebuild — to take.
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
+  # The Hangul dropping itself is fixed in overlays/vscode-xterm-hangul.nix,
+  # picked up automatically by the overlay loader in modules/shared/default.nix.
+
   # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {
     enable = true;

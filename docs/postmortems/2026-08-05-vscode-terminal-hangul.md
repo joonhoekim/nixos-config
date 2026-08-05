@@ -438,12 +438,45 @@ node --check result/lib/vscode/resources/app/node_modules/@xterm/xterm/lib/xterm
 
 ## 확인하지 못한 것
 
-- 상류에 리포트하지 않았다. [microsoft/vscode#267568](https://github.com/microsoft/vscode/issues/267568)
-  이 upstream 라벨로 열려 있는데 macOS 재현만 있다. 여기서 나온 (b) — `cat` 만 띄운
-  Linux/Wayland/fcitx5 재현 — 이 훨씬 깔끔한 최소 케이스이고, 원인이
-  `_isSendingComposition` 의 공유 취소라는 것까지 붙일 수 있다.
 - `_handleAnyTextareaChanges` 의 두 드롭 지점은 **고치지 않았다.** 이번 추적에서
   발동하지 않았고, 발동하는 입력을 아직 못 찾았다. 구조는 여전히 위태롭다.
+  (상류에도 [#6045](https://github.com/xtermjs/xterm.js/issues/6045) 로 이미 올라와
+  있다 — 우리가 만난 것과 다른 경로지만 같은 함수다.)
+- Linux / Chromium / fcitx5(한국어) 밖은 확인하지 못했다. Windows TSF 와 macOS
+  경로는 원리상 이 변경과 무관하지만 돌려볼 방법이 없었다.
+
+---
+
+## 상류
+
+standalone xterm.js 에서도 재현된다는 것을 확인한 뒤 올렸다.
+
+- 이슈 [xtermjs/xterm.js#6089](https://github.com/xtermjs/xterm.js/issues/6089)
+- PR [xtermjs/xterm.js#6090](https://github.com/xtermjs/xterm.js/pull/6090)
+
+**standalone 재현이 리포트를 다른 물건으로 만들었다.** 처음엔 VS Code 안에서만 본
+상태였고, 그대로 냈으면 "VS Code 통합 문제"로 넘어가기 쉬웠다. 브라우저에 xterm.js
+하나만 띄운 페이지로 옮기니 처음엔 **재현이 안 됐고**, 그게 오히려 결정적인 단서였다 —
+유휴 페이지에서는 0ms 타이머가 다음 조합보다 먼저 돌기 때문이다. 메인 스레드에 부하를
+걸자 재현됐고, 그래서 리포트의 논지가 "느려서 생긴다"가 아니라
+
+> 지연 전송은 **한 `compositionend` 와 다음 `compositionend` 사이에 0ms 타이머가
+> 돈다**는 조건에서만 안전한데, 그걸 강제하는 장치가 없다
+
+가 됐다. 부하 조건 두 가지에서 각각 다른 방식으로 깨지는 걸 보였다 — 하나는 타이머가
+104ms 굶어서, 다른 하나는 타이머가 2.3ms 밖에 안 늦었는데도 다음 조합이 1ms 만에
+끝나버려서. 두 번째가 "타이머를 더 빠르게" 가 해법이 아님을 직접 증명한다.
+
+PR 을 만들면서 **우리 오버레이의 결함이 하나 드러났다.** keydown 의 가드를 여전히
+`_isSendingComposition` 이 읽게 두었는데, 취소가 사라졌으니 무해해 보였지만 아니었다.
+큐에 여러 개가 있을 때 첫 콜백이 플래그를 내리면 그 다음 비-조합 키가 drain 을 건너뛰고,
+남은 전송이 **그 키 뒤에** 나간다. 유실이 아니라 순서 붕괴라 훨씬 찾기 어려웠을 것이다.
+오버레이도 PR 과 같게 고쳤고, 열 가지 동작을 기계적으로 대조해 일치를 확인했다.
+
+xterm.js 저장소를 클론해 프로젝트 자체 테스트로 검증했다: 베이스라인 2407 passing,
+수정 후 2409 passing(회귀 0), 린트 통과. 새 회귀 테스트 두 개는 fix 를 되돌리면
+`expected '' to equal '니다'` / `expected '' to equal '가'` 로 실패한다 — 그걸 확인해야
+회귀 테스트라고 부를 수 있다.
 
 ---
 

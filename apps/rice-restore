@@ -199,10 +199,10 @@ plan() {
     ;;
   esac
   case " $want " in *" hypr "*)
-    # hyprland.lua 는 파일이 바뀌면 컴포지터가 알아서 다시 읽으므로 여기서 할 일이
-    # 없다. shaders/ 는 다르다 — 걸려 있는 셰이더는 걸던 순간의 파일로 이미
-    # 컴파일돼 있어서, 덮어써도 다시 걸기 전에는 화면이 안 바뀐다. 아래 파생물
-    # 단계의 rice-crt --reload 가 그 몫이다.
+    # hyprland.lua 도 shaders/ 도 여기서 쓰는 것만으로는 화면에 안 나타난다.
+    # 아래 파생물 단계가 둘 다 맡는다 — hyprctl reload 와 rice-crt --reload.
+    # (설정은 rm+cp 때문에 감시가 끊겨서, 셰이더는 이미 컴파일돼 있어서다.
+    # 이유는 그쪽에 적어 뒀다.)
     item "$hy/hyprland.lua" "$cfg/hypr/hyprland.lua"
     item "$hy/shaders" "$cfg/hypr/shaders"
     ;;
@@ -311,6 +311,14 @@ here="$(dirname "$0")"
 # 니리에서 `--check` 없이 전체 복원을 돌린 사람에게 그 빨간 줄은 겁만 준다.
 case " $want " in *" hypr "*)
   if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    # hyprland.lua 는 저장하면 알아서 다시 읽힌다 — 단 **덮어썼을 때** 얘기다.
+    # 위 item() 은 `rm -rf` 뒤에 `cp` 라서 감시가 걸려 있던 아이노드가 통째로
+    # 사라지고, 새로 생긴 파일에는 아무도 붙어 있지 않다. 그래서 복원이 끝나도
+    # 컴포지터는 옛 설정으로 계속 돈다. `복원 완료` 를 보고 새 키맵이 걸렸다고
+    # 믿게 되는 자리라, 실제로 한 번 속았다(Mod+Ctrl+E 를 넣고 눌러도 아무 일도
+    # 안 일어났다). rm+cp 는 레포에서 사라진 조각을 지우려는 것이라 그쪽을
+    # 바꿀 수는 없으니, 여기서 명시적으로 다시 읽힌다.
+    hyprctl reload >/dev/null 2>&1 || printf "${YELLOW}hyprctl reload 실패 — 손으로: hyprctl reload${NC}\n"
     "$here/rice-crt" --reload || printf "${YELLOW}rice-crt 실패 — 손으로: apps/rice-crt --reload${NC}\n"
   else
     printf "${DIM}하이프랜드 세션이 아니다 — 셰이더는 다음 로그인부터.${NC}\n"

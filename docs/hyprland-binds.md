@@ -133,16 +133,33 @@ out_of_group` 이 나오는데 `monitor` 가 빠져 있다. 실제로는 받는�
 | `focus l/r/u/d` | 검증함. 끝에서 감싸 돈다 |
 | `swapcol l/r` | 이름·인자 검증함 (잘못된 방향은 `no target`) |
 | `colresize +0.1 / -0.1 / +conf` | 검증함. `+conf` 는 `explicit_column_widths` 순환 |
-| `fit_into_view` | 검증함 |
-| `center` | 이름만 확인, 동작 미검증 |
-| `promote` | 이름만 확인, 동작 미검증 |
-| `expel` | 이름 확인 (`column has only one window` 경고를 돌려줌) |
-| `consume` | 이름만 확인, 동작 미검증 |
-| `move` | 이름 확인 (`failed to parse offset` — 오프셋 인자를 받는다) |
+| `fit_into_view` | 검증함. 활성 컬럼이 이미 다 보이면 아무 일도 안 한다 |
+| `center` | 검증함. 활성 컬럼을 뷰포트 **가운데로**. 다 보이는 상태에서도 옮긴다 |
+| `consume` | 검증함. **다음 컬럼의 맨 위 창 하나**를 현재 컬럼으로 끌어온다 |
+| `promote` | 검증함. **활성 창**을 컬럼에서 빼내 바로 오른쪽에 새 컬럼으로 |
+| `expel` | 검증함. **컬럼 맨 아래 창**을 빼낸다 — 활성 창이 아니다 |
+| `move <px>` | 검증함. 띠 전체를 픽셀만큼 스크롤(`move 300`, `move -300`) |
 
-`consume`/`expel` 은 니리의 consume-or-expel-window 에 해당할 가능성이 높지만
-확인하지 않았다. `promote`/`center`/`move` 도 마찬가지다. **지금 어디에도 안
-걸려 있고, 걸기 전에 위 "확인하는 법"으로 한 번 눌러보고 걸어야 한다.**
+넷 다 창 세 개를 띄워 좌표를 재서 확인했다(2026-08-06, 0.56.1, 1920×1080 한 대).
+
+**니리의 consume-or-expel-window 에 해당하는 짝은 `consume` + `promote` 다.**
+`expel` 이 이름 때문에 그 짝처럼 보이지만 아니다 — 포커스가 어디 있든 컬럼 맨
+아래 창을 뱉는다. `[T1, T3, T2]` 컬럼에서 T1 을 잡고 눌러도, T3 을 잡고 눌러도
+나가는 건 T2 였다. 창을 골라 빼내려면 `promote` 를 써야 한다.
+
+`center` 와 `fit_into_view` 는 겹치지 않는다. `fit_into_view` 는 잘렸을 때만
+최소한으로 밀고, `center` 는 이미 다 보이는 컬럼도 화면 중앙으로 가져온다
+(948폭 컬럼이 x=566 → 488 로, 중심이 962 ≈ 화면 중앙 960).
+
+`move` 의 인자는 방향이 아니라 **픽셀 수**다. `move l` 은 `failed to parse
+offset` 이고 `move 0.1` 은 통과한다. 그리고 이건 창이 아니라 **뷰포트**를
+움직이는 것이라, 스크롤 결과 활성 창이 다른 컬럼으로 바뀐다 — `focus r` 로
+오른쪽 끝 컬럼을 잡은 뒤 `move` 를 부르면 활성이 왼쪽 컬럼으로 돌아왔다.
+
+**다섯 개 다 지금 어디에도 안 걸려 있다.** 리눅스 쪽에는 rift 의 `Mod+Ctrl+E`
+(consume_or_expel_window)에 해당하는 키가 없는데, 그 자리를 채우려면
+`consume`/`promote` 두 개를 각각 걸어야 한다 — rift 처럼 상태에 따라 알아서
+합치고 떼는 하나짜리 액션은 여기 없다.
 
 ### `hl.*` — 조회 함수
 

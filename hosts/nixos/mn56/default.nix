@@ -9,6 +9,12 @@
   imports = [
     ../common.nix
     ../../../modules/nixos/amd.nix
+    # nginx reproducing the reverse proxy that fronts the work app's
+    # closed-network dev/qa servers. Package and unit only — the config under
+    # /etc/nginx is managed imperatively by that repo's own deploy script.
+    # This is the only machine used for that work, so it is imported here
+    # rather than from ../common.nix.
+    ../../../modules/nixos/nginx.nix
     ./hardware-configuration.nix
   ];
 

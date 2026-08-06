@@ -62,13 +62,11 @@ mouse_follows_focus = false
 mouse_hides_on_focus = false
 
 # Windows that must never steal focus or drag a workspace switch with them.
-# Sol is the launcher (modules/darwin/casks.nix) and is on screen constantly.
 auto_focus_blacklist = [
   "com.apple.Spotlight",
   "com.apple.dock",
   "com.apple.systemuiserver",
   "com.apple.SecurityAgent",
-  "com.ospfranco.sol",
 ]
 
 hot_reload = true
@@ -231,7 +229,6 @@ app_rules = [
   { app_id = "com.apple.systempreferences", floating = true },
   { app_id = "com.apple.ActivityMonitor", floating = true },
   { app_id = "com.apple.finder", ax_subrole = "AXDialog", floating = true },
-  { app_id = "com.ospfranco.sol", manage = false },
   { app_id = "org.pqrs.Karabiner-Elements.Settings", floating = true },
   { title_substring = "Preferences", floating = true },
   { title_substring = "Settings", floating = true },
@@ -428,9 +425,9 @@ move2 = "Alt + Ctrl"
 
 # ── Deliberately unbound ─────────────────────────────────────────────────
 #
-#   Alt + D        launcher. macOS has Spotlight on Cmd-Space and Sol besides;
-#                  hyprland and niri need the key because fuzzel is the
-#                  fallback when the shell is not up.
+#   Alt + D        launcher. macOS has Spotlight on Cmd-Space; hyprland and
+#                  niri need the key because fuzzel is the fallback when the
+#                  shell is not up.
 #   Alt + Ctrl + W WorkspacePeek's overlay takes it, and Alt + Ctrl + Q is left
 #                  free beside it (see modules/darwin/rice/peek/README.md).
 #                  Both use a CGEvent tap, as rift does, so a collision would

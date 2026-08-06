@@ -88,6 +88,7 @@
         "rice-menu" = mkApp "rice-menu" system;
         "rice-knobs" = mkApp "rice-knobs" system;
         "rice-colors" = mkApp "rice-colors" system;
+        "demo" = mkApp "demo" system;
       };
     in
     {

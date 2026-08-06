@@ -58,7 +58,7 @@ focus_follows_mouse = false
 # window when you do reach for the mouse. AeroSpace did this for monitor
 # switches only (`on-focused-monitor-changed = move-mouse monitor-lazy-center`);
 # rift makes it a setting.
-mouse_follows_focus = true
+mouse_follows_focus = false
 mouse_hides_on_focus = false
 
 # Windows that must never steal focus or drag a workspace switch with them.
@@ -152,7 +152,7 @@ focus_navigation_style = "niri"
 # when the strip runs out, the next swipe crosses into the neighbouring
 # workspace. If swipes ever feel double-fired, this is the first thing to turn
 # off — the keyboard bindings do not depend on it.
-enabled = true
+enabled = false
 fingers = 3
 invert_horizontal = false
 propagate_to_workspace_swipe = true

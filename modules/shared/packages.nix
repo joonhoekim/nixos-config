@@ -156,6 +156,27 @@ with pkgs; [
   mkcert         # locally-trusted dev HTTPS certificates
   cloudflared    # quick public tunnels for webhook/callback testing
 
+  # Browser automation / web verification
+  #
+  # Why this exists: verifying a local web app by eye needs a browser an agent
+  # can actually drive. The Claude-in-Chrome extension talks to the *live*
+  # Chrome and silently stops working when it isn't connected, so these are the
+  # headless, scriptable fallback that always works. Docs: docs/browser-tooling.md
+  #
+  # No `chromium` here: nixpkgs marks it unsupported on aarch64-darwin. Browsers
+  # come from playwright-driver.browsers (pinned below) or the installed Chrome
+  # cask. `lighthouse` is meta.broken in nixpkgs, so it's deliberately absent.
+  playwright-mcp           # MCP server — gives Claude Code navigate/click/screenshot/console tools
+  playwright               # CLI + library for ad-hoc scripts (`playwright screenshot`, codegen)
+  playwright-driver.browsers # pinned Chromium/Firefox/WebKit; PLAYWRIGHT_BROWSERS_PATH is
+                             # exported in modules/shared/programs/zsh.nix so nothing
+                             # downloads a browser at runtime
+  shot-scraper             # one-liner URL → PNG, and --javascript to pull values out of a page
+  odiff                    # fast pixel diff — before/after and light/dark screenshot comparison
+  imagemagick              # crop/annotate/montage screenshots (e.g. side-by-side theme pairs)
+  htmlq                    # CSS selectors over HTML on the CLI — jq for server-rendered output
+  lychee                   # link checker that actually fetches (catches live 404s, not just refs)
+
   # Nix tooling (handy while editing this config)
   nil            # Nix language server
   nixfmt         # Nix formatter (was nixfmt-rfc-style)

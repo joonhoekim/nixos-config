@@ -34,6 +34,15 @@
 | `imagemagick` | 이미지 자르기·합치기·주석 | 테마 쌍을 나란히 붙이기 |
 | `htmlq` | HTML에 CSS 선택자 (HTML판 jq) | 서버 렌더 결과 검사 |
 | `lychee` | 실제로 요청을 보내는 링크 검사기 | 살아 있는 404 잡기 |
+| `hurl` | HTTP 요청을 평문 파일로 쓰고 응답을 assert | API 계약 테스트, CI에서 그대로 |
+| `mitmproxy` | HTTPS 복호화 프록시 | 앱이 실제로 뭘 보내는지 관찰·재전송 |
+| `miniserve` | 정적 파일 서버 단일 바이너리 | `file://` 우회, CORS·SPA 폴백 |
+| `websocat` | WebSocket판 curl | WS 엔드포인트 수동 확인 |
+| `k6` | JS로 시나리오 쓰는 부하 테스트 | 성능 스모크 테스트 |
+| `wrk` | 단순 HTTP 처리량 측정 | "몇 RPS 버티나"만 볼 때 |
+| `html-tidy` | HTML 검증기 (`tidy`) | htmlq가 넘어가는 깨진 마크업 잡기 |
+
+HTTP 클라이언트 `xh`(httpie 호환)는 같은 파일의 네트워킹 절에 이미 있다.
 
 ---
 
@@ -157,6 +166,43 @@ lychee --base http://localhost:3000 --exclude-mail 'content/**/*.mdx'
 lychee --max-concurrency 4 http://localhost:3000/docs/dev/cs/0.series
 ```
 
+### API 응답 assert (hurl)
+
+요청과 기대치를 한 파일에 쓰고 돌린다. 실패하면 비영 종료코드라 CI에 바로 물린다.
+
+```sh
+cat > smoke.hurl <<'EOF'
+GET http://localhost:3000/api/health
+HTTP 200
+[Asserts]
+jsonpath "$.status" == "ok"
+EOF
+hurl --test smoke.hurl
+```
+
+### 앱이 실제로 보내는 요청 보기 (mitmproxy)
+
+브라우저 devtools 밖에서 — CLI 도구·백엔드가 뭘 보내는지 볼 때.
+
+```sh
+mitmproxy --listen-port 8080          # TUI. 웹 UI가 좋으면 mitmweb
+curl -x http://localhost:8080 -k https://api.example.com/…   # 프록시를 태워 관찰
+```
+
+### WebSocket 엔드포인트 찔러보기
+
+```sh
+websocat ws://localhost:3000/ws       # 대화형 — 타이핑한 줄이 메시지로 나간다
+echo '{"type":"ping"}' | websocat -n1 ws://localhost:3000/ws   # 한 발 쏘고 응답만
+```
+
+### 성능 스모크
+
+```sh
+wrk -t4 -c64 -d10s http://localhost:3000/          # 처리량 숫자 하나면 될 때
+k6 run script.js                                    # 시나리오(로그인 → 조회 → …)가 필요할 때
+```
+
 ### iframe 안에 있는 것 확인하기
 
 `sandbox="allow-scripts"`만 준 iframe은 **부모에서 내용을 못 읽는다**
@@ -177,7 +223,7 @@ shot-scraper "$URL" -o out.png --width 1400 --height 900 --wait 6000 \
 
 ```sh
 # srcdoc을 파일로 뽑아 두고, 정적 서버로 띄운 뒤
-python3 -m http.server 8899 &
+miniserve -p 8899 . &
 shot-scraper http://localhost:8899/sim.html -o h.png --width 846   # --height 생략 = 전체 페이지
 magick identify -format '%h' h.png                                  # = 그 폭에서의 콘텐츠 높이
 ```
@@ -188,7 +234,7 @@ magick identify -format '%h' h.png                                  # = 그 폭�
 
 **`file://`은 안 먹는다.** `shot-scraper`가 스킴을 잘못 붙여
 `http://file///…`로 요청한다(`ERR_NAME_NOT_RESOLVED`). 로컬 HTML은 위처럼
-`python3 -m http.server`로 띄워서 볼 것.
+`miniserve`로 띄워서 볼 것 (CORS가 필요하면 `--header` 플래그, SPA면 `--spa`).
 
 **`shot-scraper javascript`에는 `--width`가 없다.** 뷰포트 폭은 항상 기본값(1280)이라
 반응형 분기가 있는 페이지에서는 실제와 다른 값을 잰다. 폭이 중요하면 `shot` 쪽
@@ -207,8 +253,8 @@ magick identify -format '%h' h.png                                  # = 그 폭�
 - **`chromium`** — nixpkgs가 `aarch64-darwin`을 지원 대상에서 뺐다
   (`meta.platforms`에 darwin이 없다). 브라우저는 `playwright-driver.browsers`나
   설치된 `google-chrome` cask로 충분하다.
-- **`lighthouse`** — nixpkgs에서 `meta.broken = true`다. 성능·접근성 감사가
-  필요하면 `npx lighthouse`를 쓰거나, 고쳐졌는지 다시 확인할 것.
+- **`lighthouse`** — nixpkgs에서 `meta.broken = true`다 (2026-08-07 재확인, 여전함).
+  성능·접근성 감사가 필요하면 `npx lighthouse`를 쓰거나, 고쳐졌는지 다시 확인할 것.
 - **`pa11y`** — nixpkgs에 없다. 접근성 검사는 `npx @axe-core/cli` 또는
   Playwright에 `@axe-core/playwright`를 붙이는 쪽이 현실적이다.
 - **`pup` / `monolith`** — 각각 `htmlq`와 역할이 겹치거나(HTML 질의),

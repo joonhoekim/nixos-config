@@ -176,6 +176,13 @@ with pkgs; [
   imagemagick              # crop/annotate/montage screenshots (e.g. side-by-side theme pairs)
   htmlq                    # CSS selectors over HTML on the CLI — jq for server-rendered output
   lychee                   # link checker that actually fetches (catches live 404s, not just refs)
+  hurl                     # HTTP contract tests as plain-text files — asserts on status/JSONPath/headers
+  mitmproxy                # HTTPS-decrypting proxy — see/replay what the app actually sends over the wire
+  miniserve                # single-binary static file server (CORS/SPA flags) — the file:// workaround
+  websocat                 # curl for WebSockets — the one protocol the rest of this list can't speak
+  k6                       # load/perf smoke tests scripted in JS
+  wrk                      # dumb-simple HTTP throughput check when k6 is overkill
+  html-tidy                # HTML validator/pretty-printer (`tidy`) — catches malformed markup htmlq glosses over
 
   # Nix tooling (handy while editing this config)
   nil            # Nix language server

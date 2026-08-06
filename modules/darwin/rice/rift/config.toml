@@ -1,9 +1,12 @@
 # rift tiling window manager config.
-# Managed by Nix — symlinked read-only from the store via modules/darwin/files.nix.
-# To change: edit this file and `darwin-rebuild switch`. rift's `hot_reload`
-# watches the path — but what a switch replaces is the *symlink*, not the file
-# under it, and a watcher does not always see that. If a rebuild appears to
-# change nothing, press Alt+Ctrl+R (reload_config, bound below).
+#
+# This copy is a *seed*. modules/darwin/rice plants it at
+# ~/.config/rift/config.toml on a machine that has none, and after that the
+# live file is the original — edit that one, watch rift hot-reload it, and run
+# `apps/rice-save rift` to bring the result back here. `apps/rice-restore rift`
+# pushes the other way. If a change does not seem to take, press Alt+Ctrl+R
+# (reload_config, bound below); it also prints the reason when the file is bad.
+#
 # Reference: https://github.com/acsandmann/rift/wiki
 #
 # ── Ported from aerospace.toml ────────────────────────────────────────────
@@ -307,6 +310,24 @@ move2 = "Alt + Ctrl"
 # quits the whole application.
 "Alt + Q" = "close_window"
 
+# Cheatsheet — opens docs/keymap.md, the cross-platform keymap this file is one
+# of three implementations of.
+#
+# On Linux this key is `dms ipc call keybinds toggle hyprland`: DMS asks the
+# running compositor what is bound and draws an overlay. There is no equivalent
+# here, and building one was tried and thrown away — reading the live config out
+# of `rift-cli execute config get` is easy, but the overlay around it is not.
+# Ghostty exposes no AXTitle, so no app_rule can single the window out, and
+# `rift-cli query windows` reports ids that vanish moments later, so tracking it
+# from outside needs polling and retries. All of that to avoid opening a file.
+#
+# So: open the file. `open` and not `open -a`, so this follows whatever
+# modules/darwin/default-apps.nix has made the markdown handler (VS Code today).
+#
+# The cost is that this points at the checkout. Nothing else under ~/.config
+# does, so if the repo moves, this key quietly stops working.
+"Alt + H" = { exec = ["/bin/sh", "-c", "open $HOME/nixos-config/docs/keymap.md"] }
+
 # Fullscreen, gentle version: fills the tiling area and leaves the outer gaps,
 # so the menu bar stays reachable. This is the one that used to be on
 # alt-shift-f — the two were inverted relative to hyprland and niri, where the
@@ -410,8 +431,6 @@ move2 = "Alt + Ctrl"
 #   Alt + D        launcher. macOS has Spotlight on Cmd-Space and Sol besides;
 #                  hyprland and niri need the key because fuzzel is the
 #                  fallback when the shell is not up.
-#   Alt + H        cheatsheet. DMS builds one from the live config on Linux.
-#                  There is no equivalent here — docs/keymap.md is the sheet.
 #   Alt + Ctrl + W WorkspacePeek's overlay takes it, and Alt + Ctrl + Q is left
 #                  free beside it (see modules/darwin/rice/peek/README.md).
 #                  Both use a CGEvent tap, as rift does, so a collision would

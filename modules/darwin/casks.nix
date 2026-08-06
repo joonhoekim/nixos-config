@@ -12,9 +12,6 @@ _:
   "dbeaver-community"  # universal database tool / SQL client
   "redis-insight"       # official Redis GUI
 
-  # Productivity Tools
-  "sol"                # launcher / command palette (replaces Raycast)
-
   # Terminals
   "ghostty"            # daily driver
   # Secondary terminal. `wezterm@nightly` rather than `wezterm`: upstream's

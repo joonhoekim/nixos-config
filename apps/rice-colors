@@ -178,8 +178,7 @@ exec borders \\
 	hidpi=on \\
 	ax_focus=on \\
 	active_color="$active" \\
-	inactive_color=$inactive \\
-	blacklist="Sol"
+	inactive_color=$inactive
 BORDERSRC
 	chmod +x "$bordersrc"
 fi

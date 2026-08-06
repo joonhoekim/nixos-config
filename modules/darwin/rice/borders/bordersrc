@@ -17,5 +17,4 @@ exec borders \
 	hidpi=on \
 	ax_focus=on \
 	active_color="glow(0xffb4befe)" \
-	inactive_color=0xff45475a \
-	blacklist="Sol"
+	inactive_color=0xff45475a

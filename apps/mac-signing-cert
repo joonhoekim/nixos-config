@@ -1,0 +1,189 @@
+#!/bin/sh -e
+#
+# 이 기계에서 쓸 코드 서명 신원을 하나 만든다. macOS 전용.
+#
+#   apps/mac-signing-cert              만든다 (이미 있으면 그대로 둔다)
+#   apps/mac-signing-cert --status     지금 상태
+#   apps/mac-signing-cert sign <경로>  그 .app 을 이 신원으로 다시 서명한다
+#   apps/mac-signing-cert --remove     지운다
+#
+# ── 왜 이게 필요한가 ──────────────────────────────────────────────────────
+# docs/03-operating-on-macos.md 는 TCC(개인정보) 권한을 "진짜 천장"으로 적어 뒀다.
+# 맞다 — 허가를 주는 것은 GUI 로만 된다. 다만 그 GUI 비용을 **몇 번 치르는가**는
+# 우리가 정할 수 있고, 그게 이 스크립트다.
+#
+# TCC 는 허가를 앱의 "지정 요구사항"에 묶어 저장한다. 임의 서명(codesign -s -)한
+# 앱은 인증서가 없으므로 그 요구사항이 이렇게 된다:
+#
+#     designated => cdhash H"6d3a31a0…"
+#
+# 곧 **바이너리가 한 바이트만 달라져도 허가가 안 맞는다.** 명령형으로 빌드하는
+# .app 은 고칠 때마다 다시 빌드하므로, 재빌드마다 권한이 조용히 끊긴다.
+#
+# 제일 고약한 것은 이때 macOS 가 **다시 묻지 않는다**는 점이다. TCC 항목 자체는
+# 남아 있어서 시스템 설정의 체크박스는 켜진 채이고, 앱만 거절당한다. 그래서
+# 증상이 "권한은 분명히 켜 뒀는데 그냥 안 된다"가 된다. 로그를 봐야 보인다:
+#
+#     tccd: Failed to match existing code requirement for subject
+#           <bundle id> and service kTCCServiceScreenCapture
+#
+# 인증서로 서명하면 요구사항이 이렇게 바뀐다:
+#
+#     designated => identifier "…" and certificate leaf = H"414ae8f4…"
+#
+# cdhash 가 안 들어간다. 인증서는 그대로 있으므로 몇 번을 다시 빌드해도 같은
+# 요구사항이고, 허가는 기계당 한 번만 주면 된다. 실측으로 확인한 것:
+#
+#     cdhash        fef47451… → 1f33c032…   (바뀜)
+#     지정 요구사항  identifier … leaf H"414ae8f4…"  (그대로)
+#     결과          재승인 없이 화면 기록 통과
+#
+# ── 왜 선언형이 아닌가 ────────────────────────────────────────────────────
+# 인증서에는 개인키가 딸린다. /nix/store 는 월드 리더블이라 넣을 수 없고, 넣어서
+# 여러 기계가 같은 키를 쓰게 만드는 것은 더 나쁘다. 그래서 **절차만** 이 레포가
+# 갖고 산출물은 기계마다 따로다 — docs/03 §5 의 "여러 기계에서 똑같이면 졸업"에서
+# 졸업하는 쪽은 절차다.
+#
+# home.activation 에도 넣지 않는다. 키체인에 항목을 넣는 일은 GUI 인증 창을
+# 띄우므로, 매 rebuild 마다 도는 activation 에 끼우면 build-switch 가 암호 창
+# 앞에서 멈춰 선다. 사람이 명시적으로 부르는 자리가 맞다.
+#
+# ── 이걸로 되는 것과 안 되는 것 ───────────────────────────────────────────
+# 이 인증서는 애플이 보증하지 않는다. 그러니 이걸로 서명한 앱을 남에게 나눠 줄
+# 수는 없다(Gatekeeper 가 막는다). 목적은 그게 아니라 **내 기계에서 TCC 허가가
+# 재빌드를 견디게** 하는 것 하나다. 배포나 공증이 필요해지면 그때는 애플 개발자
+# 인증서다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  printf "${RED}macOS 전용이다.${NC}\n"
+  exit 1
+fi
+
+# 앱마다 따로 만들지 않고 하나를 나눠 쓴다. 신원이 늘어날수록 재승인해야 할
+# 조합이 늘고, 이 신원이 하는 일은 앱마다 다르지 않다.
+CN="${MAC_SIGN_ID:-jh local codesign}"
+KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
+
+exists() { security find-certificate -c "$CN" >/dev/null 2>&1; }
+
+show_status() {
+  if exists; then
+    printf "신원: ${GREEN}%s${NC}\n" "$CN"
+    security find-identity -p codesigning 2>/dev/null \
+      | sed -n "s/.*\([0-9A-F]\{40\}\) \"$CN\"/  지문 \1/p" | head -1
+  else
+    printf "신원: ${YELLOW}없다${NC} (%s)\n" "$CN"
+    printf "${DIM}  apps/mac-signing-cert 로 만든다.${NC}\n"
+  fi
+}
+
+# ── sign: 이미 깔린 .app 을 이 신원으로 다시 서명한다 ─────────────────────
+# 남의 install.sh 가 임의 서명으로 끝내는 앱(WorkspacePeek 이 그렇다)을 위한
+# 것이다. 서명만 갈아 끼우면 그 앱의 TCC 허가도 재빌드를 견디게 된다.
+if [ "${1:-}" = "sign" ]; then
+  app="${2:-}"
+  if [ -z "$app" ] || [ ! -d "$app" ]; then
+    printf "${RED}사용법: apps/mac-signing-cert sign /Applications/Foo.app${NC}\n"
+    exit 1
+  fi
+  if ! exists; then
+    printf "${RED}신원이 없다. 먼저 apps/mac-signing-cert 를 돌려라.${NC}\n"
+    exit 1
+  fi
+  # 안에 또 코드가 들어 있으면(프레임워크·헬퍼) 안쪽부터 서명해야 한다. 이
+  # 레포가 쓰는 앱들은 단일 실행 파일이라 해당이 없지만, 조용히 반쪽 서명이
+  # 되는 것보다 말해 주는 편이 낫다.
+  if [ -d "$app/Contents/Frameworks" ] || [ -d "$app/Contents/XPCServices" ]; then
+    printf "${YELLOW}안쪽에 코드가 더 있다. --deep 이 필요할 수 있다.${NC}\n"
+  fi
+  codesign --force --sign "$CN" --timestamp=none "$app"
+  printf "${GREEN}다시 서명했다${NC} %s\n" "$app"
+  codesign -d -r- "$app" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+  printf "\n"
+  printf "${YELLOW}서명이 바뀌었으므로 이 앱의 TCC 허가는 한 번 다시 줘야 한다.${NC}\n"
+  printf "${DIM}  tccutil reset <서비스> <bundle id>   후 앱을 다시 띄운다${NC}\n"
+  printf "${DIM}  서비스: Accessibility · ScreenCapture · ListenEvent 등${NC}\n"
+  exit 0
+fi
+
+if [ "${1:-}" = "--status" ]; then
+  show_status
+  exit 0
+fi
+
+if [ "${1:-}" = "--remove" ]; then
+  if ! exists; then
+    printf "${YELLOW}그런 인증서가 없다: %s${NC}\n" "$CN"
+    exit 0
+  fi
+  security delete-certificate -c "$CN" "$KEYCHAIN"
+  printf "${GREEN}지웠다${NC} %s\n" "$CN"
+  printf "\n"
+  printf "${YELLOW}이 신원으로 서명한 앱들은 다음 빌드부터 임의 서명으로 돌아간다.${NC}\n"
+  printf "${DIM}  곧 재빌드마다 권한을 다시 줘야 하는 상태가 된다.${NC}\n"
+  exit 0
+fi
+
+if exists; then
+  printf "${GREEN}이미 있다${NC}\n"
+  show_status
+  printf "\n${DIM}다시 만들려면 먼저 --remove.${NC}\n"
+  exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+# 확장은 설정 파일로 넘긴다. -addext 플래그는 macOS 가 들고 있는 LibreSSL 에서
+# 안 먹는 판이 있어서, 두 구현에서 다 도는 이 길을 쓴다.
+cat > "$tmp/openssl.cnf" <<EOF
+[ req ]
+distinguished_name = dn
+x509_extensions    = ext
+prompt             = no
+
+[ dn ]
+CN = $CN
+
+[ ext ]
+basicConstraints = critical,CA:FALSE
+keyUsage         = critical,digitalSignature
+# 이게 있어야 codesign 이 이 인증서를 서명에 쓸 물건으로 알아본다.
+extendedKeyUsage = critical,codeSigning
+EOF
+
+printf "인증서를 만든다: ${GREEN}%s${NC}\n" "$CN"
+openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+  -config "$tmp/openssl.cnf" -keyout "$tmp/key.pem" -out "$tmp/cert.pem" 2>/dev/null
+
+# 인증서와 개인키를 따로 넣는다. p12 로 묶는 길도 있지만 OpenSSL 3 과 LibreSSL 이
+# 기본 암호화 방식이 달라 -legacy 유무로 갈린다. 따로 넣으면 그 갈림이 없다.
+#
+# -T /usr/bin/codesign: codesign 이 이 키를 쓸 때 매번 묻지 않게 미리 허용한다.
+printf "키체인에 넣는다\n"
+security import "$tmp/cert.pem" -k "$KEYCHAIN" -T /usr/bin/codesign >/dev/null
+security import "$tmp/key.pem"  -k "$KEYCHAIN" -T /usr/bin/codesign >/dev/null
+
+# 코드 서명 용도로만 신뢰한다. 여기서 GUI 암호 창이 한 번 뜬다. 실패해도 서명
+# 자체는 되므로 멈추지 않는다 — 신뢰는 검증하는 쪽 얘기고, 우리에게 필요한 것은
+# "같은 인증서로 서명됐다"는 사실뿐이다.
+printf "코드 서명 용도로 신뢰 표시 ${DIM}(암호를 한 번 묻는다)${NC}\n"
+if security add-trusted-cert -r trustRoot -p codeSign -k "$KEYCHAIN" "$tmp/cert.pem" 2>/dev/null; then
+  printf "  ${GREEN}됐다${NC}\n"
+else
+  printf "  ${YELLOW}건너뛴다${NC} ${DIM}(서명에는 지장 없다)${NC}\n"
+fi
+
+printf "\n"
+show_status
+printf "\n"
+printf "이 신원을 쓰는 것들:\n"
+printf "  ${DIM}global-shader${NC}  build.sh 가 알아서 집는다 (GS_SIGN_ID 로 덮을 수 있다)\n"
+printf "  ${DIM}WorkspacePeek${NC}  install.sh 뒤에 한 번:\n"
+printf "                 ${DIM}apps/mac-signing-cert sign /Applications/WorkspacePeek.app${NC}\n"
+printf "\n"
+printf "${YELLOW}각 앱마다 TCC 허가를 한 번씩 다시 줘야 한다.${NC} 옛 허가는 옛 서명에 묶여 있다.\n"
+printf "${DIM}  tccutil reset ScreenCapture dev.jh.global-shader${NC}\n"
+printf "${DIM}  그 다음부터는 몇 번을 다시 빌드해도 안 묻는다.${NC}\n"

@@ -89,6 +89,9 @@
         "rice-knobs" = mkApp "rice-knobs" system;
         "rice-colors" = mkApp "rice-colors" system;
         "demo" = mkApp "demo" system;
+        # macOS 전용. NixOS 에서 부르면 스스로 거절한다 — 위 주석대로 목록은
+        # 플랫폼마다 같게 두고 판단은 스크립트가 한다.
+        "mac-signing-cert" = mkApp "mac-signing-cert" system;
       };
     in
     {

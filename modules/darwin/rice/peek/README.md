@@ -44,6 +44,26 @@ launchctl kickstart -k gui/$(id -u)/org.nixos.workspacepeek         # 다시 띄
 서명에 붙으므로, **재빌드한 뒤에는 손쉬운 사용 권한을 다시 줘야 할 수 있다.**
 핫키가 갑자기 안 먹으면 십중팔구 이것이다.
 
+### 그 왕복을 없애기
+
+`install.sh` 는 ad-hoc 서명을 한다. ad-hoc 은 인증서가 없어서 TCC 가 저장하는 지정
+요구사항이 `cdhash H"…"` 가 되고, 그러면 재빌드가 곧 권한 상실이다. 고정된 인증서로
+다시 서명해 두면 요구사항이 `certificate leaf` 기준으로 바뀌어 재빌드를 견딘다.
+자세한 것은 [docs/03 의 "TCC는 못 하지만, 그 비용을 1회로 줄일 수는 있다"](../../../../docs/03-operating-on-macos.md#tcc는-못-하지만-그-비용을-1회로-줄일-수는-있다).
+
+```sh
+apps/mac-signing-cert                                       # 기계당 한 번
+cd WorkspacePeek && ./install.sh                            # 평소대로
+apps/mac-signing-cert sign /Applications/WorkspacePeek.app  # install.sh 뒤에 한 번 더
+tccutil reset Accessibility com.example.workspacepeek       # 옛 허가를 버리고
+```
+
+그 뒤 앱을 다시 띄워 손쉬운 사용을 허용하면, **다음부터는 몇 번을 다시 빌드해도 안
+묻는다.** `install.sh` 를 돌릴 때마다 `sign` 한 줄만 따라붙이면 된다.
+
+이게 아래 "걷어낸 것: WallpaperPeek" 의 원인이었는지는 확인되지 않았다 — 그쪽 결론은
+`AXIsProcessTrustedWithOptions` 를 안 부른 것이었다. 다시 시도한다면 둘 다 짚는 게 좋다.
+
 ## 단축키를 왜 Alt+Ctrl 로 옮겼나
 
 기본값은 Option+W 였는데, 같은 계열의 Option+Q 가 rift 의 `close_window` 와 정면으로

@@ -48,6 +48,64 @@ macOS는 "쉽게" 노출하진 않았지만 스크립트 뒷문은 열어 뒀다
 
 추가로, `defaults`로 써도 즉시 반영 안 되고 로그아웃/재시작이나 `killall Dock`이 필요한 경우가 많다.
 
+### TCC는 못 하지만, 그 비용을 1회로 줄일 수는 있다
+
+TCC 허가를 **주는 것**은 위에 적은 대로 GUI로만 된다. 그건 안 바뀐다. 하지만 그 GUI 비용을
+**몇 번 치르는가**는 우리가 정할 수 있고, 명령형으로 빌드하는 `.app`에서는 이게 꽤 큰 차이다.
+
+TCC는 허가를 앱의 **지정 요구사항**에 묶어 저장한다. 임의 서명(`codesign -s -`)한 앱은 인증서가
+없으므로 요구사항이 이렇게 된다:
+
+```
+designated => cdhash H"6d3a31a07290c00701e45474884eb5b0138c2657"
+```
+
+곧 **바이너리가 한 바이트만 달라져도 허가가 안 맞는다.** 손으로 빌드하는 앱은 고칠 때마다 다시
+빌드하므로, 재빌드마다 권한이 끊긴다.
+
+제일 고약한 것은 이때 macOS가 **다시 묻지 않는다**는 점이다. TCC 항목 자체는 남아 있어서 System
+Settings의 체크박스는 켜진 채이고, 앱만 거절당한다. 그래서 증상이 "권한은 분명히 켜 뒀는데 그냥
+안 된다"가 된다. 추측하지 말고 로그를 본다:
+
+```bash
+log show --last 10m --predicate 'process == "tccd"' --style compact | grep -i <앱이름>
+#   Failed to match existing code requirement for subject
+#   dev.jh.global-shader and service kTCCServiceScreenCapture
+```
+
+**고정된 인증서로 서명하면** 요구사항에서 cdhash가 빠진다:
+
+```
+designated => identifier "dev.jh.global-shader" and certificate leaf = H"5a9ec361…"
+```
+
+인증서는 그대로 있으므로 몇 번을 다시 빌드해도 같은 요구사항이고, 허가는 **기계당 한 번**이면
+된다. 실측(2026-08-09, global-shader):
+
+| | 값 |
+|---|---|
+| cdhash | `fef47451…` → `1f33c032…` (바뀜) |
+| 지정 요구사항 | `identifier … certificate leaf = H"5a9ec361…"` (그대로) |
+| 결과 | 재승인 없이 화면 기록 통과 |
+
+```bash
+apps/mac-signing-cert                                    # 기계당 한 번
+apps/mac-signing-cert sign /Applications/Foo.app         # 남이 서명한 앱을 갈아 끼울 때
+```
+
+**왜 선언형이 아닌가.** 인증서에는 개인키가 딸린다. `/nix/store`는 월드 리더블이라 넣을 수 없고,
+넣어서 여러 기계가 같은 키를 쓰게 만드는 것은 더 나쁘다. 그래서 절차만 이 레포가 갖고 산출물은
+기계마다 따로다 — §5의 "여러 기계에서 똑같이면 졸업"에서 졸업하는 쪽은 **절차**다. `home.activation`
+에도 넣지 않는다: 키체인 항목 생성은 GUI 인증 창을 띄우므로, 매 rebuild마다 도는 activation에
+끼우면 `build-switch`가 암호 창 앞에서 멈춰 선다.
+
+**함정 하나.** 번들 안 실행 파일을 셸에서 직접 돌리면(`./build/foo`) 잘 되는 것처럼 보인다. 그건
+앱이 권한을 가져서가 아니라 **부모 프로세스(터미널)의 권한을 빌려 쓰는 것**이다. `open`이나 Finder,
+launchd로 띄웠을 때와 결과가 다르면 거의 항상 이것이다.
+
+이 인증서는 Apple이 보증하지 않으므로 배포용이 아니다. 목적은 내 기계에서 TCC 허가가 재빌드를
+견디게 하는 것 하나다.
+
 ### 실전: 모르는 설정의 key 찾기
 
 ```bash

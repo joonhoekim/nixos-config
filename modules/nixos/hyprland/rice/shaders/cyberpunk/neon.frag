@@ -16,7 +16,7 @@
 // 혼자 걸어도 되지만 체인 뒤칸에 두는 것이 제 자리다(../../README.md 「체인」).
 //
 //   global-shader shaders/crt/crt.frag shaders/cyberpunk/neon.frag        브라운관 네온
-//   global-shader shaders/cyberpunk/neon.frag shaders/cyberpunk/rain.frag shaders/cyberpunk/glitch.frag
+//   global-shader shaders/cyberpunk/neon.frag shaders/cyberpunk/glitch.frag  간판이 튄다
 //
 // **그래서 깜빡임을 안 넣었다.** 간판이라면 깜빡여야 할 것 같지만, `time` 을
 // 한 번이라도 읽으면 재그리기가 켜져서 정지 화면에서도 주사율대로 GPU 를 쓴다

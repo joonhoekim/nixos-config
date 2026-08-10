@@ -29,8 +29,8 @@
 // 체인 **마지막 칸**이 제 자리다. 앞칸이 만든 결과가 신호라고 치고 그걸
 // 망가뜨리는 파일이라, 뒤에 뭔가 더 오면 망가진 것을 다시 다듬게 된다.
 //
-//   global-shader shaders/cyberpunk/neon.frag shaders/cyberpunk/rain.frag shaders/cyberpunk/glitch.frag
-//   global-shader shaders/print/riso.frag shaders/cyberpunk/glitch.frag   스캔한 인쇄물이 깨진다
+//   global-shader shaders/cyberpunk/neon.frag shaders/cyberpunk/glitch.frag
+//   global-shader shaders/print/paper.frag shaders/cyberpunk/glitch.frag  인쇄물이 깨진다
 //
 // `time` 을 읽으므로 이 칸이 들어가면 체인 전체가 재그리기 켬이 된다. 그 값을
 // 치르겠다는 결정이 이 파일을 고르는 행동에 들어 있다(./neon.frag 머리말 참고).

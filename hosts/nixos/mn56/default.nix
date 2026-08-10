@@ -96,6 +96,33 @@
     "${config.systemd.package}/lib/systemd/systemd-sleep hibernate"
   ];
 
+  # ── Warm reboot hangs before POST ────────────────────────────────────
+  # `reboot` leaves this box dark maybe a third of the time: both monitors
+  # stay asleep and nothing ever comes up. Three of the ~10 warm reboots on
+  # record failed that way — 2026-08-04 09:20 (133s to the next boot),
+  # 2026-08-05 12:49 (53min), 2026-08-10 09:03 (110s) — against a normal
+  # shutdown→boot gap of 19-24s. Every recovery was a power-button hold.
+  #
+  # The failure is below Linux. Shutdown itself is clean each time — the
+  # journal runs all the way through "Sending SIGTERM to remaining
+  # processes..." with no amdgpu complaint — and the attempt that hangs leaves
+  # *no* boot record at all: journalctl --list-boots skips straight from the
+  # session that asked to reboot to the one after the power cycle. The kernel
+  # never reaches journald, so it is the firmware that stops.
+  #
+  # The default reboot type here is ACPI (/sys/kernel/reboot/type), a write to
+  # the ACPI reset register, and the BIOS is still the shipping image (1.00
+  # 01/13/2024). `reboot=pci` takes the port-CF9 path instead, which pulls the
+  # platform reset harder. Consistent with the s2idle note above: warm resets
+  # on this chassis leave rails up and devices half-initialised.
+  #
+  # If it still hangs, try `reboot=bios` and then `reboot=efi` before assuming
+  # this cannot be fixed from the OS side. Note also that systemd arms the
+  # SP5100 TCO watchdog with a 10min timeout on the way down and cannot disarm
+  # it ("watchdog did not stop!"), so waiting ~10min may reset the box on its
+  # own instead of holding the power button.
+  boot.kernelParams = [ "reboot=pci" ];
+
   # ── Drive health monitoring ──────────────────────────────────────────
   # modules/nixos/packages.nix already ships smartmontools, but that is only
   # the `smartctl` CLI — it tells you nothing unless you remember to go look.

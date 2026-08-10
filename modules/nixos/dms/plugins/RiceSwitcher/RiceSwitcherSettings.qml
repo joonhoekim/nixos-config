@@ -62,10 +62,17 @@ FocusScope {
             onStreamFinished: {
                 try {
                     const data = JSON.parse(text);
-                    root.targets = data.targets || [];
+                    // 걸려 있는 칸을 앞으로 당긴다. 체인이 생기면서 걸린 것이
+                    // 여럿이 됐고, 대상 목록도 두어 개에서 열 몇 개로 늘었다 —
+                    // 그 줄에서 지금 만질 것을 찾는 데 눈이 가장 오래 걸린다.
+                    // pass 는 체인에서 몇째 칸인지고(apps/rice-knobs), 안 걸린
+                    // 것은 없으므로 뒤로 간다.
+                    root.targets = (data.targets || []).slice().sort(function (a, b) {
+                        return (a.pass || 99) - (b.pass || 99);
+                    });
                     root.error = "";
                     // 지금 화면에 걸려 있는 것으로 시작한다. 조절하려는 것이
-                    // 보이고 있는 것일 확률이 압도적으로 높다.
+                    // 보이고 있는 것일 확률이 압도적으로 높다. 체인이면 첫 칸이다.
                     let pick = root.targets.find(t => t.applied);
                     root.target = (pick || root.targets[0] || {}).id || "";
                     root.loadKnobs();
@@ -184,7 +191,9 @@ FocusScope {
 
         DankButtonGroup {
             id: picker
-            model: root.targets.map(t => t.id)
+            // 걸린 칸에는 순서를 붙인다. 체인에서는 같은 두 셰이더도 순서가
+            // 바뀌면 다른 그림이라, 어느 칸을 만지고 있는지가 이름만으로는 부족하다.
+            model: root.targets.map(t => (t.pass ? t.pass + "·" : "") + t.id)
             currentIndex: Math.max(0, root.targets.findIndex(t => t.id === root.target))
             size: "small"
             onSelectionChanged: (index, selected) => {

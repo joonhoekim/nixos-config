@@ -375,9 +375,17 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 -------------------
 
 -- 이 세션이 존재하는 이유. 렌더링이 끝난 화면 한 장에 프래그먼트 셰이더를 한 번
--- 더 거는 훅이고, 니리에는 이게 없다. 셋을 순환한다:
+-- 더 거는 훅이고, 니리에는 이게 없다.
 --
---   끔 → crt.frag(정지) → crt-motion.frag(그레인 + 험 바)
+-- ── 목록과 순환은 여기 없다 ───────────────────────────────────────────────
+-- 예전에는 이 파일이 셰이더 셋을 배열로 들고 직접 순환했다. 지금은
+-- `apps/rice-crt --next` 를 부른다. 옮긴 이유는 셰이더가 열 몇 장이 된 것보다
+-- **체인** 쪽이 크다 — 여러 장을 겹치면 하이프랜드에 걸 파일을 만들어 내야
+-- 하는데(apps/rice-chain), 그건 lua 설정 안에서 할 일이 아니다. 게다가 순환
+-- 목록을 두 곳에 두면 갈래를 하나 늘릴 때마다 둘을 같이 고쳐야 하고, 안 고친
+-- 쪽이 조용히 낡는다.
+--
+-- 그래서 이 자리에 남은 것은 "무엇으로 시작할까" 하나다.
 --
 -- ── 셰이더에 딸려 오는 두 축 ──────────────────────────────────────────────
 -- 하나로 보이지만 둘이고, 서로 다른 조건에 묶인다. 한동안 이 둘을 하나로 묶어
@@ -393,58 +401,44 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 --
 -- debug:vfr — 프레임을 *그릴지 말지*
 --   VFR 이 켜져 있으면 데미지가 없을 때 프레임을 아예 안 그린다. time 을 쓰는
---   셰이더는 거기서 멈춰서, 마우스를 움직여야 험 바가 한 칸 흐른다. 이쪽 기준은
---   `time` 이 맞다 — 정지 셰이더는 화면이 바뀔 때만 다시 그리면 충분하고(실측:
+--   셰이더는 거기서 멈춰서, 마우스를 움직여야 험 바가 한 칸 흐른다. 그래서 이쪽은
+--   흐르는지로 갈린다 — 정지 셰이더는 화면이 바뀔 때만 다시 그리면 충분하고(실측:
 --   damage 0 + vfr 켬으로 잔상 없음), 끄면 정지 화면을 주사율대로 다시 그리는
 --   순수한 낭비가 된다.
 --
--- 배터리 비용은 damage_tracking 이 아니라 이 vfr 쪽에 붙어 있다. 그래서 값을
--- 치르는 건 crt-motion 하나뿐이고, 그걸 켜는 건 알고 켜는 것이다 — 노트북이라고
--- 따로 갈라 두지 않는다.
+--   판정은 `time` 유니폼이 있는지가 아니라 **흐르는 것을 여는 손잡이가 0 이 아닌지**
+--   다. crt.frag 은 그레인·험 바·클릭 파문을 전부 0 으로 내리면 그 자리에서 정지
+--   셰이더가 되고, 그때는 VFR 을 켜 두는 것이 맞다. 그 손잡이가 어느 것인지는
+--   셰이더가 `!motion` 으로 스스로 선언한다(apps/rice-chain --motion).
 --
--- 로그인 직후부터 걸린다(아래 apply_crt 호출). 끄려면 Mod+Shift+C 로 off 까지
--- 돌리거나 `apps/rice-crt off`. 그때 두 축 모두 하이프랜드 기본값으로 돌아간다.
--- 이 파일을 저장할 때마다 다시 걸리므로, off 로 둔 채 여기를 고치면 도로 켜진다.
-local shaders = os.getenv("HOME") .. "/.config/hypr/shaders/"
-local CRT = {
-    { shader = "",                           vfr = true  }, -- 끔 (탈출구)
-    { shader = shaders .. "crt.frag",        vfr = true  }, -- 정지 — 놀 때는 안 그린다
-    { shader = shaders .. "crt-motion.frag", vfr = false }, -- 그레인 + 험 바 — 계속 그린다
-}
+-- 배터리 비용은 damage_tracking 이 아니라 이 vfr 쪽에 붙어 있다.
+--
+-- 로그인 직후부터 걸린다(아래 exec_cmd). 끄려면 Mod+Shift+C 로 off 까지 돌리거나
+-- `apps/rice-crt off`. 그때 두 축 모두 하이프랜드 기본값으로 돌아간다. 이 파일을
+-- 저장할 때마다 다시 걸리므로, off 로 둔 채 여기를 고치면 도로 켜진다.
+local rice_crt = os.getenv("HOME") .. "/nixos-config/apps/rice-crt"
 
--- 먼저 떼고 → 두 축을 맞추고 → 다시 건다. 순서가 뒤집히면 time 을 쓰는 셰이더가
--- 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸 경고 오버레이 +
--- time 고정으로 갚는다. apps/rice-crt 도 같은 순서다.
-local function apply_crt(entry)
-    local on = entry.shader ~= ""
-    hl.config({ decoration = { screen_shader = "" } })
-    hl.config({ debug = { damage_tracking = on and 0 or 2, vfr = entry.vfr } })
-    hl.config({ decoration = { screen_shader = entry.shader } })
-end
+-- 로그인 때 걸 것. 갈래/이름 하나여도 되고 체인 이름이어도 된다:
+--   "crt/crt"  "water/still"  "chain/newsprint"  "off"
+-- 여기를 고치고 저장하면 그 자리에서 다시 걸린다.
+local crt_start = "crt/crt"
 
-apply_crt(CRT[3])
+-- hl.dsp.exec_cmd 가 아니라 hl.exec_cmd 다. 이름이 같아서 헷갈리는데 뜻이 다르다:
+-- dsp 쪽은 **디스패처를 만들어 돌려주고**(그래서 hl.bind 의 인자로 쓴다), 이쪽은
+-- 그 자리에서 실행하고 nil 을 돌려준다(share/hypr/stubs/hl.meta.lua). dsp 쪽을
+-- 여기에 쓰면 아무 일도 안 일어나고, 증상은 "로그인하면 셰이더가 안 걸린다"다.
+hl.exec_cmd(rice_crt .. " " .. crt_start)
 
-hl.bind(mod .. " + SHIFT + C", function()
-    -- 다음 것은 *지금 걸려 있는 것*에서 고른다. 여기에 카운터를 두면 밖에서 바꾼
-    -- 순간(apps/rice-crt) 둘이 어긋나고, 낡은 카운터로 고른 "다음"은 엉뚱한 데로
-    -- 뛴다. 걸려 있는 셰이더는 컴포지터가 이미 알고 있으니 그쪽이 유일한 진실이다.
-    -- 목록에 없는 값이 걸려 있으면(손으로 eval 했거나 새 셰이더) 처음으로 돌아간다.
-    local now = hl.get_config("decoration:screen_shader")
-    local i = 1
-    for n, s in ipairs(CRT) do
-        if s.shader == now then
-            i = n
-            break
-        end
-    end
-    -- 매번 파일을 다시 읽으므로 셰이더를 고치고 세 바퀴(= 셋이니 세 번) 돌리면
-    -- 제자리로 오면서 반영된다. 값을 맞춰 가는 중이라면 `apps/rice-crt --reload`.
-    apply_crt(CRT[i % #CRT + 1])
-end)
+-- 다음 것은 *지금 걸려 있는 것*에서 고른다. 여기에 카운터를 두면 밖에서 바꾼
+-- 순간(런처의 Rice 플러그인) 둘이 어긋나고, 낡은 카운터로 고른 "다음"은 엉뚱한
+-- 데로 뛴다. 걸려 있는 셰이더는 컴포지터가 이미 알고 있으니 그쪽이 유일한
+-- 진실이고, rice-crt 가 그걸 되읽는다.
+hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 -- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다. `hyprctl keyword` 는 못 쓴다 —
 -- lua 설정에서는 파서가 통째로 거절한다("keyword can't work with non-legacy
 -- parsers. Use eval."). 남는 길은 eval 뿐이고, 그걸 감싼 게 rice-crt 다:
---   apps/rice-crt off | crt | crt-motion | --next | --reload
+--   apps/rice-crt off | crt/crt | water/still | chain/newsprint | --next | --reload
+--   apps/rice-crt crt/crt print/riso          즉석 체인
 --   hyprctl eval 'hl.config({decoration={screen_shader=""}})'
 
 

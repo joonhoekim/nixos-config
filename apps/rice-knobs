@@ -3,9 +3,20 @@
 # 라이싱 값을 밖에서 읽고 쓰는 뒤판. DMS 플러그인의 슬라이더가 이걸 쓴다.
 #
 #   apps/rice-knobs                        조절 가능한 대상 목록 (JSON)
-#   apps/rice-knobs get hypr/crt           그 대상의 손잡이 전부 (JSON)
-#   apps/rice-knobs set hypr/crt CURVE 0.14
-#   apps/rice-knobs reset hypr/crt [CURVE] 레포 값으로 되돌린다
+#   apps/rice-knobs get crt/crt            그 대상의 손잡이 전부 (JSON)
+#   apps/rice-knobs set crt/crt CURVE 0.14
+#   apps/rice-knobs reset crt/crt [CURVE]  레포 값으로 되돌린다
+#
+# ── 대상 이름은 셰이더 칸 이름과 같다 ─────────────────────────────────────
+# `crt/crt` · `water/still` · `term/glow` — apps/rice-chain 이 칸을 부르는 이름
+# 그대로다. 예전에는 `hypr/crt` 처럼 종류를 앞에 붙였는데, 체인이 생기면서 같은
+# 것을 두 이름으로 부르게 됐다. 종류는 아래 targets() 의 넷째 열에 그대로 있고,
+# 다시 거는 방법을 정하는 데만 쓰인다.
+#
+# 맥 판은 체인에서 이름이 겹칠 때 `1.BLOOM` 처럼 칸 번호를 앞에 붙인다. 여기서는
+# 그럴 일이 없다 — 거기서는 손잡이가 메모리에 있고 두 칸이 같은 이름을 가질 수
+# 있지만, 여기서는 손잡이가 파일 안의 `#define` 이라 파일 이름이 곧 유일한
+# 주소다. 대신 아래 targets 가 지금 걸린 체인의 **몇째 칸**인지를 같이 준다.
 #
 # ── 왜 파일을 다시 쓰는가 ─────────────────────────────────────────────────
 # 하이프랜드의 스크린 셰이더에는 우리가 넣을 수 있는 유니폼이 없다. 넘어오는 것은
@@ -45,11 +56,14 @@ repo="${RICE_REPO:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/n
 # ── 대상 ──────────────────────────────────────────────────────────────────
 # 한 줄 = <id> <라이브 파일> <레포 파일> <종류>. 종류가 다시 거는 방법을 정한다.
 targets() {
-	for f in "$cfg"/hypr/shaders/*.frag; do
+	# 갈래 폴더 한 단을 훑는다. 평면이던 것이 열 장을 넘기면서 갈렸고, 이름도
+	# `<갈래>/<이름>` 이 됐다 — 셰이더 하나가 어느 갈래인지가 이름에 들어 있어야
+	# 슬라이더 목록도 같은 순서로 접힌다.
+	for f in "$cfg"/hypr/shaders/*/*.frag "$cfg"/hypr/shaders/*/*.glsl; do
 		[ -f "$f" ] || continue
-		n="${f##*/}"; n="${n%.frag}"
-		printf 'hypr/%s\t%s\t%s\t%s\n' "$n" "$f" \
-			"$repo/modules/nixos/hyprland/rice/shaders/$n.frag" hypr
+		n="${f#"$cfg"/hypr/shaders/}"
+		printf '%s\t%s\t%s\t%s\n' "${n%.*}" "$f" \
+			"$repo/modules/nixos/hyprland/rice/shaders/$n" hypr
 	done
 	for f in "$cfg"/ghostty/shaders/*.glsl; do
 		[ -f "$f" ] || continue
@@ -87,10 +101,20 @@ parse() { # parse <파일> [all]
 			next
 		}
 		/^#define[[:space:]]/ {
-			ann = ""
+			ann = ""; rest = ""; mot = 0
 			if (match($0, /\/\/[[:space:]]*@[^[:space:]]+/)) {
 				ann = substr($0, RSTART, RLENGTH)
+				rest = substr($0, RSTART + RLENGTH)
 				sub(/^\/\/[[:space:]]*@/, "", ann)
+
+				# `@범위` 뒤에 남은 줄 전체가 설명이고, 거기에 `!motion` 이
+				# 섞여 있을 수 있다. 그건 "이 값이 0 이면 흐르는 것이 멈춘다"는
+				# 셰이더 자신의 선언이고, apps/rice-chain --motion 이 그걸 보고
+				# debug:vfr 을 켤지 말지 정한다. 표시로만 쓰이므로 설명에서는 뺀다.
+				if (rest ~ /!motion/) mot = 1
+				gsub(/!motion/, "", rest)
+				gsub(/^[[:space:]]+|[[:space:]]+$/, "", rest)
+				if (rest != "") doc = (doc == "" ? rest : doc " " rest)
 			}
 			# 숫자만 손잡이가 된다. TINT 같은 vec3 을 슬라이더에 태우면
 			# 되돌리기가 그 줄을 0.0000 으로 만들어 버린다.
@@ -98,8 +122,8 @@ parse() { # parse <파일> [all]
 				n = split(ann, ps, ":")
 				step = (n > 1 ? ps[2] : "")
 				split(ps[1], mm, /\.\./)
-				printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-					group, $2, $3, mm[1], mm[2], step, doc
+				printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+					group, $2, $3, mm[1], mm[2], step, doc, mot
 			}
 			doc = ""; next
 		}
@@ -111,14 +135,23 @@ parse() { # parse <파일> [all]
 case "${1:-}" in
 "" | targets)
 	# 지금 걸려 있는 것도 같이 준다. 플러그인이 그걸 기본 선택으로 쓴다.
-	cur=""
+	#
+	# 체인이면 칸이 여럿이고 **순서가 뜻을 가진다** — 앞칸의 출력이 뒷칸의 입력
+	# 이라 같은 두 셰이더도 순서가 바뀌면 다른 그림이다. 그래서 걸렸는지(applied)
+	# 만이 아니라 몇째 칸인지(pass)까지 준다.
+	stages=""
 	if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
-		cur="hypr/$("$(dirname "$0")/rice-crt" --current 2>/dev/null || echo '')"
+		stages="$("$(dirname "$0")/rice-crt" --stages 2>/dev/null || true)"
 	fi
-	targets | jq -Rs --arg cur "$cur" '
-		[ split("\n")[] | select(length > 0) | split("\t")
-		  | { id: .[0], file: .[1], kind: .[3], applied: (.[0] == $cur) } ]
-		| { targets: . }'
+	targets | jq -Rs --arg stages "$stages" '
+		($stages | split("\n") | map(select(length > 0))) as $s
+		| [ split("\n")[] | select(length > 0) | split("\t")
+		    | . as $t
+		    | ($s | index($t[0])) as $i
+		    | { id: $t[0], file: $t[1], kind: $t[3],
+		        applied: ($i != null),
+		        pass: (if $i == null then null else $i + 1 end) } ]
+		| { targets: ., chain: $s }'
 	;;
 
 get)
@@ -143,6 +176,9 @@ get)
 		      step:  (if .[5] == "" then (((.[4] | tonumber) - (.[3] | tonumber)) / 100 * 10000 | round) / 10000
 		              else (.[5] | tonumber) end),
 		      doc:   .[6],
+		      # 이 값을 0 으로 내리면 흐르는 것이 멈춘다는 표시. UI 가 이걸
+		      # 보여 주면 "왜 이 셰이더는 배터리를 먹나"를 손으로 확인할 수 있다.
+		      motion: (.[7] == "1"),
 		      repo:  ($repo[0][.[1]] // null | if . == null then null else tonumber end) } ]
 		| map(. + { dirty: (.repo != null and (.repo - .value | fabs) > 1e-9) })
 		# 그룹은 파일에 나온 순서를 지킨다. 값들이 그렇게 배열돼 있는 데에 이유가
@@ -202,11 +238,17 @@ set | reset)
 				tail = $0
 				sub(/^#define[[:space:]]+[A-Za-z0-9_]+[[:space:]]+[^[:space:]]+[[:space:]]*/,
 				    "", tail)
+				# do-while 인 것에 이유가 있다. while 로 두면 이름이 길어서
+				# 이미 20 칸을 채운 줄에 공백이 하나도 안 붙고, 값이 이름에
+				# 그대로 달라붙는다 — `#define FOCUS_RADIUS0.13`. 컴파일은
+				# 깨지는데 원인은 스위처가 아니라 셰이더 쪽으로 보인다.
+				# ("#define 뒤에 공백이 없다" + "FOCUS_RADIUS 는 없는 이름이다")
+				# 열이 한 칸 밀리는 것은 그 줄에서만이고, 그건 감수한다.
 				out = sprintf("#define %s", k)
-				while (length(out) < 20) out = out " "
+				do { out = out " " } while (length(out) < 20)
 				out = out s
 				if (tail != "") {
-					while (length(out) < 38) out = out " "
+					do { out = out " " } while (length(out) < 38)
 					out = out tail
 				}
 				print out
@@ -224,8 +266,11 @@ set | reset)
 	here="$(dirname "$0")"
 	case "$(field "$id" 4)" in
 	hypr)
+		# 체인의 한 칸일 수도 있으므로 이름 하나를 견주는 게 아니라 칸 목록에서
+		# 찾는다. 안 걸린 셰이더를 고쳤으면 아무것도 안 한다 — 다음에 고를 때
+		# 어차피 새로 접힌다.
 		if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] &&
-			[ "hypr/$("$here/rice-crt" --current 2>/dev/null)" = "$id" ]; then
+			"$here/rice-crt" --stages 2>/dev/null | grep -qxF "$id"; then
 			"$here/rice-crt" --reload >/dev/null
 		fi
 		;;

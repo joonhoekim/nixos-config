@@ -85,6 +85,7 @@
         "rice-fuzzel" = mkApp "rice-fuzzel" system;
         "rice-term" = mkApp "rice-term" system;
         "rice-crt" = mkApp "rice-crt" system;
+        "rice-chain" = mkApp "rice-chain" system;
         "rice-menu" = mkApp "rice-menu" system;
         "rice-knobs" = mkApp "rice-knobs" system;
         "rice-colors" = mkApp "rice-colors" system;

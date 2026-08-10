@@ -1,0 +1,570 @@
+#!/bin/sh -e
+#
+# 화면 셰이더 여러 장을 하이프랜드가 받을 수 있는 한 장으로 접는다.
+#
+#   apps/rice-chain crt/crt print/riso     합성해서 결과 파일 경로를 낸다
+#   apps/rice-chain --check crt/crt        합성과 검증만 (경로는 안 낸다)
+#   apps/rice-chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
+#   apps/rice-chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
+#   apps/rice-chain --motion crt/crt       이 조합이 흐르는가 (yes/no)
+#   apps/rice-chain --info crt/crt         탭 수와 흐름을 한 줄로 (`23 yes`)
+#
+# 칸 이름은 `갈래/이름` 이다 — ~/.config/hypr/shaders/<갈래>/<이름>.frag.
+# 절대 경로도 받는다.
+#
+# ── 터미널 셰이더도 칸이 된다 ─────────────────────────────────────────────
+# `term/<이름>` 은 ~/.config/ghostty/shaders/<이름>.glsl 을 가리킨다. 그쪽은
+# 셰이더토이 규약(mainImage / iChannel0 / iResolution)이고 이쪽은 하이프랜드
+# 규약(main / tex / screen_size)이라 서로 다른 껍데기를 두르지만, 둘 다 "화면 한
+# 장을 받아 한 장을 낸다"는 점은 같아서 같은 체인에 섞어도 된다.
+#
+# 이 길을 낸 것은 창 하나에 걸던 룩을 화면 전체로 올려 볼 수 있어서만은 아니다.
+# 맥 레포는 crt/glow.glsl 을 자기 shaders/ 안에 복사해 들고 있는데, 그 파일은
+# 이 레포의 ../modules/shared/ghostty/shaders/glow.glsl 과 사실상 같은 파일이다.
+# 가져오면서 그 사본을 또 만들면 같은 셰이더가 한 레포 안에 두 벌이 되고, 그건
+# 맥 쪽 crt.frag/crt-motion.frag 이 이미 한 번 보여 준 실패다(그 파일 머리말 —
+# 값이 실제로 어긋나 있었다). 그래서 복사 대신 부르기로 했다.
+#
+# ── 왜 합성이 필요한가 ────────────────────────────────────────────────────
+# decoration:screen_shader 는 파일 하나만 받는다. 상류도 여러 장을 겹치는 기능을
+# 안 만들고 "합쳐서 써라"로 답해 왔다(hyprwm/Hyprland#14101). 그래서 브라운관 뒤에
+# 리소 망점을 더하려면 손으로 두 파일을 합쳐야 했고, 합치는 순간 둘을 따로 끄거나
+# 순서를 바꿔 볼 수가 없어진다. 맥 판(global-shader-for-macos)은 이 자리에서
+# 패스마다 오프스크린에 그려서 해결하는데, 여기서는 그 오프스크린이 없다.
+#
+# ── 소스는 한 글자도 안 고친다 ────────────────────────────────────────────
+# 접는 방법이 전처리기뿐인 것이 중요하다. 셰이더 파일을 고쳐서 함수로 바꾸는
+# 길도 있지만, 그러면 같은 파일이 맥에서·혼자 걸릴 때 안 돈다. 대신 칸마다
+# 이런 껍데기를 앞뒤에 두르고 파일 내용을 **그대로** 사이에 끼운다:
+#
+#   #define v_texcoord _uv1        칸의 입력 좌표를 우리 전역으로
+#   #define fragColor  _fc1        칸의 출력을 우리 전역으로
+#   #define main       _p1_main    칸의 main 을 이름 있는 함수로
+#   #define bloom      _p1_bloom   칸끼리 겹치는 이름을 갈라 놓는다
+#   #define texture(_s, _c) _p0(_c)   이 칸의 tex 는 앞 칸의 출력이다
+#   <파일 내용 그대로>
+#   #undef …
+#   vec4 _p1(vec2 _c) { _uv1 = _c; _p1_main(); return _fc1; }
+#
+# `#define` 의 매크로 이름은 매크로 확장을 안 거치므로(GLSL ES 3.00 전처리기),
+# 칸 안의 `#define BLOOM 0.32` 는 우리 이름 바꾸기와 안 부딪힌다. 그래서 칸이
+# 선언한 `#define` 은 이름을 바꾸는 대신 칸이 끝날 때 전부 `#undef` 한다.
+#
+# 잘못 접히면 컴파일 에러로 죽는다 — 조용히 다른 그림이 나오는 길이 없다. 이게
+# 맥 판이 GLSL→MSL 에 손치환기를 안 쓴 것과 같은 기준이다.
+#
+# ── 값은 곱으로 든다. 이게 진짜 제약이다 ──────────────────────────────────
+# 맥은 칸마다 화면 한 장을 만들어 넘기므로 비용이 **합**이다. 여기는 인라인이라
+# **곱**이다 — 뒷칸이 tex 를 N 번 읽으면 앞칸이 픽셀당 N 번 돈다.
+#
+#   crt(≈30탭) → riso(1탭)    =  30    쓸 수 있다
+#   crt(≈30탭) → neon(17탭)   ≈ 510    못 쓴다
+#
+# 곱이라 순서를 바꿔도 안 줄어든다. 그래서 겹칠 수 있는 것은 사실상 **탭 많은
+# 칸 하나 + 나머지는 한 탭짜리**다. 아래 taps() 가 픽셀당 tex 읽기 횟수를 세고,
+# 곱이 RICE_CHAIN_MAX_TAPS 를 넘으면 거절한다. 느려진 화면을 보고 원인을 찾게
+# 두는 것보다 못 건다고 말하는 편이 낫다.
+#
+# 세는 방식은 함수 단위다. `texture(tex` 가 몇 줄에 있는지만 세면 bloom() 처럼
+# 루프를 품은 함수를 두 번 부르는 경우를 놓친다.
+#
+# ── 결과 파일 ─────────────────────────────────────────────────────────────
+# ${XDG_CACHE_HOME:-~/.cache}/rice/shaders/ 에 쓴다. 손잡이를 고치면 원본이
+# 바뀌므로 걸 때마다 다시 접는다(apps/rice-crt --reload). 캐시가 통째로 없어져도
+# 다음에 걸 때 다시 만들어지므로 잃을 것이 없다.
+#
+# 첫 줄에 `// rice-chain: <칸> <칸>` 을 적어 둔다. 컴포지터에게 "지금 뭐가
+# 걸렸냐"고 물으면 이 경로가 돌아오는데, 경로만으로는 어떤 칸들이었는지 되짚을
+# 수 없기 때문이다. 이름을 파일명에 인코딩하는 것보다 이쪽이 안 깨진다.
+
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/rice/shaders"
+shaders="${RICE_SHADERS:-$cfg/hypr/shaders}"
+termshaders="${RICE_TERM_SHADERS:-$cfg/ghostty/shaders}"
+
+# 임계값. 이 레포에서 제일 무거운 한 장이 crt.frag(≈30탭)이고, 그 뒤에 한 탭짜리
+# 마감(riso·dither·paper 의 src 읽기)을 붙이는 것이 실제로 쓰는 모양이다. 64 는
+# 거기에 한 겹 더 얹을 여유를 준 값이고, neon(17탭) 같은 것을 crt 뒤에 붙이는
+# 조합은 여기서 걸린다. 화면을 보고 판단하고 싶으면 환경변수로 올릴 수 있다.
+max_taps="${RICE_CHAIN_MAX_TAPS:-64}"
+
+RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+die() {
+	printf "${RED}%s${NC}\n" "$1" >&2
+	exit 1
+}
+
+# ── 칸 이름 → 파일 ────────────────────────────────────────────────────────
+# 확장자로 규약이 갈리지 않는다(.frag 도 .glsl 도 양쪽일 수 있다). 규약은 아래
+# convention() 이 파일 안을 보고 정한다.
+resolve() { # resolve <칸>
+	case "$1" in
+	/*)
+		[ -f "$1" ] || die "그런 파일이 없다: $1"
+		printf '%s\n' "$1"
+		return
+		;;
+	term/*)
+		n="${1#term/}"
+		for ext in .glsl .frag ''; do
+			if [ -f "$termshaders/$n$ext" ]; then
+				printf '%s\n' "$termshaders/$n$ext"
+				return
+			fi
+		done
+		die "그런 터미널 셰이더가 없다: $1  (${termshaders} 아래를 본다)"
+		;;
+	esac
+	for ext in .frag .glsl ''; do
+		if [ -f "$shaders/$1$ext" ]; then
+			printf '%s\n' "$shaders/$1$ext"
+			return
+		fi
+	done
+	die "그런 셰이더가 없다: $1  (${shaders} 아래를 본다)"
+}
+
+# 규약을 가르는 실질적인 표식은 mainImage 하나다. 주석을 걷고 본다 — 이 레포의
+# 셰이더는 머리말에서 다른 규약을 자주 인용한다.
+convention() { # convention <파일>  →  shadertoy | hyprland
+	if sed 's|//.*||' "$1" | grep -q 'mainImage[[:space:]]*('; then
+		printf 'shadertoy\n'
+	else
+		printf 'hyprland\n'
+	fi
+}
+
+# ── 탭 세기 ───────────────────────────────────────────────────────────────
+# 픽셀당 `texture(tex, …)` 가 몇 번 평가되는지. 함수 단위로 세고 호출 횟수를
+# 곱해서 올린다 — GLSL 에 재귀가 없으므로 반복 대입으로 반드시 수렴한다.
+#
+# 루프 횟수를 못 읽으면 세는 것을 포기하고 0 이 아니라 실패를 낸다. 모르는 값을
+# 1 로 치면 무거운 조합이 조용히 통과한다.
+taps() { # taps <파일>
+	awk '
+		function trip(head,   a, b) {
+			# for (int i = 0; i < BLOOM_TAPS; i++)  →  BLOOM_TAPS
+			# for (int i = 2; i >= 0; i--)          →  3
+			if (match(head, /=[[:space:]]*-?[0-9]+[[:space:]]*;/)) {
+				a = substr(head, RSTART + 1, RLENGTH - 2) + 0
+			} else return -1
+			if (match(head, /<[[:space:]]*[A-Za-z0-9_]+/)) {
+				b = substr(head, RSTART + 1, RLENGTH - 1)
+				gsub(/[[:space:]]/, "", b)
+				if (b in def) b = def[b]
+				if (b !~ /^-?[0-9]+$/) return -1
+				return (b + 0) - a
+			}
+			if (match(head, />=[[:space:]]*-?[0-9]+/)) {
+				b = substr(head, RSTART + 2, RLENGTH - 2) + 0
+				return a - b + 1
+			}
+			return -1
+		}
+
+		# 주석을 먼저 걷는다. 이 레포의 셰이더는 주석에 코드를 자주 인용해서,
+		# 안 걷고 세면 없는 탭을 센다.
+		{
+			line = $0
+			if (inblock) {
+				if (match(line, /\*\//)) { line = substr(line, RSTART + 2); inblock = 0 }
+				else next
+			}
+			if (match(line, /\/\*/)) {
+				rest = substr(line, RSTART)
+				line = substr(line, 1, RSTART - 1)
+				if (!match(rest, /\*\//)) inblock = 1
+			}
+			sub(/\/\/.*$/, "", line)
+			src[++n] = line
+			if (line ~ /^[[:space:]]*#define[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]+-?[0-9]+[[:space:]]*$/) {
+				split(line, p, /[[:space:]]+/)
+				def[p[2]] = p[3]
+			}
+			# 함수 이름을 미리 다 모아 둔다. 호출을 세려면 목록이 먼저 있어야 한다.
+			if (line ~ /^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/) {
+				h = line
+				sub(/^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+/, "", h)
+				sub(/[[:space:]]*\(.*$/, "", h)
+				if (h != "") isfn[h] = 1
+			}
+			next
+		}
+
+		END {
+			fn = ""; depth = 0; nloop = 0; mul = 1
+			for (i = 1; i <= n; i++) {
+				line = src[i]
+
+				if (depth == 0 && line ~ /^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/) {
+					fn = line
+					sub(/^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+/, "", fn)
+					sub(/[[:space:]]*\(.*$/, "", fn)
+				}
+
+				if (fn != "" && line ~ /for[[:space:]]*\(/) {
+					t = trip(line)
+					if (t < 0) { print "?"; exit }
+					nloop++; loopat[nloop] = depth; loopn[nloop] = t
+					mul *= t
+				}
+
+				if (fn != "") {
+					# 탭 그 자체. 샘플러 이름을 안 보는 것은 규약마다 다르기
+					# 때문이다(tex / iChannel0). 화면 말고 다른 것을 읽는 셰이더는
+					# 애초에 걸 수 없으므로 — 하이프랜드가 줄 수 있는 샘플러가
+					# 그것뿐이다 — texture( 는 전부 화면 읽기로 봐도 된다.
+					# textureLod( 는 안 걸린다: 뒤에 바로 여는 괄호가 와야 한다.
+					c = gsub(/texture[[:space:]]*\(/, "&", line)
+					if (c > 0) own[fn] += c * mul
+					# 아는 함수 호출
+					tmp = line
+					while (match(tmp, /[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/)) {
+						g = substr(tmp, RSTART, RLENGTH)
+						sub(/[[:space:]]*\($/, "", g)
+						tmp = substr(tmp, RSTART + RLENGTH)
+						if (g in isfn && g != fn) calls[fn, g] += mul
+					}
+				}
+
+				depth += gsub(/{/, "&", line) - gsub(/}/, "&", line)
+				while (nloop > 0 && depth <= loopat[nloop]) { mul /= loopn[nloop]; nloop-- }
+				if (depth <= 0) { depth = 0; fn = ""; nloop = 0; mul = 1 }
+			}
+
+			# 호출을 펴서 올린다. 재귀가 없으니 함수 수만큼 돌면 반드시 굳는다.
+			for (f in isfn) total[f] = own[f]
+			for (round = 0; round < 64; round++) {
+				changed = 0
+				for (f in isfn) {
+					v = own[f]
+					for (g in isfn)
+						if ((f SUBSEP g) in calls) v += calls[f, g] * total[g]
+					if (v != total[f]) { total[f] = v; changed = 1 }
+				}
+				if (!changed) break
+			}
+			print (("main" in total) ? total["main"] : 0)
+		}
+	' "$1"
+}
+
+# ── 흐르는가 ──────────────────────────────────────────────────────────────
+# debug:vfr 을 끌지 말지가 여기에 달렸다. 시간을 읽는 셰이더는 화면에 바뀐 것이
+# 없어도 계속 그려야 흐르고, 안 읽으면 안 그리는 게 맞다 — 배터리 값이 통째로
+# 이 판단에 붙어 있다.
+#
+# 판정이 두 단이다. `time` 을 아예 안 읽으면 끔이다. 읽더라도 흐르는 것을 여닫는
+# 손잡이가 전부 0 이면 역시 끔이다 — crt.frag 은 GRAIN·HUM·RIPPLE 을 0 으로
+# 내리면 그 자리에서 정지 셰이더가 된다. 어느 손잡이가 그런 손잡이인지는
+# 셰이더가 `@범위` 옆에 `!motion` 으로 스스로 선언한다(apps/rice-knobs 와 같은
+# 문법이고, 맥 판이 그 문법을 여기서 가져갔다).
+#
+# 체인은 한 칸이라도 흐르면 전체가 흐른다. 시간을 읽는 칸이 안 흐르면 그 칸만
+# 멈추는 게 아니라 고장으로 보이기 때문이다.
+#
+# 주석을 먼저 걷는 것이 핵심이다. 이 레포의 셰이더는 머리말에서 `time` 을 자주
+# 언급해서, 안 걷고 세면 정지 셰이더가 전부 흐르는 것으로 읽힌다.
+motion() { # motion <파일>...
+	for f in "$@"; do
+		[ "$(motion_one "$f")" = yes ] && {
+			printf 'yes\n'
+			return
+		}
+	done
+	printf 'no\n'
+}
+
+# 칸 하나씩 따로 봐야 한다. 여러 파일을 한 awk 에 밀어 넣으면 A 의 손잡이가 B 의
+# `time` 을 막아 주는 것처럼 셈해져서, 흐르는 체인이 안 흐르는 것으로 읽힌다.
+motion_one() { # motion_one <파일>
+	awk '
+		function has(w) {
+			return match(code, "(^|[^A-Za-z0-9_])" w "([^A-Za-z0-9_]|$)") > 0
+		}
+		{
+			l = $0
+			tail = ""
+			if (match(l, /\/\/.*$/)) tail = substr(l, RSTART)
+			sub(/\/\/.*$/, "", l)
+			code = l
+			if (has("time") || has("iTime") || has("iTimeDelta") || has("iFrame"))
+				anytime = 1
+			if (l ~ /^[[:space:]]*#define[[:space:]]/ && tail ~ /!motion/) {
+				split(l, p, /[[:space:]]+/)
+				ngate++
+				if (p[3] + 0 != 0) open = 1
+			}
+		}
+		END {
+			if (!anytime) print "no"
+			else if (ngate == 0) print "yes"
+			else print (open ? "yes" : "no")
+		}
+	' "$1"
+}
+
+# ── 합성 ──────────────────────────────────────────────────────────────────
+# 칸 하나짜리도 같은 길로 접는다. 갈래가 둘이면 `precision` 같은 사소한 차이를
+# 두 곳에서 처리하게 되고, 무엇보다 crt/glow.glsl 처럼 precision 선언이 없는
+# 파일이 혼자 걸릴 때만 안 되는 상태가 생긴다.
+compose() { # compose <파일>...
+	# #version 이 반드시 첫 줄이어야 한다. es 프로파일은 그 앞에 주석도 못 둔다
+	# ("statement must appear first in es-profile shader; before comments or
+	# newlines"). 그래서 우리 머리말이 아래로 내려간다.
+	printf '#version 300 es\n'
+	printf '// 이 파일은 apps/rice-chain 이 만든다. 고치지 말 것 — 다시 접히면\n'
+	printf '// 통째로 날아간다. 고칠 것은 아래 칸들의 원본이다.\n'
+	printf '// rice-chain:'
+	for s in $stage_names; do printf ' %s' "$s"; done
+	printf '\n'
+
+	# 어느 유니폼이 실제로 쓰이는지 먼저 본다. 안 쓰는 것까지 다 선언해 두면
+	# apps/rice-crt 의 재그리기 판정이 `time` 을 보고 늘 켜진 것으로 읽는다.
+	# 셰이더토이 이름은 여기서 하이프랜드 이름으로 접힌다 — iTime 을 쓰는 칸이
+	# 하나라도 있으면 이 합성본은 시간을 읽는 셰이더다.
+	# awk 에서 \b 를 쓰면 안 된다 — gawk 는 그걸 낱말 경계가 아니라 백스페이스
+	# 문자로 읽는다. 그러면 이 검사가 전부 조용히 빗나가고, 증상은 합성본이
+	# "screen_size : undeclared identifier" 로 죽는 것이다.
+	uniforms=$(cat "$@" | sed 's|//.*||' | awk -v st="$has_shadertoy" '
+		function has(w) {
+			return match($0, "(^|[^A-Za-z0-9_])" w "([^A-Za-z0-9_]|$)") > 0
+		}
+		{
+			if (has("screen_size"))               u["screen_size"] = 1
+			if (has("time"))                      u["time"] = 1
+			if (has("iTime") || has("iTimeDelta") || has("iFrame")) u["time"] = 1
+			if (has("pointer_position") || has("iMouse")) u["pointer_position"] = 1
+			if (has("pointer_pressed_positions")) u["pointer_pressed_positions"] = 1
+			if (has("pointer_pressed_times"))     u["pointer_pressed_times"] = 1
+		}
+		END {
+			# 셰이더토이 껍데기는 fragCoord 를 만들 때 화면 크기가 있어야 한다.
+			if (st != "") u["screen_size"] = 1
+			for (k in u) print k
+		}')
+
+	printf '\nprecision highp float;\n\n'
+	printf 'in vec2 v_texcoord;\nlayout(location = 0) out vec4 fragColor;\n\n'
+	# tex 는 조건 없이 선언한다. 첫 칸은 반드시 화면을 읽고, 셰이더토이 칸의
+	# iChannel0 도 결국 이 이름으로 접힌다.
+	printf 'uniform sampler2D tex;\n'
+	for u in $uniforms; do
+		case "$u" in
+		screen_size) printf 'uniform vec2 screen_size;\n' ;;
+		time) printf 'uniform float time;\n' ;;
+		pointer_position) printf 'uniform vec2 pointer_position;\n' ;;
+		pointer_pressed_positions) printf 'uniform vec2 pointer_pressed_positions[32];\n' ;;
+		pointer_pressed_times) printf 'uniform float pointer_pressed_times[32];\n' ;;
+		esac
+	done
+
+	k=0
+	for f in "$@"; do
+		awk -v k="$k" -v path="$f" -v conv="$(convention "$f")" '
+			# 파일이 자기 규약대로 선언해 둔 줄들. 합성본은 이걸 머리에서 한 번만
+			# 한다. 여기 적힌 이름만 정확히 지운다 — 셰이더가 직접 만든 다른
+			# uniform 은 남겨 둬야 검증기가 "그건 못 준다"고 제대로 화를 낸다.
+			function isdecl(l) {
+				return l ~ /^[[:space:]]*#version/ ||
+				       l ~ /^[[:space:]]*precision[[:space:]]+[a-z]+p[[:space:]]+[a-z]+[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*(layout[[:space:]]*\([^)]*\)[[:space:]]*)?in[[:space:]]+vec2[[:space:]]+v_texcoord[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*(layout[[:space:]]*\([^)]*\)[[:space:]]*)?out[[:space:]]+vec4[[:space:]]+fragColor[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*uniform[[:space:]]+sampler2D[[:space:]]+tex[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*uniform[[:space:]]+vec2[[:space:]]+(screen_size|pointer_position)[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*uniform[[:space:]]+float[[:space:]]+time[[:space:]]*;/ ||
+				       l ~ /^[[:space:]]*uniform[[:space:]]+vec2[[:space:]]+pointer_pressed_positions[[:space:]]*\[/ ||
+				       l ~ /^[[:space:]]*uniform[[:space:]]+float[[:space:]]+pointer_pressed_times[[:space:]]*\[/
+			}
+			function sep(c,   s, i) { s = ""; for (i = 0; i < 60; i++) s = s c; return s }
+			{
+				body[++n] = $0
+				l = $0
+				sub(/\/\/.*$/, "", l)
+				if (l ~ /^[[:space:]]*#define[[:space:]]+[A-Za-z_]/) {
+					split(l, p, /[[:space:]]+/)
+					m = p[2]
+					sub(/\(.*$/, "", m)   # 함수형 매크로도 이름만
+					if (!(m in seenm)) { seenm[m] = 1; macro[++nm] = m }
+				}
+				# 최상단 선언(함수·전역·const). 들여쓰기가 없는 줄만 본다 —
+				# 이 레포의 셰이더는 전부 그 모양이다. 못 찾으면 칸끼리 이름이
+				# 겹쳐서 컴파일이 깨지지, 조용히 틀린 그림이 나오지는 않는다.
+				else if (l ~ /^(const[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[\(=;\[]/) {
+					d = l
+					sub(/^const[[:space:]]+/, "", d)
+					sub(/^[A-Za-z_][A-Za-z0-9_]*[[:space:]]+/, "", d)
+					sub(/[[:space:]]*[\(=;\[].*$/, "", d)
+					if (d != "" && d != "main" && !(d in seend)) {
+						seend[d] = 1; name[++nn] = d
+					}
+				}
+			}
+			END {
+				print ""
+				print "// " sep("=")
+				print "// 칸 " k " — " path "  (" conv ")"
+
+				if (conv == "shadertoy") {
+					# 뒤집기가 두 군데인 게 헷갈리지만 둘 다 필요하다. 셰이더토이의
+					# fragCoord 는 좌하단 원점이라 아래 껍데기에서 한 번 뒤집고,
+					# 그 좌표로 화면을 읽을 때 좌상단으로 되돌려야 해서 여기서 또
+					# 뒤집는다. 이 함수를 `#define texture` **앞에** 두는 것이
+					# 요점이다 — 그래야 몸통의 texture 가 아직 매크로가 아니다.
+					if (k == 0)
+						print "vec4 _p" k "_tex(sampler2D _s, vec2 _c) { return texture(_s, vec2(_c.x, 1.0 - _c.y)); }"
+					else
+						print "vec4 _p" k "_tex(sampler2D _s, vec2 _c) { return _p" (k - 1) "(vec2(_c.x, 1.0 - _c.y)); }"
+					print "#define texture(_s, _c) _p" k "_tex(_s, _c)"
+					print "#define iChannel0   tex"
+					print "#define iResolution vec3(screen_size, 1.0)"
+					print "#define iTime       time"
+					print "#define iTimeDelta  (1.0 / 60.0)"
+					print "#define iFrame      int(time * 60.0)"
+					print "#define iMouse      vec4(pointer_position * screen_size, 0.0, 0.0)"
+				} else {
+					print "vec2 _uv" k "; vec4 _fc" k ";"
+					print "#define v_texcoord _uv" k
+					print "#define fragColor _fc" k
+					print "#define main _p" k "_main"
+					if (k > 0) print "#define texture(_s, _c) _p" (k - 1) "(_c)"
+				}
+				for (i = 1; i <= nn; i++) print "#define " name[i] " _p" k "_" name[i]
+
+				for (i = 1; i <= n; i++) if (!isdecl(body[i])) print body[i]
+
+				for (i = 1; i <= nn; i++) print "#undef " name[i]
+				for (i = 1; i <= nm; i++) print "#undef " macro[i]
+				if (conv == "shadertoy") {
+					print "#undef texture"
+					print "#undef iChannel0"
+					print "#undef iResolution"
+					print "#undef iTime"
+					print "#undef iTimeDelta"
+					print "#undef iFrame"
+					print "#undef iMouse"
+					print "vec4 _p" k "(vec2 _c) {"
+					print "    vec4 _o = vec4(0.0, 0.0, 0.0, 1.0);"
+					print "    _p" k "_mainImage(_o, vec2(_c.x, 1.0 - _c.y) * screen_size);"
+					print "    return _o;"
+					print "}"
+				} else {
+					print "#undef v_texcoord"
+					print "#undef fragColor"
+					print "#undef main"
+					if (k > 0) print "#undef texture"
+					print "vec4 _p" k "(vec2 _c) { _uv" k " = _c; _p" k "_main(); return _fc" k "; }"
+				}
+			}
+		' "$f"
+		k=$((k + 1))
+	done
+
+	printf '\nvoid main() { fragColor = _p%d(v_texcoord); }\n' "$((k - 1))"
+}
+
+# ── 명령 ──────────────────────────────────────────────────────────────────
+mode=apply
+case "${1:-}" in
+--check) mode=check; shift ;;
+--cost) mode=cost; shift ;;
+--motion) mode=motion; shift ;;
+--info) mode=info; shift ;;
+--stages)
+	[ -f "${2:-}" ] || die "합성본 경로가 필요하다"
+	sed -n 's|^// rice-chain: ||p' "$2"
+	exit 0
+	;;
+-*) die "알 수 없는 옵션: $1" ;;
+esac
+
+[ $# -gt 0 ] || die "칸을 하나 이상 줘야 한다  (예: apps/rice-chain crt/crt print/riso)"
+
+stage_names="$*"
+files=""
+for s in "$@"; do
+	files="$files $(resolve "$s")"
+done
+# shellcheck disable=SC2086
+set -- $files
+
+if [ "$mode" = motion ]; then
+	motion "$@"
+	exit 0
+fi
+
+# 비용부터 본다. 못 쓸 조합이면 파일을 만들 이유가 없다.
+product=1
+detail=""
+has_shadertoy=""
+for f in "$@"; do
+	[ "$(convention "$f")" = shadertoy ] && has_shadertoy=1
+
+	# 고스티 전용 유니폼을 읽는 셰이더는 여기서 잘라 낸다. 검증기에 맡기면
+	# "iCurrentCursor : undeclared identifier" 라는, 원인은 맞지만 무엇을 해야
+	# 하는지는 안 알려 주는 말이 나온다. 하이프랜드가 화면 셰이더에 주는 유니폼
+	# 목록은 컴포지터가 정하고 커서 위치·색은 거기 없다 — 고칠 수 있는 종류의
+	# 실패가 아니라서, 그렇게 말해 주는 편이 맞다.
+	bad="$(sed 's|//.*||' "$f" |
+		grep -o 'iCurrentCursor[A-Za-z]*\|iPreviousCursor[A-Za-z]*\|iTimeCursorChange' |
+		sort -u | tr '\n' ' ')"
+	if [ -n "$bad" ]; then
+		printf "${RED}%s 는 고스티 전용 유니폼을 읽는다: %s${NC}\n" "$(basename "$f")" "$bad" >&2
+		die "화면 셰이더에는 그 값이 없다 — 터미널 창에서만 도는 셰이더다."
+	fi
+
+	t="$(taps "$f")"
+	[ "$t" = "?" ] && die "$(basename "$f") 의 루프 횟수를 못 읽었다 — 탭 수를 셀 수 없어서 안 건다."
+	[ "$t" -lt 1 ] && t=1
+	product=$((product * t))
+	detail="$detail  $(basename "$f") ${t}탭"
+done
+
+if [ "$mode" = cost ]; then
+	printf '%s\n' "$product"
+	printf "${DIM}%s${NC}\n" "$detail" >&2
+	exit 0
+fi
+
+# 둘을 한 번에 묻는 길. 목록 UI 는 값마다 이 둘을 다 알아야 하는데, 따로 부르면
+# 프로세스가 값 수의 두 배로 뜬다 — 런처를 열 때마다 그만큼 기다리게 된다.
+if [ "$mode" = info ]; then
+	printf '%s %s\n' "$product" "$(motion "$@")"
+	exit 0
+fi
+
+if [ "$product" -gt "$max_taps" ]; then
+	printf "${RED}이 조합은 픽셀당 tex 를 %d 번 읽는다 (한도 %d). 안 건다.${NC}\n" \
+		"$product" "$max_taps" >&2
+	printf "${DIM}%s${NC}\n" "$detail" >&2
+	printf "${DIM}인라인 합성이라 비용이 곱이다 — 순서를 바꿔도 안 준다. 탭 많은 칸은 하나만 두고 나머지는 한 탭짜리로 (apps/rice-chain 머리말).${NC}\n" >&2
+	exit 1
+fi
+
+mkdir -p "$cache"
+slug="$(printf '%s' "$stage_names" | tr ' /' '+.')"
+out="$cache/$slug.frag"
+tmp="$out.tmp"
+trap 'rm -f "$tmp"' EXIT
+
+compose "$@" >"$tmp"
+
+# 검증기가 있으면 여기서 잡는다. 없어도 도는 것은 맥·니리에서도 이 스크립트를
+# 부를 수 있어야 하기 때문이고, 하이프랜드 세션에는 모듈이 glslang 을 깐다.
+# 하이프랜드는 컴파일 실패를 알려 주지 않는다 — 셰이더를 걸어 두고 다음 프레임에
+# 컴파일하며, 실패해도 hyprctl 은 ok 를 돌려준다(0.56.1 실측). 생성 파일에서는
+# 그게 더 나쁘다. 원본이 멀쩡해도 접다가 깨질 수 있고, 그러면 검은 화면만 남는다.
+if command -v glslangValidator >/dev/null 2>&1; then
+	if ! err="$(glslangValidator -S frag "$tmp" 2>&1)"; then
+		printf "${RED}합성본이 컴파일되지 않는다. 안 건다.${NC}\n" >&2
+		printf '%s\n' "$err" | sed 's/^/  /' >&2
+		printf "${DIM}합성본을 보려면: %s${NC}\n" "$tmp" >&2
+		trap - EXIT
+		exit 1
+	fi
+fi
+
+mv "$tmp" "$out"
+trap - EXIT
+[ "$mode" = check ] || printf '%s\n' "$out"

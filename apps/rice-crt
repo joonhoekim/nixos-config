@@ -2,16 +2,28 @@
 #
 # Switch the Hyprland output shader, live.
 #
-#   apps/rice-crt              현재 것과 목록만 출력
-#   apps/rice-crt crt          전환
-#   apps/rice-crt --next       목록 순서대로 다음 것 (Mod+Shift+C 와 같은 순환)
-#   apps/rice-crt --reload     지금 걸린 것을 파일에서 다시 읽는다 (값 튜닝용)
-#   apps/rice-crt off          셰이더 없는 상태로 (탈출구)
+#   apps/rice-crt                        현재 것과 목록만 출력
+#   apps/rice-crt crt/crt                한 장 걸기
+#   apps/rice-crt crt/crt print/riso     즉석 체인 — 순서대로 겹쳐 건다
+#   apps/rice-crt chain/newsprint        저장해 둔 체인
+#   apps/rice-crt --next                 목록 순서대로 다음 것 (Mod+Shift+C 와 같은 순환)
+#   apps/rice-crt --reload               지금 걸린 것을 파일에서 다시 읽는다 (값 튜닝용)
+#   apps/rice-crt --save <이름>           지금 걸린 체인을 이름 붙여 저장
+#   apps/rice-crt --stages               지금 걸린 칸들을 한 줄에 하나씩
+#   apps/rice-crt off                    셰이더 없는 상태로 (탈출구)
 #
-# 룩 하나 = ~/.config/hypr/shaders/<name>.frag 파일 하나. decoration:screen_shader
-# 에 절대 경로를 넣으면 렌더링이 끝난 화면 한 장에 그 프래그먼트 셰이더가 한 번 더
-# 걸린다 — 벽지도 바도 창도 커서도 같은 유리 뒤로 들어간다. 니리에 없는 훅이고,
-# 하이프랜드 세션이 이 레포에 있는 이유다(../modules/nixos/hyprland).
+# 룩 하나 = ~/.config/hypr/shaders/<갈래>/<이름>.frag 파일 하나, 또는 그런 파일
+# 여럿을 순서대로 겹친 체인. decoration:screen_shader 에 절대 경로를 넣으면
+# 렌더링이 끝난 화면 한 장에 그 프래그먼트 셰이더가 한 번 더 걸린다 — 벽지도
+# 바도 창도 커서도 같은 유리 뒤로 들어간다. 니리에 없는 훅이고, 하이프랜드
+# 세션이 이 레포에 있는 이유다(../modules/nixos/hyprland).
+#
+# ── 체인은 파일 하나로 접혀서 들어간다 ────────────────────────────────────
+# decoration:screen_shader 는 한 장만 받는다. 그래서 여러 칸은 apps/rice-chain 이
+# 전처리기로 한 파일에 접어서 캐시에 두고, 여기서는 그 결과 경로를 건다. 왜 그
+# 방법뿐인지, 왜 비용이 합이 아니라 곱인지는 그 파일 머리말에 있다.
+#
+# 셰이더 원본은 안 고쳐지므로, 값을 튜닝하고 --reload 하면 다시 접혀서 반영된다.
 #
 # ── 왜 hyprctl keyword 가 아니라 eval 인가 ────────────────────────────────
 # 이 레포의 하이프랜드는 hyprland.conf 가 아니라 hyprland.lua 로 설정한다. 0.56 의
@@ -30,6 +42,10 @@
 # 컴포지터가 이미 알고 있으니 그쪽이 유일한 진실이다. hyprland.lua 의 키바인드도
 # 같은 이유로 카운터를 안 들고 hl.get_config 를 본다.
 #
+# 체인이 생기면서 그 되읽기가 한 단 늘었다. 컴포지터가 돌려주는 것은 캐시 안의
+# 합성본 경로 하나뿐이라 어떤 칸들이었는지가 안 보인다. 그래서 합성본 머리에
+# `// rice-chain: …` 이 적혀 있고(apps/rice-chain), 여기서 그 줄을 되읽는다.
+#
 # ── 같이 움직이는 두 축 ───────────────────────────────────────────────────
 # 셰이더 하나를 걸면 하이프랜드 쪽 옵션 둘이 따라온다. 둘은 서로 다른 조건에
 # 묶이고, 한동안 이 둘을 하나로 묶어 둔 탓에 증상이 둘 다 남았다
@@ -38,125 +54,243 @@
 # debug:damage_tracking — 프레임을 그릴 때 *어디를* 그리는가
 #   자기 픽셀 밖을 읽는 셰이더는 부분 재합성과 같이 못 산다. 이웃이 낡아서 움직이는
 #   것 둘레에 잔상이 남고, 미분(fwidth)을 쓰면 사각형 경계에 이음매가 생긴다.
-#   여기 있는 CRT 들은 곡률·색수차·블룸이 전부 이웃을 읽으므로, 셰이더가 걸리면
+#   여기 있는 셰이더는 곡률·굴절·블룸이 전부 이웃을 읽으므로, 셰이더가 걸리면
 #   무조건 0 이다. `time` 유무와는 상관이 없다.
 #
 # debug:vfr — 프레임을 *그릴지 말지*
 #   VFR 이 켜져 있으면 데미지가 없을 때 프레임을 안 그린다. time 을 읽는 셰이더는
-#   거기서 멈춰 입력이 있을 때만 한 칸씩 흐른다. 그래서 *이쪽*이 time 유무로
+#   거기서 멈춰 입력이 있을 때만 한 칸씩 흐른다. 그래서 *이쪽*이 흐르는지로
 #   갈린다 — 정지 셰이더는 켜 둔 채로 두는 게 맞고(놀 때 안 그린다), 끄는 건
 #   흐르는 것이 있는 셰이더뿐이다. 배터리 비용은 여기 붙어 있다.
+#
+#   판정은 apps/rice-chain --motion 이 한다. `time` 유니폼이 선언돼 있는지만 보면
+#   안 된다 — crt.frag 은 그레인·험 바·클릭 파문을 손잡이로 끌 수 있고, 전부 0 인
+#   crt.frag 은 정지 셰이더다. 그 손잡이가 어느 것인지는 셰이더가 `!motion` 으로
+#   스스로 선언한다.
 #
 # 셰이더를 새로 넣어도 두 판단 다 자동이다.
 
 # 목록·순환·거절은 apps/rice-switch, apps/rice-term 과 같은 모양이어야 해서
 # rice-lib.sh 에 있다. rice_current 는 아래에서 갈아치운다(머리말 참고).
-. "$(dirname "$0")/rice-lib.sh"
+here="$(dirname "$0")"
+. "$here/rice-lib.sh"
 
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
-shaders="$cfg/hypr/shaders"
+shaders="${RICE_SHADERS:-$cfg/hypr/shaders}"
+termshaders="${RICE_TERM_SHADERS:-$cfg/ghostty/shaders}"
+chains="${RICE_CHAINS:-$cfg/hypr/chains}"
 
 rice_kind="화면 셰이더"
 
 # 니리 세션이나 맥에서 부르면 hyprctl 이 없거나, 있어도 붙을 인스턴스가 없다.
 # 그냥 두면 eval 이 조용히 실패하고 "바꿨는데 아무 일도 안 일어났다"가 된다.
 if ! command -v hyprctl >/dev/null 2>&1 || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
-  printf "${RED}하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.${NC}\n"
-  printf "${DIM}터미널 창 하나에만 거는 브라운관은 양쪽에서 된다: apps/rice-term crt${NC}\n"
-  exit 1
+	printf "${RED}하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.${NC}\n"
+	printf "${DIM}터미널 창 하나에만 거는 브라운관은 양쪽에서 된다: apps/rice-term crt${NC}\n"
+	exit 1
 fi
 
 if [ ! -d "$shaders" ]; then
-  printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$shaders"
-  exit 1
+	printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$shaders"
+	exit 1
 fi
 
+# ── 목록 ──────────────────────────────────────────────────────────────────
 # off 를 앞에 둔다. 목록 순서가 곧 --next 의 순서이고, 로그인 직후가 off 이므로
-# 거기서 시작해 점점 세게 가는 편이 손에 붙는다.
+# 거기서 시작해 점점 세게 가는 편이 손에 붙는다. 체인이 그다음인 것은 그것이
+# 손을 봐서 고른 한 벌이기 때문이다 — 낱장은 재료에 가깝다.
 rice_list() {
-  printf 'off\n'
-  for f in "$shaders"/*.frag; do
-    [ -f "$f" ] || continue
-    f="${f##*/}"
-    printf '%s\n' "${f%.frag}"
-  done | sort
+	printf 'off\n'
+
+	for f in "$chains"/*.chain; do
+		[ -f "$f" ] || continue
+		f="${f##*/}"
+		printf 'chain/%s\n' "${f%.chain}"
+	done | sort
+
+	for f in "$shaders"/*/*.frag "$shaders"/*/*.glsl; do
+		[ -f "$f" ] || continue
+		f="${f#"$shaders"/}"
+		printf '%s\n' "${f%.*}"
+	done | sort
+
+	# 터미널 셰이더도 화면 전체에 걸 수 있다(apps/rice-chain 의 `term/`). 다만
+	# 고스티 전용 유니폼을 읽는 것은 빼야 한다 — 목록에 뜨는데 누르면 거절당하는
+	# 것은 목록이 거짓말을 하는 것이다.
+	for f in "$termshaders"/*.glsl; do
+		[ -f "$f" ] || continue
+		grep -q 'iCurrentCursor\|iPreviousCursor\|iTimeCursorChange' "$f" && continue
+		f="${f##*/}"
+		printf 'term/%s\n' "${f%.glsl}"
+	done | sort
 }
 
+# ── 이름 → 칸들 ───────────────────────────────────────────────────────────
+stages_of() { # stages_of <이름>
+	case "$1" in
+	off) ;;
+	chain/*)
+		f="$chains/${1#chain/}.chain"
+		# 없으면 조용히 빈 결과다. 여기서 rice_reject 를 부르면 안 된다 — 이
+		# 함수는 늘 `$( )` 안에서 불리므로 거기의 exit 는 서브셸만 끝내고, 메시지만
+		# 두 번 나온다. 거절은 부르는 쪽이 빈 결과를 보고 한다.
+		[ -f "$f" ] || return 0
+		# 한 줄에 한 칸. 주석과 빈 줄은 넘긴다.
+		sed 's/#.*//' "$f" | tr -s '[:space:]' '\n' | grep -v '^$' | tr '\n' ' '
+		;;
+	*) printf '%s' "$1" ;;
+	esac
+}
+
+# 칸들 → 이름. 저장된 체인과 같으면 그 이름으로 접어 준다. 즉석으로 만든 것과
+# 저장해 둔 것이 화면에서는 구별이 안 되므로, 이름이 있는 쪽을 보여 주는 게 맞다.
+name_of() { # name_of <칸> <칸>...
+	want="$*"
+	for f in "$chains"/*.chain; do
+		[ -f "$f" ] || continue
+		have="$(sed 's/#.*//' "$f" | tr -s '[:space:]' '\n' | grep -v '^$' | tr '\n' ' ')"
+		# 뒤에 붙은 공백 하나까지 맞춘다.
+		[ "${have% }" = "$want" ] && {
+			f="${f##*/}"
+			printf 'chain/%s\n' "${f%.chain}"
+			return
+		}
+	done
+	printf '%s\n' "$want"
+}
+
+# ── 지금 걸린 것 ──────────────────────────────────────────────────────────
 # 값이 두 가지 모양으로 나온다: 한 번도 안 건드린 세션은 `[[EMPTY]]`(set: false),
 # 껐다 켠 뒤로는 빈 문자열(set: true). 둘 다 off 다.
 rice_current() {
-  cur="$(hyprctl getoption decoration:screen_shader 2>/dev/null |
-    sed -n 's/^str:[[:space:]]*//p' | sed 's/[[:space:]]*$//')"
-  case "$cur" in
-  "" | "[[EMPTY]]") printf 'off\n' ;;
-  *)
-    cur="${cur##*/}"
-    printf '%s\n' "${cur%.frag}"
-    ;;
-  esac
+	cur="$(hyprctl getoption decoration:screen_shader 2>/dev/null |
+		sed -n 's/^str:[[:space:]]*//p' | sed 's/[[:space:]]*$//')"
+	case "$cur" in
+	"" | "[[EMPTY]]")
+		printf 'off\n'
+		;;
+	*)
+		st="$("$here/rice-chain" --stages "$cur" 2>/dev/null || true)"
+		if [ -n "$st" ]; then
+			# shellcheck disable=SC2086
+			name_of $st
+		else
+			# 합성본이 아니다 — 손으로 걸어 뒀거나 캐시가 지워진 뒤 남은 경로다.
+			# 그대로 보여 준다. 이걸 이름인 척하면 --next 가 엉뚱한 데로 뛴다.
+			printf '%s\n' "$cur"
+		fi
+		;;
+	esac
 }
 
-# --reload 는 rice_dispatch 에 안 넘긴다. "무엇으로 바꿀지"가 아니라 "지금 것을
-# 다시 읽어라"여서 이름을 고르는 그 함수의 문법에 안 맞는다. 하이프랜드는 셰이더를
-# 걸 때마다 파일을 새로 읽으므로, 값을 고치고 이걸 한 번 돌리면 그대로 반영된다.
-case "${1:-}" in
---reload | -r)
-  name="$(rice_current)"
-  [ "$name" = "off" ] &&
-    printf "${DIM}지금은 off 다 — 고친 값을 보려면 셰이더를 먼저 걸 것 (apps/rice-crt --next).${NC}\n"
-  ;;
-*)
-  rice_dispatch "$@"
-  name="$RICE_NAME"
-  ;;
-esac
-
-if [ "$name" = "off" ]; then
-  src=""
-  damage=2 # 하이프랜드 기본값(full)
-  vfr=true
-else
-  src="$shaders/$name.frag"
-  [ -f "$src" ] || rice_reject "$name"
-  damage=0 # 이웃을 읽는 셰이더는 부분 재합성과 같이 못 산다 (머리말)
-  if grep -Eq '^[[:space:]]*uniform[[:space:]]+float[[:space:]]+time[[:space:]]*;' "$src"; then
-    vfr=false # 흐르는 것이 있다 — 데미지가 없어도 그려야 한다
-  else
-    vfr=true
-  fi
-fi
-
-# 컴파일 실패는 여기서 못 잡는다. 하이프랜드는 셰이더를 걸어 두고 *다음 프레임에*
-# 컴파일하며, 실패해도 hyprctl 은 ok 를 돌려주고 로그에도 안 남는다(0.56.1 에서
-# 실측). 그래서 검증기가 PATH 에 있을 때만 미리 한 번 돌린다 — 이 레포는 그걸 깔지
-# 않으므로 평소에는 이 블록이 통째로 비켜 간다. rice-term 이 ghostty 셰이더에 대해
-# 같은 처지인 것과 같다(거기도 잡을 방법이 없어서 탈출구를 안내한다).
-if [ -n "$src" ] && command -v glslangValidator >/dev/null 2>&1; then
-  if ! out="$(glslangValidator -S frag "$src" 2>&1)"; then
-    printf "${RED}%s 가 컴파일되지 않는다. 안 건다.${NC}\n" "$name"
-    printf '%s\n' "$out" | sed 's/^/  /'
-    exit 1
-  fi
-fi
-
+# ── 걸기 ──────────────────────────────────────────────────────────────────
 # 순서가 중요하다: 먼저 떼고 → 두 축을 맞추고 → 다시 건다. 뒤집히면 time 을 쓰는
 # 셰이더가 트래킹이 켜진 채로 올라오는 순간이 생기고, 하이프랜드는 그걸 경고
 # 오버레이 + time 고정으로 갚는다. hyprland.lua 의 키바인드도 같은 순서다.
 set_shader() { # set_shader <절대 경로 또는 빈 문자열>
-  hyprctl eval "hl.config({ decoration = { screen_shader = \"$1\" } })" >/dev/null
+	hyprctl eval "hl.config({ decoration = { screen_shader = \"$1\" } })" >/dev/null
 }
 
-set_shader ""
-hyprctl eval "hl.config({ debug = { damage_tracking = $damage, vfr = $vfr } })" >/dev/null
-set_shader "$src"
+apply() { # apply <칸>...
+	if [ $# -eq 0 ]; then
+		src=""
+		damage=2 # 하이프랜드 기본값(full)
+		vfr=true
+	else
+		# 합성이 실패하면 여기서 끝난다. 앞의 것만 걸어 두면 브라운관 뒤에 오던
+		# 망점이 조용히 빠진 화면이 되는데, 그건 안 바뀐 화면보다 알아채기 어렵다.
+		src="$("$here/rice-chain" "$@")" || exit 1
+		damage=0 # 이웃을 읽는 셰이더는 부분 재합성과 같이 못 산다 (머리말)
+		if [ "$("$here/rice-chain" --motion "$@")" = yes ]; then
+			vfr=false # 흐르는 것이 있다 — 데미지가 없어도 그려야 한다
+		else
+			vfr=true
+		fi
+	fi
 
-printf "  hyprland   %s\n" "screen_shader ← ${src:-(없음)}"
+	set_shader ""
+	hyprctl eval "hl.config({ debug = { damage_tracking = $damage, vfr = $vfr } })" >/dev/null
+	set_shader "$src"
+}
+
+# ── 명령 ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+--reload | -r)
+	# "무엇으로 바꿀지"가 아니라 "지금 것을 다시 읽어라"여서 rice_dispatch 의
+	# 문법에 안 맞는다. 손잡이를 고친 뒤 여기를 부르면 다시 접혀서 반영된다.
+	name="$(rice_current)"
+	if [ "$name" = off ]; then
+		printf "${DIM}지금은 off 다 — 고친 값을 보려면 셰이더를 먼저 걸 것 (apps/rice-crt --next).${NC}\n"
+		exit 0
+	fi
+	;;
+--stages)
+	# 손잡이 UI 가 "지금 걸린 체인의 칸들"을 알아야 해서 낸다(apps/rice-knobs).
+	# --current 는 chain/이름 으로 접어서 주므로 거기서는 칸이 안 보인다.
+	cur="$(rice_current)"
+	[ "$cur" = off ] && exit 0
+	for s in $(stages_of "$cur"); do printf '%s\n' "$s"; done
+	exit 0
+	;;
+--save)
+	label="${2:?이름이 필요하다  (예: apps/rice-crt --save newsprint)}"
+	case "$label" in
+	*/* | .*) printf "${RED}이름에 / 나 앞점은 못 쓴다: %s${NC}\n" "$label" >&2; exit 1 ;;
+	esac
+	cur="$(rice_current)"
+	[ "$cur" = off ] && {
+		printf "${RED}지금은 off 다 — 저장할 체인이 없다.${NC}\n" >&2
+		exit 1
+	}
+	mkdir -p "$chains"
+	{
+		printf '# %s — apps/rice-crt --save 가 적었다.\n' "$label"
+		printf '# 한 줄에 한 칸, 위에서 아래 순서로 겹친다.\n'
+		printf '# 레포에 남기려면 apps/rice-save.\n'
+		# shellcheck disable=SC2086
+		for s in $(stages_of "$cur"); do printf '%s\n' "$s"; done
+	} >"$chains/$label.chain"
+	printf "${GREEN}chain/%s 로 저장했다${NC} ${DIM}(%s)${NC}\n" "$label" "$chains/$label.chain"
+	exit 0
+	;;
+esac
+
+if [ -z "${name:-}" ]; then
+	if [ $# -gt 1 ]; then
+		# 즉석 체인. 이름을 고르는 게 아니라 칸을 늘어놓은 것이라 rice_dispatch 를
+		# 안 거친다 — 그 함수의 문법은 이름 하나다.
+		name="$*"
+	else
+		rice_dispatch "$@"
+		name="$RICE_NAME"
+		# 이름 하나로 골랐으면 목록에 있어야 한다. 여기서 안 막으면 오타가
+		# rice-chain 까지 흘러가서 "그런 셰이더가 없다" 한 줄로 끝나는데, 그건
+		# 뭐가 있는지는 안 알려 준다. 즉석 체인(인자 여럿)은 목록에 없는 것이
+		# 정상이라 이 검사를 안 거친다.
+		rice_list | grep -qxF "$name" || rice_reject "$name"
+	fi
+fi
+
+if [ "$name" = off ]; then
+	apply
+	printf "  hyprland   %s\n" "screen_shader ← (없음)"
+	printf "${GREEN}화면 셰이더: off${NC}\n"
+	exit 0
+fi
+
+# shellcheck disable=SC2046,SC2086
+set -- $(stages_of "$name")
+[ $# -gt 0 ] || rice_reject "$name"
+
+apply "$@"
+
+printf "  hyprland   screen_shader ← %s\n" "$*"
 if [ "$vfr" = false ]; then
-  printf "${GREEN}화면 셰이더: %s${NC} ${YELLOW}(VFR 끔 — 놀 때도 주사율대로 계속 그린다)${NC}\n" "$name"
+	printf "${GREEN}화면 셰이더: %s${NC} ${YELLOW}(VFR 끔 — 놀 때도 주사율대로 계속 그린다)${NC}\n" "$(name_of "$@")"
 else
-  printf "${GREEN}화면 셰이더: %s${NC}\n" "$name"
+	printf "${GREEN}화면 셰이더: %s${NC}\n" "$(name_of "$@")"
 fi
 
 # 셰이더가 깨지면 화면이 새까매지거나 알아볼 수 없게 된다. 그 상태에서도 이 줄은
 # 다른 tty 나 눈 감고 친 명령으로 돌릴 수 있다.
-[ "$name" = "off" ] || printf "${DIM}화면이 이상해지면: apps/rice-crt off${NC}\n"
+printf "${DIM}화면이 이상해지면: apps/rice-crt off${NC}\n"

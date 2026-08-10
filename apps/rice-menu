@@ -5,6 +5,9 @@
 #   apps/rice-menu                    축과 값 전부를 JSON 으로 (stdout)
 #   apps/rice-menu profile amoled     그 축을 그 값으로
 #   apps/rice-menu shader --reload    지금 걸린 셰이더를 파일에서 다시 읽는다
+#   apps/rice-menu shader add crt/crt 지금 체인 뒤에 한 칸 더
+#   apps/rice-menu shader pop         마지막 칸 빼기
+#   apps/rice-menu shader save 이름    지금 체인을 이름 붙여 저장
 #   apps/rice-menu wall pick          월페이퍼 고르기 창
 #
 # ── 왜 스크립트가 하나 더 필요한가 ────────────────────────────────────────
@@ -52,6 +55,35 @@ if [ $# -gt 0 ]; then
 			printf '하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.\n' >&2
 			exit 1
 		}
+		# 체인을 손보는 셋만 여기서 조립한다. rice-crt 는 "이 칸들을 걸어라"만
+		# 알고, "지금 것에 한 칸 더"는 지금 것을 먼저 읽어야 하는 일이라 UI 쪽
+		# 문법이다. 결국 부르는 것은 같은 rice-crt 다.
+		case "$value" in
+		add)
+			[ -n "${3:-}" ] || {
+				printf '더할 칸이 필요하다\n' >&2
+				exit 1
+			}
+			# shellcheck disable=SC2046
+			exec "$here/rice-crt" $("$here/rice-crt" --stages) "$3"
+			;;
+		pop)
+			n="$("$here/rice-crt" --stages | wc -l)"
+			[ "$n" -gt 1 ] || {
+				printf '칸이 하나뿐이다 — 빼면 off 다. 그건 off 로 하는 게 맞다.\n' >&2
+				exit 1
+			}
+			# shellcheck disable=SC2046
+			exec "$here/rice-crt" $("$here/rice-crt" --stages | sed '$d')
+			;;
+		save)
+			[ -n "${3:-}" ] || {
+				printf '이름이 필요하다\n' >&2
+				exit 1
+			}
+			exec "$here/rice-crt" --save "$3"
+			;;
+		esac
 		exec "$here/rice-crt" "$value"
 		;;
 	wall)
@@ -94,17 +126,64 @@ try_axis() { # try_axis <id> <label> <icon> <스위처> <actions-json>
 	printf '%s\n' "$list" | axis "$1" "$2" "$3" "$cur" "$5"
 }
 
+# ── 셰이더 축은 다른 축보다 아는 것이 많아야 한다 ─────────────────────────
+# 다른 축은 값 하나를 고르면 끝이지만 여기는 **여러 칸을 순서대로 쌓는다.** 그래서
+# 목록에 없는 것 둘을 더 준다:
+#
+#   meta[값].taps    픽셀당 tex 읽기 횟수. 체인 비용은 곱이라(apps/rice-chain),
+#                    UI 가 "지금 것에 이걸 더해도 되나"를 스스로 셀 수 있어야
+#                    한다. 이게 없으면 못 걸 것을 목록에 늘어놓고 누른 뒤에야
+#                    거절하게 된다.
+#   meta[값].motion  흐르는가. 이 값 하나가 debug:vfr 을 가르고 배터리를 문다.
+#
+# 값마다 프로세스를 하나씩 띄우므로 --info 로 둘을 한 번에 묻는다. 목록이 열 몇
+# 개라 이 정도가 상한이고, 더 늘면 rice-chain 에 일괄 모드를 내야 한다.
+shader_axis() {
+	sw="$here/rice-crt"
+	[ -x "$sw" ] || return 0
+	list="$("$sw" --list 2>/dev/null)" || return 0
+	[ -n "$list" ] || return 0
+	cur="$("$sw" --current 2>/dev/null || echo '')"
+	stages="$("$sw" --stages 2>/dev/null || echo '')"
+
+	meta="$(
+		printf '%s\n' "$list" | while read -r v; do
+			# off 은 값이 아니고, 체인은 칸이 아니라 칸 목록이라 탭 수가 이 자리의
+			# 뜻과 다르다. 둘 다 "더할 수 있는 한 장"이 아니므로 건너뛴다.
+			case "$v" in
+			off | chain/*) continue ;;
+			esac
+			# 쪼개지는 것이 목적이다 — `--info` 는 `23 yes` 한 줄을 낸다.
+			# shellcheck disable=SC2046
+			set -- $("$here/rice-chain" --info "$v" 2>/dev/null || echo '0 no')
+			jq -Rn --arg v "$v" --argjson t "${1:-0}" --arg m "${2:-no}" \
+				'{ ($v): { taps: $t, motion: ($m == "yes") } }'
+		done | jq -s 'add // {}'
+	)"
+
+	printf '%s\n' "$list" | jq -Rn \
+		--arg cur "$cur" \
+		--arg stages "$stages" \
+		--argjson meta "${meta:-\{\}}" \
+		--argjson maxTaps "${RICE_CHAIN_MAX_TAPS:-64}" \
+		'{ id: "shader", label: "화면 셰이더", icon: "blur_on",
+		   current: $cur,
+		   values: [inputs],
+		   chain: ($stages | split("\n") | map(select(length > 0))),
+		   meta: $meta,
+		   maxTaps: $maxTaps,
+		   actions: [
+		     { value: "--reload", label: "다시 읽기",
+		       comment: "지금 걸린 셰이더를 파일에서 다시 읽는다 (값 튜닝용)" },
+		     { value: "pop", label: "마지막 칸 빼기",
+		       comment: "체인의 맨 뒤 한 장을 뺀다" }
+		   ] }'
+}
+
 {
 	try_axis profile "프로필" palette rice-switch
 
-	if has_hypr; then
-		# --reload 는 값이 아니라 동작이라 values 가 아니라 actions 다. 셰이더 값을
-		# 고쳐 가며 맞추는 자리에서 제일 자주 누르게 되는 것이므로 목록 맨 앞에 둔다.
-		try_axis shader "화면 셰이더" blur_on rice-crt '[
-			{ "value": "--reload", "label": "다시 읽기",
-			  "comment": "지금 걸린 셰이더를 파일에서 다시 읽는다 (값 튜닝용)" }
-		]'
-	fi
+	has_hypr && shader_axis
 
 	try_axis term "터미널" terminal rice-term
 

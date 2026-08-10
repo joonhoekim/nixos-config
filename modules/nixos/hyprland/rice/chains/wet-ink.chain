@@ -1,0 +1,11 @@
+# wet-ink — 물 밑에 깔린 화면을 디더로 굳힌다. 10탭.
+#
+# still.frag 의 굴절이 화면을 밀어 놓으면 dither 가 그걸 제한된 색으로 떨군다.
+# 물의 부드러운 기울기가 디더 무늬를 타고 흐르면서, 어느 쪽도 혼자서는 안 내는
+# 결이 나온다.
+#
+# 물은 흐르므로 이 체인은 VFR 을 끈다 — 정지 화면에서도 계속 그린다. still.frag
+# 의 SPEED 를 0 으로 내리면 그 자리에서 정지 셰이더가 되고 값도 안 치른다
+# (`!motion`, apps/rice-chain --motion).
+water/still
+print/dither

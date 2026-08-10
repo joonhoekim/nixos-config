@@ -25,13 +25,27 @@
 # --remember-session is what actually decides where a login lands.
 #
 # ── The shader ─────────────────────────────────────────────────────────────
-# ./rice/shaders holds two ports of the terminal's CRT (see
-# modules/shared/ghostty/shaders/crt.glsl), and Mod+Shift+C cycles off → static
-# → animated. Two files rather than one because Hyprland cannot damage-track a
-# shader that reads `time`: the animated one only works with
-# debug:damage_tracking = 0, which redraws the whole screen every frame. The
-# keybind moves both settings together; the static one leaves damage tracking
-# alone and costs nothing on an idle screen.
+# ./rice/shaders 에 네 갈래 열 장이 있고(crt / water / cyberpunk / print),
+# ./rice/chains 에 그중 몇을 겹쳐 둔 체인이 있다. Mod+Shift+C 가 목록을 순환하고,
+# 런처(Mod+space 의 `:`)에서 갈래별로 골라도 된다. 값 조절은 DMS 설정 패널의
+# 슬라이더이고, 그 뒤판이 apps/rice-knobs 다.
+#
+# 셰이더는 ~/git/global-shader-for-macos 에서 왔다. 그쪽은 맥에 없는
+# decoration:screen_shader 를 캡처 + 오버레이로 흉내 내는 프로그램이고, 규약을
+# 하이프랜드에 맞춰 뒀기 때문에 파일이 양쪽에서 그대로 돈다. 여기 있는 것이
+# 사본이라는 뜻이라, 한쪽에서 값을 고쳤으면 다른 쪽도 봐야 한다.
+#
+# ── 겹치기는 파일 하나로 접어서 넣는다 ────────────────────────────────────
+# decoration:screen_shader 는 한 장만 받는다. 여러 칸은 apps/rice-chain 이
+# 전처리기로 한 파일에 접어 캐시에 두고, 스위처가 그 경로를 건다. 셰이더 소스는
+# 한 글자도 안 고쳐진다 — 왜 그 방법뿐인지, 왜 비용이 합이 아니라 곱인지는 그
+# 파일 머리말에 있다.
+#
+# ── 두 축은 셰이더가 정한다 ───────────────────────────────────────────────
+# 셰이더가 걸리면 debug:damage_tracking 은 무조건 0 이다(자기 픽셀 밖을 읽는
+# 셰이더는 부분 재합성과 같이 못 산다). debug:vfr 은 흐르는 셰이더에서만 끈다.
+# 배터리 값은 vfr 쪽에 붙어 있고, 판정은 `!motion` 표시가 붙은 손잡이가 0 인지로
+# 갈린다 — 자세한 건 apps/rice-crt 머리말.
 #
 # ── Installation is declarative, ricing is not ─────────────────────────────
 # Same split as ../niri: this module installs and wires the session, and the
@@ -78,6 +92,13 @@ in
       # and knows how to ask hyprctl for the active window's geometry, which is
       # the one mode a bare `grim -g "$(slurp)"` cannot do.
       hyprshot
+
+      # 셰이더 검증기. apps/rice-chain 이 있으면 쓰고 없으면 넘어가지만, 이
+      # 세션에서는 있어야 한다 — 체인은 **생성된 GLSL** 을 거는 것이고,
+      # 하이프랜드는 컴파일 실패를 알려 주지 않기 때문이다. 셰이더를 걸어 두고
+      # 다음 프레임에 컴파일하며, 실패해도 hyprctl 은 ok 를 돌려주고 로그에도
+      # 안 남는다(0.56.1 실측). 그 상태에서 남는 단서는 검은 화면 하나뿐이다.
+      glslang
     ];
 
     # Start DMS in this session too.
@@ -138,9 +159,16 @@ in
         # (require 자체는 pcall 로 감싸 뒀으니 없어도 세션은 뜬다.)
         seed ${./rice/dms} "$HOME/.config/hypr/dms"
 
-        # 화면 셰이더. hyprland.lua 의 Mod+Shift+C 가 절대 경로로 집어 든다 —
-        # decoration:screen_shader 는 경로만 받고 ~ 를 풀지 않는다.
+        # 화면 셰이더. 갈래 폴더 한 단(crt / water / cyberpunk / print)이고, 그
+        # 폴더 이름이 곧 스위처와 런처에서 부르는 이름의 앞부분이다 — `crt/crt`.
+        # decoration:screen_shader 는 경로만 받고 ~ 를 풀지 않으므로 전부 절대
+        # 경로로 다뤄진다(apps/rice-crt).
         seed ${./rice/shaders} "$HOME/.config/hypr/shaders"
+
+        # 이름 붙인 체인. 한 줄에 한 칸이고, 위에서 아래 순서로 겹친다.
+        # `apps/rice-crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은
+        # apps/rice-save 다 — 다른 라이싱 파일과 같은 방향이다.
+        seed ${./rice/chains} "$HOME/.config/hypr/chains"
 
         # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty.nix
         # 가 이미 같은 파일을 $HOME 에 깔아 두고, 그것들은 컴포지터를 안 가린다.

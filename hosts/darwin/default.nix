@@ -226,7 +226,7 @@
 
       trackpad = {
         Clicking = true;
-        TrackpadThreeFingerDrag = true;
+        TrackpadThreeFingerDrag = false;
         TrackpadRightClick = true;
       };
 

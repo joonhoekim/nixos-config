@@ -7,8 +7,8 @@
 ```sh
 apps/rice-crt                        지금 걸린 것과 목록
 apps/rice-crt crt/crt                한 장
-apps/rice-crt crt/crt print/riso     즉석 체인 — 순서대로 겹친다
-apps/rice-crt chain/newsprint        저장해 둔 체인
+apps/rice-crt water/still print/paper  즉석 체인 — 순서대로 겹친다
+apps/rice-crt chain/bad-signal        저장해 둔 체인
 apps/rice-crt --save 이름             지금 체인에 이름 붙이기
 apps/rice-crt --next                 목록 순환 (Mod+Shift+C 와 같다)
 apps/rice-crt off                    탈출구
@@ -22,11 +22,17 @@ apps/rice-crt off                    탈출구
 shaders/
 ├── crt/          crt.frag
 ├── water/        still.frag  river.frag  ocean.frag
-├── cyberpunk/    neon.frag  rain.frag  glitch.frag
-└── print/        riso.frag  dither.frag  paper.frag
+├── cyberpunk/    neon.frag  glitch.frag
+└── print/        paper.frag
 
-chains/           newsprint  wet-ink  bad-signal
+chains/           bad-signal
 ```
+
+한때 `cyberpunk/rain.frag`(빗방울) · `print/riso.frag`(리소 망점) ·
+`print/dither.frag`(게임보이 4색)이 더 있었다. 실기에서 보고 지웠다 — 셋 다 본문을
+못 읽게 만드는데 그 대가로 얻는 룩이 값어치가 없었다. 지운 판단의 근거는 아래
+「값이 곱이라는 것」이 아니라 순전히 눈이다. 맥 쪽(`~/git/global-shader-for-macos`)
+에는 아직 남아 있다.
 
 폴더가 곧 갈래 이름이고, 그게 그대로 부르는 이름의 앞부분이 된다 — `crt/crt`.
 런처의 접기도 이 모양 그대로다. 파일이 서넛일 때는 한 단에 늘어놓는 게 맞았지만
@@ -77,19 +83,25 @@ chains/           newsprint  wet-ink  bad-signal
 
 ```
 crt/crt           23      cyberpunk/neon    21      print/paper        5
-water/still       10      cyberpunk/rain     5      print/riso         1
-water/river       10      cyberpunk/glitch   3      print/dither       1
-water/ocean       10                                term/glow          1
+water/still       10      cyberpunk/glitch   3      term/glow          1
+water/river       10
+water/ocean       10
 ```
 
 ```
-crt/crt → print/riso      =  23    쓸 수 있다
-crt/crt → cyberpunk/neon  ≈ 483    못 쓴다
+water/still → print/paper    =  50    쓸 수 있다
+cyberpunk/neon → glitch      =  63    아슬아슬하게 들어간다
+crt/crt → cyberpunk/neon     ≈ 483    못 쓴다
 ```
 
-곱이라 순서를 바꿔도 안 준다. 겹칠 수 있는 것은 사실상 **탭 많은 칸 하나 + 나머지는
-한 탭짜리**다. 한도(64)를 넘으면 `apps/rice-chain` 이 거절하고, 런처의 "칸 더하기"
-목록에는 애초에 안 뜬다.
+곱이라 순서를 바꿔도 안 준다. 한도(64)를 넘으면 `apps/rice-chain` 이 거절하고,
+런처의 "칸 더하기" 목록에는 애초에 안 뜬다.
+
+한 탭짜리가 `term/glow` 하나뿐인 것이 지금의 제약이다. 예전에는 `print/riso` 와
+`print/dither` 가 그 자리에 있어서 `crt/crt` 뒤에도 무엇이든 붙일 수 있었는데,
+둘을 지우면서 제일 무거운 `crt/crt`(23) 은 `term/glow` 하고만 겹칠 수 있게 됐다.
+룩을 잃은 대가가 아니라 **곱셈의 대가**라, 새 셰이더를 들일 때 탭 수를 먼저 보는
+편이 낫다.
 
 여기 있는 것은 탭 수뿐이고 **프레임 시간은 안 쟀다.** 탭 수는 셰이더가 화면을 몇
 번 읽는지일 뿐이라 실제 비용의 전부가 아니다 — 다만 이 셰이더들에서는 그게 가장
@@ -105,11 +117,8 @@ crt/crt            켬    0 으로 두면 끈다: GRAIN HUM* RIPPLE_*
 water/still        켬    0 으로 두면 끈다: SPEED CLICK
 water/river        켬    0 으로 두면 끈다: FLOW
 water/ocean        켬    0 으로 두면 끈다: SPEED
-cyberpunk/rain     켬    0 으로 두면 끈다: FALL
 cyberpunk/glitch   켬    0 으로 두면 끈다: DENSITY
 cyberpunk/neon     끔
-print/riso         끔
-print/dither       끔
 print/paper        끔
 term/glow          끔
 ```

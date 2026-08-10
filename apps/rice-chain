@@ -2,7 +2,7 @@
 #
 # 화면 셰이더 여러 장을 하이프랜드가 받을 수 있는 한 장으로 접는다.
 #
-#   apps/rice-chain crt/crt print/riso     합성해서 결과 파일 경로를 낸다
+#   apps/rice-chain water/still print/paper  합성해서 결과 파일 경로를 낸다
 #   apps/rice-chain --check crt/crt        합성과 검증만 (경로는 안 낸다)
 #   apps/rice-chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
 #   apps/rice-chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
@@ -57,11 +57,11 @@
 # 맥은 칸마다 화면 한 장을 만들어 넘기므로 비용이 **합**이다. 여기는 인라인이라
 # **곱**이다 — 뒷칸이 tex 를 N 번 읽으면 앞칸이 픽셀당 N 번 돈다.
 #
-#   crt(≈30탭) → riso(1탭)    =  30    쓸 수 있다
-#   crt(≈30탭) → neon(17탭)   ≈ 510    못 쓴다
+#   still(10탭) → paper(5탭)  =   50    쓸 수 있다
+#   crt(23탭)   → neon(21탭)  =  483    못 쓴다
 #
 # 곱이라 순서를 바꿔도 안 줄어든다. 그래서 겹칠 수 있는 것은 사실상 **탭 많은
-# 칸 하나 + 나머지는 한 탭짜리**다. 아래 taps() 가 픽셀당 tex 읽기 횟수를 세고,
+# 칸 하나 + 나머지는 가벼운 칸**이다. 아래 taps() 가 픽셀당 tex 읽기 횟수를 세고,
 # 곱이 RICE_CHAIN_MAX_TAPS 를 넘으면 거절한다. 느려진 화면을 보고 원인을 찾게
 # 두는 것보다 못 건다고 말하는 편이 낫다.
 #
@@ -82,10 +82,14 @@ cache="${XDG_CACHE_HOME:-$HOME/.cache}/rice/shaders"
 shaders="${RICE_SHADERS:-$cfg/hypr/shaders}"
 termshaders="${RICE_TERM_SHADERS:-$cfg/ghostty/shaders}"
 
-# 임계값. 이 레포에서 제일 무거운 한 장이 crt.frag(≈30탭)이고, 그 뒤에 한 탭짜리
-# 마감(riso·dither·paper 의 src 읽기)을 붙이는 것이 실제로 쓰는 모양이다. 64 는
-# 거기에 한 겹 더 얹을 여유를 준 값이고, neon(17탭) 같은 것을 crt 뒤에 붙이는
-# 조합은 여기서 걸린다. 화면을 보고 판단하고 싶으면 환경변수로 올릴 수 있다.
+# 임계값. 이 레포에서 제일 무거운 한 장이 crt.frag(23탭)이고, 그 뒤에 한 탭짜리
+# 마감(term/glow)을 붙이면 23 이다. 64 는 거기에 한 겹 더 얹을 여유를 준 값이고,
+# neon(21탭) 같은 것을 crt 뒤에 붙이는 조합은 여기서 걸린다. 화면을 보고
+# 판단하고 싶으면 환경변수로 올릴 수 있다.
+#
+# 한 탭짜리 마감이 term/glow 하나뿐인 것은 print/riso 와 print/dither 를 지운
+# 뒤의 상태다(../modules/nixos/hyprland/rice/README.md). 그전에는 이 한도가
+# 훨씬 덜 조였다.
 max_taps="${RICE_CHAIN_MAX_TAPS:-64}"
 
 RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
@@ -479,7 +483,7 @@ case "${1:-}" in
 -*) die "알 수 없는 옵션: $1" ;;
 esac
 
-[ $# -gt 0 ] || die "칸을 하나 이상 줘야 한다  (예: apps/rice-chain crt/crt print/riso)"
+[ $# -gt 0 ] || die "칸을 하나 이상 줘야 한다  (예: apps/rice-chain water/still print/paper)"
 
 stage_names="$*"
 files=""

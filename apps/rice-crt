@@ -4,8 +4,8 @@
 #
 #   apps/rice-crt                        현재 것과 목록만 출력
 #   apps/rice-crt crt/crt                한 장 걸기
-#   apps/rice-crt crt/crt print/riso     즉석 체인 — 순서대로 겹쳐 건다
-#   apps/rice-crt chain/newsprint        저장해 둔 체인
+#   apps/rice-crt water/still print/paper  즉석 체인 — 순서대로 겹쳐 건다
+#   apps/rice-crt chain/bad-signal        저장해 둔 체인
 #   apps/rice-crt --next                 목록 순서대로 다음 것 (Mod+Shift+C 와 같은 순환)
 #   apps/rice-crt --reload               지금 걸린 것을 파일에서 다시 읽는다 (값 튜닝용)
 #   apps/rice-crt --save <이름>           지금 걸린 체인을 이름 붙여 저장
@@ -233,7 +233,7 @@ case "${1:-}" in
 	exit 0
 	;;
 --save)
-	label="${2:?이름이 필요하다  (예: apps/rice-crt --save newsprint)}"
+	label="${2:?이름이 필요하다  (예: apps/rice-crt --save my-look)}"
 	case "$label" in
 	*/* | .*) printf "${RED}이름에 / 나 앞점은 못 쓴다: %s${NC}\n" "$label" >&2; exit 1 ;;
 	esac

@@ -419,7 +419,7 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 local rice_crt = os.getenv("HOME") .. "/nixos-config/apps/rice-crt"
 
 -- 로그인 때 걸 것. 갈래/이름 하나여도 되고 체인 이름이어도 된다:
---   "crt/crt"  "water/still"  "chain/newsprint"  "off"
+--   "crt/crt"  "water/still"  "chain/bad-signal"  "off"
 -- 여기를 고치고 저장하면 그 자리에서 다시 걸린다.
 local crt_start = "crt/crt"
 
@@ -437,8 +437,8 @@ hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 -- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다. `hyprctl keyword` 는 못 쓴다 —
 -- lua 설정에서는 파서가 통째로 거절한다("keyword can't work with non-legacy
 -- parsers. Use eval."). 남는 길은 eval 뿐이고, 그걸 감싼 게 rice-crt 다:
---   apps/rice-crt off | crt/crt | water/still | chain/newsprint | --next | --reload
---   apps/rice-crt crt/crt print/riso          즉석 체인
+--   apps/rice-crt off | crt/crt | water/still | chain/bad-signal | --next | --reload
+--   apps/rice-crt water/still print/paper     즉석 체인
 --   hyprctl eval 'hl.config({decoration={screen_shader=""}})'
 
 

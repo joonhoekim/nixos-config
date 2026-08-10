@@ -218,6 +218,13 @@ set | reset)
 	printf '%s\n' "$pairs" | while IFS='	' read -r k v; do
 		[ -n "$k" ] || continue
 		awk -v k="$k" -v v="$v" -v raw="$raw" '
+			# 값이 이미 그것이면 줄을 그대로 둔다. 아래에서 열을 다시 맞추기
+			# 때문에, 안 바뀌는 줄까지 다시 쓰면 값은 같은데 공백만 다른 diff 가
+			# 남는다. reset 은 표시 없는 #define 까지 훑으므로(parse … all) 특히
+			# 잘 걸린다 — `#define TAU 6.2831853` 이 열 맞춤을 당하고, 그 뒤로
+			# apps/rice-save 에 영영 헛 diff 가 뜬다.
+			$1 == "#define" && $2 == k && $3 == v && raw != "" { print; next }
+
 			$1 == "#define" && $2 == k {
 				# 되돌리기는 레포에 적힌 글자를 그대로 쓴다. 0.10 을 0.1 로
 				# 정규화해 버리면 값은 같은데 diff 만 남는다.

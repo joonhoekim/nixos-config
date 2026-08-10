@@ -163,7 +163,31 @@ in
         # 폴더 이름이 곧 스위처와 런처에서 부르는 이름의 앞부분이다 — `crt/crt`.
         # decoration:screen_shader 는 경로만 받고 ~ 를 풀지 않으므로 전부 절대
         # 경로로 다뤄진다(apps/rice-crt).
-        seed ${./rice/shaders} "$HOME/.config/hypr/shaders"
+        #
+        # ── 왜 폴더 하나씩 심는가 ────────────────────────────────────────
+        # `seed ${./rice/shaders} "$HOME/.config/hypr/shaders"` 로 통째로 심으면
+        # **이미 shaders/ 를 가진 머신에는 새 갈래가 영영 안 들어간다.** seed 의
+        # 존재 검사가 부모 폴더에 걸리기 때문이다(../../shared/rice-seed-helpers.nix
+        # 머리말의 그 대가다). 셰이더가 평면이던 시절에 리빌드를 한 번이라도 한
+        # 머신이 정확히 그 상태이고, 증상은 "런처에 셰이더가 crt 하나뿐"이다.
+        #
+        # 갈래 단위로 심으면 부모가 있어도 자식이 새로 들어가고, 손댄 셰이더는
+        # 여전히 안 덮인다. 목록은 폴더에서 읽으므로 갈래를 추가해도 여기는
+        # 안 고친다.
+        ${lib.concatMapStringsSep "\n        " (n: ''
+          seed ${./rice/shaders}/${n} "$HOME/.config/hypr/shaders/${n}"'')
+          (builtins.attrNames (builtins.readDir ./rice/shaders))}
+
+        # 평면 시절의 두 장은 이제 crt/crt.frag 하나가 대신한다(그 파일 머리말 —
+        # 둘은 FOCUS 값이 실제로 어긋나 있었다). 남아 있어도 목록에는 안 뜬다.
+        # 스위처가 `<갈래>/<이름>` 으로만 훑기 때문이다. 지우지는 않는다 — 값을
+        # 손봐 뒀을 수 있고, 이 레포에서 $HOME 쪽 라이싱 파일을 지우는 것은
+        # rebuild 가 할 일이 아니다. 대신 있다는 사실만 알린다.
+        for old in crt.frag crt-motion.frag; do
+          if [ -f "$HOME/.config/hypr/shaders/$old" ]; then
+            echo "note: ~/.config/hypr/shaders/$old 은 이제 안 쓰인다 (crt/crt.frag 이 대신한다). 값을 손봤다면 옮겨 담고 지울 것"
+          fi
+        done
 
         # 이름 붙인 체인. 한 줄에 한 칸이고, 위에서 아래 순서로 겹친다.
         # `apps/rice-crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은

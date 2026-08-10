@@ -178,14 +178,20 @@ in
           seed ${./rice/shaders}/${n} "$HOME/.config/hypr/shaders/${n}"'')
           (builtins.attrNames (builtins.readDir ./rice/shaders))}
 
-        # 평면 시절의 두 장은 이제 crt/crt.frag 하나가 대신한다(그 파일 머리말 —
-        # 둘은 FOCUS 값이 실제로 어긋나 있었다). 남아 있어도 목록에는 안 뜬다.
-        # 스위처가 `<갈래>/<이름>` 으로만 훑기 때문이다. 지우지는 않는다 — 값을
-        # 손봐 뒀을 수 있고, 이 레포에서 $HOME 쪽 라이싱 파일을 지우는 것은
-        # rebuild 가 할 일이 아니다. 대신 있다는 사실만 알린다.
-        for old in crt.frag crt-motion.frag; do
+        # 퇴역한 셰이더들. seed 는 지우지 않으므로 $HOME 에는 그대로 남고, 남으면
+        # 스위처 목록에 계속 뜬다(`<갈래>/<이름>` 으로 훑으므로 평면 두 장만은
+        # 예외로 안 뜬다). 여기서 지우지 않는 것은 값을 손봐 뒀을 수 있어서다 —
+        # $HOME 쪽 라이싱 파일을 지우는 것은 rebuild 가 할 일이 아니다. 대신
+        # 있다는 사실만 알린다.
+        #
+        #   crt.frag / crt-motion.frag   평면 시절의 두 장. crt/crt.frag 이 대신한다
+        #                                (그 파일 머리말 — 둘은 FOCUS 가 어긋나 있었다)
+        #   rain / riso / dither         실기에서 보고 지웠다. 본문이 안 읽히는데
+        #                                룩도 값어치가 없었다
+        for old in crt.frag crt-motion.frag \
+                   cyberpunk/rain.frag print/riso.frag print/dither.frag; do
           if [ -f "$HOME/.config/hypr/shaders/$old" ]; then
-            echo "note: ~/.config/hypr/shaders/$old 은 이제 안 쓰인다 (crt/crt.frag 이 대신한다). 값을 손봤다면 옮겨 담고 지울 것"
+            echo "note: ~/.config/hypr/shaders/$old 은 퇴역했다. 값을 손봤다면 옮겨 담고 지울 것"
           fi
         done
 

@@ -5,6 +5,6 @@
 # 없어 보이는데, 실제로는 글리치가 "인쇄 사고"처럼 읽혀서 한 덩어리가 된다.
 #
 # paper 가 5탭이라 여유가 많지는 않다 — 여기에 한 장을 더 얹으려면 한 탭짜리
-# (print/riso · print/dither · term/glow) 여야 한다.
+# 여야 하고, 지금 남은 것은 term/glow 하나다.
 cyberpunk/glitch
 print/paper

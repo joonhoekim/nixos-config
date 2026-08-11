@@ -252,9 +252,12 @@
   # amortises seek latency on a disk; on zram there is no seek, so the 7 extra
   # pages are 7 extra decompressions that usually go unused.
   #
-  # This does not endanger the hibernate image: zram0 sits at priority 5 and
-  # the nvme swap partition at -1, so zram always fills first and the disk is
-  # only touched once zram is exhausted (see ./mn56 for the resume setup).
+  # Both machines also declare a disk swap partition, and the ordering already
+  # keeps zram in front: zram0 sits at priority 5 and the partition at -1, so
+  # zram always fills first and the disk is only touched once zram is
+  # exhausted. That layering is the whole point — the disk is the backstop, not
+  # the first stop. (mn56's partition used to hold a hibernate image too; that
+  # is gone, and only the backstop role remains. See ./mn56.)
   boot.kernel.sysctl = {
     "vm.swappiness" = 180;
     "vm.page-cluster" = 0;

@@ -90,10 +90,12 @@ hl.config({
         layout = "scrolling",
     },
 
+    -- 투명도·흐리게·어둡게·그림자는 여기 없다. 손으로 정하는 값이 아니라 화면을
+    -- 보면서 맞추는 값이라 apps/rice-decor 가 ~/.config/hypr/decor.lua 에 쓰고,
+    -- 그 조각을 이 파일 맨 끝에서 부른다. 둥글기만 여기 남는데, 그것도 DMS 가
+    -- 덮는다(맨 아래 조각 주석).
     decoration = {
         rounding = 12,
-        active_opacity = 1.0,
-        inactive_opacity = 1.0,
     },
 
     misc = {
@@ -461,3 +463,19 @@ hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 for _, fragment in ipairs({ "colors", "cursor", "outputs", "windowrules", "layout", "binds-user" }) do
     pcall(require, "dms." .. fragment)
 end
+
+
+-------------------
+---- 장식 조각 ----
+-------------------
+
+-- 투명도·흐리게·어둡게·그림자. apps/rice-decor 가 쓰는 생성물이고, 라이싱
+-- 스튜디오의 "장식" 탭이 그 스크립트를 부른다.
+--
+-- DMS 조각 **뒤에** 오는 것이 요점이다. 지금은 겹치는 키가 없지만(그쪽은
+-- gaps·rounding·border_size, 이쪽은 opacity·blur·shadow) 언젠가 겹치면 나중에
+-- 부른 이쪽이 이긴다. 그건 잘못된 방향이라, rice-decor 의 표에서 DMS 가 가진
+-- 키를 아예 뺐다 — 순서가 아니라 표가 안전장치다.
+--
+-- 파일이 없어도 세션은 뜬다. 아무 값도 안 바꾼 머신에는 이 파일이 아예 없다.
+pcall(require, "decor")

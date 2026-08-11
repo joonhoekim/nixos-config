@@ -162,6 +162,17 @@ in
 
         seed ${./rice/hyprland.lua} "$HOME/.config/hypr/hyprland.lua"
 
+        # 장식 조각의 배선 한 줄. decor.lua 자체는 심지 않는다 — 생성물이고,
+        # apps/rice-decor 가 값을 처음 바꿀 때 만든다. 대신 그것을 부르는 줄은
+        # 이미 hyprland.lua 를 가진 머신에도 들어가야 한다. seed 는 존재 검사에서
+        # 멈추므로 영영 안 들어가고, 그때 증상은 "스튜디오에서 값을 바꾸면 지금은
+        # 먹는데 다시 로그인하면 원래대로"다 — 스위처가 성실히 동작하고 화면만
+        # 안 따라오는, ../../shared/rice-seed-helpers.nix 머리말이 적어 둔 바로
+        # 그 제일 나쁜 상태다.
+        ensure "$HOME/.config/hypr/hyprland.lua" \
+          'pcall(require, "decor")' \
+          '-- 장식 값(투명도·흐리게·어둡게·그림자). apps/rice-decor 가 쓴다.'
+
         # DMS 가 자기 설정을 쓰는 자리. 빈 조각을 미리 깔아 두는 건 DMS 가 처음
         # 뜨기 전에도 hyprland.lua 의 require 가 뭔가를 찾게 하려는 것이다.
         # (require 자체는 pcall 로 감싸 뒀으니 없어도 세션은 뜬다.)

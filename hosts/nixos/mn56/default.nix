@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 # Firebat MN56 — Ryzen 7 7840HS (Phoenix, RDNA3 780M) mini PC.
 #
@@ -35,66 +35,69 @@
   # comes up on `balanced`; switch profiles if this ever needs to stay pinned
   # to performance.
 
-  # ── Hibernate (suspend-to-disk) ──────────────────────────────────────
-  # hardware-configuration.nix declares a 48G swap partition, ≥ the 48G of
-  # installed RAM, so a full image always fits.
+  # ── This box never sleeps ────────────────────────────────────────────
+  # Both sleep states this chassis can reach are broken, so every path into
+  # them is masked and the machine only ever runs or powers off.
   #
-  # This one option is the whole feature: it puts `resume=<dev>` on the kernel
-  # command line (see nixos/modules/system/boot/systemd/initrd.nix), which
-  # systemd-hibernate-resume in the initrd uses to restore the image, and which
-  # the kernel *also* uses as the device to write the image to
-  # (swsusp_resume_device). That second half matters here because common.nix
-  # enables zramSwap: zram0 is an active swap area, and without an explicit
-  # resume device the kernel would pick the first swap area it finds — possibly
-  # RAM-backed zram, which loses the image on power-off. (systemd's own
-  # hibernation path already skips zram, but the kernel's does not.)
+  # s2idle is the only suspend state the firmware offers (dmesg: "ACPI: PM:
+  # (supports S0 S4 S5)" — no S3), and on 2026-08-03 a suspend entered it and
+  # never came out: the journal stops dead at "PM: suspend entry (s2idle)"
+  # with no matching exit, and the AX200 came back wedged — "CSR_RESET =
+  # 0x10" then "probe with driver iwlwifi failed with error -110" across six
+  # warm reboots. Only a full power-off cleared the card, because a warm reset
+  # leaves the M.2 rails up.
   #
-  # Same UUID as the swapDevices entry; keep the two in sync if the partition
-  # is ever recreated.
-  boot.resumeDevice = "/dev/disk/by-uuid/423f3ce2-ba0e-4ee3-a8a5-7868532f2201";
+  # Hibernate (S4) was the workaround for that: a 48G swap partition, a
+  # boot.resumeDevice pointing at it, and systemd-suspend's ExecStart swapped
+  # to the hibernate verb so every caller went straight to disk instead of
+  # transiting s2idle. It survived two cycles and then corrupted the kernel on
+  # the way back. On 2026-08-11 09:04:59 the resume itself finished cleanly —
+  # "Restarting tasks: Done", "SMU is resumed successfully!", both outputs
+  # re-detected — and two seconds later the first GPU client to touch a buffer
+  # that had been evicted for the snapshot hit
+  #
+  #   list_del corruption. prev->next should be ..., but was 0000000000000000
+  #   kernel BUG at lib/list_debug.c:62!
+  #     ttm_resource_fini / ttm_sys_man_free / ttm_resource_free
+  #     amdgpu_bo_move / ttm_bo_validate / amdgpu_cs_ioctl
+  #
+  # — a TTM resource LRU node that did not survive S4. The task died holding
+  # the buffer's lock ("exited with preempt_count 1"), so everything that
+  # wanted it afterwards spun forever in native_queued_spin_lock_slowpath:
+  # amdgpu's atomic commit worker (hence monitors stuck on a stale frame) and
+  # Hyprland (hence dead input). Soft lockups piled up for 149s until the
+  # power button. Kernel 7.1.5, GFX 11.0.1 / DCN 3.1.4 — a driver bug with no
+  # config-side fix, and not deterministic either: the 2026-08-04 cycle (2min
+  # under) came back fine, the 2026-08-10 one (13.4h under) did not.
+  #
+  # Masking sleep.target is what makes this stick. suspend.target requires
+  # systemd-suspend.service, which in turn is Requires=sleep.target, and the
+  # hibernate/hybrid-sleep/suspend-then-hibernate targets are built the same
+  # way — so with all five masked there is no reachable path left. That covers
+  # every caller the session has: dms' power menu "Suspend" runs `systemctl
+  # suspend` (Services/SessionService.qml picks systemctl over loginctl in
+  # powerManagerCommand(), and customPowerActionSuspend is empty), the suspend
+  # key lands on the same target, and the idle timeout calls
+  # suspendWithBehavior() with acSuspendBehavior = Suspend (0). All of them now
+  # fail with "Unit ... is masked." instead of hanging the box. Masking
+  # suspend-then-hibernate.target also closes the one gap the old ExecStart
+  # override left open, so dms' suspend behaviour no longer needs to be left
+  # alone to keep s2idle unreachable.
+  systemd.targets = {
+    sleep.enable = false;
+    suspend.enable = false;
+    hibernate.enable = false;
+    hybrid-sleep.enable = false;
+    suspend-then-hibernate.enable = false;
+  };
 
-  # GNOME has no hibernate entry in its power menu (upstream dropped it), so
-  # this is driven from the shell: `systemctl hibernate`. logind's polkit
-  # default already allows it for the active local session, no sudo needed.
-
-  # ── Any suspend → straight to disk ───────────────────────────────────
-  # This box only supports s2idle (dmesg: "ACPI: PM: (supports S0 S4 S5)" —
-  # no S3), and s2idle on this chassis is not trustworthy. On 2026-08-03 a
-  # suspend entered s2idle and never came out: the journal stops dead at
-  # "PM: suspend entry (s2idle)" with no matching exit, no hibernation image
-  # was ever written (next boot: "PM: Image not found (code -22)", and no
-  # HibernateLocation EFI variable), and the AX200 came back wedged —
-  # "CSR_RESET = 0x10" then "probe with driver iwlwifi failed with error -110"
-  # across six warm reboots. Only a full power-off cleared the card, because a
-  # warm reset leaves the M.2 rails up.
-  #
-  # This machine is only ever asked to hibernate anyway, once by hand at the
-  # end of the day. So skip s2idle entirely rather than transit through it:
-  # the earlier suspend-then-hibernate setup suspended first and armed an RTC
-  # alarm to hibernate 3h later, which meant the fragile leg ran unattended.
-  # Going straight to disk removes that leg, and HibernateDelaySec with it —
-  # it governs nothing once suspend-then-hibernate is out of the picture.
-  #
-  # The override is what keeps the s2idle path unreachable. The session here is
-  # niri + DankMaterialShell, and dms' power menu "Suspend" runs `systemctl
-  # suspend`: Services/SessionService.qml picks systemctl over loginctl in
-  # powerManagerCommand(), and customPowerActionSuspend is empty. That pulls in
-  # suspend.target, which is Requires=systemd-suspend.service. The idle timeout
-  # lands on the same unit — IdleService calls suspendWithBehavior() with
-  # acSuspendBehavior, and that setting is Suspend (0). The upstream suspend and
-  # hibernate units differ solely in the systemd-sleep verb, so swapping the
-  # verb here makes the menu item, the suspend key and `systemctl suspend` all
-  # hibernate instead. NixOS emits this as a drop-in over the upstream unit; the
-  # empty first element resets its ExecStart.
-  #
-  # What this does NOT cover: systemd-suspend-then-hibernate.service is its own
-  # unit and is left untouched. Setting dms' suspend behaviour to
-  # SuspendThenHibernate (2) would run `systemctl suspend-then-hibernate` and
-  # reach s2idle again, so leave acSuspendBehavior alone.
-  systemd.services.systemd-suspend.serviceConfig.ExecStart = [
-    ""
-    "${config.systemd.package}/lib/systemd/systemd-sleep hibernate"
-  ];
+  # The 48G swap partition in hardware-configuration.nix was sized against the
+  # installed RAM because it had to hold a hibernate image. That reason is now
+  # gone, but the partition stays declared and active: with zram in front of it
+  # at priority 5 (common.nix) it costs nothing to keep, and it is the only
+  # backstop left if zram's 23G ever fills. It just no longer has a size
+  # requirement — if the space is ever wanted back, it can be shrunk or dropped
+  # without anything else in this file caring.
 
   # ── Warm reboot hangs before POST ────────────────────────────────────
   # `reboot` leaves this box dark maybe a third of the time: both monitors

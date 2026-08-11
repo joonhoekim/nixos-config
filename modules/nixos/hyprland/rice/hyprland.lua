@@ -365,8 +365,10 @@ hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall 
 
 -- 축 하나에 키 하나씩 두는 건 셰이더 값을 고쳐 가며 맞출 때는 오히려 느리다.
 -- 이건 DMS 런처를 RiceSwitcher 플러그인의 트리거(":")를 미리 친 채로 연다 —
--- 프로필·셰이더·터미널·월페이퍼가 한 목록에 있고, 지금 걸린 것에 ✓ 가 붙는다.
+-- 프로필·터미널·월페이퍼가 한 목록에 있고, 지금 걸린 것에 ✓ 가 붙는다.
 -- 플러그인은 ../../dms/plugins/RiceSwitcher, 값은 apps/rice-menu 에서 온다.
+-- 화면 셰이더는 이 목록에 값이 없다 — 고르는 자리가 별도 창이라(apps/rice-studio)
+-- 여기에는 그 창을 여는 줄과 탈출구(off · 다음 것)만 있다.
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQuery ':'"))
 
 

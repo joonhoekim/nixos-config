@@ -4,10 +4,8 @@
 #
 #   apps/rice-menu                    축과 값 전부를 JSON 으로 (stdout)
 #   apps/rice-menu profile amoled     그 축을 그 값으로
-#   apps/rice-menu shader --reload    지금 걸린 셰이더를 파일에서 다시 읽는다
-#   apps/rice-menu shader add crt/crt 지금 체인 뒤에 한 칸 더
-#   apps/rice-menu shader pop         마지막 칸 빼기
-#   apps/rice-menu shader save 이름    지금 체인을 이름 붙여 저장
+#   apps/rice-menu shader studio      라이싱 스튜디오를 연다
+#   apps/rice-menu shader off         화면 셰이더 탈출구
 #   apps/rice-menu wall pick          월페이퍼 고르기 창
 #
 # ── 왜 스크립트가 하나 더 필요한가 ────────────────────────────────────────
@@ -55,34 +53,11 @@ if [ $# -gt 0 ]; then
 			printf '하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.\n' >&2
 			exit 1
 		}
-		# 체인을 손보는 셋만 여기서 조립한다. rice-crt 는 "이 칸들을 걸어라"만
-		# 알고, "지금 것에 한 칸 더"는 지금 것을 먼저 읽어야 하는 일이라 UI 쪽
-		# 문법이다. 결국 부르는 것은 같은 rice-crt 다.
+		# 고르고 겹치고 값을 맞추는 것은 전부 스튜디오가 한다. 여기 남은 것은
+		# 탈출구 둘(off · --next)과 그 창을 여는 것뿐이다 — 왜 갈랐는지는
+		# apps/rice-studio 머리말.
 		case "$value" in
-		add)
-			[ -n "${3:-}" ] || {
-				printf '더할 칸이 필요하다\n' >&2
-				exit 1
-			}
-			# shellcheck disable=SC2046
-			exec "$here/rice-crt" $("$here/rice-crt" --stages) "$3"
-			;;
-		pop)
-			n="$("$here/rice-crt" --stages | wc -l)"
-			[ "$n" -gt 1 ] || {
-				printf '칸이 하나뿐이다 — 빼면 off 다. 그건 off 로 하는 게 맞다.\n' >&2
-				exit 1
-			}
-			# shellcheck disable=SC2046
-			exec "$here/rice-crt" $("$here/rice-crt" --stages | sed '$d')
-			;;
-		save)
-			[ -n "${3:-}" ] || {
-				printf '이름이 필요하다\n' >&2
-				exit 1
-			}
-			exec "$here/rice-crt" --save "$3"
-			;;
+		studio) exec "$here/rice-studio" ;;
 		esac
 		exec "$here/rice-crt" "$value"
 		;;
@@ -126,58 +101,29 @@ try_axis() { # try_axis <id> <label> <icon> <스위처> <actions-json>
 	printf '%s\n' "$list" | axis "$1" "$2" "$3" "$cur" "$5"
 }
 
-# ── 셰이더 축은 다른 축보다 아는 것이 많아야 한다 ─────────────────────────
-# 다른 축은 값 하나를 고르면 끝이지만 여기는 **여러 칸을 순서대로 쌓는다.** 그래서
-# 목록에 없는 것 둘을 더 준다:
+# ── 셰이더 축에는 값이 없다 ───────────────────────────────────────────────
+# 한동안 이 축이 제일 컸다. 값 열 몇 개에 갈래와 탭 수와 흐름과 한도까지 실어
+# 보냈고, 그 짐은 그대로 런처 QML 이 졌다 — 갈래를 자르고 탭을 곱하는 코드가
+# 거기 생겼다. 축 하나가 "값 하나 고르기"라는 이 파일의 계약에서 벗어난 것이라,
+# 그 축을 계약 안에 우겨넣는 대신 밖으로 냈다(apps/rice-studio).
 #
-#   meta[값].taps    픽셀당 tex 읽기 횟수. 체인 비용은 곱이라(apps/rice-chain),
-#                    UI 가 "지금 것에 이걸 더해도 되나"를 스스로 셀 수 있어야
-#                    한다. 이게 없으면 못 걸 것을 목록에 늘어놓고 누른 뒤에야
-#                    거절하게 된다.
-#   meta[값].motion  흐르는가. 이 값 하나가 debug:vfr 을 가르고 배터리를 문다.
+# 그래서 여기 남은 것은 월페이퍼 축과 같은 모양 — **동작만 있는 축**이다. 값도,
+# meta 도, chain 도 없다. 목록을 한 번 여는 데 프로세스가 예순 개씩 뜨던 것도
+# 같이 없어졌다.
 #
-# 값마다 프로세스를 하나씩 띄우므로 --info 로 둘을 한 번에 묻는다. 목록이 열 몇
-# 개라 이 정도가 상한이고, 더 늘면 rice-chain 에 일괄 모드를 내야 한다.
+# off 과 다음 것을 스튜디오로 안 옮긴 것은 그것이 탈출구이기 때문이다. 셰이더가
+# 화면을 못 알아보게 만들면 스튜디오 창도 같은 유리 뒤에 있다.
 shader_axis() {
-	sw="$here/rice-crt"
-	[ -x "$sw" ] || return 0
-	list="$("$sw" --list 2>/dev/null)" || return 0
-	[ -n "$list" ] || return 0
-	cur="$("$sw" --current 2>/dev/null || echo '')"
-	stages="$("$sw" --stages 2>/dev/null || echo '')"
-
-	meta="$(
-		printf '%s\n' "$list" | while read -r v; do
-			# off 은 값이 아니고, 체인은 칸이 아니라 칸 목록이라 탭 수가 이 자리의
-			# 뜻과 다르다. 둘 다 "더할 수 있는 한 장"이 아니므로 건너뛴다.
-			case "$v" in
-			off | chain/*) continue ;;
-			esac
-			# 쪼개지는 것이 목적이다 — `--info` 는 `23 yes` 한 줄을 낸다.
-			# shellcheck disable=SC2046
-			set -- $("$here/rice-chain" --info "$v" 2>/dev/null || echo '0 no')
-			jq -Rn --arg v "$v" --argjson t "${1:-0}" --arg m "${2:-no}" \
-				'{ ($v): { taps: $t, motion: ($m == "yes") } }'
-		done | jq -s 'add // {}'
-	)"
-
-	printf '%s\n' "$list" | jq -Rn \
-		--arg cur "$cur" \
-		--arg stages "$stages" \
-		--argjson meta "${meta:-\{\}}" \
-		--argjson maxTaps "${RICE_CHAIN_MAX_TAPS:-64}" \
-		'{ id: "shader", label: "화면 셰이더", icon: "blur_on",
-		   current: $cur,
-		   values: [inputs],
-		   chain: ($stages | split("\n") | map(select(length > 0))),
-		   meta: $meta,
-		   maxTaps: $maxTaps,
-		   actions: [
-		     { value: "--reload", label: "다시 읽기",
-		       comment: "지금 걸린 셰이더를 파일에서 다시 읽는다 (값 튜닝용)" },
-		     { value: "pop", label: "마지막 칸 빼기",
-		       comment: "체인의 맨 뒤 한 장을 뺀다" }
-		   ] }'
+	[ -x "$here/rice-crt" ] || return 0
+	cur="$("$here/rice-crt" --current 2>/dev/null || echo '')"
+	printf '' | axis shader "화면 셰이더" blur_on "$cur" '[
+		{ "value": "studio", "label": "스튜디오 열기…", "detach": true,
+		  "comment": "고르기 · 겹치기 · 값 맞추기 (apps/rice-studio)" },
+		{ "value": "--next", "label": "다음 것",
+		  "comment": "목록을 한 바퀴 (Mod+Shift+C 와 같다)" },
+		{ "value": "off", "label": "off",
+		  "comment": "탈출구 — 화면이 이상해졌을 때" }
+	]'
 }
 
 {

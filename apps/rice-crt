@@ -84,11 +84,24 @@ rice_kind="화면 셰이더"
 
 # 니리 세션이나 맥에서 부르면 hyprctl 이 없거나, 있어도 붙을 인스턴스가 없다.
 # 그냥 두면 eval 이 조용히 실패하고 "바꿨는데 아무 일도 안 일어났다"가 된다.
+#
+# 다만 여기서 바로 나가지는 않는다. **읽기는 세션이 없어도 된다** — 목록도 탭
+# 수도 합성도 파일만 보면 되는 일이고, apps/rice-studio 가 하이프랜드 밖에서도
+# 열려서 값을 맞추거나 조합을 검증할 수 있는 것이 갈라 놓은 실익 중 하나다.
+# 세션이 필요한 것은 컴포지터에게 묻고 거는 일뿐이라, 그 자리에서만 거절한다.
+session=1
 if ! command -v hyprctl >/dev/null 2>&1 || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+	session=0
+fi
+
+need_session() {
+	if [ "$session" = 1 ]; then
+		return 0
+	fi
 	printf "${RED}하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.${NC}\n"
 	printf "${DIM}터미널 창 하나에만 거는 브라운관은 양쪽에서 된다: apps/rice-term crt${NC}\n"
 	exit 1
-fi
+}
 
 if [ ! -d "$shaders" ]; then
 	printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$shaders"
@@ -163,6 +176,12 @@ name_of() { # name_of <칸> <칸>...
 # 값이 두 가지 모양으로 나온다: 한 번도 안 건드린 세션은 `[[EMPTY]]`(set: false),
 # 껐다 켠 뒤로는 빈 문자열(set: true). 둘 다 off 다.
 rice_current() {
+	# 세션이 없으면 물어볼 데가 없다. off 로 답하는 것은 거짓말이 아니라 사실이다 —
+	# 이 컴포지터에 걸린 화면 셰이더가 없다.
+	if [ "$session" = 0 ]; then
+		printf 'off\n'
+		return 0
+	fi
 	cur="$(hyprctl getoption decoration:screen_shader 2>/dev/null |
 		sed -n 's/^str:[[:space:]]*//p' | sed 's/[[:space:]]*$//')"
 	case "$cur" in
@@ -192,6 +211,7 @@ set_shader() { # set_shader <절대 경로 또는 빈 문자열>
 }
 
 apply() { # apply <칸>...
+	need_session
 	if [ $# -eq 0 ]; then
 		src=""
 		damage=2 # 하이프랜드 기본값(full)
@@ -230,6 +250,59 @@ case "${1:-}" in
 	cur="$(rice_current)"
 	[ "$cur" = off ] && exit 0
 	for s in $(stages_of "$cur"); do printf '%s\n' "$s"; done
+	exit 0
+	;;
+--json)
+	# apps/rice-studio 가 창을 그릴 때 쓰는 것 전부를 한 번에. 프로세스 하나인 게
+	# 요점이다 — 예전에는 값마다 apps/rice-chain --info 를 불러서 목록 한 번에
+	# 예순 번쯤 포크했고, 창을 닫았다 여는 런처에서는 그걸 2 초 캐시로 가렸지만
+	# 열어 두고 만지는 창에서는 가려지지 않는다.
+	#
+	# 곱 한도는 여기서 안 센다. 무엇을 더할 수 있는지는 apps/rice-chain --addable
+	# 이 답하고, 여기서는 그 답을 옮겨 담기만 한다 — 규칙이 두 벌이 되면 한쪽만
+	# 고친 날 목록이 거짓말을 한다.
+	cur="$(rice_current)"
+	st="$(stages_of "$cur")"
+	list="$(rice_list)"
+	# 낱장만 센다. off 는 값이 아니고, 저장된 체인은 한 장이 아니라 칸 목록이라
+	# 탭 수가 이 자리의 뜻과 다르다.
+	singles="$(printf '%s\n' "$list" | grep -v '^off$' | grep -v '^chain/' || true)"
+	# shellcheck disable=SC2086
+	meta="$("$here/rice-chain" --info-all $singles 2>/dev/null || true)"
+	# shellcheck disable=SC2086
+	add="$(printf '%s\n' "$singles" | "$here/rice-chain" --addable $st 2>/dev/null || true)"
+
+	jq -n \
+		--arg cur "$cur" \
+		--arg list "$list" \
+		--arg stages "$st" \
+		--arg meta "$meta" \
+		--arg add "$add" \
+		--argjson limit "$("$here/rice-chain" --limit)" \
+		--argjson session "$session" '
+		def rows: split("\n") | map(select(length > 0) | split("\t"));
+		( $meta | rows
+		  | map({ key: .[0], value: { taps: (.[1] | tonumber), motion: (.[2] == "yes") } })
+		  | from_entries ) as $m
+		| ( $add | rows
+		    | map({ key: .[0], value: (.[1] | tonumber) })
+		    | from_entries ) as $a
+		| { current: $cur,
+		    session: ($session == 1),
+		    chain: ($stages | split(" ") | map(select(length > 0))),
+		    maxTaps: $limit,
+		    values: ( $list | split("\n") | map(select(length > 0)) | map(
+		        . as $v
+		        | { name: $v,
+		            group: (if ($v | contains("/")) then ($v | split("/")[0]) else "" end),
+		            leaf:  (if ($v | contains("/")) then ($v | split("/")[1:] | join("/")) else $v end),
+		            kind:  (if $v == "off" then "off"
+		                    elif ($v | startswith("chain/")) then "chain"
+		                    else "stage" end),
+		            current: ($v == $cur) }
+		        + ($m[$v] // {})
+		        + (if $a[$v] then { addable: true, thenTaps: $a[$v] } else { addable: false } end)
+		      )) }'
 	exit 0
 	;;
 --save)

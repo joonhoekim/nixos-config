@@ -25,10 +25,18 @@
 # --remember-session is what actually decides where a login lands.
 #
 # ── The shader ─────────────────────────────────────────────────────────────
-# ./rice/shaders 에 네 갈래 열 장이 있고(crt / water / cyberpunk / print),
-# ./rice/chains 에 그중 몇을 겹쳐 둔 체인이 있다. Mod+Shift+C 가 목록을 순환하고,
-# 런처(Mod+space 의 `:`)에서 갈래별로 골라도 된다. 값 조절은 DMS 설정 패널의
-# 슬라이더이고, 그 뒤판이 apps/rice-knobs 다.
+# ./rice/shaders 에 네 갈래 일곱 장이 있고(crt / water / cyberpunk / print),
+# ./rice/chains 에 그중 몇을 겹쳐 둔 체인이 있다.
+#
+# 고르고 겹치고 값을 맞추는 것은 **라이싱 스튜디오**가 한다 — ./rice/studio 의
+# QML 이고 apps/rice-studio 가 띄운다. DMS 안이 아니라 별도 창인 이유는 그
+# 스크립트 머리말에 있다(요약: 이 축만 성질이 달라서 런처의 항목 계약을 깨고
+# 있었다).
+#
+# DMS 에 남은 것은 여는 단추(DankBar 조각)와 탈출구다. Mod+Shift+C 가 목록을
+# 순환하고, 런처(Mod+space 의 `:`)에 off 와 "다음 것"이 있다 — 셰이더가 화면을
+# 못 알아보게 만들면 스튜디오 창도 같은 유리 뒤에 있어서, 끄는 길이 거기에만
+# 있으면 안 된다.
 #
 # 셰이더는 ~/git/global-shader-for-macos 에서 왔다. 그쪽은 맥에 없는
 # decoration:screen_shader 를 캡처 + 오버레이로 흉내 내는 프로그램이고, 규약을
@@ -199,6 +207,17 @@ in
         # `apps/rice-crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은
         # apps/rice-save 다 — 다른 라이싱 파일과 같은 방향이다.
         seed ${./rice/chains} "$HOME/.config/hypr/chains"
+
+        # 라이싱 스튜디오. quickshell 설정 하나이고 apps/rice-studio 가
+        # `quickshell -p` 로 띄운다. 하이프랜드 밑에 두는 것은 화면 셰이더가
+        # 이 세션에만 있는 훅이기 때문이고, 창 자체는 니리에서 열어도 뜬다 —
+        # 거기서는 값만 고칠 수 있고 거는 것은 안 된다(apps/rice-crt 의 need_session).
+        #
+        # 셰이더와 달리 폴더 통째로 심는다. 갈래처럼 나중에 늘어나는 것이 아니라
+        # 한 벌이고, 안의 파일이 서로를 참조해서 반쪽만 새로 들어가면 오히려
+        # 깨진다. 이미 있는 머신에 새 파일이 안 들어가는 대가는 그대로다 —
+        # QML 을 고쳤으면 apps/rice-save 로 되받는 것이 이 레포의 방향이다.
+        seed ${./rice/studio} "$HOME/.config/rice-studio"
 
         # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty.nix
         # 가 이미 같은 파일을 $HOME 에 깔아 두고, 그것들은 컴포지터를 안 가린다.

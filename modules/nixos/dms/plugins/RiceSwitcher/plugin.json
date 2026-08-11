@@ -1,15 +1,18 @@
 {
     "id": "riceSwitcher",
     "name": "Rice",
-    "description": "라이싱 축(프로필 · 화면 셰이더 · 터미널 · 월페이퍼)을 런처에서 바로 고른다",
-    "version": "1.0.0",
+    "description": "라이싱 축(프로필 · 터미널 · 월페이퍼)을 런처에서 고르고, 화면 셰이더는 스튜디오를 연다",
+    "version": "2.0.0",
     "author": "jh",
     "icon": "palette",
-    "type": "launcher",
-    "capabilities": ["launcher", "command-execution"],
-    "component": "./RiceSwitcherLauncher.qml",
-    "settings": "./RiceSwitcherSettings.qml",
+    "type": "composite",
+    "capabilities": ["launcher", "dankbar-widget", "command-execution"],
+    "components": {
+        "launcher": "./RiceSwitcherLauncher.qml",
+        "widget": "./RiceStudioWidget.qml"
+    },
     "trigger": ":",
     "requires": ["jq"],
+    "requires_dms": ">=1.5.0",
     "permissions": ["settings_read", "settings_write"]
 }

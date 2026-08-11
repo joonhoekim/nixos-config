@@ -1,6 +1,7 @@
 #!/bin/sh -e
 #
-# 라이싱 값을 밖에서 읽고 쓰는 뒤판. DMS 플러그인의 슬라이더가 이걸 쓴다.
+# 라이싱 값을 밖에서 읽고 쓰는 뒤판. 라이싱 스튜디오의 슬라이더가 이걸 쓴다
+# (apps/rice-studio).
 #
 #   apps/rice-knobs                        조절 가능한 대상 목록 (JSON)
 #   apps/rice-knobs get crt/crt            그 대상의 손잡이 전부 (JSON)
@@ -161,11 +162,17 @@ get)
 
 	# 레포 값은 비교용이다. 레포가 없거나(스토어에서 실행) 그 파일이 아직
 	# 없으면 그냥 비어 있고, 그러면 "레포와 다름" 표시가 안 뜬다.
+	#
+	# mktemp + trap 인 것은 아래 jq 가 죽을 수 있어서다. `$$` 로 이름을 짓고 끝에서
+	# 지우면 `set -e` 로 그 자리에서 나갈 때 파일이 남는다.
+	reposnap="$(mktemp)"
+	trap 'rm -f "$reposnap"' EXIT
+
 	parse "$(field "$id" 3)" all | jq -Rs '
 		[ split("\n")[] | select(length > 0) | split("\t") | { key: .[1], value: .[2] } ] | from_entries
-	' >"${TMPDIR:-/tmp}/rice-knobs-repo.$$"
+	' >"$reposnap"
 
-	parse "$live" | jq -Rs --arg id "$id" --slurpfile repo "${TMPDIR:-/tmp}/rice-knobs-repo.$$" '
+	parse "$live" | jq -Rs --arg id "$id" --slurpfile repo "$reposnap" '
 		[ split("\n")[] | select(length > 0) | split("\t")
 		  | { group: .[0], name: .[1],
 		      value: (.[2] | tonumber),
@@ -188,7 +195,6 @@ get)
 		               if (length > 0 and (.[-1].label == $k.group))
 		               then .[0:-1] + [ .[-1] + { knobs: (.[-1].knobs + [$k]) } ]
 		               else . + [ { label: $k.group, knobs: [$k] } ] end)) }'
-	rm -f "${TMPDIR:-/tmp}/rice-knobs-repo.$$"
 	;;
 
 set | reset)

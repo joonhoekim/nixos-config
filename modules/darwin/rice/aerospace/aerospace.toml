@@ -1,15 +1,20 @@
-# AeroSpace tiling window manager config.
-# Managed by Nix — symlinked read-only from the store via modules/darwin/files.nix.
-# To change: edit this file and `darwin-rebuild switch`, then `alt-shift-;` -> `esc`
-# (service mode reload) or it auto-reloads on the next launch.
+# AeroSpace tiling window manager config (rift 의 폴백 WM — `open -a AeroSpace`).
+#
+# This copy is a *seed*. modules/darwin/rice plants it at
+# ~/.config/aerospace/aerospace.toml on a machine that has none, and after that
+# the live file is the original — edit that one and reload (`alt-shift-;` ->
+# `esc`, or it re-reads on next launch), then `apps/rice-save aerospace` to
+# bring the result back here. `apps/rice-restore aerospace` pushes the other way.
+#
 # Reference: https://nikitabobko.github.io/AeroSpace/guide
 
 # Commands to run after AeroSpace startup / login. Left empty.
 after-login-command = []
 after-startup-command = []
 
-# We start AeroSpace via a Nix-managed LaunchAgent (hosts/darwin/default.nix),
-# so don't also register AeroSpace's own login item.
+# AeroSpace does not start at login any more — rift took that LaunchAgent slot
+# (hosts/darwin/default.nix). This stays false so the fallback WM never races
+# rift for the same windows; bring it up by hand with `open -a AeroSpace`.
 start-at-login = false
 
 # Normalizations — keep the tree tidy. Defaults, kept explicit.

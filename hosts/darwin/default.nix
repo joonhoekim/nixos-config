@@ -4,10 +4,6 @@
   imports = [
     ../../modules/darwin/home-manager.nix
     ../../modules/darwin/default-apps.nix
-    # eul은 stats로 대체됐다 (modules/darwin/casks.nix 참고). 모듈 파일 자체는
-    # 남겨두되 import 하지 않는다 — 되돌릴 때 이 줄과 아래 eul LaunchAgent,
-    # casks.nix의 "eul" 항목을 함께 살리면 된다.
-    # ../../modules/darwin/eul.nix
     ../../modules/darwin/ios.nix
     ../../modules/darwin/rice
     ../../modules/shared
@@ -89,8 +85,8 @@
     #
     # Stats replaced eul here: same job, strictly more of it (sensors, GPU,
     # battery health), so running both just duplicated the menu bar. eul's
-    # cask and its defaults module are commented out too; see
-    # modules/darwin/casks.nix.
+    # cask, defaults module and LaunchAgent were removed outright — git
+    # history has them if it ever comes back.
     #
     # Stats does have its own "Start at login" toggle, but it registers a
     # SMAppService login item that the app rewrites from its own preferences —
@@ -103,10 +99,6 @@
       serviceConfig.RunAtLoad = true;
     };
 
-    # eul = {
-    #   command = "/Applications/eul.app/Contents/MacOS/eul";
-    #   serviceConfig.RunAtLoad = true;
-    # };
 
     # Workspace-switcher overlay (Option+Ctrl+W). Same shape as stats: start it,
     # but a manual quit stays quit.
@@ -117,7 +109,7 @@
     # looked perfectly installed.
     #
     # nix does not install this one; it is a Swift .app built imperatively
-    # (modules/darwin/rice/peek/README.md). On a machine where it has not been
+    # (modules/darwin/rice/workspacepeek/README.md). On a machine where it has not been
     # built yet this agent fails once at login and is never retried — which is
     # the behaviour we want, not a restart loop. `command -v` cannot guard a
     # LaunchAgent, and KeepAlive would turn the absence into one.
@@ -139,8 +131,10 @@
     };
   };
 
-  environment.systemPackages =
-    import ../../modules/shared/packages.nix { inherit pkgs; };
+  # environment.systemPackages 는 없다. shared 패키지는 home-manager 의
+  # home.packages 로 들어가고(modules/darwin/packages.nix → home-manager.nix),
+  # 여기서 또 넣으면 같은 패키지가 시스템·홈에 이중으로 깔린다 — NixOS 쪽이
+  # home.packages 하나만 쓰는 것과 같은 모양으로 맞췄다(README.md 의 패키지 절).
 
   # Register fonts with the macOS font system (symlinked into
   # /Library/Fonts/Nix Fonts). Fonts in systemPackages are NOT picked up by

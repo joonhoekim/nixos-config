@@ -1,7 +1,7 @@
 -- wezterm 설정.
 --
 -- 이 레포에서 wezterm 은 보조 터미널이다. 일상용은 ghostty 이고
--- (modules/shared/ghostty.nix, apps/rice-term), 여기 있는 이유는 두 가지다:
+-- (modules/shared/ghostty, apps/rice-term), 여기 있는 이유는 두 가지다:
 -- 설정이 Lua 라 pywal 이 뱉은 JSON 을 파일 하나 더 만들지 않고 그대로 읽을 수
 -- 있고, 그 파일을 감시 목록에 넣어 두면 팔레트가 바뀔 때 스스로 다시 뜬다.
 --

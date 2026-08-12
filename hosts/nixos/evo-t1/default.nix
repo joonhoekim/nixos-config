@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 # GMKtec EVO-T1 (NucBox_EVO-T1, board V1.1, firmware V2.03 2025-12-16) —
 # Core Ultra 9 285H (Arrow Lake-H): 16 cores / 16 threads, no SMT, 400 MHz to
@@ -82,8 +82,96 @@
   # /sys/class/accel/accel0/device/npu_busy_time_us is the cheap "is anything
   # using it" counter.
   #
-  # Left enabled — this is generated output and the repo treats that file as
-  # authoritative — but nothing here uses the NPU yet.
+  # The *userspace* half did not work, and that is the interesting part —
+  # see the level-zero note below.
+
+  # ── Making the NPU actually reachable ────────────────────────────────
+  # `hardware.cpu.intel.npu.enable` puts intel-npu-driver into
+  # hardware.graphics.extraPackages, which lands libze_intel_npu.so.1 in
+  # /run/opengl-driver/lib. That is where every other graphics loader here
+  # looks — and the Level Zero loader is the one that does not. It dlopens
+  # driver libraries by bare soname and relies on the ordinary dynamic linker
+  # search path, which on NixOS never contains /run/opengl-driver/lib. So
+  # zeInitDrivers() returned ZE_RESULT_ERROR_UNINITIALIZED, npu-umd-test
+  # failed in global setup before running a single test, and OpenVINO listed
+  # only ['CPU'] — with the NPU plugin loaded and reporting "No available
+  # devices" from inside itself, which is what makes this look like missing
+  # hardware rather than a missing path.
+  #
+  # ZE_ENABLE_ALT_DRIVERS names driver libraries explicitly and is read by the
+  # loader before it goes looking, so it fixes this without the collateral
+  # damage of putting /run/opengl-driver/lib on a global LD_LIBRARY_PATH —
+  # that would shadow mesa, libgbm and friends for every process on the box.
+  # With it set, npu-umd-test's Driver suite passes and OpenVINO enumerates
+  # the NPU.
+  #
+  # Two things to know about this variable. It *replaces* the loader's default
+  # driver set rather than adding to it, so anything else that ever ships a
+  # Level Zero driver has to be appended here by hand. And entries that do not
+  # exist are skipped quietly (verified), so it is safe to list a path
+  # speculatively.
+  #
+  # sessionVariables rather than environment.variables: this has to reach GUI
+  # applications too, not just interactive shells.
+  #
+  # nixpkgs sets this nowhere, so it is not something the NPU module forgot to
+  # turn on — the module has no notion of it at all.
+  environment.sessionVariables.ZE_ENABLE_ALT_DRIVERS =
+    "/run/opengl-driver/lib/libze_intel_npu.so.1";
+
+  # ── How far the NPU actually goes today ──────────────────────────────
+  # With the above in place the whole Level Zero stack works: npu-umd-test
+  # runs 220 tests and passes 157, skipping 62 only because no model config
+  # file was handed to it, and its one "failure" is the check that says so.
+  # OpenVINO enumerates the device as "Intel(R) AI Boost".
+  #
+  # Compiling a model for it does NOT work, and will not until nixpkgs
+  # changes. Ask OpenVINO to compile even a two-op graph for NPU and it dies
+  # with
+  #   Level0 pfnCreate2 result: ZE_RESULT_ERROR_UNSUPPORTED_FEATURE
+  # from ze_graph_ext_wrappers.cpp. That is not a hardware or a firmware
+  # limit. libze_intel_npu.so reaches its compiler by
+  # dlopen("libnpu_driver_compiler.so") — the "Compiler in Driver" — and
+  # nixpkgs' intel-npu-driver never builds it: the derivation installs exactly
+  # three cmake components (level-zero-npu, validation-npu, fw-npu) and the
+  # compiler is not among them. Nothing in /nix/store has that file, and the
+  # driver being 2.1 MB rather than the ~100 MB a compiler-carrying build
+  # weighs is the other tell. The reason is presumably circular: the CiD is
+  # itself built out of OpenVINO.
+  #
+  # So the honest state is: the device is reachable and programmable through
+  # raw Level Zero, but the OpenVINO "load an ONNX/IR model and run it on NPU"
+  # path is closed. Importing an already-compiled blob takes a different
+  # driver entry point than the one that fails here and may well work — that
+  # has not been tried, for lack of any way to produce a blob on this machine.
+  #
+  # Nothing to fix in this repo; it wants either a nixpkgs change or a
+  # locally-packaged compiler. Left written down so the next attempt does not
+  # start by suspecting the firmware.
+
+  # OpenCL for the iGPU, which is what OpenVINO's GPU plugin talks to — the
+  # same plugin was failing with "no supported devices found" for want of it.
+  # Worth having next to the NPU: comparing NPU / GPU / CPU on the same model
+  # is most of what a hobby project on this hardware is going to do.
+  #
+  # This is a host-level import, deliberately not in
+  # ../../modules/nixos/intel.nix: intel-compute-runtime supports 12th Gen and
+  # newer, so on galaxy-chromebook-1 (Kaby Lake UHD 620) it would be dead
+  # weight that also imports as a supported configuration when it is not.
+  #
+  # Note it ships only the OpenCL ICD (lib/intel-opencl/libigdrcl.so), no
+  # Level Zero GPU driver — hence nothing to add to ZE_ENABLE_ALT_DRIVERS
+  # above for the GPU side.
+  hardware.graphics.extraPackages = [ pkgs.intel-compute-runtime ];
+
+  environment.systemPackages = [
+    # OpenVINO runtime — CPU, GPU and NPU plugins in one package, plus
+    # ov-compile_tool. CPU and GPU work from here directly; `nix develop .#npu`
+    # is what to use for the NPU, because openvino's NPU plugin cannot find
+    # libze_loader.so.1 without help. The why, and why the fix lives in a shell
+    # rather than an overlay, is in flake.nix next to that shell.
+    pkgs.openvino
+  ];
 
   # ── Networking: both guesses in the first draft were wrong ───────────
   # Wi-Fi is **not** Wi-Fi 7. 00:14.3 is the Arrow Lake CNVi MAC [8086:7740],

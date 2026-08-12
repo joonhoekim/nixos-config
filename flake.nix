@@ -65,6 +65,46 @@
             export EDITOR=vim
           '';
         };
+      } // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+        # `nix develop .#npu` — OpenVINO with evo-t1's NPU actually reachable.
+        #
+        # It needs a shell rather than plain systemPackages because of a
+        # packaging gap: openvino's NPU plugin reaches Level Zero by
+        # dlopen("libze_loader.so.1") at runtime, but nixpkgs gives that .so no
+        # runpath entry for level-zero — so the dlopen fails, the plugin
+        # reports "No available devices" from inside itself, and the NPU simply
+        # never appears in available_devices. (strace shows it looking for
+        # libze_loader.so.1 in openvino's, onetbb's and gcc's lib dirs and
+        # nowhere else.) Fixing it properly means an overlay that patchelfs the
+        # plugin, which costs a full source rebuild of openvino on every
+        # nixpkgs bump — far too much for the two lines below.
+        #
+        # LD_LIBRARY_PATH is safe *here* precisely because it is scoped to this
+        # shell and points at a directory holding nothing but libze_*. The same
+        # variable in environment.sessionVariables would be inherited by every
+        # process on the machine, which is how NixOS setups get mysterious.
+        #
+        # ZE_ENABLE_ALT_DRIVERS is set for evo-t1 system-wide already
+        # (hosts/nixos/evo-t1), and repeated so the shell stands on its own.
+        #
+        # Verified end to end: available_devices returns
+        #   ['CPU', 'GPU', 'NPU'] -> Core Ultra 9 285H / Arc Graphics (iGPU) /
+        #   Intel(R) AI Boost
+        # and compile_model + inference runs on CPU and GPU. Compiling *for*
+        # the NPU still fails, one layer below anything this shell controls —
+        # nixpkgs does not build the driver's compiler. hosts/nixos/evo-t1 has
+        # the diagnosis; do not spend an evening re-deriving it here.
+        npu = pkgs.mkShell {
+          nativeBuildInputs = [
+            (pkgs.python3.withPackages (ps: with ps; [ openvino numpy ]))
+            pkgs.level-zero
+            pkgs.openvino
+          ];
+          shellHook = ''
+            export LD_LIBRARY_PATH=${pkgs.level-zero}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+            export ZE_ENABLE_ALT_DRIVERS=/run/opengl-driver/lib/libze_intel_npu.so.1
+          '';
+        };
       };
       mkApp = scriptName: system: {
         type = "app";

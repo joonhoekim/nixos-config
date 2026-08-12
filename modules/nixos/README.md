@@ -7,11 +7,13 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 ```
 .
 ├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
-├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + GTK 다크 테마 + mise 활성화)
-├── hyprland/          # Hyprland 세션 (uwsm) + 같은 셸, 라이싱 시드
+├── dms/               # 두 세션이 같이 쓰는 DMS 플러그인 (RiceSwitcher)
+├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + dconf 다크 모드 + mise 활성화)
+├── hyprland/          # Hyprland 세션 (uwsm) + 같은 셸, 라이싱 시드·셰이더·스튜디오
 ├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 홀드 레이어)
 ├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
+├── nginx.nix          # 로컬 리버스 프록시 (import 하는 호스트에서만)
 ├── niri/              # niri 세션 + DankMaterialShell, 라이싱 시드
 ├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
 └── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
@@ -29,8 +31,10 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 위한 것이지 X11 세션을 쓰기 위한 게 아니다.
 
 GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않는다. 다크 모드만
-`home-manager.nix`에서 dconf(`org/gnome/desktop/interface`)로 잡고, 같은 파일의 `gtk`
-블록이 GNOME 세션 밖에서 뜨는 GTK 앱까지 커버한다.
+`home-manager.nix`에서 dconf(`org/gnome/desktop/interface`)로 잡는다. GTK 설정
+파일(settings.ini, gtk.css)은 이 레포가 쓰지 않는다 — DankMaterialShell이 같은
+파일을 자기가 쓰면서 경합했던 이력이 있어 그쪽에 넘겼고, 테마 패키지만 Nix가
+깐다(`home-manager.nix`의 gtk 관련 주석 참고).
 
 ## 한글 입력
 

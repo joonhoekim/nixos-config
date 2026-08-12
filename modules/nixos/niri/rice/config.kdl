@@ -195,8 +195,13 @@ binds {
 	XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
 	XF86AudioMute allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
 	XF86AudioMicMute allow-when-locked=true { spawn "dms" "ipc" "call" "mic" "mute"; }
-	XF86MonBrightnessUp allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "increment" "5"; }
-	XF86MonBrightnessDown allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "decrement" "5"; }
+	// 밝기만 인자가 둘이다: `increment(step, device)`. 위 오디오 줄들
+	// (`increment(step)`)을 보고 하나만 넘기면 DMS 가 "Too few arguments
+	// provided" 로 조용히 거절하고 화면에는 아무 일도 안 일어난다 — 키가 안
+	// 먹는 게 아니라 호출이 틀린 것이다. 빈 문자열은 "기본 장치"라는 뜻이라
+	// 노트북 백라이트든 DDC 로 잡힌 외장 모니터든 알아서 간다.
+	XF86MonBrightnessUp allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "increment" "5" ""; }
+	XF86MonBrightnessDown allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "decrement" "5" ""; }
 
 	// 버린 것:
 	//   Mod+L         잠금. IJKL 이 오른쪽을 L 로 가져갔다. 잠금은 Mod+Escape 의

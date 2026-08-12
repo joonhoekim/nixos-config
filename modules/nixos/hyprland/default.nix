@@ -162,6 +162,22 @@ in
 
         seed ${./rice/hyprland.lua} "$HOME/.config/hypr/hyprland.lua"
 
+        # 밝기 키의 인자 개수를 고친다. DMS 의 brightness 는 오디오 쪽과 달리
+        # `increment(step, device)` 로 인자가 둘이라, 하나만 넘기던 옛 시드는
+        # "Too few arguments provided" 로 조용히 거절당했다 — 키는 눌리는데
+        # 화면은 그대로인, 원인 찾기 나쁜 쪽이다. 빈 문자열이 "기본 장치"다.
+        #
+        # 고친 줄을 레포 시드에 넣는 것만으로는 이미 hyprland.lua 를 가진 머신에
+        # 영영 안 들어간다(seed 의 존재 검사). ensure 는 줄을 붙일 뿐 고치지는
+        # 못하므로, 위 decor require→dofile 때와 같은 방식으로 sed 를 쓴다.
+        # 패턴은 망가진 형태에만 걸리고 고친 뒤에는 안 걸리므로 여러 번 돌려도
+        # 같은 결과이며, step 을 손으로 바꿔 둔 머신도 그 값을 지킨다.
+        if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
+          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i -E \
+            's#hl\.dsp\.exec_cmd\("dms ipc call brightness (increment|decrement) ([0-9]+)"\)#hl.dsp.exec_cmd('"'"'dms ipc call brightness \1 \2 ""'"'"')#g' \
+            "$HOME/.config/hypr/hyprland.lua"
+        fi
+
         # 장식 조각의 배선 한 줄. decor.lua 자체는 심지 않는다 — 생성물이고,
         # apps/rice-decor 가 값을 처음 바꿀 때 만든다. 대신 그것을 부르는 줄은
         # 이미 hyprland.lua 를 가진 머신에도 들어가야 한다. seed 는 존재 검사에서

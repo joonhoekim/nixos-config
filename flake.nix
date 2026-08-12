@@ -137,6 +137,7 @@
       # hardware-configuration.nix, and a placeholder one only breaks
       # `nix flake check`. Build with e.g.:
       #   nixos-rebuild switch --flake .#mn56
+      #   nixos-rebuild switch --flake .#evo-t1
       #   nixos-rebuild switch --flake .#galaxy-chromebook-1
       nixosConfigurations = let
         # home-manager 배선은 여기 없다 — darwin 이 modules/darwin/home-manager.nix
@@ -149,6 +150,7 @@
         };
       in {
         mn56 = mkNixosHost ./hosts/nixos/mn56;
+        evo-t1 = mkNixosHost ./hosts/nixos/evo-t1;
         galaxy-chromebook-1 = mkNixosHost ./hosts/nixos/galaxy-chromebook-1;
       };
   };

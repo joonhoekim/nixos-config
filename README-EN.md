@@ -10,8 +10,8 @@ target — e.g. `.#aarch64-darwin`. Intel Macs (`x86_64-darwin`) are dropped,
 since nixpkgs 26.11 removed support; reviving one means a separate nixpkgs
 input pinned to the 26.05 darwin branch.
 
-The NixOS configurations are keyed by **hostname** — `mn56` and
-`galaxy-chromebook-1` (both `x86_64-linux`). Use that name as the flake target —
+The NixOS configurations are keyed by **hostname** — `mn56`, `evo-t1` and
+`galaxy-chromebook-1` (all `x86_64-linux`). Use that name as the flake target —
 e.g. `.#mn56`. A host directory only exists for a machine that actually exists,
 since it needs that machine's generated `hardware-configuration.nix`. See
 [NixOS — first build](#nixos--first-build-on-a-new-machine) for the
@@ -118,7 +118,7 @@ needs `--extra-experimental-features 'nix-command flakes'`). On top of that,
 three things are machine-specific and must be set **before** the first build:
 
 1. **Provide this machine's hardware config.** Every registered host (`mn56`,
-   `galaxy-chromebook-1`) carries the real
+   `evo-t1`, `galaxy-chromebook-1`) carries the real
    `hosts/nixos/<host>/hardware-configuration.nix` generated on that machine.
    When adding a new machine, produce this file **before** creating the host
    directory — committing an empty placeholder only breaks evaluation at the
@@ -135,7 +135,7 @@ three things are machine-specific and must be set **before** the first build:
    It pins your root/boot filesystems, swap, initrd modules, and CPU microcode,
    so it can't be shared between machines.
 
-2. **Pick the host.** Hosts are keyed by hostname (`mn56`,
+2. **Pick the host.** Hosts are keyed by hostname (`mn56`, `evo-t1`,
    `galaxy-chromebook-1`). To add another, create `hosts/nixos/<name>/`
    (importing `../common.nix` plus its own `hardware-configuration.nix`) and
    register it in `flake.nix`'s `mkNixosHost` list. Keep the flake attribute
@@ -150,7 +150,7 @@ three things are machine-specific and must be set **before** the first build:
 Then build:
 
 ```sh
-sudo nixos-rebuild switch --flake .#mn56      # or .#galaxy-chromebook-1
+sudo nixos-rebuild switch --flake .#mn56      # or .#evo-t1, .#galaxy-chromebook-1
 # once flakes are enabled and the hostname matches a host: nix run .#build-switch
 ```
 

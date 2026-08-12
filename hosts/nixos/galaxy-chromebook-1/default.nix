@@ -10,6 +10,7 @@
 {
   imports = [
     ../common.nix
+    ../../../modules/nixos/intel.nix
     ./hardware-configuration.nix
     ./hardware.nix
   ];

@@ -10,6 +10,7 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 ├── dms/               # 두 세션이 같이 쓰는 DMS 플러그인 (RiceSwitcher)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + dconf 다크 모드 + mise 활성화)
 ├── hyprland/          # Hyprland 세션 (uwsm) + 같은 셸, 라이싱 시드·셰이더·스튜디오
+├── intel.nix          # Intel CPU/iGPU 공통 레이어 (Intel 호스트에서 import)
 ├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 홀드 레이어)
 ├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
 ├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
@@ -149,18 +150,20 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 ## 호스트 추가하기
 
 호스트는 아키텍처가 아니라 **hostname**으로 키잉된다. 현재 `mn56`(Firebat MN56, Ryzen
-7840HS)와 `galaxy-chromebook-1` 둘이 있고, 새 호스트는 이들을 그대로 따라 하면
-된다. CPU 벤더가 아니라 **머신 이름**으로 짓는다 — 같은 칩을 쓰는 기기가 둘 이상이면
-`amd`나 `intel` 같은 이름은 바로 무너진다.
+7840HS), `evo-t1`(GMKtec EVO-T1, Core Ultra 9 285H), `galaxy-chromebook-1` 셋이 있고,
+새 호스트는 이들을 그대로 따라 하면 된다. CPU 벤더가 아니라 **머신 이름**으로 짓는다 —
+같은 칩을 쓰는 기기가 둘 이상이면 `amd`나 `intel` 같은 이름은 바로 무너진다.
 
 호스트 디렉토리는 **실제로 존재하는 머신**만 만든다. 그 머신에서 생성한 진짜
 `hardware-configuration.nix` 없이는 호스트 항목이 아무 쓸모가 없고, placeholder를
 커밋해두면 `nix flake check`만 깨진다. 예전에 있던 `intel` 호스트가 정확히 그 상태여서
 제거했다.
 
-벤더 공통 설정(예: AMD의 `radeontop`/전력 관리 주석)은 호스트 디렉토리가 아니라
-[`amd.nix`](amd.nix) 같은 모듈에 두고 여러 호스트가 import한다. 호스트 디렉토리에는
-그 섀시에만 해당하는 것만 남긴다.
+벤더 공통 설정(예: AMD의 `radeontop`/전력 관리 주석, Intel의 thermald·VAAPI 드라이버)은
+호스트 디렉토리가 아니라 [`amd.nix`](amd.nix)·[`intel.nix`](intel.nix) 같은 모듈에 두고
+여러 호스트가 import한다. 호스트 디렉토리에는 그 섀시에만 해당하는 것만 남긴다 —
+`intel.nix`는 실제로 그렇게 생겼다. `galaxy-chromebook-1`이 혼자 들고 있던 조각을,
+두 번째 Intel 호스트(`evo-t1`)가 생긴 시점에 끌어올린 것이다.
 
 flake 속성 이름은 실제 hostname과 달라도 `--flake .#<이름>`으로 지정하면 동작하지만,
 `apps/build-switch`가 인자 없이 실행될 때 `$(hostname)`으로 타겟을 고르므로 둘을 같게

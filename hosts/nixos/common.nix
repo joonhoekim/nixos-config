@@ -2,9 +2,9 @@
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
-# host dirs (./mn56, ./galaxy-chromebook-1) that import this file.
+# host dirs (./mn56, ./evo-t1, ./galaxy-chromebook-1) that import this file.
 # Vendor-common layers shared by several hosts live in modules/nixos
-# (e.g. amd.nix).
+# (amd.nix, intel.nix).
 #
 # `home-manager` 는 flake input 이다 — specialArgs 가 input 을 이름 그대로
 # 풀어 주므로 여기서 인자로 받는다. darwin 쪽이 자기 home-manager 배선을
@@ -73,7 +73,7 @@
 
   time.timeZone = "Asia/Seoul";
 
-  # hostName is set per-host (see ./mn56, ./galaxy-chromebook-1).
+  # hostName is set per-host (see ./mn56, ./evo-t1, ./galaxy-chromebook-1).
   networking.networkmanager.enable = true;
 
   # Turn on flag for proprietary software
@@ -277,8 +277,8 @@
   # amortises seek latency on a disk; on zram there is no seek, so the 7 extra
   # pages are 7 extra decompressions that usually go unused.
   #
-  # Both machines also declare a disk swap partition, and the ordering already
-  # keeps zram in front: zram0 sits at priority 5 and the partition at -1, so
+  # A host that also declares a disk swap partition gets the right ordering
+  # for free: zram0 sits at priority 5 and a partition at -1, so
   # zram always fills first and the disk is only touched once zram is
   # exhausted. That layering is the whole point — the disk is the backstop, not
   # the first stop. (mn56's partition used to hold a hibernate image too; that
@@ -297,9 +297,11 @@
   boot.tmp.cleanOnBoot = true;
 
   # GPU / video acceleration. AMD (amdgpu) and modern Intel (i915/xe) are both
-  # covered by mesa out of the box. Anything beyond that is per-machine and
-  # goes in the host dir — an Intel box wanting VAAPI/QSV decode adds
-  # intel-media-driver to hardware.graphics.extraPackages there.
+  # covered by mesa out of the box for *rendering*. Video decode is where they
+  # part: radeonsi carries VAAPI with it, Intel needs intel-media-driver added
+  # explicitly — which is what ../../modules/nixos/intel.nix does, alongside
+  # ../../modules/nixos/amd.nix. Anything narrower than a vendor goes in the
+  # host dir.
   hardware.graphics.enable = true;
 
   # Add docker daemon
@@ -353,6 +355,6 @@
   # NOT what a fresh install gets. Whatever nixos-generate-config wrote on the
   # target machine (e.g. 26.05 from a 26.05 installer) is the correct value for
   # that host, so every host pins its own and this stays mkDefault
-  # (see ./mn56 = 26.05, ./galaxy-chromebook-1 = 25.11).
+  # (see ./mn56 = 26.05, ./evo-t1 = 26.05, ./galaxy-chromebook-1 = 25.11).
   system.stateVersion = lib.mkDefault "26.11";
 }

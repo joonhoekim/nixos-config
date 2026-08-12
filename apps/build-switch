@@ -7,21 +7,10 @@
 # Don't run the whole thing under sudo: it builds as your user and only the
 # activation step escalates. Extra flags pass through, e.g. `-- --show-trace`.
 
-GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; NC='\033[0m'
-
-host=""; passthru=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --host=*) host="${1#*=}"; shift ;;
-    --host)   host="$2"; shift 2 ;;
-    *)        passthru="$passthru $1"; shift ;;
-  esac
-done
-
-export NIXPKGS_ALLOW_UNFREE=1
+# --host 파싱, NIXPKGS_ALLOW_UNFREE, $arch. build 와 같은 프롤로그다.
+. "$(dirname "$0")/build-lib.sh"
 
 if [ "$(uname)" = "Darwin" ]; then
-  arch="$(uname -m)"; [ "$arch" = "arm64" ] && arch="aarch64"
   target="${arch}-darwin"
   printf "${YELLOW}Building darwinConfigurations.%s...${NC}\n" "$target"
   nix --extra-experimental-features 'nix-command flakes' build ".#darwinConfigurations.${target}.system" $passthru

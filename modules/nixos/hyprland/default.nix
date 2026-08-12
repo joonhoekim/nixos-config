@@ -169,8 +169,18 @@ in
         # 먹는데 다시 로그인하면 원래대로"다 — 스위처가 성실히 동작하고 화면만
         # 안 따라오는, ../../shared/rice-seed-helpers.nix 머리말이 적어 둔 바로
         # 그 제일 나쁜 상태다.
+        # 처음에는 require 였다. require 된 파일은 하이프랜드가 감시해서 스튜디오
+        # 슬라이더마다(rice-decor 가 decor.lua 를 다시 쓴다) 설정 전체가 리로드
+        # 됐고, 리로드는 걸어 둔 화면 셰이더까지 지운다(rice/hyprland.lua 의 장식
+        # 조각 주석). 그래서 dofile 로 바꿨다. ensure 는 붙이기만 하고 못 지우므로
+        # 옛 배선이 남은 머신에서는 그 줄부터 걷어낸다 — 안 걷으면 dofile 줄을
+        # 붙여도 require 가 다시 감시를 붙인다.
+        if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
+          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i '/^pcall(require, "decor")$/d' \
+            "$HOME/.config/hypr/hyprland.lua"
+        fi
         ensure "$HOME/.config/hypr/hyprland.lua" \
-          'pcall(require, "decor")' \
+          'pcall(dofile, os.getenv("HOME") .. "/.config/hypr/decor.lua")' \
           '-- 장식 값(투명도·흐리게·어둡게·그림자). apps/rice-decor 가 쓴다.'
 
         # DMS 가 자기 설정을 쓰는 자리. 빈 조각을 미리 깔아 두는 건 DMS 가 처음
@@ -230,7 +240,7 @@ in
         # QML 을 고쳤으면 apps/rice-save 로 되받는 것이 이 레포의 방향이다.
         seed ${./rice/studio} "$HOME/.config/rice-studio"
 
-        # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty.nix
+        # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty
         # 가 이미 같은 파일을 $HOME 에 깔아 두고, 그것들은 컴포지터를 안 가린다.
       '';
     };

@@ -417,21 +417,30 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 --
 -- 배터리 비용은 damage_tracking 이 아니라 이 vfr 쪽에 붙어 있다.
 --
--- 로그인 직후부터 걸린다(아래 exec_cmd). 끄려면 Mod+Shift+C 로 off 까지 돌리거나
--- `apps/rice-crt off`. 그때 두 축 모두 하이프랜드 기본값으로 돌아간다. 이 파일을
--- 저장할 때마다 다시 걸리므로, off 로 둔 채 여기를 고치면 도로 켜진다.
+-- ── 이 줄은 리로드마다 다시 돈다 ──────────────────────────────────────────
+-- 하이프랜드는 이 파일과 require 된 조각이 바뀔 때마다 설정을 통째로 다시
+-- 읽는데, 그때 screen_shader 는 비워진다 — 리로드 평가 시점에는 hl.get_config
+-- 도 빈 값을 준다(실측 2026-08-12). DMS 는 테마·간격이 바뀔 때마다 dms/ 조각을
+-- 다시 쓰므로, **프로필 전환마다** 리로드가 일어난다. 여기서 이름 하나를 그대로
+-- 걸면 그때마다 골라 둔 셰이더가 그 이름으로 되돌아간다(실제로 그랬다).
+--
+-- 그래서 --boot 다: 마지막으로 걸었던 것(~/.config/rice/shader, rice-crt 가
+-- 걸 때마다 적는다)을 도로 걸고, 그게 없을 때만 아래 기본값이다. off 로 꺼
+-- 뒀으면 off 로 남는다.
 local rice_crt = os.getenv("HOME") .. "/nixos-config/apps/rice-crt"
 
--- 로그인 때 걸 것. 갈래/이름 하나여도 되고 체인 이름이어도 된다:
+-- 첫 로그인(아직 아무것도 안 걸어 본 머신)에 걸 것. 갈래/이름 하나여도 되고
+-- 체인 이름이어도 된다:
 --   "crt/crt"  "water/still"  "chain/bad-signal"  "off"
--- 여기를 고치고 저장하면 그 자리에서 다시 걸린다.
+-- 한 번이라도 스위처로 골랐으면 그쪽이 이긴다 — 여기를 고쳐서 바꾸는 게
+-- 아니라 apps/rice-crt 로 걸면 된다.
 local crt_start = "crt/crt"
 
 -- hl.dsp.exec_cmd 가 아니라 hl.exec_cmd 다. 이름이 같아서 헷갈리는데 뜻이 다르다:
 -- dsp 쪽은 **디스패처를 만들어 돌려주고**(그래서 hl.bind 의 인자로 쓴다), 이쪽은
 -- 그 자리에서 실행하고 nil 을 돌려준다(share/hypr/stubs/hl.meta.lua). dsp 쪽을
 -- 여기에 쓰면 아무 일도 안 일어나고, 증상은 "로그인하면 셰이더가 안 걸린다"다.
-hl.exec_cmd(rice_crt .. " " .. crt_start)
+hl.exec_cmd(rice_crt .. " --boot " .. crt_start)
 
 -- 다음 것은 *지금 걸려 있는 것*에서 고른다. 여기에 카운터를 두면 밖에서 바꾼
 -- 순간(런처의 Rice 플러그인) 둘이 어긋나고, 낡은 카운터로 고른 "다음"은 엉뚱한
@@ -477,5 +486,11 @@ end
 -- 부른 이쪽이 이긴다. 그건 잘못된 방향이라, rice-decor 의 표에서 DMS 가 가진
 -- 키를 아예 뺐다 — 순서가 아니라 표가 안전장치다.
 --
+-- require 가 아니라 dofile 인 것도 요점이다. require 된 파일은 하이프랜드가
+-- 감시해서, 스튜디오 슬라이더를 움직일 때마다(rice-decor 가 이 파일을 통째로
+-- 다시 쓴다) 설정 전체가 리로드된다. dofile 로 읽은 파일은 감시 목록에 안
+-- 들어간다(실측 2026-08-12 — 설정 디렉터리 안이어도). 값의 라이브 반영은
+-- rice-decor 의 eval 이 이미 하므로, 이 줄은 다음 세션과 리로드를 위한 것이다.
+--
 -- 파일이 없어도 세션은 뜬다. 아무 값도 안 바꾼 머신에는 이 파일이 아예 없다.
-pcall(require, "decor")
+pcall(dofile, os.getenv("HOME") .. "/.config/hypr/decor.lua")

@@ -78,7 +78,28 @@
 
   # Turn on flag for proprietary software
   nix = {
-    nixPath = [ "nixos-config=/home/${user}/.local/share/src/nixos-config:/etc/nixos" ];
+    # nix.nixPath is deliberately NOT set. It used to carry
+    #   [ "nixos-config=/home/${user}/.local/share/src/nixos-config:/etc/nixos" ]
+    # — a dustinlyons-template leftover that pointed at a directory none of
+    # these machines has (the repo lives at ~/nixos-config on all three), and
+    # nothing in this repo ever read it.
+    #
+    # The real damage was the second-order kind. nixos/modules/misc/
+    # nixpkgs-flake.nix gives every flake-built system
+    #   nix.nixPath = lib.mkDefault [ "nixpkgs=flake:nixpkgs" ... ];
+    # and mkDefault loses to any plain definition — so that one line silently
+    # dropped `nixpkgs=` from NIX_PATH, and `nix-shell -p foo` /
+    # `nix-build '<nixpkgs>' -A hello` failed with "file 'nixpkgs' was not
+    # found in the Nix search path" on every NixOS host here. (`nix run
+    # nixpkgs#hello` kept working — that goes through nix.registry, which the
+    # same module sets from a separate block.)
+    #
+    # Leaving the option alone restores the module's default. There is no
+    # replacement `nixos-config=` entry because there cannot be a working one:
+    # <nixos-config> wants a file (a directory needs default.nix, and the repo
+    # root only has flake.nix), and pointing it at a host's own default.nix
+    # would not evaluate either — ./common.nix takes `home-manager` from
+    # specialArgs, which only exists inside the flake.
     settings = {
       # `@wheel`, not the `@admin` this once carried: `admin` is the macOS
       # administrators group (see hosts/darwin, where it is correct). NixOS has

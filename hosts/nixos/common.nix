@@ -1,13 +1,19 @@
-{ config, inputs, pkgs, lib, user, ... }:
+{ config, pkgs, lib, user, home-manager, ... }:
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
 # host dirs (./mn56, ./galaxy-chromebook-1) that import this file.
 # Vendor-common layers shared by several hosts live in modules/nixos
 # (e.g. amd.nix).
+#
+# `home-manager` 는 flake input 이다 — specialArgs 가 input 을 이름 그대로
+# 풀어 주므로 여기서 인자로 받는다. darwin 쪽이 자기 home-manager 배선을
+# modules/darwin/home-manager.nix 에 두는 것과 같은 모양으로, NixOS 쪽 배선도
+# flake.nix 가 아니라 이 파일에 있다(아래 home-manager 블록).
 
 {
   imports = [
+    home-manager.nixosModules.home-manager
     # Korean locale, IME (fcitx5-hangul), and CJK fonts.
     ../../modules/nixos/korean.nix
     # keyd remaps: Right Alt -> Hangul, and a nav layer on held Caps Lock.
@@ -27,6 +33,25 @@
     ../../modules/nixos/dms
     ../../modules/shared
   ];
+
+  home-manager = {
+    useGlobalPkgs = true;
+    useUserPackages = true;
+    # Rename rather than refuse. home-manager aborts the whole activation
+    # when a file it wants to link already exists as a real file, and that
+    # takes the rebuild down with it — which is exactly what happened on
+    # galaxy-chromebook-1 once DMS had written ~/.config/gtk-*/settings.ini
+    # itself.
+    #
+    # This repo deliberately leaves most of $HOME writable so the desktop can
+    # tune itself, so that collision is a standing risk rather than a one-off.
+    # A backup copy is a better outcome than a machine that cannot rebuild.
+    backupFileExtension = "hm-bak";
+    # Thread `user` into home-manager modules (separate arg scope from the
+    # system modules' specialArgs).
+    extraSpecialArgs = { inherit user; };
+    users.${user} = import ../../modules/nixos/home-manager.nix;
+  };
 
   # Boot — systemd-boot EFI loader. The disk/initrd kernel modules
   # (availableKernelModules, fileSystems, swap) and CPU microcode come from

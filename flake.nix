@@ -1,5 +1,5 @@
 {
-  description = "Starter Configuration for MacOS and NixOS";
+  description = "jh's macOS + NixOS configuration — three window managers, one keymap, ricing as ordinary files";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -43,7 +43,10 @@
     };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, nikitabobko-tap, acsandmann-tap, home-manager, nixpkgs } @inputs:
+  # 나머지 input(홈브루 탭들)은 이름으로 안 꺼낸다 — darwinConfigurations 안에서
+  # inputs.<이름> 으로 닿고, input 을 하나 늘릴 때 고칠 자리가 위 목록 하나로
+  # 줄어든다.
+  outputs = inputs@{ self, nixpkgs, home-manager, darwin, ... }:
     let
       user = "jh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -56,9 +59,9 @@
       darwinSystems = [ "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
-        default = with pkgs; mkShell {
+        default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [ bashInteractive git ];
-          shellHook = with pkgs; ''
+          shellHook = ''
             export EDITOR=vim
           '';
         };
@@ -72,29 +75,20 @@
         '')}/bin/${scriptName}";
       };
       # The app scripts are shared across platforms and self-detect macOS vs
-      # NixOS at runtime, so every system exposes the same set.
-      mkApps = system: {
-        "build-switch" = mkApp "build-switch" system;
-        "build" = mkApp "build" system;
-        "rollback" = mkApp "rollback" system;
-        "clean" = mkApp "clean" system;
-        "rice-save" = mkApp "rice-save" system;
-        "rice-restore" = mkApp "rice-restore" system;
-        "rice-switch" = mkApp "rice-switch" system;
-        "rice-wall" = mkApp "rice-wall" system;
-        "rice-fuzzel" = mkApp "rice-fuzzel" system;
-        "rice-term" = mkApp "rice-term" system;
-        "rice-crt" = mkApp "rice-crt" system;
-        "rice-chain" = mkApp "rice-chain" system;
-        "rice-studio" = mkApp "rice-studio" system;
-        "rice-menu" = mkApp "rice-menu" system;
-        "rice-knobs" = mkApp "rice-knobs" system;
-        "rice-colors" = mkApp "rice-colors" system;
-        "demo" = mkApp "demo" system;
-        # macOS 전용. NixOS 에서 부르면 스스로 거절한다 — 위 주석대로 목록은
-        # 플랫폼마다 같게 두고 판단은 스크립트가 한다.
-        "mac-signing-cert" = mkApp "mac-signing-cert" system;
-      };
+      # NixOS at runtime, so every system exposes the same set — macOS 전용인
+      # 것(mac-signing-cert, rice-colors)도 목록에 있고, 잘못 부르면 스크립트가
+      # 스스로 거절한다.
+      #
+      # apps/ 의 실행 파일과 이 목록은 짝이다. rice-lib.sh 처럼 sourced 되는
+      # 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새 스크립트(rice-decor)
+      # 를 빠뜨린 적이 있어서 목록 하나로 접었다.
+      mkApps = system: nixpkgs.lib.genAttrs [
+        "build" "build-switch" "rollback" "clean"
+        "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
+        "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
+        "rice-knobs" "rice-decor" "rice-colors"
+        "demo" "mac-signing-cert"
+      ] (name: mkApp name system);
     in
     {
       devShells = forAllSystems devShell;
@@ -108,23 +102,23 @@
           specialArgs = inputs // { inherit user; };
           modules = [
             home-manager.darwinModules.home-manager
-            nix-homebrew.darwinModules.nix-homebrew
+            inputs.nix-homebrew.darwinModules.nix-homebrew
             {
               nix-homebrew = {
                 inherit user;
                 enable = true;
                 taps = {
-                  "homebrew/homebrew-core" = homebrew-core;
-                  "homebrew/homebrew-cask" = homebrew-cask;
-                  "homebrew/homebrew-bundle" = homebrew-bundle;
+                  "homebrew/homebrew-core" = inputs.homebrew-core;
+                  "homebrew/homebrew-cask" = inputs.homebrew-cask;
+                  "homebrew/homebrew-bundle" = inputs.homebrew-bundle;
                   # aerospace lives here; managed declaratively so a fresh
                   # machine never needs an imperative `brew tap` (which fails
                   # on a not-yet-writable /opt/homebrew/Library/Taps).
-                  "nikitabobko/homebrew-tap" = nikitabobko-tap;
+                  "nikitabobko/homebrew-tap" = inputs.nikitabobko-tap;
                   # rift, same reasoning. Brew refers to this tap as
                   # `acsandmann/tap` (the `homebrew-` prefix is implicit), which
                   # is the spelling modules/darwin/brews.nix uses.
-                  "acsandmann/homebrew-tap" = acsandmann-tap;
+                  "acsandmann/homebrew-tap" = inputs.acsandmann-tap;
                 };
                 # Allow imperative `brew tap`/`brew install` to coexist with Nix.
                 mutableTaps = true;
@@ -145,33 +139,13 @@
       #   nixos-rebuild switch --flake .#mn56
       #   nixos-rebuild switch --flake .#galaxy-chromebook-1
       nixosConfigurations = let
+        # home-manager 배선은 여기 없다 — darwin 이 modules/darwin/home-manager.nix
+        # 에 두는 것과 같은 모양으로 hosts/nixos/common.nix 에 있다. flake 는
+        # 순수 배선만 한다.
         mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = inputs // { inherit user; };
-          modules = [
-            home-manager.nixosModules.home-manager {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                # Rename rather than refuse. home-manager aborts the whole
-                # activation when a file it wants to link already exists as a
-                # real file, and that takes the rebuild down with it — which is
-                # exactly what happened on galaxy-chromebook-1 once DMS had
-                # written ~/.config/gtk-*/settings.ini itself.
-                #
-                # This repo deliberately leaves most of $HOME writable so the
-                # desktop can tune itself, so that collision is a standing risk
-                # rather than a one-off. A backup copy is a better outcome than
-                # a machine that cannot rebuild.
-                backupFileExtension = "hm-bak";
-                # Thread `user` into home-manager modules (separate arg scope
-                # from the system modules' specialArgs).
-                extraSpecialArgs = { inherit user; };
-                users.${user} = import ./modules/nixos/home-manager.nix;
-              };
-            }
-            hostModule
-          ];
+          modules = [ hostModule ];
         };
       in {
         mn56 = mkNixosHost ./hosts/nixos/mn56;

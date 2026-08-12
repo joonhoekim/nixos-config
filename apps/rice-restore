@@ -22,7 +22,9 @@
 #
 #   niri        config.kdl, animations.kdl                          니리 세션
 #   profiles    rice/profiles (프로필당 niri.kdl + dms.json)         니리 세션
-#   hypr        hyprland.lua, shaders/                              하이프랜드 세션
+#   hypr        hyprland.lua, shaders/, chains/                     하이프랜드 세션
+#   studio      ~/.config/rice-studio (라이싱 스튜디오 QML)          하이프랜드 세션
+#   dms         DankMaterialShell 플러그인 (RiceSwitcher)            두 리눅스 세션
 #   ghostty     config, rices/, shaders/                            양쪽
 #   fuzzel      fuzzel.ini                                          니리 세션
 #   gtk         gtk-3.0 과 gtk-4.0 의 settings.ini (레포엔 파일 하나) 니리 세션
@@ -64,6 +66,7 @@ repo="${RICE_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
 rice="$repo/modules/nixos/niri/rice"
 gt="$repo/modules/shared/ghostty"
 hy="$repo/modules/nixos/hyprland/rice"
+dm="$repo/modules/nixos/dms"
 dr="$repo/modules/darwin/rice"
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
@@ -72,7 +75,7 @@ if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
   exit 1
 fi
 
-linux_only="niri profiles hypr fuzzel gtk"
+linux_only="niri profiles hypr studio dms fuzzel gtk"
 mac_only="wezterm rift karabiner aerospace helpers peek"
 # 터미널 라이싱만 두 플랫폼이 공유한다.
 all="$linux_only ghostty $mac_only"
@@ -209,6 +212,19 @@ plan() {
     # 이유는 그쪽에 적어 뒀다.)
     item "$hy/hyprland.lua" "$cfg/hypr/hyprland.lua"
     item "$hy/shaders" "$cfg/hypr/shaders"
+    # 이름 붙인 체인도 같은 처지다. rm+cp 라서 rice-crt --save 로 만들고 아직
+    # rice-save 로 안 되받은 체인은 여기서 지워진다 — 백업에는 남는다.
+    item "$hy/chains" "$cfg/hypr/chains"
+    ;;
+  esac
+  case " $want " in *" studio "*)
+    # 파생물 단계가 없다. 스튜디오는 창을 띄울 때 QML 을 읽으므로, 떠 있는
+    # 창만 닫았다 열면 된다(apps/rice-studio).
+    item "$hy/studio" "$cfg/rice-studio"
+    ;;
+  esac
+  case " $want " in *" dms "*)
+    item "$dm/plugins/RiceSwitcher" "$cfg/DankMaterialShell/plugins/RiceSwitcher"
     ;;
   esac
   case " $want " in *" ghostty "*)
@@ -346,6 +362,23 @@ case " $want " in *" hypr "*)
   ;;
 esac
 
+# DMS 는 플러그인 폴더를 감시하지만 rift 처럼 rm+cp 가 감시를 끊을 수 있고,
+# plugin.json 을 바꿨으면 reload 로는 부족하다(../modules/nixos/dms 머리말 —
+# 매니페스트는 dms restart 라야 읽힌다). 그래서 reload 를 걸어 보고, 실패하면
+# 손으로 할 일을 알려 준다.
+case " $want " in *" dms "*)
+  if command -v dms >/dev/null 2>&1; then
+    if dms ipc call plugins reload riceSwitcher >/dev/null 2>&1; then
+      printf "${DIM}RiceSwitcher 플러그인 다시 읽혔다. plugin.json 을 바꿨다면: dms restart${NC}\n"
+    else
+      printf "${YELLOW}플러그인 reload 실패 — 손으로: dms restart${NC}\n"
+    fi
+  else
+    printf "${DIM}dms 가 없다 — 플러그인은 셸이 다음에 뜰 때 읽힌다.${NC}\n"
+  fi
+  ;;
+esac
+
 case " $want " in *" ghostty "*)
   term="$(cat "$cfg/rice/term" 2>/dev/null || true)"
   if [ -n "$term" ]; then
@@ -443,7 +476,7 @@ case " $want " in *" peek "*)
   else
     # 에이전트가 없는 머신(앱을 아직 안 깐 경우)이면 여기로 온다. 설정은 이미
     # 복원됐으므로 실패로 다루지 않는다.
-    printf "${YELLOW}WorkspacePeek 에이전트가 없다 — 앱을 깔았는지 볼 것 (modules/darwin/rice/peek/README.md)${NC}\n"
+    printf "${YELLOW}WorkspacePeek 에이전트가 없다 — 앱을 깔았는지 볼 것 (modules/darwin/rice/workspacepeek/README.md)${NC}\n"
   fi
   ;;
 esac

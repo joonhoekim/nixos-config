@@ -23,9 +23,11 @@ Wayland** (the fallback). The first two run the same Quickshell desktop shell,
 DankMaterialShell; see [modules/nixos/niri](modules/nixos/niri) and
 [modules/nixos/hyprland](modules/nixos/hyprland). Hyprland is there for the one
 thing niri cannot do: an output-wide shader (`decoration:screen_shader`) —
-`Mod+Shift+C` cycles the CRT off → static → animated, off at every login, and
+`Mod+Shift+C` cycles the list (off · saved chains · per-branch shaders), and
 `apps/rice-crt` does the same from a shell (`--reload` re-reads the `.frag`,
-which is how you tune its values).
+which is how you tune its values). Picking, stacking and tuning has a GUI —
+the ricing studio (`apps/rice-studio`), with `apps/rice-knobs` and
+`apps/rice-decor` as its shell backends.
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
@@ -211,4 +213,15 @@ sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 nix run .#build               # build only, no switch (verify it evaluates)
 nix run .#rollback            # roll back to a previous generation
 nix run .#clean               # garbage-collect old generations (default 7d; e.g. `-- 14d`)
+
+nix run .#demo                # replay real window-manager usage on an empty workspace
+nix run .#rice-menu           # backend for the DMS launcher plugin (axes as JSON)
+nix run .#rice-fuzzel         # regenerate fuzzel colors from the DMS palette
+nix run .#rice-colors         # macOS only — pywal palette push
+nix run .#mac-signing-cert    # macOS only — pin the code-signing identity (docs/03)
 ```
+
+The ricing family (rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
+rice-knobs · rice-decor · rice-chain · rice-save · rice-restore) is covered in
+the ricing section above and in each script's header. The full list lives in
+`flake.nix` (`mkApps`).

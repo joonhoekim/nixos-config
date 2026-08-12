@@ -199,9 +199,10 @@ nix --extra-experimental-features 'nix-command flakes' run .#build-switch
 원인: `mutableTaps = false`(tap은 선언한 것만 허용, 폴더 잠금)인데 이미 수동 커스텀 tap(예: aerospace의
 `nikitabobko/tap`)이 있어 충돌. 수동 brew·커스텀 tap을 쓰는 사람이면 `flake.nix`의 nix-homebrew에서
 `mutableTaps = true`로. 선언한 casks는 계속 관리하되 수동 `brew`도 허용된다.
+(이 레포는 이미 그렇게 돼 있다 — 새로 겪는다면 값이 되돌아갔는지부터 볼 것.)
 
 **5. home-manager가 기존 dotfile을 못 덮음.** `Existing file '~/.zshrc' would be clobbered` 등.
-`modules/darwin/home-manager.nix`에서 자동 백업 켜기:
+`modules/darwin/home-manager.nix`에서 자동 백업 켜기 (이미 켜져 있다 — 진단용으로 적어 둔다):
 
 ```nix
 home-manager.backupFileExtension = "backup";   # 기존 파일을 <name>.backup 으로 옮긴 뒤 관리

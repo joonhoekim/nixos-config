@@ -1,8 +1,8 @@
 { config, pkgs, ... }:
 
 # Shared AMD Ryzen + Radeon (iGPU) layer. Vendor-common settings only —
-# per-chassis quirks live in the host dirs (hosts/nixos/<hostname>/). Both
-# 7840HS machines import this.
+# per-chassis quirks live in the host dirs (hosts/nixos/<hostname>/). mn56
+# (7840HS) imports this; any future AMD host should too.
 #
 # CPU microcode (hardware.cpu.amd.updateMicrocode) and redistributable
 # firmware are already switched on by the generated hardware-configuration.nix

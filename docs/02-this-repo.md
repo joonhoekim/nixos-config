@@ -12,7 +12,9 @@
 
 - `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
 - `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
-- `apps.<system>.{build-switch, build, rollback, clean}` → `apps/<name>` (`nix run`의 실체)
+- `apps.<system>.<name>` → `apps/<name>` (`nix run`의 실체) — 빌드 4종(build-switch,
+  build, rollback, clean)과 라이싱 도구들(rice-*), demo, mac-signing-cert.
+  전체 목록은 `flake.nix`의 `mkApps` 한 곳이다
 - `devShells`
 
 흐름: `nix run .#build-switch` → `apps.<현재system>.build-switch` → 공유 스크립트 `apps/build-switch`
@@ -36,16 +38,19 @@ darwinSystems = [ "aarch64-darwin" ];  # 인텔 Mac은 nixpkgs 26.11에서 지�
 
 ### (B) 파일 안에서의 세밀한 분기 — `isDarwin` / `isLinux`
 
-공유 파일은 한 파일에서 두 OS를 다루므로 줄 단위로 갈라낸다(`modules/shared/home-manager.nix`).
+공유 파일은 한 파일에서 두 OS를 다루므로 줄 단위로 갈라낸다. 실제 예는
+`modules/shared/programs/zsh.nix` — macOS 전용 헬퍼(colima-up)를 darwin일 때만
+소싱한다:
 
 ```nix
-size = lib.mkMerge [
-  (lib.mkIf pkgs.stdenv.hostPlatform.isLinux  10)   # 리눅스면 10
-  (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin 14)   # macOS면 14
-];
+lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
+  ("\n" + builtins.readFile ../../darwin/scripts/colima-up.zsh)
 ```
 
-`mkIf <조건> <값>` = "조건이 참일 때만 적용". 거짓이면 그 줄은 없는 셈.
+같은 감각의 도구가 둘 더 있다: `lib.mkIf <조건> <값>`(조건이 거짓이면 그 줄은
+없는 셈), `lib.mkMerge [ a b ]`(여러 정의 병합). 경로 상수는 분기하지 않는다 —
+`/home` vs `/Users` 는 `config.home.homeDirectory` 가 이미 알고 있다
+(`modules/shared/programs/ssh.nix`).
 
 ---
 
@@ -57,19 +62,22 @@ hosts/darwin/default.nix          ← macOS 진입점 (시스템 레벨 설정)
 ├──→ modules/darwin/home-manager.nix   ← macOS 유저/홈 레벨
 │    │   imports ./dock              (Dock 관리 모듈)
 │    │   casks   = ./casks.nix       (GUI 앱)
+│    │   brews   = ./brews.nix       (formula — rift 등)
 │    │   home-manager.users.<user>:
-│    │     packages = ./packages.nix             (macOS 전용 패키지)
-│    │     file     = ../shared/files.nix + ./files.nix   (dotfile 링크)
+│    │     packages = ./packages.nix             (shared + macOS 전용 패키지)
 │    │     programs = ../shared/home-manager.nix          ← 공유
 │    └
 └──→ modules/shared (= modules/shared/default.nix)   ← nixpkgs 설정 + overlays
 
 modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
-├─ home-manager.nix   zsh, git, vim, ssh, atuin ... (셸/프로그램)
-├─ packages.nix       공통 CLI 패키지
-├─ fonts.nix          공통 폰트 (fonts.packages로 등록)
-├─ files.nix          공통 dotfile
-└─ default.nix        nixpkgs.config + overlays
+├─ home-manager.nix       ./programs 조각(zsh, git, vim, ssh, ...)을 하나로 폴드
+├─ programs/              프로그램별 home-manager 조각
+├─ packages.nix           공통 CLI 패키지
+├─ fonts.nix              공통 폰트 (fonts.packages로 등록)
+├─ ghostty/               터미널 라이싱 시드 + 심는 모듈 (양 플랫폼)
+├─ mise-install.nix       mise 도구를 switch 때 까는 활성화 조각 (양 플랫폼)
+├─ rice-seed-helpers.nix  라이싱 시드용 seed/ensure 셸 함수
+└─ default.nix            nixpkgs.config + overlays
 ```
 
 리눅스도 대칭이다. `hosts/nixos/<host>/default.nix` → `hosts/nixos/common.nix` → `modules/nixos/*`
@@ -103,19 +111,19 @@ mkApp = scriptName: system: {
     exec ${self}/apps/${scriptName} "$@"   # 공유 스크립트 실행, 인자 전달
   '')}/bin/${scriptName}";
 };
-# 스크립트가 플랫폼을 자체 감지하므로 모든 system이 같은 앱을 노출
-mkApps = system: {
-  "build-switch" = mkApp "build-switch" system;
-  "build"        = mkApp "build" system;
-  "rollback"     = mkApp "rollback" system;
-  "clean"        = mkApp "clean" system;
-};
+# 스크립트가 플랫폼을 자체 감지하므로 모든 system이 같은 앱을 노출.
+# 이름 목록 하나가 전부다 — 스크립트를 추가하면 여기 이름만 넣는다.
+mkApps = system: nixpkgs.lib.genAttrs [
+  "build" "build-switch" "rollback" "clean"
+  "rice-save" "rice-restore" ...  # 전체는 flake.nix
+] (name: mkApp name system);
 ```
 
 `${self}`는 flake 소스 루트. 흐름: `nix run .#build-switch` → writeScriptBin 래퍼 →
 `apps/build-switch` → `uname`으로 OS 판별 → macOS면 `darwinConfigurations.<arch>`,
 NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps/`에 스크립트를 두고
-`mkApps`에 한 줄 등록하면 모든 플랫폼에 노출된다.
+`mkApps`의 이름 목록에 넣으면 모든 플랫폼에 노출된다. `rice-lib.sh`·`build-lib.sh`처럼
+sourced 되는 조각은 목록에 넣지 않는다.
 
 ### 각 app이 하는 일
 
@@ -125,6 +133,9 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 | `build` | 빌드만 (활성화 X) | 평가·빌드 검증용 |
 | `rollback` | 이전 세대로 복구 | 세대 번호 입력(공백=직전). 양 OS |
 | `clean` | 구 세대 GC | `nix-collect-garbage --delete-older-than 7d` (인자로 기간 변경) |
+| `rice-*` | 라이싱 도구 일습 | 프로필·터미널·월페이퍼·화면 셰이더 전환과 저장/복원. 각 스크립트 머리말과 [README](../README.md)의 라이싱 절 참고 |
+| `demo` | 창 관리자 실사용 재연 | 빈 워크스페이스에서 키맵대로 창을 움직여 보여준다. 시나리오 목록은 `apps/demo` |
+| `mac-signing-cert` | 코드 서명 신원 고정 | macOS 전용 (docs/03 참고) |
 
 인자 규칙 세 가지:
 
@@ -159,7 +170,8 @@ NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps
 - GUI 앱(cask): `modules/darwin/casks.nix`
 - macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
-- dotfile 심링크: `modules/shared/files.nix` 또는 `modules/darwin/files.nix`
+- 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고
+  `apps/rice-save`로 되받는다 — files.nix 류의 심링크는 이제 없다
 - 외부 의존성: `flake.nix`의 `inputs`
 
 ---

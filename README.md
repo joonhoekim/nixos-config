@@ -46,16 +46,22 @@ apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
 [modules/shared/ghostty/README.md](modules/shared/ghostty/README.md).
 
 같은 브라운관을 **화면 전체**에 거는 건 Hyprland 세션에서만 된다 — `Mod+Shift+C`가
-끔 → 정지 → 움직임(그레인·험 바) 셋을 순환한다. 움직이는 쪽은 데미지 트래킹을 꺼야
-해서 배터리를 먹으니, 기본은 꺼짐이다
+목록(끔 · 체인 · 갈래별 셰이더)을 순환한다. 흐르는 셰이더는 VFR을 꺼야 해서
+배터리를 먹으니, 값어치는 각자 판단이다
 ([modules/nixos/hyprland/rice/shaders](modules/nixos/hyprland/rice/shaders)).
 
 ```sh
 apps/rice-crt                 # 현재 것과 목록
-apps/rice-crt crt             # 전환 (--next 는 키바인드와 같은 순환)
+apps/rice-crt crt/crt         # 한 장 걸기 (--next 는 키바인드와 같은 순환)
+apps/rice-crt water/still print/paper   # 즉석 체인 — 순서대로 겹친다
 apps/rice-crt --reload        # .frag 값을 고쳐 가며 맞출 때
 apps/rice-crt off             # 탈출구
 ```
+
+고르고 겹치고 값을 맞추는 GUI는 **라이싱 스튜디오**다(`apps/rice-studio`, DankBar의
+팔레트 조각으로도 뜬다). 셰이더 손잡이는 `apps/rice-knobs`, 하이프랜드 장식
+값(투명도·흐리게·그림자)은 `apps/rice-decor`가 뒤판이고, 체인 합성은
+`apps/rice-chain`이 한다 — 각 스크립트 머리말이 곧 문서다.
 
 셰이더를 거는 길은 `hyprctl eval` 뿐이다 — 이 세션은 `hyprland.lua`로 설정하는데
 lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드와 이 스크립트는
@@ -215,4 +221,14 @@ sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 nix run .#build               # 빌드만, 활성화 X (평가 검증용)
 nix run .#rollback            # 이전 generation으로 복구
 nix run .#clean               # 구 generation GC (기본 7d; 예: `-- 14d`)
+
+nix run .#demo                # 창 관리자 실사용을 빈 워크스페이스에서 자동 재연
+nix run .#rice-menu           # DMS 런처 플러그인의 뒤판 (축 목록을 JSON으로)
+nix run .#rice-fuzzel         # fuzzel 색을 DMS 팔레트에 맞춘다
+nix run .#rice-colors         # macOS 전용 — 벽지에서 팔레트를 뽑아 밀어 넣는다
+nix run .#mac-signing-cert    # macOS 전용 — 코드 서명 신원 고정 (docs/03)
 ```
+
+라이싱 계열(rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
+rice-knobs · rice-decor · rice-chain · rice-save · rice-restore)은 위 라이싱 절과
+각 스크립트 머리말 참고. 전체 목록은 `flake.nix`의 `mkApps`다.

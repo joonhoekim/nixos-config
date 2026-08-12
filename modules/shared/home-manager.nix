@@ -5,7 +5,7 @@
 # by its program name (e.g. `{ zsh = {...}; }`); they are folded together here.
 #
 # The result MUST stay a plain attrset: the darwin/nixos home-manager modules
-# consume it as `programs = {} // import ./shared/home-manager.nix {...}`, which
+# consume it as `programs = import ./shared/home-manager.nix {...}`, which
 # cannot resolve a `lib.mkMerge` thunk. Program keys do not overlap across
 # fragments, so a left-fold with `//` is sufficient and order-independent.
 let

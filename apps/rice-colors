@@ -22,7 +22,7 @@
 #                colors.json 을 새로 읽는다(useWalColors).
 #
 # ghostty 는 일부러 빠져 있다. 터미널 팔레트는 다른 축(apps/rice-term +
-# modules/shared/ghostty.nix)이 갖고 있고, 생성기 둘이 같은 테마 파일을 쓰면
+# modules/shared/ghostty)이 갖고 있고, 생성기 둘이 같은 테마 파일을 쓰면
 # 다음 룩 전환에서 색이 되돌아간다.
 #
 # ── NixOS 에서는 ──────────────────────────────────────────────────────────

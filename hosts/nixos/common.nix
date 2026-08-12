@@ -227,6 +227,43 @@
     # Periodic SSD TRIM.
     fstrim.enable = true;
 
+    # smartd is enabled per host (./mn56, ./evo-t1 — the note there explains
+    # why it cannot go in this file), but *how its alarms get delivered* is not
+    # a per-host question, so it is answered once here and applies to whichever
+    # host runs the daemon.
+    #
+    # x11 is off because it could never have worked. The option defaults to on
+    # whenever services.xserver.enable is set — which it is, above, for
+    # Xwayland and xkb — and then hardcodes DISPLAY=:0. Every session on these
+    # machines is Wayland, so :0 is at best some Xwayland instance and at worst
+    # nothing at all. A warning sent there is a warning lost.
+    #
+    # systembus-notify is the replacement. smartd runs as root and desktop
+    # notifications are per-user, so the alarm has to cross that boundary;
+    # this is the bridge that carries it, and turning it on here also flips
+    # services.systembus-notify on (the smartd module does that with mkDefault).
+    # Its own module warns that any local user can then spam the session with
+    # notifications — irrelevant on a single-user desktop, worth remembering if
+    # that ever stops being true.
+    #
+    # wall stays on underneath as the fallback that needs no session at all:
+    # it reaches a TTY even when the desktop is the thing that is broken.
+    #
+    # One gotcha on the rebuild that first enables this: the user unit is
+    # wantedBy=graphical-session.target, and a target that is *already* active
+    # does not start newly-installed wants. So it sits inactive until the next
+    # login (or a manual `systemctl --user start systembus-notify`) even though
+    # the switch reported success.
+    #
+    # Verified by running the generated smartd-notify.sh by hand as root with
+    # SMARTD_DEVICESTRING/SMARTD_MESSAGE set: the signal crosses the system bus
+    # and the notification lands on the desktop.
+    smartd.notifications = {
+      systembus-notify.enable = true;
+      wall.enable = true;
+      x11.enable = false;
+    };
+
     # Tray-toggleable power profiles (Power Saver / Balanced / Performance),
     # which GNOME's quick settings drive. Mutually exclusive with tlp and
     # auto-cpufreq — don't enable those alongside it.

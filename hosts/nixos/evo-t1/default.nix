@@ -296,18 +296,32 @@
     autodetect = true;
   };
 
+  # ── Firmware updates ─────────────────────────────────────────────────
+  # Turned on to find out what this box can even be offered — not a question
+  # answerable from the outside, since fwupdmgr talks to the daemon over
+  # D-Bus and there is no device list at all with the service off.
+  #
+  # The answer, as of 2026-08-13: fwupd enumerates 15 updatable devices and
+  # LVFS carries firmware for exactly one of them — UEFI dbx. Not the board
+  # (BIOS1 / Internal SPI Controller, AMI 5.32), not Intel ME 18.1.18.2635,
+  # not either Solidigm SSD, not the Genesys Logic hub. So GMKtec publishes
+  # nothing to LVFS and neither does Solidigm for this part; their updates,
+  # if any, are vendor tools and a USB stick.
+  #
+  # The dbx offer is 20241101 -> 20260402, Microsoft's Secure Boot revocation
+  # list. It is deliberately not applied: Secure Boot is *disabled* in this
+  # firmware (`bootctl status`), and dbx is only ever consulted when it is on,
+  # so installing it buys exactly nothing today while still being an NVRAM
+  # write to a no-name board's firmware. It becomes worth doing the day
+  # Secure Boot gets turned on — and at that point it should be applied
+  # *before* anything starts depending on an older signed loader, which is the
+  # usual way a dbx bump bricks a dual boot.
+  #
+  # Kept enabled anyway: the daemon is D-Bus activated (it reads `inactive`
+  # when idle) and fwupd-refresh.timer keeps the metadata current, so this
+  # costs nothing and is how a future vendor upload would ever get noticed.
+  services.fwupd.enable = true;
+
   # ── Not enabled, on purpose ──────────────────────────────────────────
   # modules/nixos/nginx.nix — mn56-only work setup, not wanted here.
-  #
-  # services.fwupd — the firmware is V2.03 from 2025-12-16 and no other host
-  # here runs fwupd, so there is no precedent to follow. Whether GMKtec
-  # publishes to LVFS at all is unverified, and it cannot be checked without
-  # the daemon running. If it is ever turned on, the components most likely to
-  # have updates are the Solidigm SSDs and the UEFI dbx, not the board.
-  #
-  # OpenCL / GPU compute — hardware.graphics.extraPackages could take
-  # pkgs.intel-compute-runtime (NEO) to expose OpenCL and Level Zero on the
-  # iGPU. level-zero itself is already installed as a side effect of the NPU
-  # module above, so the runtime is the only missing piece. Left out because
-  # nothing on this machine asks for it yet.
 }

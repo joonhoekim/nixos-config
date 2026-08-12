@@ -63,6 +63,10 @@ shared-packages ++ [
   wayland-utils   # `wayland-info` — compositor + supported protocols
   mesa-demos      # glxinfo, eglinfo, glxgears
   vulkan-tools    # vulkaninfo, vkcube
+  # 외장 모니터와 DDC/CI 로 말하는 도구 — 밝기·명암·입력 소스 등. apps/ddc-probe
+  # 가 이것을 부르고, 그 파일 머리말에 "왜 되읽기만으로는 판정이 안 되는가" 가
+  # 있다. 접근 권한은 programs.dms-shell 이 켜는 hardware.i2c 에서 온다.
+  ddcutil
 
   # Hardware / power inspection (vendor-neutral; per-vendor tools such as
   # intel-gpu-tools live in the host dirs under hosts/nixos)

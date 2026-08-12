@@ -127,6 +127,7 @@
         "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
         "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
         "rice-knobs" "rice-decor" "rice-colors"
+        "ddc-probe"
         "demo" "mac-signing-cert"
       ] (name: mkApp name system);
     in

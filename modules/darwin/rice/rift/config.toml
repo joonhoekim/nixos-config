@@ -429,7 +429,7 @@ move2 = "Alt + Ctrl"
 #                  niri need the key because fuzzel is the fallback when the
 #                  shell is not up.
 #   Alt + Ctrl + W WorkspacePeek's overlay takes it, and Alt + Ctrl + Q is left
-#                  free beside it (see modules/darwin/rice/peek/README.md).
+#                  free beside it (see modules/darwin/rice/workspacepeek/README.md).
 #                  Both use a CGEvent tap, as rift does, so a collision would
 #                  not error — it would be a race won by whoever registered
 #                  first, and the winner would change with login order.

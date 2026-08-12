@@ -132,7 +132,7 @@ in
 #
 # `apps/rice-colors <image>` runs wal and then pokes them. Ghostty is
 # deliberately not in that list: its palette is owned by the other ricing axis
-# (modules/shared/ghostty.nix + apps/rice-term), and having two generators
+# (modules/shared/ghostty + apps/rice-term), and having two generators
 # write the same theme file is how you get a look that flips back on the next
 # switch.
 
@@ -269,7 +269,7 @@ in
       seed ${./bin} "$HOME/.config/rice/bin"
 
       # WorkspacePeek(Option+Ctrl+W) 설정. 앱 자체는 nix 가 안 깐다 — Swift 로
-      # 빌드하는 .app 이라 명령형으로 두었다. 자세한 건 ./peek/README.md.
+      # 빌드하는 .app 이라 명령형으로 두었다. 자세한 건 ./workspacepeek/README.md.
       #
       # 설정만 여기서 관리하는 게 가능한 이유는 앱이 loadOrCreate 로 *없을 때만*
       # 쓰기 때문이다. 파일이 이미 있으면 앱은 읽기만 하므로, 여기 심어 둔 값이

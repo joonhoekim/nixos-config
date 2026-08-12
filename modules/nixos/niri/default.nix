@@ -69,7 +69,7 @@ in
       # needed. Without it X11 clients simply have no display to connect to.
       xwayland-satellite
 
-      # Deliberate fallback launcher, bound to Mod+D in ./home.nix while the
+      # Deliberate fallback launcher, bound to Mod+D in ./rice/config.kdl while the
       # shell's own launcher sits on Mod+Space. If the shell fails to come up
       # (a beta bump, a bad setting) there is still a way to start a terminal
       # without dropping to a TTY.
@@ -115,7 +115,7 @@ in
         seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
         seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
 
-        # 터미널(ghostty)은 여기 없다. ../../shared/ghostty.nix 가 심고, 그
+        # 터미널(ghostty)은 여기 없다. ../../shared/ghostty 가 심고, 그
         # 모듈은 macOS 에서도 같은 파일을 쓴다 — 셰이더는 플랫폼을 안 가리고
         # 니리는 리눅스 전용이라, 터미널 룩을 니리 밑에 두면 macOS 가 같은 것을
         # 쓰려 할 때 경로부터 막힌다.
@@ -137,7 +137,7 @@ in
           include=/home/${user}/.config/fuzzel/dank-rice.ini
 
         '' + builtins.readFile ./rice/fuzzel.ini)} "$HOME/.config/fuzzel/fuzzel.ini"
-        seed ${./rice/fuzzel-generated.ini} "$HOME/.config/fuzzel/dank-rice.ini"
+        seed ${./rice/fuzzel-fallback.ini} "$HOME/.config/fuzzel/dank-rice.ini"
 
         # GTK. Seeded rather than home-manager-managed because DMS edits these
         # in place — see the header of rice/gtk-settings.ini for the whole

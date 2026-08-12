@@ -1,11 +1,9 @@
-{ config, pkgs, lib, home-manager, user, ... }:
+{ config, pkgs, lib, user, ... }:
 
-let
-  sharedFiles = import ../shared/files.nix { inherit config pkgs; };
-  # ./files.nix 는 없다. macOS 쪽에 심링크로 걸던 셋(karabiner.json,
-  # aerospace.toml, rift 의 config.toml)이 2026-08-06 에 전부 시드로 옮겨
-  # 갔고(./rice), 그러고 나니 파일에 남는 항목이 하나도 없었다.
-in
+# home.file 항목은 여기 없다. macOS 쪽에 심링크로 걸던 셋(karabiner.json,
+# aerospace.toml, rift 의 config.toml)이 2026-08-06 에 전부 시드로 옮겨
+# 갔고(./rice), 그러고 나니 파일에 남는 항목이 하나도 없어서 files.nix 자체를
+# 지웠다 — 빈 껍데기만 남아 있던 shared 쪽도 같이 지웠다.
 {
   imports = [
    ./dock
@@ -58,24 +56,18 @@ in
       # 터미널 라이싱(셰이더 포함). NixOS 쪽 home-manager 도 같은 모듈을 쓴다 —
       # ghostty 는 여기서 cask 로 깔리고(./casks.nix), custom-shader 는 문서상
       # 모든 플랫폼이라 조각을 한 벌만 둔다. 자세한 건 그 모듈의 머리말.
-      imports = [ ../shared/ghostty.nix ];
+      imports = [ ../shared/ghostty ];
 
       home = {
         enableNixpkgsReleaseCheck = false;
         packages = pkgs.callPackage ./packages.nix {};
-        file = sharedFiles;
         stateVersion = "23.11";
 
-        # Materialize the tool versions declared in programs.mise.globalConfig
-        # at switch time. `mise install` is idempotent (no-op when nothing is
-        # missing); `|| true` keeps an offline switch from failing. curl is put
-        # on PATH because mise's rust backend shells out to rustup-init, which
-        # needs curl/wget — the activation env doesn't otherwise provide it.
-        activation.miseInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-          PATH="${pkgs.curl}/bin:$PATH" $DRY_RUN_CMD ${config.programs.mise.package}/bin/mise install || true
-        '';
+        # mise 도구 설치. NixOS 와 같은 것을 쓴다 — 예전에는 여기만 `|| true` 로
+        # 실패를 삼키는 옛 판이었고, 그 반쪽 수정이 이 조각으로 접은 이유다.
+        activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
       };
-      programs = {} // import ../shared/home-manager.nix { inherit config pkgs lib user; };
+      programs = import ../shared/home-manager.nix { inherit config pkgs lib user; };
 
       # Marked broken Oct 20, 2022 check later to remove this
       # https://github.com/nix-community/home-manager/issues/3344

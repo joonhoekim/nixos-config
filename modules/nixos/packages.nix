@@ -10,7 +10,6 @@ shared-packages ++ [
   # App and package management
   appimage-run
   gnumake
-  cmake
   home-manager
 
   # Media and design tools
@@ -22,14 +21,12 @@ shared-packages ++ [
   pavucontrol # Pulse audio controls
 
   # Text and terminal utilities
-  tree
   unixtools.ifconfig
   unixtools.netstat
 
   # File and system utilities
   inotify-tools # inotifywait, inotifywatch - For file system events
   libnotify
-  sqlite
   xdg-utils
 
   # Other utilities

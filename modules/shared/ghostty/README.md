@@ -1,6 +1,6 @@
 # ghostty 룩
 
-이 디렉터리는 **NixOS 와 macOS 가 같이 쓴다.** `../ghostty.nix` 가 양쪽
+이 디렉터리는 **NixOS 와 macOS 가 같이 쓴다.** `./default.nix` 가 양쪽
 home-manager 에서 import 되어 같은 파일을 `~/.config/ghostty/` 에 심고,
 `apps/rice-term` 도 두 플랫폼에서 돈다. 그래서 `modules/nixos/niri/rice/` 가
 아니라 `modules/shared/` 에 있다 — 니리는 리눅스 전용이지만 터미널 룩은 아니다.
@@ -89,7 +89,7 @@ A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `../../nixos/n
 
 **레포 파일을 고치고 `apps/rice-term` 을 돌리면 아무 일도 일어나지 않는다.**
 `rice-term` 이 복사하는 건 `rices/<name>.conf` 뿐이고, 셰이더 파일은 건드리지
-않는다. 레포는 시드일 뿐이라 `../ghostty.nix` 도 **파일이 없을 때만** 넣어 준다 —
+않는다. 레포는 시드일 뿐이라 `./default.nix` 도 **파일이 없을 때만** 넣어 준다 —
 이미 있는 `~/.config/ghostty/shaders/crt.glsl` 은 리빌드를 해도 덮이지 않는다.
 그래서 ghostty 는 리로드를 성실히 하고도 바뀐 게 없다고 나온다.
 

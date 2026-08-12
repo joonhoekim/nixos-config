@@ -1,17 +1,14 @@
 # SSH client configuration. Returns a `programs`-shaped fragment.
-{ pkgs, lib, user, ... }:
+#
+# 경로에 플랫폼 분기(/home vs /Users)가 있었는데, home.homeDirectory 가 양쪽에서
+# 이미 그 답을 들고 있어서 걷어냈다 — NixOS 는 modules/nixos/home-manager.nix 가
+# 직접 적고, darwin 은 users.users.<name>.home 에서 home-manager 가 받아 적는다.
+{ config, ... }:
 {
   ssh = {
     enable = true;
     enableDefaultConfig = false;
-    includes = [
-      (lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-        "/home/${user}/.ssh/config_external"
-      )
-      (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin
-        "/Users/${user}/.ssh/config_external"
-      )
-    ];
+    includes = [ "${config.home.homeDirectory}/.ssh/config_external" ];
     # Host blocks now live under `settings`, keyed by host pattern, using
     # upstream OpenSSH directive names (PascalCase).
     settings = {
@@ -23,14 +20,7 @@
       # Example SSH configuration for GitHub
       # "github.com" = {
       #   IdentitiesOnly = true;
-      #   IdentityFile = [
-      #     (lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-      #       "/home/${user}/.ssh/id_github"
-      #     )
-      #     (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin
-      #       "/Users/${user}/.ssh/id_github"
-      #     )
-      #   ];
+      #   IdentityFile = [ "${config.home.homeDirectory}/.ssh/id_github" ];
       # };
     };
   };

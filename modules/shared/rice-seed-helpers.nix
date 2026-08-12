@@ -1,6 +1,7 @@
 # home.activation 스크립트에 붙여 쓰는 셸 함수 두 개. 라이싱 파일을 $HOME 에
-# 심는 모듈들이 공유한다 — 지금은 ../nixos/niri/default.nix (니리·fuzzel·GTK)와
-# ./ghostty.nix (터미널) 둘이다.
+# 심는 모듈들이 공유한다 — ../nixos/niri (니리·fuzzel·GTK), ../nixos/hyprland
+# (hyprland.lua·셰이더·스튜디오), ../nixos/dms (플러그인), ./ghostty (터미널),
+# ../darwin/rice (rift·karabiner 등) 다섯이다.
 #
 #   ''
 #     ${import ../shared/rice-seed-helpers.nix}

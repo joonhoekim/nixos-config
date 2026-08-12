@@ -19,7 +19,8 @@
     ];
 
     # macOS-only helpers (e.g. colima-up) live as real shell files under
-    # ../scripts and are injected here via readFile, so they keep shell syntax
+    # modules/darwin/scripts (macOS 전용이라 shared 가 아니라 darwin 밑이다)
+    # and are injected here via readFile, so they keep shell syntax
     # highlighting and avoid nix string escaping.
     initContent = lib.mkBefore (''
       if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
@@ -61,6 +62,6 @@
       # Claude Code without permission prompts
       alias cld='claude --dangerously-skip-permissions'
     '' + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
-      ("\n" + builtins.readFile ../scripts/colima-up.zsh));
+      ("\n" + builtins.readFile ../../darwin/scripts/colima-up.zsh));
   };
 }

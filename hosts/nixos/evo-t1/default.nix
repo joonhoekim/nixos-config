@@ -297,9 +297,10 @@
   };
 
   # ── Firmware updates ─────────────────────────────────────────────────
-  # Turned on to find out what this box can even be offered — not a question
-  # answerable from the outside, since fwupdmgr talks to the daemon over
-  # D-Bus and there is no device list at all with the service off.
+  # Off. It was turned on once to answer a question that cannot be answered
+  # from the outside — fwupdmgr talks to the daemon over D-Bus, so with the
+  # service off there is no device list at all — and the answer is below.
+  # Turn it back on for a minute if this ever needs re-checking.
   #
   # The answer, as of 2026-08-13: fwupd enumerates 15 updatable devices and
   # LVFS carries firmware for exactly one of them — UEFI dbx. Not the board
@@ -317,10 +318,10 @@
   # *before* anything starts depending on an older signed loader, which is the
   # usual way a dbx bump bricks a dual boot.
   #
-  # Kept enabled anyway: the daemon is D-Bus activated (it reads `inactive`
-  # when idle) and fwupd-refresh.timer keeps the metadata current, so this
-  # costs nothing and is how a future vendor upload would ever get noticed.
-  services.fwupd.enable = true;
+  # With one un-wanted update as the entire yield, there is nothing left for
+  # the daemon to do here, so it goes back off rather than idling and
+  # refreshing metadata weekly for a vendor that publishes nothing.
+  services.fwupd.enable = false;
 
   # ── Not enabled, on purpose ──────────────────────────────────────────
   # modules/nixos/nginx.nix — mn56-only work setup, not wanted here.

@@ -68,7 +68,7 @@
 // 그 터미널 셰이더의 뿌리는 다시 space_dots(Golden Era) 라이스에 들어 있던
 // **Maxim Samoliuk 의 Hyprland 화면 셰이더(MIT)** 다. 블룸·그레인·깜빡임·색수차·
 // 가장자리 처리는 전부 다시 짰지만, 파생인 것은 맞으므로 여기 적어 둔다.
-// ../../LICENSE 참고.
+// ../../SHADER-CREDITS.md 참고.
 //
 // 고치면 저장하는 즉시 반영된다.
 

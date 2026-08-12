@@ -42,9 +42,18 @@
   # / `xe.force_probe=`) if something is actually broken — the swap changes
   # which driver's bugs you get, not the feature set.
   #
-  # NPU — "Intel AI Boost", the intel_vpu module. It probes on its own; there
-  # is nothing to enable here. Userspace (intel-npu-driver / OpenVINO) is not
-  # installed because nothing on this machine uses it yet.
+  # NPU — "Intel AI Boost". nixos-generate-config detected it and wrote
+  # `hardware.cpu.intel.npu.enable = true` into ./hardware-configuration.nix
+  # itself, which is more than the usual disks-and-microcode scan does, so it
+  # is easy to miss when skimming that file. It is not a no-op: the nixpkgs
+  # module behind it (nixos/modules/hardware/cpu/intel-npu.nix) adds
+  # intel-npu-driver's firmware, puts the driver in hardware.graphics
+  # .extraPackages next to the two from ../../modules/nixos/intel.nix, and
+  # installs level-zero plus the driver's validation tools system-wide.
+  #
+  # Left enabled — this is generated output and the repo treats that file as
+  # authoritative — but nothing here uses the NPU yet, so if the closure is
+  # ever worth trimming, that line is the one to turn off.
   #
   # Wi-Fi 7 / Bluetooth — an Intel BE-series card on iwlwifi. Firmware comes
   # from enableRedistributableFirmware, which the generated
@@ -55,10 +64,10 @@
   #
   # Ethernet — 2× 2.5 GbE, driven by igc. In-tree, no firmware needed.
   #
-  # Thunderbolt 4 / OCuLink — the tb port needs `boot.initrd.availableKernelModules`
-  # to carry "thunderbolt" if anything ever has to boot off it;
-  # nixos-generate-config normally writes that itself. OCuLink is plain PCIe
-  # and has no OS-side switch.
+  # Thunderbolt 4 / OCuLink — "thunderbolt" is already in
+  # boot.initrd.availableKernelModules (the scan put it there), so anything
+  # that ever has to boot off the TB port can. OCuLink is plain PCIe and has
+  # no OS-side switch.
 
   # ── Storage / swap ───────────────────────────────────────────────────
   # One NVMe, ESP on nvme1n1p1 and a single ext4 root on nvme1n1p2. No swap

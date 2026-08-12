@@ -33,8 +33,12 @@
     # modules/nixos/packages.nix).
     radeontop          # iGPU utilization
     nvtopPackages.amd  # GPU monitor
-    # cpupower + turbostat, taken from the running kernel's package set so it
-    # matches boot.kernelPackages (linuxPackages_latest).
+    # cpupower + turbostat, taken from the running kernel's package set so they
+    # match boot.kernelPackages (linuxPackages_latest). The comment here has
+    # named both since it was written; turbostat was never actually in the list
+    # until ./intel.nix needed it (i7z does not understand Arrow Lake, see
+    # there) and the omission turned up. It reads AMD's RAPL/MSR interfaces too.
     config.boot.kernelPackages.cpupower
+    config.boot.kernelPackages.turbostat
   ];
 }

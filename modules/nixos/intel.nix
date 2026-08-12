@@ -20,15 +20,21 @@
   #                       libvpl simply finds no matching implementation and
   #                       falls back to VAAPI.
   #
-  # Check what actually got picked up with `vainfo` (pkgs.libva-utils).
+  # Check what actually got picked up with `vainfo` (pkgs.libva-utils, in the
+  # package list below). On evo-t1 that reports iHD 26.1.6 against VA-API 1.24
+  # and a full Xe-LPG profile list — AV1/HEVC/VP9/H.264 decode *and* encode —
+  # so these two lines are doing the work they claim to.
   hardware.graphics.extraPackages = with pkgs; [
     intel-media-driver
     vpl-gpu-rt
   ];
 
-  # Proactive thermal management via the DPTF tables the firmware exposes.
-  # It matters most in small/passive chassis, which is what both Intel
-  # machines here are.
+  # Proactive thermal management. thermald prefers the firmware's own DPTF
+  # tables and falls back to its packaged thermal-conf.xml when there are none
+  # — which is what happens on evo-t1 (the log line naming the config file is
+  # the tell, and `--adaptive` found no GDDV to read). Useful either way, and it
+  # matters most in small/passive chassis, which is what both Intel machines
+  # here are.
   services.thermald.enable = true;
 
   # NOTE: powerManagement.cpuFreqGovernor is intentionally NOT set. On Intel
@@ -44,11 +50,25 @@
   environment.systemPackages = with pkgs; [
     # Intel-specific inspection (the vendor-neutral set is in ./packages.nix).
     intel-gpu-tools     # intel_gpu_top, ...
-    i7z                 # Intel CPU C-state / turbo detail
     nvtopPackages.intel # GPU monitor for the Intel iGPU
-    # cpupower, taken from the running kernel's package set so it matches
-    # boot.kernelPackages (linuxPackages_latest in common.nix) rather than the
-    # default one.
+    libva-utils         # `vainfo` — the check the VAAPI note above asks for
+
+    # i7z used to sit here for "CPU C-state / turbo detail" and has been
+    # dropped. It is a 2020 release that dispatches off a hardcoded CPU table,
+    # so on Arrow Lake-H it prints
+    #   Unknown processor, not exactly based on Nehalem, Sandy bridge or Ivy
+    #   Bridge
+    # and then shows a single made-up core with no frequency and no C-state
+    # residency — worse than nothing, because it still exits 0.
+    #
+    # cpupower + turbostat replace it, taken from the running kernel's package
+    # set so they match boot.kernelPackages (linuxPackages_latest in
+    # common.nix) rather than the default one. That versioning is the point:
+    # turbostat is built from the same tree as the kernel that boots, so it
+    # always knows the topology that kernel knows — including the P/E/LPE mix
+    # a hybrid part has and i7z never learned.
+    #   sudo turbostat --quiet --show PkgWatt,Busy%,Bzy_MHz,PkgTmp
     config.boot.kernelPackages.cpupower
+    config.boot.kernelPackages.turbostat
   ];
 }

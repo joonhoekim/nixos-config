@@ -1,8 +1,11 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 # Machine-specific hardware quirks for the Galaxy Chromebook 1. Anything here
 # is about THIS chassis; vendor-neutral tooling lives in
-# modules/nixos/packages.nix.
+# modules/nixos/packages.nix, and the Intel-but-not-chassis-specific parts
+# (thermald, the iHD VAAPI driver, intel_gpu_top/i7z/cpupower, the
+# intel_pstate note) moved to modules/nixos/intel.nix once a second Intel
+# host existed — ./default.nix imports it.
 
 {
   hardware.firmware = with pkgs; [
@@ -128,27 +131,11 @@
   # The Wayland session uses GNOME's own per-monitor scaling.
   services.xserver.dpi = 192;
 
-  # Intel proactive thermal management — essential for the fanless chassis.
-  services.thermald.enable = true;
-
-  # NOTE: powerManagement.cpuFreqGovernor is intentionally NOT set. On Intel
-  # CPUs the intel_pstate driver ignores generic cpufreq governors;
-  # services.power-profiles-daemon (common.nix) drives the Energy Performance
-  # Preference instead. `scaling_governor` always reads "powersave" — that's
-  # intel_pstate naming, not the actual behavior. Switch profiles from GNOME
-  # quick settings or:
-  #   powerprofilesctl set {power-saver|balanced|performance}
+  # thermald matters more here than on any other host — this chassis is
+  # fanless — but it is not chassis-*specific*, so it lives in
+  # modules/nixos/intel.nix along with the rest of the Intel-common layer.
 
   environment.systemPackages = with pkgs; [
-    # Intel-specific inspection (the vendor-neutral set is in
-    # modules/nixos/packages.nix).
-    intel-gpu-tools     # intel_gpu_top, gpu-frequency, ...
-    i7z                 # Intel CPU C-state / turbo detail
-    nvtopPackages.intel # GPU monitor for the Intel iGPU
-    # cpupower + turbostat. Taken from the running kernel's package set so it
-    # matches boot.kernelPackages (linuxPackages_latest), not the default one.
-    config.boot.kernelPackages.cpupower
-
     # `display-try <target>` — restart into a different display setting
     # without a rebuild. i915 only reads both knobs when it initialises the
     # eDP connector, so trying anything means restarting the kernel; this does

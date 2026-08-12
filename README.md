@@ -9,7 +9,7 @@ Silicon)뿐이다. 이 이름을 flake 타겟으로 쓴다 — 예: `.#aarch64-d
 (`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 — 되살리려면 26.05 darwin
 브랜치에 고정한 별도 nixpkgs input이 필요하다.
 
-NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `galaxy-chromebook-1`(둘 다
+NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `evo-t1`, `galaxy-chromebook-1`(모두
 `x86_64-linux`). 이 이름을 flake 타겟으로 쓴다 — 예: `.#mn56`. 호스트 디렉토리는 실제로
 존재하는 머신만 만든다(그 머신에서 생성한 `hardware-configuration.nix`가 필요하다).
 머신별 설정은 [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
@@ -132,7 +132,7 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 `--extra-experimental-features 'nix-command flakes'`가 필요). 거기에 더해, 첫 빌드 **전에**
 반드시 정해야 하는 머신 고유 항목이 셋 있다:
 
-1. **이 머신의 하드웨어 설정을 채운다.** 등록된 호스트(`mn56`,
+1. **이 머신의 하드웨어 설정을 채운다.** 등록된 호스트(`mn56`, `evo-t1`,
    `galaxy-chromebook-1`)는 모두 그 머신에서 생성한 진짜
    `hosts/nixos/<host>/hardware-configuration.nix`를 갖고 있다. 새 머신을 추가할 때는
    호스트 디렉토리를 만들기 **전에** 이 파일부터 뽑는다 — 빈 placeholder를 커밋해두면
@@ -149,7 +149,7 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
    이 파일은 root/boot 파일시스템, swap, initrd 모듈, CPU 마이크로코드를 고정하므로 머신
    간에 공유할 수 없다.
 
-2. **호스트를 고른다.** 호스트는 hostname으로 키잉된다(`mn56`,
+2. **호스트를 고른다.** 호스트는 hostname으로 키잉된다(`mn56`, `evo-t1`,
    `galaxy-chromebook-1`). 더 추가하려면 `hosts/nixos/<name>/`를 만들고(`../common.nix` +
    자기 `hardware-configuration.nix`를 import) `flake.nix`의 `mkNixosHost` 목록에 등록한다.
    flake 속성 이름과 `networking.hostName`을 맞춰두면 `build-switch`가 호스트를 자동으로
@@ -162,7 +162,7 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 그다음 빌드:
 
 ```sh
-sudo nixos-rebuild switch --flake .#mn56      # 또는 .#galaxy-chromebook-1
+sudo nixos-rebuild switch --flake .#mn56      # 또는 .#evo-t1, .#galaxy-chromebook-1
 # flakes가 켜져 있고 hostname이 호스트와 일치하면: nix run .#build-switch
 ```
 

@@ -150,7 +150,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 치환(`apply`)·비밀키 부트스트랩(`*-keys`)·disko 포맷·`install` 앱은 **전부 제거**했다.
 머신마다 다른 값은 한 곳, 각 호스트의 `hardware-configuration.nix`에만 모인다.
 
-- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`,
+- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`, `.evo-t1`,
   `.galaxy-chromebook-1`). 각 `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관
   설정) + 자기 `hardware-configuration.nix`를 import한다.
 - `hardware-configuration.nix`는 **그 머신에서 생성한 진짜 파일**이어야 한다. 해당
@@ -158,7 +158,9 @@ sourced 되는 조각은 목록에 넣지 않는다.
   디렉토리는 실제로 존재하는 머신만 만든다 — 빈 placeholder를 커밋해두면 `fileSystems`
   미정의로 평가가 깨질 뿐 얻는 게 없다.
 - CPU 마이크로코드·initrd 모듈·디스크 UUID는 이 파일이 자동으로 담으므로, AMD/Intel 머신
-  차이는 여기서 흡수된다. GPU(amdgpu / i915·xe)는 mesa로 공통 처리.
+  차이는 여기서 흡수된다. GPU(amdgpu / i915·xe)의 *렌더링*도 mesa로 공통 처리된다 —
+  벤더별로 남는 건 `modules/nixos/{amd,intel}.nix` 정도이고, 실제 차이는 영상 디코드다
+  (radeonsi는 VAAPI를 같이 들고 오지만 Intel은 `intel-media-driver`가 따로 필요하다).
 
 ---
 

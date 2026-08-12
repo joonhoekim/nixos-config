@@ -114,6 +114,72 @@
     ];
   };
 
+  # ── The monitor on DP-1: brightness, and its USB hub ─────────────────
+  # Both were investigated alongside the speakers. Neither needs anything on
+  # this host, but "nothing to do" is the kind of answer that gets re-derived
+  # from scratch a year later, so the findings stay.
+  #
+  # Brightness works over DDC/CI, and needs nothing on this host — but it was
+  # dead for a while for a reason no amount of looking at this machine would
+  # ever have found, so the route matters more than the answer.
+  #
+  # The mechanics first. There is no /sys/class/backlight, which is correct for
+  # an external panel: the path is I2C over the DP AUX channel. /dev/i2c-10
+  # ("AUX USBC1/DDI TC1/PHY TC1", the AUX line of this very connector) answers
+  # on DDC address 0x37, the panel reports MCCS 2.1 on an Mstar controller, and
+  # VCP 0x10 is in its capabilities string. DMS finds it by itself — `dms ipc
+  # call brightness list` shows `ddc:i2c-10 (ddc)` — through a DDC backend
+  # compiled into the dms binary, so ddcutil is not needed for the shell to
+  # drive it (it is still the tool to debug with, and modules/nixos/packages.nix
+  # ships it). Permissions come free as well: programs.dms-shell turns on
+  # hardware.i2c, whose udev rule tags /dev/i2c-* with uaccess, so the seat
+  # user gets an ACL and no i2c group membership is needed.
+  #
+  # ── What was actually wrong, in the order it was found ───────────────
+  # Two separate faults, and the first one hid nothing — it just wasted the
+  # search.
+  #
+  #   1. The keybind called DMS with the wrong number of arguments and failed
+  #      silently. Real bug, fixed, and not host-specific — see
+  #      ../../../modules/nixos/hyprland/rice/hyprland.lua.
+  #
+  #   2. The monitor's own OSD had HDR set to Auto, and in that mode the panel
+  #      ignores manual brightness. DDC was working the whole time: writes were
+  #      acknowledged and read back correctly. The backlight simply did not
+  #      move, because the monitor had taken brightness away from itself.
+  #      Turning HDR off in the OSD fixed it. Nothing on this machine was ever
+  #      set to HDR — Hyprland reports colorManagementPreset srgb — so the
+  #      state was invisible from the OS side in both directions.
+  #
+  # The wrong turn in between is the part worth keeping. `setvcp 10 60`
+  # followed by `getvcp 10` returning 60 was taken as proof that brightness
+  # control worked. It is not: it proves the monitor stored the value, and
+  # says nothing about whether it acted on it. This panel will happily lie in
+  # the same register — it answers 0x60 (input source) with "S-Video-1" while
+  # connected over DisplayPort, and answers 0x13 (backlight control), which its
+  # own capabilities string does not list, with a current value larger than the
+  # maximum it reports in the same reply, refusing writes with DDCRC_VERIFY.
+  #
+  # apps/ddc-probe exists because of that. It holds each changed value on
+  # screen while it asks whether anything moved, then restores. Only an eye
+  # settles this question; use it before believing any DDC claim, this comment
+  # included.
+  #
+  # So: if brightness ever appears dead again, check the monitor's OSD for HDR
+  # / DCR / dynamic contrast / eco before suspecting anything in this repo.
+  #
+  # The monitor's USB hub works, and is USB 2.0 only for a reason that cannot
+  # be configured away. It enumerates as 3-1, a 4-port GenesysLogic hub, on a
+  # root port whose connect_type is "hotplug" — the soldered Bluetooth radio,
+  # for contrast, sits on a "hardwired" one — and reports bMaxPower 0mA, i.e.
+  # self-powered off the monitor. Both USB3 root hubs are empty, and that is
+  # the DP Alt Mode trade rather than a fault: DP-1 is linked at four lanes of
+  # HBR3 (i915_dp_force_lane_count reads 4*), this panel does not do DSC
+  # (DSC_Sink_Support: no), and 5120x2160@60 undsc'd needs roughly 19.9 Gbit/s,
+  # which two lanes cannot carry at about 13 Gbit/s usable. Four DP lanes on a
+  # USB-C connector leave only USB 2.0 beside them. Keyboards, mice, headsets
+  # and webcams are fine on that hub; an external SSD wants a port on the box.
+
   # ── NPU ───────────────────────────────────────────────────────────────
   # 00:0b.0 [8086:7d1d], "Intel AI Boost". nixos-generate-config detected it
   # and wrote `hardware.cpu.intel.npu.enable = true` into

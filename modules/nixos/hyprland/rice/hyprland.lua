@@ -351,8 +351,13 @@ hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("dms ipc call audio increment 5"
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("dms ipc call audio decrement 5"), mediakey)
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("dms ipc call audio mute"), { locked = true })
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("dms ipc call mic mute"), { locked = true })
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("dms ipc call brightness increment 5"), mediakey)
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("dms ipc call brightness decrement 5"), mediakey)
+-- 밝기만 인자가 둘이다: `increment(step, device)`. 오디오 쪽(`increment(step)`)을
+-- 보고 하나만 넘기면 DMS 가 "Too few arguments provided" 로 조용히 거절하고,
+-- 화면에는 아무 일도 안 일어난다 — 키가 안 먹는 게 아니라 호출이 틀린 것이다.
+-- 빈 문자열은 "기본 장치"라는 뜻이고, 그게 노트북 백라이트든 DDC 로 잡힌 외장
+-- 모니터든 알아서 간다(evo-t1 에서는 ddc:i2c-10 = 40LGD5K 로 갔다).
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd('dms ipc call brightness increment 5 ""'), mediakey)
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd('dms ipc call brightness decrement 5 ""'), mediakey)
 
 -- 리싱 스크립트. exec_cmd 는 sh -c 를 거치므로 $HOME 이 풀린다.
 -- 프로필 전환은 두 세션이 반씩 나눠 갖는다 — 니리 조각(profile.kdl)은 여기서

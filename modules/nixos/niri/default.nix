@@ -99,6 +99,16 @@ in
 
         seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
 
+        # 밝기 키의 인자 개수를 고친다. 사연과 idempotent 인 이유는 ../hyprland
+        # 쪽 같은 자리에 적어 뒀다 — 두 세션이 같은 DMS 를 같은 방식으로 잘못
+        # 부르고 있었고, 고친 줄은 시드에만 넣어서는 이미 config.kdl 을 가진
+        # 머신에 닿지 않는다.
+        if [ -f "$HOME/.config/niri/config.kdl" ]; then
+          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i -E \
+            's#("dms" "ipc" "call" "brightness" "(increment|decrement)" "[0-9]+");#\1 "";#g' \
+            "$HOME/.config/niri/config.kdl"
+        fi
+
         # config.kdl 이 optional 로 include 하는 조각. 창 열림/닫힘 셰이더가
         # 들어 있고, 지우면 니리 기본 애니메이션으로 돌아간다.
         seed ${./rice/animations.kdl} "$HOME/.config/niri/animations.kdl"

@@ -63,6 +63,57 @@
   # trade a mature driver for a newer one on hardware the newer one does not
   # target, and the feature set above is already complete.
 
+  # ── The monitor on DP-1: its speakers ────────────────────────────────
+  # DP-1 carries an HCS 40LGD5K (5120x2160, over USB-C DP Alt Mode) and that
+  # panel has speakers. The kernel sees them: /proc/asound/card0/eld#2.12 reads
+  # monitor_present 1, eld_valid 1, monitor_name 40LGD5K, connection_type
+  # DisplayPort, speakers FL/FR, one LPCM SAD at 2ch. PipeWire agrees — it
+  # lists the matching port hdmi-output-0 as "available" with
+  # device.product.name "40LGD5K". They still never appeared as a sink.
+  #
+  # The reason is that both codecs on this machine — the Senarytech SN6186 that
+  # drives the analog jacks and the Meteor Lake HDMI codec that drives the
+  # display — sit behind one ACP card, alsa_card.pci-0000_00_1f.3, and ACP
+  # profiles are mutually exclusive. WirePlumber picks by profile priority and
+  # analog duplex outranks HDMI (6565 against 5965), which does not leave the
+  # HDMI sink idle, it stops it existing. So "NixOS does not recognise the
+  # monitor's speakers" was never true; the sink was outvoted before it was
+  # created.
+  #
+  # device.profile.priority.rules is the hook WirePlumber provides for exactly
+  # this (scripts/device/find-preferred-profile.lua). It runs ahead of the
+  # priority-based find-best-profile and names a profile outright.
+  #
+  # Two things it deliberately does not do, both worth knowing before this
+  # looks broken:
+  #
+  #   It does not beat the state file. Of the three selection hooks,
+  #   find-stored-profile runs *first*, so whatever
+  #   ~/.local/state/wireplumber/default-profile holds for this card wins over
+  #   the rule below. That is the right shape — a profile chosen by hand in a
+  #   UI is a decision and should stick — but it means an entry left there by
+  #   an earlier choice has to be removed once before this rule is what is
+  #   actually in force.
+  #
+  #   It does not fall back. find-preferred-profile matches on profile name
+  #   only and never consults availability (find-best-profile is the hook that
+  #   checks), so with the monitor unplugged the card stays on the HDMI profile
+  #   rather than dropping to analog. That is acceptable here and not
+  #   elsewhere: on this box the 3.5 mm jack has nothing in it — lineout,
+  #   headphones and both mics all report "not available" — and the everyday
+  #   sink is a HIFIMAN EF400 USB DAC, which is its own card and untouched by
+  #   any of this. The analog half of this codec is carrying nothing.
+  services.pipewire.wireplumber.extraConfig."51-hdmi-audio-preference" = {
+    "device.profile.priority.rules" = [
+      {
+        matches = [ { "device.name" = "alsa_card.pci-0000_00_1f.3"; } ];
+        actions.update-props.priorities = [
+          "output:hdmi-stereo+input:analog-stereo"
+        ];
+      }
+    ];
+  };
+
   # ── NPU ───────────────────────────────────────────────────────────────
   # 00:0b.0 [8086:7d1d], "Intel AI Boost". nixos-generate-config detected it
   # and wrote `hardware.cpu.intel.npu.enable = true` into

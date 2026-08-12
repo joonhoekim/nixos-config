@@ -7,7 +7,6 @@
 #   apps/rice-chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
 #   apps/rice-chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
 #   apps/rice-chain --motion crt/crt       이 조합이 흐르는가 (yes/no)
-#   apps/rice-chain --info crt/crt         탭 수와 흐름을 한 줄로 (`23 yes`)
 #   apps/rice-chain --info-all <칸>...     칸마다 `<칸> <탭> <흐름>` (캐시된다)
 #   apps/rice-chain --addable <지금칸>...  후보를 stdin 으로, 붙일 수 있는 것만
 #   apps/rice-chain --limit                탭 한도 하나
@@ -579,7 +578,6 @@ case "${1:-}" in
 --check) mode=check; shift ;;
 --cost) mode=cost; shift ;;
 --motion) mode=motion; shift ;;
---info) mode=info; shift ;;
 --stages)
 	[ -f "${2:-}" ] || die "합성본 경로가 필요하다"
 	sed -n 's|^// rice-chain: ||p' "$2"
@@ -709,12 +707,9 @@ if [ "$mode" = cost ]; then
 	exit 0
 fi
 
-# 둘을 한 번에 묻는 길. 목록 UI 는 값마다 이 둘을 다 알아야 하는데, 따로 부르면
-# 프로세스가 값 수의 두 배로 뜬다 — 런처를 열 때마다 그만큼 기다리게 된다.
-if [ "$mode" = info ]; then
-	printf '%s %s\n' "$product" "$(motion "$@")"
-	exit 0
-fi
+# `--info <칸>` (탭 수와 흐름을 한 줄로) 이 여기 있었다. 목록 UI 가 값마다
+# 부르던 것인데 --info-all 과 rice-crt --json 이 그 자리를 가져가면서 부르는
+# 곳이 없어져 뺐다 — 같은 답은 `--info-all <칸>` 으로 나온다.
 
 if [ "$product" -gt "$max_taps" ]; then
 	printf "${RED}이 조합은 픽셀당 tex 를 %d 번 읽는다 (한도 %d). 안 건다.${NC}\n" \

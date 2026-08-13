@@ -126,6 +126,28 @@
   # own instead of holding the power button.
   boot.kernelParams = [ "reboot=pci" ];
 
+  # ── BIOS update staging ──────────────────────────────────────────────
+  # The shipping BIOS (1.00, build 2024-01-13) is suspected in all three
+  # firmware-level faults above. The vendor's last update
+  # (_temp/AR6000-MI2_PHX_250311_Firebat_DIS_SEC, AMI $FID says build
+  # 2025-03-11, project 1AZKH011 — the version *string* stays "1.00", tell
+  # them apart by dmidecode's Release Date) ships a UEFI-shell flasher
+  # alongside the Windows one, so no Windows is needed: this entry boots the
+  # EDK2 shell from the systemd-boot menu, with AfuEfix64.efi and the .rom
+  # copied onto the ESP next to it. flashrom cannot back up the current image
+  # from Linux (SPI is unmapped on this platform), so the backup happens in
+  # the shell right before flashing:
+  #
+  #   FS0:                                    (map -r if files aren't here)
+  #   AfuEfix64.efi mn56-bios-backup.rom /O   (dump current image first)
+  #   AfuEfix64.efi AR6000-MI2.rom /p /b /n /k /RLC:E /reboot
+  #
+  # /n rewrites NVRAM, so expect BIOS settings and UEFI boot entries to
+  # reset; \EFI\BOOT\BOOTX64.EFI on the ESP still boots systemd-boot, and
+  # `nixos-rebuild boot` re-registers the entry. Drop this option (and the
+  # two files on the ESP) once the flash is done and verified.
+  boot.loader.systemd-boot.edk2-uefi-shell.enable = true;
+
   # ── Drive health monitoring ──────────────────────────────────────────
   # modules/nixos/packages.nix already ships smartmontools, but that is only
   # the `smartctl` CLI — it tells you nothing unless you remember to go look.

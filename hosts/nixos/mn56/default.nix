@@ -35,9 +35,20 @@
   # comes up on `balanced`; switch profiles if this ever needs to stay pinned
   # to performance.
 
-  # ── This box never sleeps ────────────────────────────────────────────
-  # Both sleep states this chassis can reach are broken, so every path into
-  # them is masked and the machine only ever runs or powers off.
+  # ── Sleep: re-enabled on the 2025-03-11 BIOS ─────────────────────────
+  # Both sleep states were broken on the shipping BIOS (1.00, 2024-01-13
+  # build) and every path into them was masked here 2026-08-11 → 2026-08-13.
+  # After flashing BIOS build 2025-03-11 (docs/postmortems/
+  # 2026-08-13-mn56-bios-update.md), s2idle passed two rtcwake cycles (90s
+  # and 120s — clean entry/exit pairs, RTC wake on time, wifi intact, no
+  # errors). The old failures only ever showed on long cycles though (a
+  # 2min hibernate passed while a 13.4h one corrupted the kernel), so short
+  # tests prove little: the masks are lifted for a real-world evaluation
+  # instead of more synthetic ones. If sleep wedges again, re-add the five
+  # target masks (this block's git history has them) and reopen the story
+  # below.
+  #
+  # What was broken, for when it comes back:
   #
   # s2idle is the only suspend state the firmware offers (dmesg: "ACPI: PM:
   # (supports S0 S4 S5)" — no S3), and on 2026-08-03 a suspend entered it and
@@ -70,34 +81,13 @@
   # config-side fix, and not deterministic either: the 2026-08-04 cycle (2min
   # under) came back fine, the 2026-08-10 one (13.4h under) did not.
   #
-  # Masking sleep.target is what makes this stick. suspend.target requires
-  # systemd-suspend.service, which in turn is Requires=sleep.target, and the
-  # hibernate/hybrid-sleep/suspend-then-hibernate targets are built the same
-  # way — so with all five masked there is no reachable path left. That covers
-  # every caller the session has: dms' power menu "Suspend" runs `systemctl
-  # suspend` (Services/SessionService.qml picks systemctl over loginctl in
-  # powerManagerCommand(), and customPowerActionSuspend is empty), the suspend
-  # key lands on the same target, and the idle timeout calls
-  # suspendWithBehavior() with acSuspendBehavior = Suspend (0). All of them now
-  # fail with "Unit ... is masked." instead of hanging the box. Masking
-  # suspend-then-hibernate.target also closes the one gap the old ExecStart
-  # override left open, so dms' suspend behaviour no longer needs to be left
-  # alone to keep s2idle unreachable.
-  systemd.targets = {
-    sleep.enable = false;
-    suspend.enable = false;
-    hibernate.enable = false;
-    hybrid-sleep.enable = false;
-    suspend-then-hibernate.enable = false;
-  };
-
-  # The 48G swap partition in hardware-configuration.nix was sized against the
-  # installed RAM because it had to hold a hibernate image. That reason is now
-  # gone, but the partition stays declared and active: with zram in front of it
-  # at priority 5 (common.nix) it costs nothing to keep, and it is the only
-  # backstop left if zram's 23G ever fills. It just no longer has a size
-  # requirement — if the space is ever wanted back, it can be shrunk or dropped
-  # without anything else in this file caring.
+  # The 48G swap partition in hardware-configuration.nix was sized against
+  # the installed RAM because it had to hold a hibernate image. With sleep
+  # re-enabled that duty is back (suspend-then-hibernate is reachable again),
+  # so resumeDevice is too: without it hibernate would write an image the
+  # next boot never resumes from — every hibernate silently a data-losing
+  # power cycle. Same UUID as the swapDevices entry.
+  boot.resumeDevice = "/dev/disk/by-uuid/423f3ce2-ba0e-4ee3-a8a5-7868532f2201";
 
   # ── Warm reboot hangs before POST ────────────────────────────────────
   # `reboot` leaves this box dark maybe a third of the time: both monitors

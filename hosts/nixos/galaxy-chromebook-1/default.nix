@@ -28,15 +28,21 @@
   # twin in ./home.nix, both now removed) had no key to act on in the first
   # place.
 
-  # This machine's EFI NVRAM carries more than one "Linux Boot Manager" entry,
-  # left over from an install on a partition that no longer exists. The
-  # firmware tries the dead one first, prints
+  # This machine's EFI NVRAM has twice accumulated dead "Linux Boot Manager"
+  # entries ahead of the live one in BootOrder — once pointing at a partition
+  # that no longer exists, once with the partition fields zeroed out entirely.
+  # The firmware tries them first, prints
   #
   #   Booting from 'Linux Boot Manager' failed: Not Found
   #
-  # and only then falls through to the live entry — so it boots fine, just
-  # noisily. `bootctl status` shows which entries exist but cannot remove one;
-  # efibootmgr is the tool that can (`efibootmgr -b <ID> -B`).
+  # and only then falls through to the live entry. Both are cleared as of
+  # 2026-08-14; what wrote the zeroed ones was never identified.
+  #
+  # The trap, if it comes back: `bootctl status` only lists entries whose
+  # device path it can parse, so a broken entry is exactly the one it hides.
+  # Read `efibootmgr -v` instead. It is also the only one of the two that can
+  # remove an entry (`efibootmgr -b <ID> -B`).
+  # See docs/postmortems/2026-08-14-galaxy-chromebook-1-efi-boot-entries.md.
   #
   # Kept installed rather than reached for with `nix run`: the situation it
   # diagnoses is a boot problem, and a machine that will not boot is a poor

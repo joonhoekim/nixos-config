@@ -34,3 +34,4 @@
 - [2026-08-04 — macOS 리싱 도입: 종료 코드 0으로 조용히 실패한 것 넷](2026-08-04-macos-rift-sketchybar.md)
 - [2026-08-05 — VS Code 터미널에서 한글이 통째로 사라진다](2026-08-05-vscode-terminal-hangul.md)
 - [2026-08-13 — mn56: Windows 전용 BIOS 업데이트를 리눅스에서 해냈다](2026-08-13-mn56-bios-update.md)
+- [2026-08-14 — galaxy-chromebook-1: `bootctl status` 가 안 보여 준 죽은 부트 항목 둘](2026-08-14-galaxy-chromebook-1-efi-boot-entries.md)

@@ -109,8 +109,9 @@ AfuEfix64.efi AR6000-MI2.rom /p /b /n /k /RLC:E /reboot   # ② 제조사 라인
   버전 문자열은 안 바뀐다.
 - ROM 신원 확인: `$FID` 오프셋을 `grep -aboE '\$FID'` 로 찾아 `dd | xxd`.
   날짜는 리틀엔디언 연도 2바이트 + 월 + 일.
-- 절차 전문은 `hosts/nixos/mn56/default.nix` 의 "BIOS update staging" 주석에
-  있다 (검증이 끝나면 블록째 지워질 예정이라, 그때는 이 문서가 원본이 된다).
+- 절차 전문은 `hosts/nixos/mn56/default.nix` 의 "BIOS flashing kit" 주석에
+  있다 (지우지 않고 유지하기로 했다 — 셸 항목과 ESP 의 파일들이 곧
+  상시 재플래시/롤백 경로다).
 - 구 BIOS 백업: `_temp/bios-backup-mn56-20260813/mn56-bios-1.00-20240113.rom`
   (sha256 `db4fd85d…`). **`_temp` 는 git 밖이라 이 디스크에만 존재한다** —
   다른 곳에 사본을 하나 둘 것. 되돌리기 = 5번 절차에서 rom 파일만 이것으로.
@@ -124,6 +125,10 @@ AfuEfix64.efi AR6000-MI2.rom /p /b /n /k /RLC:E /reboot   # ② 제조사 라인
       했다.** resumeDevice 도 같이 복구 (hibernate 가 다시 닿을 수 있으니).
 - [ ] 실사용 평가: 밤샘 suspend, suspend-then-hibernate 가 자연히 굴러가는지.
       다시 안 깨어나면 → 마스킹 다섯 개 복원 (git 이력에 있다).
+      8/14 첫 밤 통과.
 - [ ] warm reboot 재시험: `reboot=pci` 제거 실험. 부팅 무출력 재발 관찰.
-- [ ] 끝나면 정리: ESP 의 플래셔/rom/백업 삭제, `edk2-uefi-shell` 옵션 제거,
-      `reboot=pci` 주석 갱신.
+- [x] ~~끝나면 정리~~ → **정리하지 않기로 했다** (8/14). ESP 의 플래셔/rom/백업과
+      `edk2-uefi-shell` 옵션은 그대로 둔다: 합쳐서 ~96 MiB 에 부트 메뉴 한 줄이
+      비용의 전부인데, 남겨 두면 "언제든 셸로 들어가 재플래시/롤백할 수 있는
+      상태"가 유지된다. 특히 구 BIOS 백업은 ESP 사본이 `_temp` 사본의 이중화도
+      겸한다. 남은 정리는 `reboot=pci` 주석 갱신뿐 (warm reboot 재시험과 함께).

@@ -116,7 +116,7 @@
   # own instead of holding the power button.
   boot.kernelParams = [ "reboot=pci" ];
 
-  # ── BIOS update staging ──────────────────────────────────────────────
+  # ── BIOS flashing kit (kept on purpose) ──────────────────────────────
   # The shipping BIOS (1.00, build 2024-01-13) is suspected in all three
   # firmware-level faults above. The vendor's last update
   # (_temp/AR6000-MI2_PHX_250311_Firebat_DIS_SEC, AMI $FID says build
@@ -134,8 +134,15 @@
   #
   # /n rewrites NVRAM, so expect BIOS settings and UEFI boot entries to
   # reset; \EFI\BOOT\BOOTX64.EFI on the ESP still boots systemd-boot, and
-  # `nixos-rebuild boot` re-registers the entry. Drop this option (and the
-  # two files on the ESP) once the flash is done and verified.
+  # `nixos-rebuild boot` re-registers the entry.
+  #
+  # The flash happened 2026-08-13 (docs/postmortems/2026-08-13-mn56-bios-
+  # update.md) and this block was going to be dropped afterwards — kept
+  # instead: the shell entry plus AfuEfix64.efi, AR6000-MI2.rom and
+  # mn56-bios-backup.rom on the ESP cost ~96 MiB and one boot menu line, and
+  # together they are a standing reflash/rollback path that needs no USB
+  # stick and no network. The ESP copy of the old-BIOS backup also doubles
+  # the _temp copy, which git does not carry.
   boot.loader.systemd-boot.edk2-uefi-shell.enable = true;
 
   # ── Drive health monitoring ──────────────────────────────────────────

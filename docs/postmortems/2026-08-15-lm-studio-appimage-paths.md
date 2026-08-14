@@ -170,5 +170,6 @@ python3 -c "import json,sys; json.load(open(sys.argv[1]))" <각 json>   # 치환
       선언한다. 구성을 굳히기로 하면 `writeShellScriptBin`이나 home-manager의 `home.file`로
       옮길 것. 그 전까지는 클린 설치 후 이 문서를 보고 손으로 재현해야 한다.
 - [x] 치환 전 원본 8개는 백업했고, JSON은 치환 후 파싱 검증까지 했다.
-- [x] Arc iGPU의 Vulkan 추론 경로는 추가 설정 없이 동작한다. 다만 **실제 모델을 올려
-      추론 속도를 재 본 적은 아직 없다** — 엔진 선택까지만 확인된 상태다.
+- [x] Arc iGPU의 Vulkan 추론 경로는 추가 설정 없이 동작한다. 실측까지 끝났다 — 생성 기준
+      4 B에서 11.3배, 27 B에서 6.2배이고 `intel_gpu_top`으로 Render/3D 67~70% 점유를
+      확인했다. 숫자와 그 해석상의 함정은 [로컬 추론](../local-inference.md)에 있다.

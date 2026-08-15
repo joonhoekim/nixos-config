@@ -165,14 +165,18 @@ mv "$part" "$dest"       # downloading_X.gguf.part -> X.gguf
 
 `lms load --gpu max|off`로 같은 모델을 두 번 재면 iGPU 기여분이 그대로 나온다.
 
-| 모델 | GPU | 로드 | 생성 (tok/s) | TTFT | 프리필 (tok/s) |
-|---|---|---|---|---|---|
-| nemotron-3-nano-4b (4 B, `nemotron_h`) | max | 1.6 s | **14.74** | 0.54 s | **143.5** |
-| nemotron-3-nano-4b | off | 3.8 s | 1.31 | 2.16 s | 3.2 |
-| qwen3.8-27b (27 B, `qwen35`, VLM) | max | 10.4 s | **2.66** | 7.84 s | (측정 실패) |
-| qwen3.8-27b | off | 14.2 s | 0.43 | 35.92 s | 9.2 |
+| 모델 | GPU | 로드 | 생성 (tok/s) | TTFT | 프리필 (tok/s) | CPU (코어) |
+|---|---|---|---|---|---|---|
+| nemotron-3-nano-4b (4 B, `nemotron_h`) | max | 1.6 s | **14.74** | 0.54 s | **143.5** | 0.5 |
+| nemotron-3-nano-4b | off | 3.8 s | 1.31 | 2.13 s | 3.2 | 3.4 |
+| qwen3.8-27b (27 B, `qwen35`, VLM) | max | 10.4 s | **2.66** | 2.24 s | (측정 실패) | — |
+| qwen3.8-27b | off | 14.2 s | 0.43 | 6.31 s | 9.2 | — |
 
 생성 기준 **4B가 11.3배, 27B가 6.2배**. Vulkan 백엔드는 설정 없이 동작한다.
+
+> TTFT 는 **첫 회를 버린 값**이다. 모델을 갓 올린 직후 1 회차는 캐시가 비어 정상 상태의
+> 몇 배가 나온다(27 B `--gpu off` 에서 35.9 s 대 6.3 s). 첫 측정에서는 이 구분 없이
+> 중앙값을 잡아 워밍업 값이 표에 실렸었고, `bench-inference.py` 가 지금은 걸러 낸다.
 
 ### GPU가 도는 증거
 
@@ -202,8 +206,20 @@ CPU의 최대 성능"이 아니다. CPU 경로가 두 가지로 불리하다.
 
 ### 재현
 
+위 표는 [`bench-inference.py`](bench-inference.py)가 뱉은 것이다. 마크다운 표로 바로 나온다.
+
 ```sh
-lms server start
+lms server start                      # 서버가 먼저 떠 있어야 한다
+python3 docs/bench-inference.py       # 모델 자동 탐지, --gpu max/off 양쪽
+python3 docs/bench-inference.py --models qwen3.8-27b --gpu max --reps 3
+```
+
+CPU 코어 열이 같이 찍히는 것이 핵심이다. 배수만 보면 "iGPU 가 CPU 보다 N 배 빠르다"로
+읽게 되는데, 그 옆에 3.4/16 이 찍혀 있으면 오독할 수 없다.
+
+손으로 재려면:
+
+```sh
 lms load <model> --gpu max --context-length 4096 --identifier bench -y
 curl -s http://127.0.0.1:1234/api/v0/chat/completions \
   -H 'Content-Type: application/json' \

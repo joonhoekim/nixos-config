@@ -165,8 +165,12 @@ bottom = 6
 right = 6
 
 [settings.layout.gaps.inner]
-horizontal = 6
-vertical = 6
+# 0 이 버그 회피다 (2026-08-18). rift 의 스크롤링 레이아웃은 컬럼 폭을
+# ratio × 타일영역으로 잡고 inner gap 을 그 위에 얹는다 — 0.5 컬럼 둘이면
+# 항상 inner gap 만큼 화면을 넘치고, 포커스가 바뀔 때마다 그 6px 을 드러내는
+# 스크롤이 일어나 창 전체가 좌우로 밀렸다. 창 사이 구분은 jankyborders 가 한다.
+horizontal = 0
+vertical = 0
 
 [settings.ui.menu_bar]
 # rift draws its own workspace indicator in the macOS menu bar. This is the

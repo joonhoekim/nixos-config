@@ -256,6 +256,30 @@ in
       unstore "$HOME/.config/karabiner/karabiner.json"
       seed ${./karabiner/karabiner.json} "$HOME/.config/karabiner/karabiner.json"
 
+      # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
+      #
+      # 시드의 존재 검사가 여기서만 한 번 새는 자리가 있다: LinearMouse 는 처음 뜰 때
+      # 설정이 없으면 **빈 설정을 스스로 만든다.** 그리고 이 활성화보다 앱이 먼저 뜨는
+      # 경우가 실제로 있다 — launchd 에이전트를 거는 것도 같은 build-switch 안이라 첫
+      # 설치에서 순서가 어느 쪽으로든 갈 수 있다. 그러면 앱이 만든 빈 파일이 존재 검사를
+      # 통과해서, 리빌드는 성공했는데 휠 방향만 안 바뀌는 상태로 끝난다.
+      #
+      # 그래서 규칙이 하나도 없는 파일은 "없는 것"으로 친다. 손으로 쓴 설정은 schemes 가
+      # 비어 있지 않으니 안 걸리고, JSON 이 깨져 있으면(= 고치던 중이다) 손대지 않는다.
+      lmcfg="$HOME/.config/linearmouse/linearmouse.json"
+      if [ -f "$lmcfg" ] && ${pkgs.python3}/bin/python3 -c '
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(1)
+sys.exit(0 if not d.get("schemes") else 1)
+' "$lmcfg"; then
+        $DRY_RUN_CMD rm -f "$lmcfg"
+        echo "removed empty linearmouse.json (앱이 만든 빈 설정)"
+      fi
+      seed ${./linearmouse/linearmouse.json} "$lmcfg"
+
       # AeroSpace 의 설정. rift 로 옮겨 간 뒤로 로그인에 뜨지 않지만 `open -a
       # AeroSpace` 폴백은 그대로라 설정도 유효하다. rift 가 완전히 자리 잡으면
       # 이 줄과 ./aerospace 를 casks.nix 의 항목과 함께 지우면 된다.

@@ -83,6 +83,30 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
   `700`/`100`은 macOS에서 체감이 너무 느려, 실기에서 올려 `3000`/`500`으로 확정했다.
   Karabiner의 단위는 Retina 포인트 환산을 거치므로 두 OS의 숫자가 갈리는 건 정상이다.
 
+## 마우스 휠 방향은 여기서 안 한다
+
+Karabiner 에는 장치별로 휠을 뒤집는 `devices[].mouse_flip_vertical_wheel` 이 있고, 실제로
+동작한다 (2026-08-18 에 G102 로 확인). 그런데도 이 파일에 안 두는 이유는 **"트랙패드가
+아닌 모든 마우스"를 표현할 수 없어서**다. 두 겹으로 막힌다:
+
+1. `devices` 항목의 식별자 대조는 완전 일치다 — `profile.hpp` 가
+   `d->get_identifiers() == identifiers` 로 찾는다. vendor/product 를 뺀
+   `{"is_pointing_device": true}` 는 "모든 포인팅 장치"가 아니라 *식별자가 정확히
+   그것뿐인 장치* 를 가리키고, `karabiner_cli --list-connected-devices` 를 보면 하필
+   그게 내장 트랙패드다. 원하는 것의 정반대만 적힌다.
+2. 복합 수정의 `mouse_basic` (`"flip": ["vertical_wheel"]`) 에 `device_unless` 를 붙여
+   규칙을 일반화해도, flip 은 Karabiner 가 **잡고 있는**(`ignore: false`) 장치에만 걸린다.
+   잡으라고 말하는 자리가 결국 `devices` 라서 열거는 그대로 남는다.
+
+전역 스크롤 방향을 끄고 트랙패드만 되뒤집는 반전도 생각해 볼 만하지만(트랙패드는 어느
+맥에서나 식별자가 같으니 진짜로 일반적이 된다), 내장 트랙패드에 Modify events 를 켜면
+가속·하드웨어 클릭·멀티터치가 통째로 날아간다 —
+[pqrs-org/Karabiner-Elements#3409](https://github.com/pqrs-org/Karabiner-Elements/issues/3409).
+
+그래서 이 축은 LinearMouse 가 가져갔다. 장치를 범주(`category: mouse`)로 매칭할 수 있어서
+마우스를 몇 개를 꽂든 선언이 한 줄이고, Karabiner 가 포인팅 장치를 잡을 일도 없어진다.
+→ [`../linearmouse/README.md`](../linearmouse/README.md)
+
 ## 기타 규칙 (레이어와 무관)
 
 - **Won(₩) → 백틱(`` ` ``)**: 한글 입력 소스일 때 `grave_accent_and_tilde` 키를 `⌥` + 백틱으로
@@ -97,7 +121,7 @@ Shift가 의미를 갖는 건 왼손뿐이다 — 저속 이동과 가로 스크
 
 ```sh
 python3 -m json.tool ~/.config/karabiner/karabiner.json > /dev/null   # JSON 유효성
-apps/rice-save karabiner    # 라이브 → 레포
+apps/rice-save              # 라이브 → 레포 (축을 안 가리고 전부 훑는다)
 git diff                    # 확인하고 커밋
 ```
 

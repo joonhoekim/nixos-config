@@ -228,6 +228,7 @@ copy "$cfg/rift/config.toml"                  "$dr/rift/config.toml"
 # Karabiner 는 설정 GUI 로 고치는 일이 많다. 되받는 길이 없던 동안에는 GUI 로 한
 # 변경이 저장조차 안 됐다 — 그게 이걸 옮긴 이유다.
 copy "$cfg/karabiner/karabiner.json"          "$dr/karabiner/karabiner.json"
+copy "$cfg/linearmouse/linearmouse.json"      "$dr/linearmouse/linearmouse.json"
 # AeroSpace. rift 폴백용이라 손댈 일은 드물지만 왕복은 나머지와 같다.
 copy "$cfg/aerospace/aerospace.toml"          "$dr/aerospace/aerospace.toml"
 # rift 키바인딩이 부르는 헬퍼(monocle.sh 등).

@@ -12,7 +12,7 @@ with pkgs; [
   wget
   zip
 
-  # Encryption and security tools
+  # Encryption and security tools — docs: docs/packages/security-hygiene.md
   age
   gnupg
   sops           # secrets-in-repo standard combo with age (env-per-stage .env)
@@ -159,7 +159,7 @@ with pkgs; [
   dog            # modern dig
   mkcert         # locally-trusted dev HTTPS certificates
   caddy          # reverse proxy + automatic local HTTPS — reproduce cross-subdomain
-                 # cookie topologies (`caddy reverse-proxy --from app.localhost --to :3000`)
+                 # cookie topologies. Docs: docs/packages/local-https-proxy.md
   cloudflared    # quick public tunnels for webhook/callback testing
 
   # Browser automation / web verification
@@ -167,7 +167,7 @@ with pkgs; [
   # Why this exists: verifying a local web app by eye needs a browser an agent
   # can actually drive. The Claude-in-Chrome extension talks to the *live*
   # Chrome and silently stops working when it isn't connected, so these are the
-  # headless, scriptable fallback that always works. Docs: docs/browser-tooling.md
+  # headless, scriptable fallback that always works. Docs: docs/packages/browser-tooling.md
   #
   # No `chromium` here: nixpkgs marks it unsupported on aarch64-darwin. Browsers
   # come from playwright-driver.browsers (pinned below) or the installed Chrome
@@ -189,6 +189,35 @@ with pkgs; [
   k6                       # load/perf smoke tests scripted in JS
   wrk                      # dumb-simple HTTP throughput check when k6 is overkill
   html-tidy                # HTML validator/pretty-printer (`tidy`) — catches malformed markup htmlq glosses over
+
+  # Mobile / on-device web verification — docs: docs/packages/mobile.md
+  #
+  # The gap this fills: everything above verifies a web app on *this* machine;
+  # none of it can reach a phone. adb is also the missing piece for PWA work —
+  # remote-debugging device Chrome (chrome://inspect) and `adb reverse
+  # tcp:3000 tcp:3000` so the phone sees the local dev server. iOS-native
+  # tooling is darwin-only and lives in ../darwin/packages.nix.
+  #
+  # Deliberately NOT here:
+  # - Android SDK / Android Studio: the SDK is managed by Android Studio in
+  #   practice (macOS: homebrew cask; NixOS: `android-studio` pkg per-host if
+  #   ever needed). JDK via mise, gradle via each project's wrapper — same
+  #   "no global language runtimes" rule as above.
+  # - flutter: in nixpkgs, but version-sensitive per project — fvm/mise
+  #   territory, same reasoning as node/go/rust.
+  # - fastlane: conventionally pinned per-project via Gemfile/bundler
+  #   (plugins + version matter), so a global install works against the grain.
+  # - PWA auditing (lighthouse/workbox/web-push): npm-ecosystem tools — `npx`
+  #   in the project. lighthouse is also meta.broken in nixpkgs (see the
+  #   browser-tooling note above). HTTPS-for-service-worker testing is already
+  #   covered by caddy + mkcert.
+  android-tools  # adb + fastboot — device Chrome remote debugging, port reverse, app install
+  scrcpy         # mirror/control an Android device on the desktop (pairs with adb)
+  qrencode       # terminal QR codes — hand a dev/tunnel URL to a phone in one line
+  # Ahead-of-need (declared now so the first RN/mobile project starts warm):
+  watchman       # file watcher React Native/Metro expects
+  maestro        # mobile E2E flows (simulator/emulator) — Playwright's mobile counterpart
+  bundletool     # AAB ↔ APK — only matters at store-distribution time
 
   # Nix tooling (handy while editing this config)
   nil            # Nix language server

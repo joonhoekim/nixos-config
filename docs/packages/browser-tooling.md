@@ -264,5 +264,6 @@ magick identify -format '%h' h.png                                  # = 그 폭�
 
 ## 관련 문서
 
-- [`03-operating-on-macos.md`](03-operating-on-macos.md) — 패키지를 더한 뒤의 반영 절차
-- [`02-this-repo.md`](02-this-repo.md) — 선언이 어느 파일로 흘러가는지
+- [`README.md`](README.md) — 이 디렉토리(도구 안내서)의 인덱스
+- [`../03-operating-on-macos.md`](../03-operating-on-macos.md) — 패키지를 더한 뒤의 반영 절차
+- [`../02-this-repo.md`](../02-this-repo.md) — 선언이 어느 파일로 흘러가는지

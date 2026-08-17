@@ -134,6 +134,39 @@ with pkgs; [
   postgresql     # psql + client libraries
   redis          # redis-cli (server runs via colima/docker)
 
+  # Everyday convenience tools (non-dev QoL) — docs: docs/packages/everyday-tools.md
+  #
+  # Downloads / media — companions to yt-dlp/ffmpeg above
+  gallery-dl     # yt-dlp for image galleries (twitter/pixiv/...)
+  aria2          # multi-connection downloader; pairs as `yt-dlp --downloader aria2c`
+  streamlink     # pipe live streams (twitch/youtube live) into mpv — the realtime gap yt-dlp leaves
+  mediainfo      # codec/bitrate/resolution details — first stop for "why won't this file play"
+
+  # Image post-processing
+  exiftool       # read/strip metadata (GPS!) before sharing photos
+  pngquant       # lossy PNG compression
+  jpegoptim      # JPEG compression
+  gifsicle       # GIF optimizer
+  gifski         # high-quality video → GIF (better output than ffmpeg alone)
+
+  # Documents / PDF — complements poppler-utils above
+  pandoc         # universal document converter (md/docx/html/epub/...)
+  qpdf           # PDF encrypt/decrypt/merge/split — the crypto side poppler doesn't do
+  ocrmypdf       # add a text layer to scanned PDFs (bundles its own tesseract)
+  (tesseract.override { enableLanguages = [ "kor" "eng" ]; }) # direct `tesseract` CLI with Korean traineddata
+
+  # File transfer / sync
+  rclone         # cloud storage (gdrive/s3/onedrive/...) sync & mount from the CLI
+  croc           # machine-to-machine file transfer via relay + codeword — AirDrop stand-in
+
+  # Korean-environment specifics
+  unar           # extracts cp949/EUC-KR-named zips (Korean Windows) without mangling filenames
+  zbar           # QR decode (`zbarimg`) — the other direction of qrencode below
+
+  # Misc
+  speedtest-cli  # bandwidth test from the terminal
+  monolith       # archive a web page as a single self-contained HTML file
+
   # Editor / LSP toolchain (system-wide; LazyVim/Mason would install these
   # per-user otherwise)
   helix          # modal editor

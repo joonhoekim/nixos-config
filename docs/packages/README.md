@@ -13,6 +13,7 @@
 | [`local-https-proxy.md`](local-https-proxy.md) | prod의 도메인·쿠키·HTTPS 조건을 로컬에서 재현 (caddy·mkcert·cloudflared) |
 | [`security-hygiene.md`](security-hygiene.md) | 시크릿과 의존성 취약점 게이트 (sops·gitleaks·osv-scanner) |
 | [`mobile.md`](mobile.md) | 실기기(폰)에서 보고 조작하기, iOS/Android 툴체인 (adb·scrcpy·…) |
+| [`everyday-tools.md`](everyday-tools.md) | 개발 무관 일상 편의 — 다운로드·이미지·문서·전송·한국어 zip (yt-dlp 짝들) |
 
 ## 단독 문서가 없는 것들
 

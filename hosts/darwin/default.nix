@@ -100,6 +100,19 @@
     };
 
 
+    # 마우스 휠 방향 교정 — 트랙패드는 자연스러운 스크롤 그대로, 외장 마우스만 반전.
+    # stats 와 같은 모양이고 같은 이유다: 앱의 "Start at login" 토글은 앱이 자기
+    # 설정에서 다시 쓰는 SMAppService 로그인 항목이라, 선언해 둔 것과 어긋난다.
+    #
+    # 읽는 설정은 ~/.config/linearmouse/linearmouse.json (시드는
+    # modules/darwin/rice/default.nix, 근거는 그 옆 linearmouse/README.md).
+    # 첫 실행에서 입력 모니터링 권한을 한 번 물어본다 — 거부하면 앱은 떠 있는 채로
+    # 아무 일도 안 하고, 휠 방향이 안 바뀌는 것 말고는 증상이 없다.
+    linearmouse = {
+      command = "/Applications/LinearMouse.app/Contents/MacOS/LinearMouse";
+      serviceConfig.RunAtLoad = true;
+    };
+
     # Workspace-switcher overlay (Option+Ctrl+W). Same shape as stats: start it,
     # but a manual quit stays quit.
     #

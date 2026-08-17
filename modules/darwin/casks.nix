@@ -28,6 +28,11 @@ _:
   # nothing until `open -a AeroSpace`. Drop this line once rift has proven out.
   "aerospace"          # tiling window manager (from nikitabobko/tap), stand-by
   "karabiner-elements"
+  # 트랙패드는 자연스러운 스크롤 그대로 두고 마우스 휠만 뒤집는다. Karabiner 로도
+  # 되지만 마우스를 vendor/product 로 하나씩 열거해야 해서, "마우스면 전부"가 한 줄인
+  # 이쪽으로 왔다. 설정과 근거는 modules/darwin/rice/linearmouse/.
+  "linearmouse"
+
   # Browsers
   "google-chrome"
   "brave-browser"

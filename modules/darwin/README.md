@@ -9,7 +9,8 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── config/            # set-default-handlers.py (default-apps.nix가 쓴다)
 ├── rice/              # 시드하는 설정 — 심은 뒤엔 ~/.config 쪽이 원본이다.
 │                      #   karabiner/, rift/, aerospace/, wezterm/, borders/,
-│                      #   bin/ (rift 키바인딩이 부르는 스크립트), workspacepeek/
+│                      #   linearmouse/ (마우스 휠 방향), workspacepeek/,
+│                      #   bin/ (rift 키바인딩이 부르는 스크립트)
 │                      #   왕복은 apps/rice-save ↔ apps/rice-restore
 ├── dock/              # macOS Dock 항목을 선언적으로 관리하는 모듈
 ├── scripts/           # zsh가 소싱하는 macOS 전용 헬퍼 (colima-up)

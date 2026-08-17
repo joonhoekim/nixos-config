@@ -15,6 +15,9 @@ with pkgs; [
   # Encryption and security tools
   age
   gnupg
+  sops           # secrets-in-repo standard combo with age (env-per-stage .env)
+  gitleaks       # secret scanner — pre-push hook / CI gate for cloned template repos
+  osv-scanner    # lockfile vulnerability scan against OSV.dev (wider than `pnpm audit`)
 
   # Cloud-related tools and SDKs
   docker          # docker CLI (talks to the colima-managed daemon)
@@ -146,6 +149,7 @@ with pkgs; [
   k9s            # Kubernetes TUI
   dive           # docker image layer explorer
   pgcli          # postgres CLI with autocomplete
+  iredis         # redis CLI with autocomplete (pgcli counterpart)
   lazysql        # database TUI
   nmap           # network scanner
   mtr            # traceroute + ping
@@ -154,6 +158,8 @@ with pkgs; [
   xh             # modern HTTP client (httpie-compatible)
   dog            # modern dig
   mkcert         # locally-trusted dev HTTPS certificates
+  caddy          # reverse proxy + automatic local HTTPS — reproduce cross-subdomain
+                 # cookie topologies (`caddy reverse-proxy --from app.localhost --to :3000`)
   cloudflared    # quick public tunnels for webhook/callback testing
 
   # Browser automation / web verification

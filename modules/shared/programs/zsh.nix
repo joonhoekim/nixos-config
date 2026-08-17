@@ -44,7 +44,7 @@
       # Playwright uses the nix-pinned browser bundle instead of downloading its
       # own into ~/Library/Caches. Without SKIP_BROWSER_DOWNLOAD, `npm i
       # playwright` in any project re-downloads ~400MB and then runs a browser
-      # nix doesn't know about. See docs/browser-tooling.md.
+      # nix doesn't know about. See docs/packages/browser-tooling.md.
       export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
       export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 

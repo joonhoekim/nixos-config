@@ -15,6 +15,11 @@
     # This is the only machine used for that work, so it is imported here
     # rather than from ../common.nix.
     ../../../modules/nixos/nginx.nix
+    # libvirt/KVM for a Windows guest — the work app's 공동인증 signing runs in a
+    # native Windows program, so that half of the flow cannot be exercised on
+    # this host directly. Same reasoning as nginx.nix for living here: this is
+    # the only machine that work happens on.
+    ../../../modules/nixos/libvirt.nix
     ./hardware-configuration.nix
   ];
 

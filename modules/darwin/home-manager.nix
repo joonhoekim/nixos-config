@@ -46,6 +46,11 @@
   # Enable home-manager
   home-manager = {
     useGlobalPkgs = true;
+    # NixOS 쪽(hosts/nixos/common.nix)과 같은 값. 켜지 않으면 home.packages 가
+    # ~/.nix-profile/bin 으로 가고, 켜면 /etc/profiles/per-user/<user>/bin 으로
+    # 간다. 두 플랫폼의 경로가 갈리면 절대 경로를 요구하는 도구 설정을 한 벌로
+    # 공유할 수 없다 — VS Code 의 todo-tree.ripgrep.ripgrep 가 그 사례였다.
+    useUserPackages = true;
     # Thread `user` into home-manager modules (separate arg scope from the
     # system modules' specialArgs).
     extraSpecialArgs = { inherit user; };

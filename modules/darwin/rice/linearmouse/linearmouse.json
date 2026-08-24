@@ -1,9 +1,55 @@
 {
-  "$schema": "https://schema.linearmouse.app/0.11.4",
-  "schemes": [
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.4",
+  "schemes" : [
     {
-      "if": { "device": { "category": "mouse" } },
-      "scrolling": { "reverse": { "vertical": true } }
+      "if" : {
+        "device" : {
+          "category" : "mouse"
+        }
+      },
+      "scrolling" : {
+        "reverse" : {
+          "vertical" : true
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xc092",
+          "productName" : "G102 LIGHTSYNC Gaming Mouse",
+          "serialNumber" : "16BCB8A10625",
+          "vendorID" : "0x46d"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 0
+        },
+        "speed" : {
+          "vertical" : 16
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xb037",
+          "productName" : "MX Anywhere 3S",
+          "serialNumber" : "2F303D0B",
+          "vendorID" : "0x46d"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 0
+        },
+        "speed" : {
+          "vertical" : 30
+        }
+      }
     }
   ]
 }

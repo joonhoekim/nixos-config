@@ -195,7 +195,7 @@ active_label = "name"
 display_style = "label"
 
 [settings.ui.stack_line]
-enabled = false
+enabled = true
 
 [settings.ui.mission_control]
 # On because Alt+E drives it (`show_mission_control_all`). That key is the

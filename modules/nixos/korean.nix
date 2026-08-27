@@ -231,6 +231,10 @@
   # modules/shared/fonts.nix, because macOS turned out to need it too: it had
   # no Hangul face of its own to lend a terminal. What is left here is what
   # only this side wants.
+  #
+  # 여기에 문서용 한글 얼굴을 더해도 OnlyOffice 는 보지 못한다. 그쪽은
+  # fontconfig 을 쓰지 않아 overlays/onlyoffice-fonts.nix 가 자기 목록을 따로
+  # 들고 있다 — 오피스에서도 쓸 폰트라면 그 파일도 같이 고쳐야 한다.
   fonts.packages = with pkgs; [
     noto-fonts-cjk-serif
     nanum

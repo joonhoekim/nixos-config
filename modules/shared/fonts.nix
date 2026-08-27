@@ -7,6 +7,12 @@
 #
 # Nerd Fonts provide the powerline/devicon glyphs that prevent symbol
 # corruption ("기호 깨짐") in terminals, shells (powerlevel10k), and TUIs.
+#
+# `fonts.packages` 는 fontconfig 을 통해 노출된다. 그것을 읽지 않는 앱은 이
+# 목록의 혜택을 받지 못한다 — 지금은 OnlyOffice 가 그렇고, 그쪽 목록은
+# overlays/onlyoffice-fonts.nix 에 따로 있다. 목록을 하나로 합치지 않은 이유는
+# 그 파일 주석에 적어뒀다(요약: 전부 넘기면 1.9GB / 378 패밀리가 되고, 문서
+# 편집기의 폰트 드롭다운에 Nerd Font 와 아이콘 폰트가 쏟아진다).
 { pkgs }:
 
 with pkgs; [

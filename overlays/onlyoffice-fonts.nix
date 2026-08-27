@@ -23,8 +23,27 @@
 # 중복된 용량은 hosts/nixos/common.nix 의 nix.optimise.automatic 이 동일 파일을
 # 하드링크로 묶으면서 대부분 회수한다.
 #
-# 상류에 고쳐지면 이 파일은 지운다. 확인 방법은 위 fonts.log 에 /usr/share/fonts
-# 아래 경로가 잡히는지 보는 것이다.
+# 이건 상류의 알려진 버그이고, 의도적인 심링크 배제가 아니다. 원인 코드는
+# core 의 DesktopEditor/common/Directory.cpp, GetFiles2() 다 — d_type 을
+# DT_REG / DT_DIR / DT_UNKNOWN 으로만 분기해서 DT_LNK 가 어디에도 걸리지 않고
+# 조용히 버려진다. 바로 위 DT_UNKNOWN 분기가 XFS 때문에 "모르겠으면 stat() 으로
+# 실체를 보자"는 예외인 걸 보면, 방침은 실체를 따라가는 쪽인데 DT_LNK 만
+# 열거에서 빠진 것이다.
+#
+#   https://github.com/ONLYOFFICE/DocumentServer/issues/1859
+#
+# 2022 년 8 월에 NixOS 쪽에서 올렸고 confirmed-bug 로 확인됐지만(내부 티켓
+# 58490) 4 년째 열려 있다. 보고는 7.1 기준, 이 파일을 쓰는 9.1.0 에서도 그대로다.
+#
+# 지우는 조건은 둘 중 하나다.
+#
+#   1. 상류가 고친다. 확인은 이 오버레이 없이 위 fonts.log 에 /usr/share/fonts
+#      아래 경로가 잡히는지 보면 된다.
+#   2. nixpkgs PR #526315 가 머지된다. programs.onlyoffice NixOS 모듈이 같은
+#      일(폰트 역참조 + bwrap 노출)을 하므로, 그러면 이 파일을 지우고 그 모듈로
+#      갈아탄다.
+#
+#      https://github.com/NixOS/nixpkgs/pull/526315
 final: prev:
 
 let

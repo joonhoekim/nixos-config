@@ -156,9 +156,24 @@
   # smartd polls in the background and shouts (wall + syslog) when an
   # attribute crosses a threshold, which is the half that was missing.
   #
-  # Worth having on this box specifically: the NVMe idles at ~64 °C in this
-  # small passive chassis. Wear is still at percentage_used 0%, so this is
-  # about catching a trend, not a current problem.
+  # Worth having on this box specifically: the NVMe used to idle at ~64 °C in
+  # this small chassis, and had already logged 8 Thermal Management T1
+  # transitions (1276 s total) doing nothing in particular. An M.2 heatsink
+  # went on at power_on_hours 1359 and fixed that:
+  #
+  #                    idle before   idle after   full load after
+  #   Composite             59 °C        50 °C            62 °C
+  #   Sensor 2              63 °C        48 °C            63 °C
+  #
+  # Full load is `stress-ng --cpu 16 --hdd 2` for 120 s; T1 Trans Count stayed
+  # at 8 across the whole run, i.e. no throttling at all. Post-heatsink full
+  # load now sits where pre-heatsink idle used to. Caveat for whoever reads
+  # this next: the NVMe was still climbing ~40 s after the CPU load stopped, so
+  # 120 s does not establish the sustained-load equilibrium. Nothing longer has
+  # been run.
+  #
+  # So smartd here is still about catching a trend rather than a current
+  # problem. Wear was percentage_used 1% at that point.
   #
   # Kept here rather than in ../common.nix on purpose: with autodetect and no
   # supported device, smartd fails to start, and galaxy-chromebook-1's storage
@@ -172,4 +187,22 @@
   # booted — wireless firmware (MT7922 / RTL8852BE, depending on the unit) is
   # already covered by enableRedistributableFirmware, which the generated
   # hardware-configuration.nix pulls in via not-detected.nix.
+
+  # `sensors` reports a standing ALARM (HIGH) on the DDR5 SPD hub temperature
+  # sensors and it is expected, not a fault to chase:
+  #
+  #   spd5118-i2c-1-51  +61.8 °C  (high = +55.0 °C)  ALARM (HIGH)
+  #   spd5118-i2c-1-50  +55.0 °C  (high = +55.0 °C)
+  #
+  # 62 °C at idle, ~65 °C under load, against the 55 °C "high" threshold
+  # programmed into the SPD5118 hub's registers (not verified whether that
+  # value comes from the module vendor or the BIOS) — crit is 85 °C, so there
+  # is real headroom and the alarm reads as a conservative threshold rather
+  # than DIMMs in trouble. No lm_sensors config is applied to silence it: a
+  # raised threshold would also hide a genuine excursion, and the alarm is
+  # only ever seen by someone deliberately running `sensors`.
+  #
+  # Not fixable the way the NVMe was: the two DIMMs sit stacked in overlapping
+  # slots, leaving no clearance to mount a heatsink on either module. The
+  # remaining mechanical option is adding a fan for the bottom. Not done.
 }

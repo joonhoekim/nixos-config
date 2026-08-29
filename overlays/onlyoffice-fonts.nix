@@ -66,9 +66,16 @@ let
   # 목록은 **열린 채로 실패한다** — 나중에 fonts.packages 에 큰 폰트가 하나
   # 붙으면 이 클로저에 조용히 수백 MB 가 딸려 들어온다. 아래의 허용 목록은
   # 닫힌 채로 실패하고, 목록 자체가 "문서용 얼굴"이라는 판단이다.
+  #
+  # Noto CJK 는 -static 판이어야 한다. nixpkgs 기본 패키지(2.004)는 가변 폰트
+  # (CFF2, wght 축 기본값 100)만 담는데, OnlyOffice 는 가변축을 다루지 못해
+  # 기본 인스턴스 = Thin 으로 그리고 PDF 에는 외곽선으로 떨어뜨린다
+  # (2026-08 macOS 9.4.0 에서 x2t 로 확인, 상류 DesktopEditors#3285).
+  # 정적 판은 굵기별 OTC 로 온다 — Regular/Bold 는 "Noto Sans CJK KR",
+  # 나머지는 "Noto Sans CJK KR Medium" 처럼 이름이 따로 붙는다.
   fontPackages = with prev; [
-    noto-fonts-cjk-sans # CJK 커버리지 — 무엇도 □ 로 렌더되지 않게
-    noto-fonts-cjk-serif
+    noto-fonts-cjk-sans-static # CJK 커버리지 — 무엇도 □ 로 렌더되지 않게
+    noto-fonts-cjk-serif-static
     nanum # 나눔고딕 / 나눔명조 — 한국에서 온 .docx 가 이름으로 부르는 폰트
     pretendard # UI/문서용 산세리프
     liberation_ttf # Arial / Times New Roman / Courier New 메트릭 호환.

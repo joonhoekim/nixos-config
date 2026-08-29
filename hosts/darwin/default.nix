@@ -152,7 +152,11 @@
   # Register fonts with the macOS font system (symlinked into
   # /Library/Fonts/Nix Fonts). Fonts in systemPackages are NOT picked up by
   # macOS apps, so terminals show broken glyphs without this.
-  fonts.packages = import ../../modules/shared/fonts.nix { inherit pkgs; };
+  fonts.packages = import ../../modules/shared/fonts.nix { inherit pkgs; } ++ [
+    # macOS 에서만 — OnlyOffice 의 한글 폴백이 Heiti 로 가는 것을 막는 "Batang"
+    # 별칭. 왜 이 이름이고 왜 NixOS 엔 없는지는 overlays/onlyoffice-batang-alias.nix.
+    pkgs.onlyoffice-batang-alias
+  ];
 
   system = {
     checks.verifyNixPath = false;

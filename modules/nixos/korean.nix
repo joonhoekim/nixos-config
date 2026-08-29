@@ -236,7 +236,7 @@
   # fontconfig 을 쓰지 않아 overlays/onlyoffice-fonts.nix 가 자기 목록을 따로
   # 들고 있다 — 오피스에서도 쓸 폰트라면 그 파일도 같이 고쳐야 한다.
   fonts.packages = with pkgs; [
-    noto-fonts-cjk-serif
+    noto-fonts-cjk-serif-static # VF 판은 OnlyOffice 에서 Thin 으로 그려진다 (아래 sans 와 같은 이유)
     nanum
     nanum-gothic-coding # Korean monospace (Nanum Gothic Coding)
     d2coding            # unpatched "D2Coding" — the family name the fallbacks

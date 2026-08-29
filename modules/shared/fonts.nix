@@ -41,7 +41,10 @@ with pkgs; [
                         # the latin ones, so columns don't drift. Terminal default.
   sarasa-gothic         # "Sarasa Mono K" / "Sarasa Term K" — Iosevka + Source Han.
                         # Ships as .ttc collections; one file holds every language cut.
-  noto-fonts-cjk-sans   # coverage insurance — nothing should render as □
+  noto-fonts-cjk-sans-static # coverage insurance — nothing should render as □.
+                        # -static on purpose: the default package is VF-only
+                        # (wght default 100, CFF2) and OnlyOffice draws that
+                        # as Thin — see overlays/onlyoffice-fonts.nix.
   pretendard            # UI/document sans (proportional; not for the terminal)
 
   # ── UI / ricing ────────────────────────────────────────────────────────

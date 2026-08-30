@@ -18,6 +18,7 @@ in
         autocrlf = "input";
       };
       pull.rebase = true;
+      push.autoSetupRemote = true;
       rebase.autoStash = true;
       credential = {
         "https://github.com".helper = "!gh auth git-credential";

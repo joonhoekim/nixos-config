@@ -236,6 +236,8 @@ darwin-rebuild --switch-generation 42       # 특정 번호
 
 # ── flake / 의존성 갱신 ──
 nix flake update [nixpkgs]    # 전체(또는 특정 input) 갱신, flake.lock 재작성 → 커밋 필요
+nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle \
+                 nikitabobko-tap acsandmann-tap   # brew 본체 + 탭 (→ homebrew-under-nix.md)
 nix flake show               # 출력 트리
 nix flake metadata           # input·lock 상태
 
@@ -251,7 +253,9 @@ nix log /nix/store/xxxx.drv         # 실패 derivation 로그 (안 되면 nix-s
 nix why-depends .#...system nixpkgs#<pkg>   # 왜 이 패키지가 들어왔나
 
 # ── Homebrew (이 저장소는 mutableTaps = true) ──
-brew install <formula> ; brew tap <user>/<repo> ; brew list ; brew update && brew upgrade
+brew install <formula> ; brew tap <user>/<repo> ; brew list
+brew upgrade      # 단, flake.lock의 탭을 먼저 올리고 switch 해야 의미가 있다
+# `brew update`는 여기서 아무 일도 안 한다(본체·탭이 nix store) → homebrew-under-nix.md
 
 # ── 정리 / 디스크 회수(GC) ──
 nix-collect-garbage -d        # 유저 프로필 오래된 generation
@@ -284,6 +288,11 @@ git add <새 파일>   # flake는 git 추적 파일만 본다(안 하면 "not tr
 **왜 공존 가능한가:** nix-darwin은 "당신이 선언한 것"만 관리하고 나머지는 소유하지 않는다.
 `/Applications` 드래그 앱, 수동 `brew install`(이 저장소는 `mutableTaps = true` + cleanup 꺼짐),
 `~/.npm-packages`·`~/.cargo` 등은 nix 영역 밖이라 충돌 없이 공존한다.
+
+**단, brew는 절반만 영역 밖이다.** 무엇을 깔지는 자유지만 **버전은 flake.lock이 정한다** —
+formula/cask 정의를 최신 API가 아니라 핀된 탭에서 읽기 때문이다(`HOMEBREW_NO_INSTALL_FROM_API=1`).
+아래 3번을 "최신을 받는 통로"로 읽으면 안 된다. 이유와 갱신 순서는
+[`homebrew-under-nix.md`](homebrew-under-nix.md)에 있다.
 
 "지금 깔기"의 통로(가벼운 것 → 영구적인 것):
 

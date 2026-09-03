@@ -73,7 +73,8 @@ genact --list-modules
 hollywood                       # 화면을 쪼개 전부 채운다
 ```
 
-`hollywood`는 멀티플렉서를 필요로 한다. `zellij`가 `packages.nix`에 있다.
+`hollywood`는 Linux 에서만 설치된다. nixpkgs 가 `atop`을 PATH 에 넣어 감싸는데,
+`atop`은 systemd 에 의존해 darwin 에서 빌드되지 않는다. tmux 는 함께 딸려 온다.
 
 ### 셸 시작 화면
 

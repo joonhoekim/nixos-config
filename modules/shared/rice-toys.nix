@@ -33,8 +33,7 @@ with pkgs; [
 
   # ── Looking busy ────────────────────────────────────────────────────────
   genact         # endless plausible-looking build/scan/deploy output
-  hollywood      # splits the screen and fills every pane with technobabble;
-                 # wants a multiplexer (zellij is in packages.nix)
+  # hollywood is Linux-only — see the tail of this file.
 
   # ── Shell greeters ──────────────────────────────────────────────────────
   # The reason a unixporn screenshot has something in the top-left corner.
@@ -116,4 +115,12 @@ with pkgs; [
   # pick `nvtopPackages.full` (there is no top-level `nvtop` attribute), and
   # that variant pulls the NVIDIA backend, which needs the unfree
   # cuda_nvml_dev — for hardware no host here has.
+]
+
+# ── Linux-only ────────────────────────────────────────────────────────────
+# hollywood splits the screen and fills every pane with technobabble. nixpkgs
+# wraps it with atop on PATH, and atop depends on systemd, so the darwin
+# build fails at libudev-zero (sys/sysmacros.h). It brings its own tmux.
+++ lib.optionals stdenv.isLinux [
+  hollywood
 ]

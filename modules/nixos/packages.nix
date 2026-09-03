@@ -96,6 +96,13 @@ shared-packages ++ [
   stress-ng       # stress tester (useful to verify thermal behavior)
   pulsemixer      # pipewire/pulse volume TUI (CLI counterpart to pavucontrol)
 
+  # ── GUI 시스템 모니터 ────────────────────────────────────────────────────
+  # ../shared/packages.nix 의 btop / bottom / htop / procs 가 프로세스를 보는 일은
+  # 더 잘한다. 이 둘은 CLI 가 못 하는 자리를 채운다 — GPU·디스크·네트워크를 한
+  # 화면에 놓고 시간축으로 보는 일, 그리고 터미널이 없는 상태에서 손이 닿는 것.
+  mission-center  # CPU/메모리/디스크/네트워크/GPU 탭. 780M 사용률도 읽는다
+  resources       # GTK4/libadwaita. 가볍고 프로세스 kill 까지
+
   # GUI applications
   vscode
   brave

@@ -13,8 +13,8 @@
 
 #define TAU 6.2831853
 
-#define BLOOM       0.70              // @0..1.5
-#define BLOOM_PX    6.0               // @1..16
+#define BLOOM       0.69              // @0..1.5
+#define BLOOM_PX    8.2               // @1..16
 #define BLOOM_CUT   0.30              // @0..1
 #define BLOOM_KNEE  0.28              // @0.01..0.6
 

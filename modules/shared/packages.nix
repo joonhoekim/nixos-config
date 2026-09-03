@@ -214,8 +214,15 @@ with pkgs; [
   yamlfmt            # YAML formatter
   markdownlint-cli2  # Markdown lint (this repo's docs/)
 
-  # Infra / DB / network
+  # Kubernetes. kubectl is up in the development-tools block; these are the
+  # layers around it — templating, log tailing, context switching, and an
+  # offline schema check so a manifest error surfaces before a cluster sees it.
   k9s            # Kubernetes TUI
+  kubernetes-helm # `helm` — chart install / template / diff
+  kustomize      # overlay-based manifest patching (the non-templating half)
+  stern          # tail logs across many pods and containers at once
+  kubectx        # `kubectx` / `kubens` — switch cluster and namespace
+  kubeconform    # validate manifests against k8s JSON schemas, offline
 
   # Container and CI definitions — the files that only get tested by being run
   dive           # docker image layer explorer

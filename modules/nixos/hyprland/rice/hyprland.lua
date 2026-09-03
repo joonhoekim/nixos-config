@@ -104,6 +104,19 @@ hl.config({
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,
+
+        -- 이미 떠 있는 앱을 다시 켰을 때 그 창으로 포커스가 간다. 기본값은 false.
+        --
+        -- 단일 인스턴스 앱(OnlyOffice 등)은 두 번째 실행이 기존 인스턴스에 넘기고
+        -- 죽는다. 그때 그 인스턴스가 보내는 "나를 띄워 달라"(xdg-activation, X11
+        -- 은 _NET_ACTIVE_WINDOW)를 false 면 하이프랜드가 버리고, 증상은 "켰는데
+        -- 아무 일도 안 일어남"이 된다. 스크롤링 레이아웃에서 특히 나쁘다 — 창은
+        -- 띠 위에 살아 있는데 화면 밖이라 살아 있다는 증거조차 없다. XWayland
+        -- 창은 스스로 포커스를 못 가져오므로 더 그렇다.
+        --
+        -- 대가는 앱이 아무 때나 포커스를 뺏을 수 있다는 것이다. 거슬리는 창이
+        -- 나오면 전역을 끄지 말고 그 창에만 windowrule 로 좁힌다.
+        focus_on_activate = true,
     },
 })
 

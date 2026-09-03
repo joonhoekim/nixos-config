@@ -139,8 +139,9 @@ rules:
     pattern: $REPO.query(`...${$X}...`)
 ```
 
-기성 룰셋(`p/typescript`, `p/owasp-top-ten`)과 **데이터 흐름 추적(taint)** 이
-이 도구의 자리다.
+`ast-grep`([`web-toolchain.md`](web-toolchain.md))과의 갈림길: 즉석 패턴과
+코드모드는 `ast-grep`, **데이터 흐름 추적(taint)** 이나 기성 룰셋이 필요하면
+`semgrep`.
 
 ---
 
@@ -214,4 +215,5 @@ lefthook run pre-commit   # 커밋 없이 수동 실행
 ## 관련 문서
 
 - [`README.md`](README.md) — 이 디렉토리(도구 안내서)의 인덱스
+- [`web-toolchain.md`](web-toolchain.md) — `ast-grep`·`biome` 등 소스 쪽 도구
 - [`../03-operating-on-macos.md`](../03-operating-on-macos.md) — 패키지를 더한 뒤의 반영 절차

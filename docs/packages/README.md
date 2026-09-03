@@ -9,6 +9,7 @@
 
 | 문서 | 다루는 상황 |
 |---|---|
+| [`web-toolchain.md`](web-toolchain.md) | Next/Nest 소스를 읽고 고치고 검증 (LSP·biome·ast-grep) |
 | [`browser-tooling.md`](browser-tooling.md) | 로컬 웹 앱을 눈으로/스크립트로 확인 (스크린샷·픽셀 비교·HTTP 검사) |
 | [`local-https-proxy.md`](local-https-proxy.md) | prod의 도메인·쿠키·HTTPS 조건을 로컬에서 재현 (caddy·mkcert·cloudflared) |
 | [`security-hygiene.md`](security-hygiene.md) | 시크릿·취약점·정적 검사 게이트 (sops·gitleaks·trivy·semgrep·lefthook) |

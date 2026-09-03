@@ -14,6 +14,9 @@
 // 둥글기·간격·보더 두께는 DMS 설정 GUI 가 소유한다(설정 → 컴포지터 레이아웃).
 // 같은 키를 여기서 또 쓰면 그쪽 슬라이더가 말없이 무효가 되므로 뒤판의 표에서
 // 아예 뺐다 — 자세한 사정은 apps/rice-decor 머리말.
+//
+// 줄 자체는 Ui/KnobRow.qml 이 그린다 — 셰이더 손잡이와 같은 것을 쓴다. 다른 것은
+// 되돌리기의 기준뿐이다(레포 사본이 아니라 하이프랜드 기본값).
 
 import QtQuick
 import qs.Rice
@@ -22,6 +25,9 @@ import qs.Ui
 Item {
     id: root
 
+    property string docHint: ""
+    property bool showDocs: false
+
     Column {
         anchors.fill: parent
         spacing: Theme.spacingM
@@ -29,26 +35,26 @@ Item {
         // ── 머리 ──────────────────────────────────────────────────────────
         Item {
             width: parent.width
-            height: 52
+            height: 56
 
             Column {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - resetAll.width - Theme.spacingM
-                spacing: 2
+                width: parent.width - headActions.width - Theme.spacingM
+                spacing: 3
 
                 Txt {
                     width: parent.width
                     text: Decor.dirtyCount > 0 ? Decor.dirtyCount + "개 바꿈" : "전부 기본값"
                     font.pixelSize: Theme.fontXL
                     font.weight: Font.Medium
-                    color: Decor.dirtyCount > 0 ? Theme.onSurface : Theme.onSurfaceVariant
+                    color: Decor.dirtyCount > 0 ? Theme.surfaceText : Theme.surfaceVariantText
                 }
 
                 Txt {
                     width: parent.width
                     font.pixelSize: Theme.fontS
-                    color: Decor.error !== "" ? Theme.error : Theme.onSurfaceVariant
+                    color: Decor.error !== "" ? Theme.error : Theme.surfaceVariantText
                     text: {
                         if (Decor.error !== "")
                             return Decor.error;
@@ -59,150 +65,121 @@ Item {
                 }
             }
 
-            Btn {
-                id: resetAll
+            Row {
+                id: headActions
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: "전부 되돌리기"
-                danger: true
-                enabled: Decor.dirtyCount > 0
-                onClicked: Decor.reset("")
+                spacing: Theme.spacingS
+
+                Txt {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "설명 보기"
+                    font.pixelSize: Theme.fontS
+                    color: Theme.surfaceVariantText
+                }
+
+                Toggle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: root.showDocs
+                    onToggled: v => root.showDocs = v
+                }
+
+                Btn {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "전부 되돌리기"
+                    danger: true
+                    enabled: Decor.dirtyCount > 0
+                    onClicked: Decor.reset("")
+                }
             }
         }
 
         // ── 값 ────────────────────────────────────────────────────────────
-        Flickable {
+        Item {
             width: parent.width
             height: parent.height - y
-            contentHeight: groupCol.implicitHeight
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
 
-            Column {
-                id: groupCol
-                width: parent.width
-                spacing: Theme.spacingM
+            Scroller {
+                id: scroll
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: strip.top
+                anchors.bottomMargin: Theme.spacingS
+                contentHeight: groupCol.implicitHeight
 
-                Repeater {
-                    model: Decor.groups
+                Column {
+                    id: groupCol
+                    width: scroll.width - scroll.barSpace
+                    spacing: Theme.spacingM
 
-                    Rectangle {
-                        required property var modelData
+                    Repeater {
+                        model: Decor.groups
 
-                        width: groupCol.width
-                        height: groupBody.implicitHeight + Theme.spacingM * 2
-                        radius: Theme.radius
-                        color: Theme.surfaceContainer
+                        Panel {
+                            required property var modelData
 
-                        // anchors.fill 을 안 쓴다. 그러면 높이가 서로를 가리켜
-                        // (카드 높이 ← 내용 높이 ← 카드 높이) 바인딩 루프 경고가
-                        // 뜬다. 자리만 직접 잡으면 방향이 한쪽으로만 흐른다.
-                        Column {
-                            id: groupBody
-                            x: Theme.spacingM
-                            y: Theme.spacingM
-                            width: parent.width - Theme.spacingM * 2
-                            spacing: Theme.spacingS
+                            width: groupCol.width
+                            height: groupBody.implicitHeight + Theme.spacingM * 2
 
-                            Txt {
-                                text: modelData.label
-                                font.pixelSize: Theme.fontS
-                                font.weight: Font.Medium
-                                color: Theme.primary
-                            }
+                            // anchors.fill 을 안 쓴다. 그러면 높이가 서로를 가리켜
+                            // (카드 높이 ← 내용 높이 ← 카드 높이) 바인딩 루프 경고가
+                            // 뜬다. 자리만 직접 잡으면 방향이 한쪽으로만 흐른다.
+                            Column {
+                                id: groupBody
+                                x: Theme.spacingM
+                                y: Theme.spacingM
+                                width: parent.width - Theme.spacingM * 2
+                                spacing: Theme.spacingXS
 
-                            Repeater {
-                                model: modelData.knobs
+                                Head {
+                                    text: modelData.label
+                                    bottomPadding: Theme.spacingXS
+                                }
 
-                                Column {
-                                    id: knob
+                                Repeater {
+                                    model: modelData.knobs
 
-                                    required property var modelData
+                                    KnobRow {
+                                        required property var modelData
 
-                                    readonly property bool isBool: modelData.type === "bool"
-
-                                    width: groupBody.width
-                                    spacing: 2
-
-                                    Row {
-                                        width: parent.width
-                                        spacing: Theme.spacingS
-
-                                        Txt {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: knob.modelData.name
-                                            font.family: Theme.monoFamily
-                                            font.pixelSize: Theme.fontS
-                                        }
-
-                                        // 불리언은 값 글자가 없다. 스위치가 곧 값이다.
-                                        Txt {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: !knob.isBool
-                                            text: {
-                                                const v = slider.live;
-                                                if (knob.modelData.type !== "float")
-                                                    return String(Math.round(v));
-                                                return v.toFixed(4).replace(/0+$/, "").replace(/\.$/, ".0");
-                                            }
-                                            font.family: Theme.monoFamily
-                                            font.pixelSize: Theme.fontS
-                                            color: Theme.primary
-                                        }
-
-                                        Toggle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: knob.isBool
-                                            checked: knob.modelData.value === 1
-                                            onToggled: v => Decor.push(knob.modelData.key, v ? 1 : 0, true)
-                                        }
-
+                                        width: groupBody.width
+                                        name: modelData.name
+                                        kind: modelData.type
+                                        value: modelData.value
+                                        minimum: modelData.min
+                                        maximum: modelData.max
+                                        step: modelData.step
+                                        dirty: modelData.dirty === true
                                         // 되돌릴 곳이 레포가 아니라 하이프랜드
                                         // 기본값이다 — 이 축에는 레포 사본이 없다.
-                                        Txt {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: knob.modelData.dirty === true
-                                            text: "· 기본 " + knob.modelData.default
-                                            font.pixelSize: Theme.fontS
-                                            color: Theme.onSurfaceVariant
-                                        }
+                                        resetTo: modelData.type === "bool" ? (modelData.default === 1 ? "켬" : "끔") : String(modelData.default)
+                                        resetLabel: "기본"
+                                        doc: modelData.doc || ""
+                                        showDoc: root.showDocs
 
-                                        Btn {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            visible: knob.modelData.dirty === true
-                                            width: 52
-                                            kind: "ghost"
-                                            text: "되돌리기"
-                                            onClicked: Decor.reset(knob.modelData.key)
-                                        }
-                                    }
-
-                                    Slide {
-                                        id: slider
-                                        visible: !knob.isBool
-                                        width: parent.width
-                                        minimum: knob.modelData.min
-                                        maximum: knob.modelData.max
-                                        step: knob.modelData.step
-                                        value: knob.modelData.value
-                                        onMoved: v => Decor.push(knob.modelData.key, v, false)
-                                        onReleased: v => Decor.push(knob.modelData.key, v, true)
-                                    }
-
-                                    Txt {
-                                        width: parent.width
-                                        visible: (knob.modelData.doc || "") !== ""
-                                        text: knob.modelData.doc
-                                        font.pixelSize: Theme.fontS
-                                        color: Theme.fade(Theme.onSurfaceVariant, 0.85)
-                                        wrapMode: Text.WordWrap
-                                        maximumLineCount: 2
+                                        onHoveredChanged: if (hovered)
+                                            root.docHint = docLine
+                                        onMoved: v => Decor.push(modelData.key, v, false)
+                                        onCommitted: v => Decor.push(modelData.key, v, true)
+                                        onReverted: Decor.reset(modelData.key)
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            DocStrip {
+                id: strip
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                visible: !root.showDocs
+                height: visible ? implicitHeight : 0
+                text: root.docHint
+                hint: Decor.groups.length > 0 ? "값에 마우스를 올리면 여기 설명이 뜬다. 전부 펴려면 위의 설명 보기." : ""
             }
         }
     }

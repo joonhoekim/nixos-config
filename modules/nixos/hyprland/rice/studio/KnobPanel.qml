@@ -7,80 +7,106 @@
 //
 // 쓰는 곳은 언제나 $HOME 이다. 레포와 다른 값에는 되돌리기가 뜨고, 레포에 넣는
 // 것은 값이 자리 잡은 뒤 apps/rice-save 로 한 번에.
+//
+// 줄 자체는 Ui/KnobRow.qml 이 그린다 — 장식 탭과 같은 것을 쓴다.
 
 import QtQuick
 import qs.Rice
 import qs.Ui
 
-Rectangle {
+Panel {
     id: root
 
-    radius: Theme.radius
-    color: Theme.surfaceContainer
+    // 마우스가 지나간 마지막 손잡이의 설명. 줄에서 마우스가 빠져도 안 지운다 —
+    // 줄 사이를 옮겨 다닐 때마다 띠가 깜빡이면 읽는 것보다 눈에 더 걸린다.
+    property string docHint: ""
+    property bool showDocs: false
 
-    Column {
+    // 대상이 바뀌면 앞의 설명은 남의 것이 된다.
+    Connections {
+        target: Knobs
+        function onTargetChanged() {
+            root.docHint = "";
+        }
+    }
+
+    Item {
         anchors.fill: parent
         anchors.margins: Theme.spacingM
-        spacing: Theme.spacingS
 
-        Txt {
-            text: "값"
-            font.pixelSize: Theme.fontS
-            font.weight: Font.Medium
-            color: Theme.primary
-        }
+        // ── 머리 ──────────────────────────────────────────────────────────
+        Item {
+            id: head
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: Theme.hit
 
-        // 대상 고르기. 걸린 칸이 앞에 오고 번호가 붙는다(apps/rice-knobs 의 pass) —
-        // 체인에서는 같은 두 셰이더도 순서가 바뀌면 다른 그림이라, 어느 칸을
-        // 만지고 있는지가 이름만으로는 부족하다.
-        Flickable {
-            width: parent.width
-            height: 32
-            contentWidth: chips.implicitWidth
-            clip: true
-            flickableDirection: Flickable.HorizontalFlick
-            boundsBehavior: Flickable.StopAtBounds
+            Head {
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                text: "값"
+            }
 
             Row {
-                id: chips
-                spacing: Theme.spacingXS
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spacingS
 
-                Repeater {
-                    model: Knobs.targets
+                Txt {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "설명 보기"
+                    font.pixelSize: Theme.fontS
+                    color: Theme.surfaceVariantText
+                }
 
-                    Rectangle {
-                        required property var modelData
+                Toggle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: root.showDocs
+                    onToggled: v => root.showDocs = v
+                }
+            }
+        }
 
-                        readonly property bool picked: modelData.id === Knobs.target
+        // ── 대상 고르기 ───────────────────────────────────────────────────
+        // 걸린 칸이 앞에 오고 번호가 붙는다(apps/rice-knobs 의 pass) — 체인에서는
+        // 같은 두 셰이더도 순서가 바뀌면 다른 그림이라, 어느 칸을 만지고 있는지가
+        // 이름만으로는 부족하다.
+        //
+        // 가로로 흘리지 않고 접는다. 흘리면 열 몇 개 중 뒤쪽 서넛이 잘려 나가는데,
+        // 가로 스크롤에는 잡을 것도 표시도 없어서 그게 전부인 줄 안다.
+        Flow {
+            id: chips
+            anchors.top: head.bottom
+            anchors.topMargin: Theme.spacingS
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: Theme.spacingXS
 
-                        width: chipText.implicitWidth + Theme.spacingM * 2
-                        height: 28
-                        radius: 14
-                        color: picked ? Theme.fade(Theme.primary, 0.22) : Theme.surfaceContainerHighest
-                        border.width: picked ? 1 : 0
-                        border.color: Theme.primary
+            Repeater {
+                model: Knobs.targets
 
-                        Txt {
-                            id: chipText
-                            anchors.centerIn: parent
-                            text: (modelData.pass ? modelData.pass + "·" : "") + modelData.id
-                            font.pixelSize: Theme.fontS
-                            color: picked ? Theme.primary : (modelData.applied ? Theme.onSurface : Theme.onSurfaceVariant)
-                        }
+                Chip {
+                    required property var modelData
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Knobs.selectTarget(modelData.id)
-                        }
-                    }
+                    text: (modelData.pass ? modelData.pass + "·" : "") + modelData.id
+                    picked: modelData.id === Knobs.target
+                    // 걸려 있는 것은 안 골랐어도 밝게 둔다 — 지금 화면에 보이는
+                    // 것이 어느 것인지가 목록에서 먼저 읽혀야 한다.
+                    idleInk: modelData.applied ? Theme.surfaceText : Theme.surfaceVariantText
+                    onClicked: Knobs.selectTarget(modelData.id)
                 }
             }
         }
 
         Txt {
-            width: parent.width
+            id: err
+            anchors.top: chips.bottom
+            anchors.topMargin: visible ? Theme.spacingS : 0
+            anchors.left: parent.left
+            anchors.right: parent.right
             visible: Knobs.error !== ""
+            height: visible ? implicitHeight : 0
             text: Knobs.error
             wrapMode: Text.WordWrap
             elide: Text.ElideNone
@@ -88,17 +114,21 @@ Rectangle {
             color: Theme.error
         }
 
-        Flickable {
-            width: parent.width
-            height: parent.height - y
+        // ── 손잡이 ────────────────────────────────────────────────────────
+        Scroller {
+            id: list
+            anchors.top: err.bottom
+            anchors.topMargin: Theme.spacingS
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: strip.top
+            anchors.bottomMargin: Theme.spacingXS
             contentHeight: knobCol.implicitHeight
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
 
             Column {
                 id: knobCol
-                width: parent.width
-                spacing: Theme.spacingS
+                width: list.width - list.barSpace
+                spacing: Theme.spacingXS
 
                 Repeater {
                     model: Knobs.groups
@@ -113,100 +143,53 @@ Rectangle {
                         // 둔 것이다(apps/rice-knobs). 안 나눠 둔 셰이더도 있고,
                         // 그때 "값"이라고 적어 두면 패널 머리와 같은 말이 두 번
                         // 나온다 — 없으면 그냥 안 그린다.
-                        Txt {
+                        Head {
                             visible: (modelData.label || "") !== ""
-                            height: visible ? implicitHeight : 0
-                            text: modelData.label
-                            font.pixelSize: Theme.fontS
-                            color: Theme.onSurfaceVariant
-                            topPadding: Theme.spacingS
+                            height: visible ? implicitHeight + Theme.spacingS : 0
+                            verticalAlignment: Text.AlignBottom
+                            text: modelData.label || ""
                         }
 
                         Repeater {
                             model: modelData.knobs
 
-                            Column {
-                                id: knob
-
+                            KnobRow {
                                 required property var modelData
 
                                 width: knobCol.width
-                                spacing: 2
+                                name: modelData.name
+                                value: modelData.value
+                                minimum: modelData.min
+                                maximum: modelData.max
+                                step: modelData.step
+                                motion: modelData.motion === true
+                                dirty: modelData.dirty === true
+                                resetTo: String(modelData.repo)
+                                resetLabel: "레포"
+                                doc: modelData.doc || ""
+                                showDoc: root.showDocs
 
-                                Row {
-                                    width: parent.width
-                                    spacing: Theme.spacingS
-
-                                    Txt {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: knob.modelData.name
-                                        font.family: Theme.monoFamily
-                                        font.pixelSize: Theme.fontS
-                                    }
-
-                                    Txt {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: slider.live.toFixed(3).replace(/0+$/, "").replace(/\.$/, ".0")
-                                        font.family: Theme.monoFamily
-                                        font.pixelSize: Theme.fontS
-                                        color: Theme.primary
-                                    }
-
-                                    // 이 값을 0 으로 내리면 흐르는 것이 멈춘다는
-                                    // 표시. 배터리 값이 통째로 여기 붙어 있어서
-                                    // (debug:vfr), 어느 손잡이가 그런 손잡이인지
-                                    // 보이는 편이 낫다.
-                                    Txt {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        visible: knob.modelData.motion === true
-                                        text: "흐름"
-                                        font.pixelSize: Theme.fontS
-                                        color: Theme.fade(Theme.onSurfaceVariant, 0.8)
-                                    }
-
-                                    Txt {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        visible: knob.modelData.dirty === true
-                                        text: "· 레포 " + knob.modelData.repo
-                                        font.pixelSize: Theme.fontS
-                                        color: Theme.onSurfaceVariant
-                                    }
-
-                                    Btn {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        visible: knob.modelData.dirty === true
-                                        width: 52
-                                        kind: "ghost"
-                                        text: "되돌리기"
-                                        onClicked: Knobs.reset(knob.modelData.name)
-                                    }
-                                }
-
-                                Slide {
-                                    id: slider
-                                    width: parent.width
-                                    minimum: knob.modelData.min
-                                    maximum: knob.modelData.max
-                                    step: knob.modelData.step
-                                    value: knob.modelData.value
-                                    onMoved: v => Knobs.push(knob.modelData.name, v, false)
-                                    onReleased: v => Knobs.push(knob.modelData.name, v, true)
-                                }
-
-                                Txt {
-                                    width: parent.width
-                                    visible: (knob.modelData.doc || "") !== ""
-                                    text: knob.modelData.doc
-                                    font.pixelSize: Theme.fontS
-                                    color: Theme.fade(Theme.onSurfaceVariant, 0.85)
-                                    wrapMode: Text.WordWrap
-                                    maximumLineCount: 2
-                                }
+                                onHoveredChanged: if (hovered)
+                                    root.docHint = docLine
+                                onMoved: v => Knobs.push(modelData.name, v, false)
+                                onCommitted: v => Knobs.push(modelData.name, v, true)
+                                onReverted: Knobs.reset(modelData.name)
                             }
                         }
                     }
                 }
             }
+        }
+
+        DocStrip {
+            id: strip
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            visible: !root.showDocs
+            height: visible ? implicitHeight : 0
+            text: root.docHint
+            hint: Knobs.groups.length > 0 ? "손잡이에 마우스를 올리면 여기 설명이 뜬다. 전부 펴려면 위의 설명 보기." : ""
         }
     }
 }

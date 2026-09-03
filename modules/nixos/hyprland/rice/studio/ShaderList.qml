@@ -14,13 +14,10 @@ import QtQuick
 import qs.Rice
 import qs.Ui
 
-Rectangle {
+Panel {
     id: root
 
     signal note(string message)
-
-    radius: Theme.radius
-    color: Theme.surfaceContainer
 
     function headerFor(v) {
         if (v.kind === "off")
@@ -56,16 +53,17 @@ Rectangle {
         return out;
     }
 
-    Flickable {
+    Scroller {
+        id: scroll
         anchors.fill: parent
+        // 포커스 링이 단추 바깥으로 3px 나간다. 여백이 없으면 첫 줄과 마지막 줄의
+        // 링이 잘려서 지금 어디에 있는지가 그 두 줄에서만 안 보인다.
         anchors.margins: Theme.spacingS
         contentHeight: col.implicitHeight
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
 
         Column {
             id: col
-            width: parent.width
+            width: scroll.width - Theme.spacingS * 2 - scroll.barSpace
             spacing: 1
 
             Repeater {
@@ -81,17 +79,14 @@ Rectangle {
 
                         Item {
                             width: col.width
-                            height: 28
+                            height: 30
 
-                            Txt {
+                            Head {
                                 anchors.left: parent.left
                                 anchors.leftMargin: Theme.spacingS
                                 anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 4
+                                anchors.bottomMargin: 5
                                 text: modelData.label
-                                font.pixelSize: Theme.fontS
-                                font.weight: Font.Medium
-                                color: Theme.primary
                             }
                         }
                     }
@@ -110,13 +105,27 @@ Rectangle {
                             readonly property bool canAdd: v.kind === "stage" && Shaders.chain.length > 0
 
                             width: col.width
-                            height: 44
+                            height: 46
                             radius: Theme.radiusS
-                            color: isCurrent ? Theme.fade(Theme.primary, 0.16) : (hover.containsMouse ? Theme.fade(Theme.onSurface, 0.06) : "transparent")
+                            color: isCurrent ? Theme.fade(Theme.primary, 0.16) : (hover.containsMouse ? Theme.hoverWash : "transparent")
+
+                            // 걸린 것은 왼쪽에 띠를 세운다. 셰이더를 통과하면
+                            // 16% 짜리 배경 색조만으로는 어느 줄이 지금 것인지가
+                            // 뭉개진다.
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                anchors.margins: 6
+                                width: 3
+                                radius: 1.5
+                                visible: row.isCurrent
+                                color: Theme.primary
+                            }
 
                             Column {
                                 anchors.left: parent.left
-                                anchors.leftMargin: Theme.spacingS
+                                anchors.leftMargin: Theme.spacingM
                                 anchors.right: plus.left
                                 anchors.rightMargin: Theme.spacingXS
                                 anchors.verticalCenter: parent.verticalCenter
@@ -126,13 +135,13 @@ Rectangle {
                                     width: parent.width
                                     text: (row.v.kind === "stage" ? row.v.leaf : row.v.name) + (row.isCurrent ? "   ✓" : (row.inChain ? "   ·" + Shaders.passOf(row.v.name) : ""))
                                     font.pixelSize: Theme.fontM
-                                    color: row.isCurrent ? Theme.primary : Theme.onSurface
+                                    color: row.isCurrent ? Theme.primary : Theme.surfaceText
                                 }
 
                                 Txt {
                                     width: parent.width
                                     font.pixelSize: Theme.fontS
-                                    color: Theme.onSurfaceVariant
+                                    color: Theme.surfaceVariantText
                                     visible: text !== ""
                                     text: {
                                         if (row.v.kind !== "stage")
@@ -153,7 +162,7 @@ Rectangle {
                                 anchors.rightMargin: Theme.spacingS
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: row.canAdd
-                                width: 30
+                                width: Theme.hit
                                 kind: "ghost"
                                 text: "＋"
                                 enabled: row.v.addable === true && !Shaders.busy
@@ -163,7 +172,7 @@ Rectangle {
                             MouseArea {
                                 id: hover
                                 anchors.fill: parent
-                                anchors.rightMargin: row.canAdd ? 40 : 0
+                                anchors.rightMargin: row.canAdd ? Theme.hit + Theme.spacingS : 0
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {

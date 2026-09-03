@@ -38,6 +38,9 @@
 // 화면 셰이더는 창을 안 가린다. 이 창도 그 유리 뒤에 그려지므로 글씨 대비와 블룸을
 // 바로 그 위에서 본다. 장식 탭은 한 걸음 더 간다 — 투명도를 내리면 이 창 자신이
 // 반투명해진다.
+//
+// 그래서 화면에 쓰는 색은 Rice/Theme.qml 한 곳에서만 나온다. 특히 카드와 창
+// 배경을 가르는 일이 팔레트만으로는 안 되는 사정이 거기 적혀 있다.
 
 import QtQuick
 import Quickshell
@@ -67,9 +70,12 @@ ShellRoot {
         id: win
 
         title: "라이싱 스튜디오"
-        implicitWidth: 940
-        implicitHeight: 660
-        minimumSize: Qt.size(720, 480)
+        implicitWidth: 1080
+        implicitHeight: 740
+        // 손잡이 한 줄이 이름·값·슬라이더·되돌리기를 가로로 늘어놓는다
+        // (Ui/KnobRow.qml). 그보다 좁으면 슬라이더가 백 픽셀 아래로 눌려서
+        // 끌 수는 있어도 맞출 수는 없는 폭이 된다.
+        minimumSize: Qt.size(880, 560)
         color: Theme.surface
 
         // 0 = 셰이더, 1 = 장식
@@ -84,6 +90,9 @@ ShellRoot {
         function say(msg, bad) {
             toast = msg;
             toastBad = bad === true;
+            // 스크립트가 낸 거절 이유는 한 줄짜리부터 두 줄짜리까지 길이가 제각각인데,
+            // 시간이 고정이면 긴 것은 다 읽기 전에 사라진다.
+            toastTimer.interval = Math.max(3200, Math.min(9000, 1600 + msg.length * 90));
             toastTimer.restart();
         }
 
@@ -124,6 +133,23 @@ ShellRoot {
             }
         }
 
+        // 탭 전환에 Esc 나 맨 숫자를 안 쓴다 — 저장 이름을 치는 중에 삼켜지거나,
+        // 반대로 글자가 탭 전환으로 새는 자리가 생긴다.
+        Shortcut {
+            sequences: ["Ctrl+1"]
+            onActivated: win.tab = 0
+        }
+
+        Shortcut {
+            sequences: ["Ctrl+2"]
+            onActivated: win.tab = 1
+        }
+
+        Shortcut {
+            sequences: ["Ctrl+W"]
+            onActivated: Qt.quit()
+        }
+
         Item {
             anchors.fill: parent
 
@@ -136,11 +162,10 @@ ShellRoot {
                 // 둘뿐이라 세그먼트 하나로 충분하다. 칩 모양은 KnobPanel 의 대상
                 // 고르기와 같은 것을 쓴다 — 같은 창에서 "고르는 것"이 두 가지
                 // 모양이면 어느 쪽이 지금 상태인지 매번 다시 배워야 한다.
-                Rectangle {
+                Panel {
                     width: parent.width
-                    height: 40
+                    height: 44
                     radius: Theme.radiusS
-                    color: Theme.surfaceContainer
 
                     Row {
                         anchors.left: parent.left
@@ -151,36 +176,15 @@ ShellRoot {
                         Repeater {
                             model: 2
 
-                            Rectangle {
+                            Chip {
                                 required property int index
-
-                                readonly property bool picked: win.tab === index
 
                                 // 장식은 기본값에서 벗어난 개수를 달고 다닌다.
                                 // 셰이더 탭을 보고 있어도 저쪽을 건드려 뒀다는
                                 // 사실이 보여야 한다.
-                                readonly property string label: index === 0 ? "셰이더" : ("장식" + (Decor.dirtyCount > 0 ? " · " + Decor.dirtyCount : ""))
-
-                                width: tabText.implicitWidth + Theme.spacingL * 2
-                                height: 32
-                                radius: 16
-                                color: picked ? Theme.fade(Theme.primary, 0.22) : "transparent"
-                                border.width: picked ? 1 : 0
-                                border.color: Theme.primary
-
-                                Txt {
-                                    id: tabText
-                                    anchors.centerIn: parent
-                                    text: parent.label
-                                    font.pixelSize: Theme.fontM
-                                    color: parent.picked ? Theme.primary : Theme.onSurfaceVariant
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: win.tab = parent.index
-                                }
+                                text: index === 0 ? "셰이더" : ("장식" + (Decor.dirtyCount > 0 ? " · " + Decor.dirtyCount : ""))
+                                picked: win.tab === index
+                                onClicked: win.tab = index
                             }
                         }
                     }
@@ -209,6 +213,8 @@ ShellRoot {
 
             // 토스트는 창 위에 겹친다. 자리를 차지하면 뜰 때마다 아래 내용이 밀린다.
             Rectangle {
+                id: toast
+
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Theme.spacingL
@@ -216,9 +222,9 @@ ShellRoot {
                 width: Math.min(parent.width - Theme.spacingL * 2, toastText.implicitWidth + Theme.spacingL * 2)
                 height: toastText.implicitHeight + Theme.spacingM * 2
                 radius: Theme.radiusS
-                color: win.toastBad ? Theme.fade(Theme.error, 0.92) : Theme.surfaceContainerHighest
+                color: win.toastBad ? Theme.fade(Theme.error, 0.92) : Theme.surfaceRaised
                 border.width: 1
-                border.color: Theme.fade(Theme.outline, 0.2)
+                border.color: Theme.line
 
                 Txt {
                     id: toastText
@@ -228,7 +234,17 @@ ShellRoot {
                     wrapMode: Text.WordWrap
                     elide: Text.ElideNone
                     font.pixelSize: Theme.fontS
-                    color: win.toastBad ? Theme.surface : Theme.onSurface
+                    color: win.toastBad ? Theme.surface : Theme.surfaceText
+                }
+
+                // 손잡이 목록의 아래쪽을 가리므로, 다 읽었으면 눌러서 치울 수 있다.
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        toastTimer.stop();
+                        win.toast = "";
+                    }
                 }
             }
         }

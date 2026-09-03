@@ -10,7 +10,7 @@ import QtQuick
 import qs.Rice
 
 Text {
-    color: Theme.onSurface
+    color: Theme.surfaceText
     font.family: Theme.fontFamily
     font.pixelSize: Theme.fontM
     renderType: Text.QtRendering

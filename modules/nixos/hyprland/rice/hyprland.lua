@@ -487,8 +487,22 @@ hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 -- binds-user 는 DMS 설정 GUI 가 키를 추가할 때 쓰는 자리다(기본은 빈 파일).
 -- 위에서 이미 잡은 키를 거기서 또 잡으면 둘 다 실행되니, 그럴 땐 그 파일에서
 -- hl.unbind() 를 먼저 부른다.
-for _, fragment in ipairs({ "colors", "cursor", "outputs", "windowrules", "layout", "binds-user" }) do
-    pcall(require, "dms." .. fragment)
+--
+-- ── 이름을 리터럴로 적어 두는 이유 ────────────────────────────────────────
+-- DMS 의 커서 테마 설정(Modules/Settings/ThemeColorsTab.qml)은 이 파일이 조각을
+-- 읽고 있는지를 **문자열 검색**으로 판정한다:
+--
+--   grepPattern: "dms.cursor"   includeLine: require("dms.cursor")
+--
+-- 못 찾으면 파일 끝에 그 줄을 덧붙인다. 이름을 런타임에 조립하면(`"dms." ..
+-- fragment`) 리터럴이 파일에 안 나타나므로, 이미 읽고 있는 조각을 한 번 더
+-- require 하는 줄이 붙고 그게 apps/rice-save 를 타고 레포까지 간다. 니리 쪽
+-- (../../niri/rice/config.kdl)은 `include "dms/cursor.kdl"` 이 그대로 적혀 있어
+-- 같은 일이 없다.
+--
+-- 목록을 펴 두면 리터럴이 생기고, 덤으로 무엇을 읽는지가 바로 보인다.
+for _, fragment in ipairs({ "dms.colors", "dms.cursor", "dms.outputs", "dms.windowrules", "dms.layout", "dms.binds-user" }) do
+    pcall(require, fragment)
 end
 
 

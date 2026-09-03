@@ -209,10 +209,11 @@ in
 
     # Seed the ricing files on a machine that has none yet. Deliberately not
     # home.file / xdg.configFile: those symlink the store and make the target
-    # read-only. `seed` copies only when the destination is missing, so a
-    # rebuild mid-ricing never clobbers unsaved work — see the helper's header.
+    # read-only. `rice_sync` only overwrites when the live copy still matches
+    # the baseline — i.e. when nobody has touched it — so a rebuild mid-ricing
+    # never clobbers unsaved work. See the helper's header for the full table.
     # linkGeneration 뒤에 두는 건 아래 unstore 때문이다. 이전 세대의 심링크를
-    # 걷어내는 건 home-manager 도 하는데, 그게 seed 보다 나중에 돌면 방금 심은
+    # 걷어내는 건 home-manager 도 하는데, 그게 rice_sync 보다 나중에 돌면 방금 심은
     # 진짜 파일을 보고 판단하게 된다. 순서를 못 박아 두면 그 경우가 아예 없다.
     home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" "linkGeneration" ] ''
       ${import ../../shared/rice-seed-helpers.nix}
@@ -220,8 +221,9 @@ in
       # ── 심링크에서 시드로 넘어오는 한 번을 위한 것 ──────────────────────
       # 아래 셋(karabiner.json, aerospace.toml, rift 의 config.toml)은
       # 2026-08-06 까지 modules/darwin/files.nix 가 거는 읽기 전용 스토어
-      # 심링크였다. seed 의 존재 검사는 링크도 "있음"으로 보므로, 걷어내지
-      # 않으면 그 머신들에는 영영 안 심긴다.
+      # 심링크였다. rice_sync 는 링크도 "있음"으로 보고, 그 내용은 기준선과도
+      # 레포와도 안 맞아 conflict 로 손을 떼므로, 걷어내지 않으면 그 머신들에는
+      # 영영 안 심긴다.
       #
       # 스토어를 가리키는 링크일 때만 지운다. 평범한 파일이면 이미 손댄
       # 설정이고, 스토어 밖을 가리키는 링크라면 일부러 그렇게 둔 것이다 —
@@ -234,16 +236,16 @@ in
 
       # wezterm. Secondary terminal (ghostty is the daily one), here mostly
       # because it can read pywal's JSON directly and reload itself.
-      seed ${./wezterm} "$HOME/.config/wezterm"
+      rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
       # 창 테두리. rift 가 run_on_start 에서 이 파일을 실행하고, 팔레트가 바뀔
       # 때마다 apps/rice-colors 가 다시 쓴다.
-      seed ${./borders} "$HOME/.config/borders"
+      rice_sync ${./borders} "$HOME/.config/borders"
 
       # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
       # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
       unstore "$HOME/.config/rift/config.toml"
-      seed ${./rift/config.toml} "$HOME/.config/rift/config.toml"
+      rice_sync ${./rift/config.toml} "$HOME/.config/rift/config.toml"
 
       # Karabiner 의 키맵. 여기 셋 중 심링크가 제일 안 맞던 자리다 — 설정 GUI 가
       # 저장할 때마다 조용히 실패했고, ./karabiner/README.md 에는 그걸 우회하는
@@ -254,15 +256,16 @@ in
       # 만드는 assets/ 와 automatic_backups/ 가 같이 산다. 통째로 다루면 그것까지
       # 레포가 관리하게 된다.
       unstore "$HOME/.config/karabiner/karabiner.json"
-      seed ${./karabiner/karabiner.json} "$HOME/.config/karabiner/karabiner.json"
+      rice_sync ${./karabiner/karabiner.json} "$HOME/.config/karabiner/karabiner.json"
 
       # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
       #
-      # 시드의 존재 검사가 여기서만 한 번 새는 자리가 있다: LinearMouse 는 처음 뜰 때
+      # rice_sync 가 여기서만 한 번 새는 자리가 있다: LinearMouse 는 처음 뜰 때
       # 설정이 없으면 **빈 설정을 스스로 만든다.** 그리고 이 활성화보다 앱이 먼저 뜨는
       # 경우가 실제로 있다 — launchd 에이전트를 거는 것도 같은 build-switch 안이라 첫
-      # 설치에서 순서가 어느 쪽으로든 갈 수 있다. 그러면 앱이 만든 빈 파일이 존재 검사를
-      # 통과해서, 리빌드는 성공했는데 휠 방향만 안 바뀌는 상태로 끝난다.
+      # 설치에서 순서가 어느 쪽으로든 갈 수 있다. 그러면 앱이 만든 빈 파일이 "이미
+      # 있음"으로 통과하고, 기준선도 그 빈 파일로 잡혀서(부트스트랩) 리빌드는
+      # 성공했는데 휠 방향만 안 바뀌는 상태로 끝난다.
       #
       # 그래서 규칙이 하나도 없는 파일은 "없는 것"으로 친다. 손으로 쓴 설정은 schemes 가
       # 비어 있지 않으니 안 걸리고, JSON 이 깨져 있으면(= 고치던 중이다) 손대지 않는다.
@@ -278,19 +281,19 @@ sys.exit(0 if not d.get("schemes") else 1)
         $DRY_RUN_CMD rm -f "$lmcfg"
         echo "removed empty linearmouse.json (앱이 만든 빈 설정)"
       fi
-      seed ${./linearmouse/linearmouse.json} "$lmcfg"
+      rice_sync ${./linearmouse/linearmouse.json} "$lmcfg"
 
       # AeroSpace 의 설정. rift 로 옮겨 간 뒤로 로그인에 뜨지 않지만 `open -a
       # AeroSpace` 폴백은 그대로라 설정도 유효하다. rift 가 완전히 자리 잡으면
       # 이 줄과 ./aerospace 를 casks.nix 의 항목과 함께 지우면 된다.
       unstore "$HOME/.config/aerospace/aerospace.toml"
-      seed ${./aerospace/aerospace.toml} "$HOME/.config/aerospace/aerospace.toml"
+      rice_sync ${./aerospace/aerospace.toml} "$HOME/.config/aerospace/aerospace.toml"
 
       # rift 키바인딩이 부르는 헬퍼들. ~/.config/rift 가 아니라 여기 두는 이유는
       # 원래 위 심링크와 부딪혀서였는데 그 제약은 사라졌다. 그래도 그대로 두는
       # 건 rift/config.toml 이 이 경로를 박아서 부르기 때문이다 — 옮기려면 키맵과
       # 같이 옮겨야 하고, 그건 이 변경과 별개다.
-      seed ${./bin} "$HOME/.config/rice/bin"
+      rice_sync ${./bin} "$HOME/.config/rice/bin"
 
       # WorkspacePeek(Option+Ctrl+W) 설정. 앱 자체는 nix 가 안 깐다 — Swift 로
       # 빌드하는 .app 이라 명령형으로 두었다. 자세한 건 ./workspacepeek/README.md.
@@ -298,13 +301,14 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 설정만 여기서 관리하는 게 가능한 이유는 앱이 loadOrCreate 로 *없을 때만*
       # 쓰기 때문이다. 파일이 이미 있으면 앱은 읽기만 하므로, 여기 심어 둔 값이
       # 앱의 기본값에 덮이지 않는다.
-      seed ${./workspacepeek/config.json} "$HOME/.config/workspacepeek/config.json"
+      rice_sync ${./workspacepeek/config.json} "$HOME/.config/workspacepeek/config.json"
 
       # 시드한 것을 다시 읽히는 단계는 여기 없다 — 일곱 다 그럴 필요가 없기
       # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고, bordersrc 와
       # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
-      # WorkspacePeek·rift·AeroSpace 는 애초에 파일이 없을 때만 시드가
-      # 일어난다(= 아직 아무도 안 읽었다).
+      # WorkspacePeek·rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
+      # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
+      # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
       #
       # 심링크에서 넘어오는 그 한 번만 예외인데, 그때도 감시자가 새로 생긴 파일을
       # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R, Karabiner 는 설정 앱에서

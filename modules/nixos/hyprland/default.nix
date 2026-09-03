@@ -160,49 +160,28 @@ in
       home.activation.seedHyprlandRice = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         ${import ../../shared/rice-seed-helpers.nix}
 
-        seed ${./rice/hyprland.lua} "$HOME/.config/hypr/hyprland.lua"
-
-        # 밝기 키의 인자 개수를 고친다. DMS 의 brightness 는 오디오 쪽과 달리
-        # `increment(step, device)` 로 인자가 둘이라, 하나만 넘기던 옛 시드는
-        # "Too few arguments provided" 로 조용히 거절당했다 — 키는 눌리는데
-        # 화면은 그대로인, 원인 찾기 나쁜 쪽이다. 빈 문자열이 "기본 장치"다.
-        #
-        # 고친 줄을 레포 시드에 넣는 것만으로는 이미 hyprland.lua 를 가진 머신에
-        # 영영 안 들어간다(seed 의 존재 검사). ensure 는 줄을 붙일 뿐 고치지는
-        # 못하므로, 위 decor require→dofile 때와 같은 방식으로 sed 를 쓴다.
-        # 패턴은 망가진 형태에만 걸리고 고친 뒤에는 안 걸리므로 여러 번 돌려도
-        # 같은 결과이며, step 을 손으로 바꿔 둔 머신도 그 값을 지킨다.
-        if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
-          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i -E \
-            's#hl\.dsp\.exec_cmd\("dms ipc call brightness (increment|decrement) ([0-9]+)"\)#hl.dsp.exec_cmd('"'"'dms ipc call brightness \1 \2 ""'"'"')#g' \
-            "$HOME/.config/hypr/hyprland.lua"
-        fi
+        rice_sync ${./rice/hyprland.lua} "$HOME/.config/hypr/hyprland.lua"
 
         # 장식 조각의 배선 한 줄. decor.lua 자체는 심지 않는다 — 생성물이고,
-        # apps/rice-decor 가 값을 처음 바꿀 때 만든다. 대신 그것을 부르는 줄은
-        # 이미 hyprland.lua 를 가진 머신에도 들어가야 한다. seed 는 존재 검사에서
-        # 멈추므로 영영 안 들어가고, 그때 증상은 "스튜디오에서 값을 바꾸면 지금은
-        # 먹는데 다시 로그인하면 원래대로"다 — 스위처가 성실히 동작하고 화면만
-        # 안 따라오는, ../../shared/rice-seed-helpers.nix 머리말이 적어 둔 바로
-        # 그 제일 나쁜 상태다.
-        # 처음에는 require 였다. require 된 파일은 하이프랜드가 감시해서 스튜디오
-        # 슬라이더마다(rice-decor 가 decor.lua 를 다시 쓴다) 설정 전체가 리로드
-        # 됐고, 리로드는 걸어 둔 화면 셰이더까지 지운다(rice/hyprland.lua 의 장식
-        # 조각 주석). 그래서 dofile 로 바꿨다. ensure 는 붙이기만 하고 못 지우므로
-        # 옛 배선이 남은 머신에서는 그 줄부터 걷어낸다 — 안 걷으면 dofile 줄을
-        # 붙여도 require 가 다시 감시를 붙인다.
-        if [ -f "$HOME/.config/hypr/hyprland.lua" ]; then
-          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i '/^pcall(require, "decor")$/d' \
-            "$HOME/.config/hypr/hyprland.lua"
-        fi
-        ensure "$HOME/.config/hypr/hyprland.lua" \
+        # apps/rice-decor 가 값을 처음 바꿀 때 만든다.
+        #
+        # rice_sync 가 아니라 rice_ensure 인 이유는 판정표 4행(양쪽 다 고침)이다.
+        # 거기서 rice_sync 는 일부러 손을 떼는데, 이 줄이 없을 때의 증상은
+        # "스튜디오에서 값을 바꾸면 지금은 먹는데 다시 로그인하면 원래대로"라
+        # 원인 찾기가 제일 나쁜 쪽이다.
+        #
+        # require 가 아니라 dofile 인 것도 요점이다: require 된 파일은 하이프랜드가
+        # 감시해서 스튜디오 슬라이더를 움직일 때마다(rice-decor 가 decor.lua 를
+        # 다시 쓴다) 설정 전체가 리로드되고, 리로드는 걸어 둔 화면 셰이더까지
+        # 지운다(rice/hyprland.lua 의 장식 조각 주석).
+        rice_ensure "$HOME/.config/hypr/hyprland.lua" \
           'pcall(dofile, os.getenv("HOME") .. "/.config/hypr/decor.lua")' \
           '-- 장식 값(투명도·흐리게·어둡게·그림자). apps/rice-decor 가 쓴다.'
 
         # DMS 가 자기 설정을 쓰는 자리. 빈 조각을 미리 깔아 두는 건 DMS 가 처음
         # 뜨기 전에도 hyprland.lua 의 require 가 뭔가를 찾게 하려는 것이다.
         # (require 자체는 pcall 로 감싸 뒀으니 없어도 세션은 뜬다.)
-        seed ${./rice/dms} "$HOME/.config/hypr/dms"
+        rice_sync ${./rice/dms} "$HOME/.config/hypr/dms"
 
         # 화면 셰이더. 갈래 폴더 한 단(crt / water / cyberpunk / print)이고, 그
         # 폴더 이름이 곧 스위처와 런처에서 부르는 이름의 앞부분이다 — `crt/crt`.
@@ -210,20 +189,19 @@ in
         # 경로로 다뤄진다(apps/rice-crt).
         #
         # ── 왜 폴더 하나씩 심는가 ────────────────────────────────────────
-        # `seed ${./rice/shaders} "$HOME/.config/hypr/shaders"` 로 통째로 심으면
-        # **이미 shaders/ 를 가진 머신에는 새 갈래가 영영 안 들어간다.** seed 의
-        # 존재 검사가 부모 폴더에 걸리기 때문이다(../../shared/rice-seed-helpers.nix
-        # 머리말의 그 대가다). 셰이더가 평면이던 시절에 리빌드를 한 번이라도 한
-        # 머신이 정확히 그 상태이고, 증상은 "런처에 셰이더가 crt 하나뿐"이다.
+        # 판정 단위가 곧 인자이기 때문이다. `rice_sync ${./rice/shaders}
+        # "$HOME/.config/hypr/shaders"` 로 통째로 넘기면 **셰이더 한 장만 값을
+        # 손봐도 폴더 전체가 "라이브가 바뀜"이 되어**, 그때부터 새 갈래가 영영 안
+        # 들어간다. 셰이더는 값을 눈으로 맞추는 축이라 그 상태가 오히려 기본값에
+        # 가깝고, 증상은 "런처에 셰이더가 crt 하나뿐"이다.
         #
-        # 갈래 단위로 심으면 부모가 있어도 자식이 새로 들어가고, 손댄 셰이더는
-        # 여전히 안 덮인다. 목록은 폴더에서 읽으므로 갈래를 추가해도 여기는
-        # 안 고친다.
+        # 갈래 단위로 넘기면 손댄 갈래만 멈추고 나머지는 따라간다. 목록은 폴더에서
+        # 읽으므로 갈래를 추가해도 여기는 안 고친다.
         ${lib.concatMapStringsSep "\n        " (n: ''
-          seed ${./rice/shaders}/${n} "$HOME/.config/hypr/shaders/${n}"'')
+          rice_sync ${./rice/shaders}/${n} "$HOME/.config/hypr/shaders/${n}"'')
           (builtins.attrNames (builtins.readDir ./rice/shaders))}
 
-        # 퇴역한 셰이더들. seed 는 지우지 않으므로 $HOME 에는 그대로 남고, 남으면
+        # 퇴역한 셰이더들. rice_sync 는 지우지 않으므로 $HOME 에는 그대로 남고, 남으면
         # 스위처 목록에 계속 뜬다(`<갈래>/<이름>` 으로 훑으므로 평면 두 장만은
         # 예외로 안 뜬다). 여기서 지우지 않는 것은 값을 손봐 뒀을 수 있어서다 —
         # $HOME 쪽 라이싱 파일을 지우는 것은 rebuild 가 할 일이 아니다. 대신
@@ -243,7 +221,7 @@ in
         # 이름 붙인 체인. 한 줄에 한 칸이고, 위에서 아래 순서로 겹친다.
         # `apps/rice-crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은
         # apps/rice-save 다 — 다른 라이싱 파일과 같은 방향이다.
-        seed ${./rice/chains} "$HOME/.config/hypr/chains"
+        rice_sync ${./rice/chains} "$HOME/.config/hypr/chains"
 
         # 라이싱 스튜디오. quickshell 설정 하나이고 apps/rice-studio 가
         # `quickshell -p` 로 띄운다. 하이프랜드 밑에 두는 것은 화면 셰이더가
@@ -254,7 +232,7 @@ in
         # 한 벌이고, 안의 파일이 서로를 참조해서 반쪽만 새로 들어가면 오히려
         # 깨진다. 이미 있는 머신에 새 파일이 안 들어가는 대가는 그대로다 —
         # QML 을 고쳤으면 apps/rice-save 로 되받는 것이 이 레포의 방향이다.
-        seed ${./rice/studio} "$HOME/.config/rice-studio"
+        rice_sync ${./rice/studio} "$HOME/.config/rice-studio"
 
         # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty
         # 가 이미 같은 파일을 $HOME 에 깔아 두고, 그것들은 컴포지터를 안 가린다.

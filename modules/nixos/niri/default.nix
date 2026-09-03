@@ -39,7 +39,7 @@ let
   cfg = config.local.niri;
 
   # Which of ./rice/profiles/* a machine with no config yet starts on. This is
-  # only a seed — apps/rice-switch owns the choice from the first switch on, and
+  # only a rice_sync — apps/rice-switch owns the choice from the first switch on, and
   # nothing re-reads this value afterwards. Not an option because a NixOS option
   # would imply the profile is declarative, which is the opposite of the point.
   seedProfile = "amoled";
@@ -97,33 +97,23 @@ in
       home.activation.seedNiriRice = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         ${import ../../shared/rice-seed-helpers.nix}
 
-        seed ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
-
-        # 밝기 키의 인자 개수를 고친다. 사연과 idempotent 인 이유는 ../hyprland
-        # 쪽 같은 자리에 적어 뒀다 — 두 세션이 같은 DMS 를 같은 방식으로 잘못
-        # 부르고 있었고, 고친 줄은 시드에만 넣어서는 이미 config.kdl 을 가진
-        # 머신에 닿지 않는다.
-        if [ -f "$HOME/.config/niri/config.kdl" ]; then
-          $DRY_RUN_CMD ${pkgs.gnused}/bin/sed -i -E \
-            's#("dms" "ipc" "call" "brightness" "(increment|decrement)" "[0-9]+");#\1 "";#g' \
-            "$HOME/.config/niri/config.kdl"
-        fi
+        rice_sync ${./rice/config.kdl} "$HOME/.config/niri/config.kdl"
 
         # config.kdl 이 optional 로 include 하는 조각. 창 열림/닫힘 셰이더가
         # 들어 있고, 지우면 니리 기본 애니메이션으로 돌아간다.
-        seed ${./rice/animations.kdl} "$HOME/.config/niri/animations.kdl"
-        ensure "$HOME/.config/niri/config.kdl" 'include "animations.kdl" optional=true' \
+        rice_sync ${./rice/animations.kdl} "$HOME/.config/niri/animations.kdl"
+        rice_ensure "$HOME/.config/niri/config.kdl" 'include "animations.kdl" optional=true' \
           '// 창 열림/닫힘 셰이더. 파일을 지우면 니리 기본 애니메이션으로 돌아간다.'
 
         # Look profiles, swapped live by apps/rice-switch.
-        seed ${./rice/profiles} "$HOME/.config/rice/profiles"
+        rice_sync ${./rice/profiles} "$HOME/.config/rice/profiles"
 
         # ...and the pieces the seeded profile is made of, so a fresh machine
         # boots into a coherent look instead of a half-applied one. Only the
         # starting point: rice-switch overwrites them from then on, and the
         # guard means it never re-seeds over a switch you made.
-        seed ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
-        seed ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
+        rice_sync ${./rice/profiles/${seedProfile}/niri.kdl} "$HOME/.config/niri/profile.kdl"
+        rice_sync ${pkgs.writeText "rice-current" seedProfile} "$HOME/.config/rice/current"
 
         # 터미널(ghostty)은 여기 없다. ../../shared/ghostty 가 심고, 그
         # 모듈은 macOS 에서도 같은 파일을 쓴다 — 셰이더는 플랫폼을 안 가리고
@@ -142,12 +132,12 @@ in
         # rice-fuzzel 도 같은 줄을 붙일 줄 알지만, 그건 손으로 만든 설정을 위한
         # 안전망이고 — 첫 로그인에 런처가 fuzzel 기본 테마(솔라라이즈드 라이트)로
         # 뜨지 않으려면 이 시점에 이미 배선돼 있어야 한다.
-        seed ${pkgs.writeText "fuzzel.ini" (''
+        rice_sync ${pkgs.writeText "fuzzel.ini" (''
           # apps/rice-fuzzel 이 쓰는 색 파일. 기본 섹션이어야 해서 맨 위다.
           include=/home/${user}/.config/fuzzel/dank-rice.ini
 
         '' + builtins.readFile ./rice/fuzzel.ini)} "$HOME/.config/fuzzel/fuzzel.ini"
-        seed ${./rice/fuzzel-fallback.ini} "$HOME/.config/fuzzel/dank-rice.ini"
+        rice_sync ${./rice/fuzzel-fallback.ini} "$HOME/.config/fuzzel/dank-rice.ini"
 
         # GTK. Seeded rather than home-manager-managed because DMS edits these
         # in place — see the header of rice/gtk-settings.ini for the whole
@@ -155,8 +145,8 @@ in
         # This is a *niri* need, not a GNOME one: there is no settings daemon
         # here to broadcast XSettings, so GTK apps read the file directly.
         # apps/rice-save takes gtk-3.0 back as the canonical one.
-        seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-3.0/settings.ini"
-        seed ${./rice/gtk-settings.ini} "$HOME/.config/gtk-4.0/settings.ini"
+        rice_sync ${./rice/gtk-settings.ini} "$HOME/.config/gtk-3.0/settings.ini"
+        rice_sync ${./rice/gtk-settings.ini} "$HOME/.config/gtk-4.0/settings.ini"
       '';
     };
 

@@ -72,14 +72,15 @@ in
       home.activation.seedDmsPlugins = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         ${import ../../shared/rice-seed-helpers.nix}
 
-        seed ${./plugins/RiceSwitcher} "${pluginDir}/RiceSwitcher"
-        seed ${./plugin-settings.json} "${settingsFile}"
+        rice_sync ${./plugins/RiceSwitcher} "${pluginDir}/RiceSwitcher"
+        rice_sync ${./plugin-settings.json} "${settingsFile}"
 
-        # seed 의 존재 검사에는 대가가 있다(../../shared/rice-seed-helpers.nix 머리말):
-        # 파일이 이미 있는 머신에는 새 키가 영영 안 들어간다. 여기서는 그게 "플러그인
-        # 파일은 깔렸는데 런처에 안 뜬다"가 되어 원인을 찾기 나쁘다. 그래서 줄 하나를
-        # 보장하는 ensure 와 같은 취지로, 이 키만 없을 때 끼워 넣는다. 나머지 플러그인
-        # 설정은 건드리지 않는다.
+        # plugin_settings.json 은 DMS 가 플러그인을 켜고 끌 때마다 다시 쓰는 파일이라
+        # 라이브가 기준선에서 벗어나 있는 게 정상이고, 그러면 rice_sync 는 손을 뗀다
+        # (../../shared/rice-seed-helpers.nix 의 판정표 3·4행). 그 상태에서 새 키가
+        # 안 들어가면 "플러그인 파일은 깔렸는데 런처에 안 뜬다"가 되어 원인을 찾기
+        # 나쁘다. 그래서 rice_ensure 와 같은 취지로 이 키만 없을 때 끼워 넣는다.
+        # 나머지 플러그인 설정은 건드리지 않는다.
         if [ -f "${settingsFile}" ] &&
            ! ${pkgs.jq}/bin/jq -e 'has("riceSwitcher")' "${settingsFile}" >/dev/null 2>&1; then
           $DRY_RUN_CMD ${pkgs.jq}/bin/jq '. + { riceSwitcher: { enabled: true } }' \

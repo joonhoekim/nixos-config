@@ -225,6 +225,9 @@ with pkgs; [
 
   # Infra / DB / network
   pgcli          # postgres CLI with autocomplete
+  pg_activity    # live pg_stat_activity TUI — what is running and what is blocking
+  sqlfluff       # SQL linter/formatter with a postgres dialect — checks hand-written
+                 # SQL before it reaches the database
   iredis         # redis CLI with autocomplete (pgcli counterpart)
   lazysql        # database TUI
   nmap           # network scanner
@@ -253,6 +256,25 @@ with pkgs; [
   grpcurl        # curl for gRPC; server reflection means no .proto file needed
   buf            # proto lint, breaking-change detection against a baseline, codegen
   ghz            # gRPC load generator — k6/wrk's counterpart on this protocol
+
+  # Local backing services — docs: docs/packages/local-backing-services.md
+  #
+  # Single binaries that stand in for the infrastructure a backend expects, so
+  # one feature can be exercised without bringing up a compose file. Each keeps
+  # its state in a directory you pass it and exits with the shell.
+  #
+  # No `minio`: upstream abandoned it and nixpkgs marks it insecure (six
+  # unfixed CVEs, one of them unauthenticated object write), so installing it
+  # would mean opening permittedInsecurePackages system-wide for a dev stub.
+  # seaweedfs takes that slot because `weed server -s3` needs no config file.
+  # `garage` is the other migration target nixpkgs names — reach for it when
+  # the store has to look like production (cluster layout, durable
+  # replication), which costs a TOML config and a layout-assign step first.
+  mailpit         # SMTP sink + web UI — signup/reset mail with no real sender
+  seaweedfs       # `weed` — S3-compatible object store, for upload paths
+  minio-client    # `mc` — S3 client; drives seaweedfs, garage and real S3 alike
+  process-compose # compose syntax over plain processes (web + api + worker);
+                  # `-t=false` runs it headless for scripts and CI
 
   # Browser automation / web verification
   #

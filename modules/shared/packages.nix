@@ -41,6 +41,9 @@ with pkgs; [
   # Text and terminal utilities
   htop
   jq
+  gron           # JSON → greppable `a.b[0] = "x"` lines; `gron -u` folds them back.
+                 # Finds the path to a value without knowing the jq syntax first.
+  jd-diff-patch  # `jd` — structural JSON diff/patch; API response regressions
   ripgrep
   tree
   tmux
@@ -117,6 +120,8 @@ with pkgs; [
   xz             # xz/lzma compression
   unrar          # rar extraction (unfree)
   glow           # markdown renderer
+  d2             # text → diagram (SVG/PNG); renders without a browser, so an
+                 # architecture sketch can be written and then looked at
   navi           # interactive cheatsheets
   hyperfine      # CLI benchmarking
   tokei          # source line counter
@@ -309,6 +314,7 @@ with pkgs; [
   websocat                 # curl for WebSockets — the one protocol the rest of this list can't speak
   k6                       # load/perf smoke tests scripted in JS
   wrk                      # dumb-simple HTTP throughput check when k6 is overkill
+  oha                      # same job as wrk with a live histogram and `--json` output
   html-tidy                # HTML validator/pretty-printer (`tidy`) — catches malformed markup htmlq glosses over
 
   # Mobile / on-device web verification — docs: docs/packages/mobile.md

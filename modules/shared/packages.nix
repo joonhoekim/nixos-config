@@ -238,6 +238,22 @@ with pkgs; [
                  # cookie topologies. Docs: docs/packages/local-https-proxy.md
   cloudflared    # quick public tunnels for webhook/callback testing
 
+  # Message brokers and gRPC — docs: docs/packages/backend-protocols.md
+  #
+  # The wire formats a Nest backend speaks that curl cannot reach. `websocat`
+  # (the WebSocket one) sits in the browser block below, since it is usually
+  # pointed at the same dev server as the rest of that group.
+  #
+  # No RabbitMQ client here: nixpkgs dropped `amqp-tools`, and `rabbitmqadmin`
+  # ships inside the broker package rather than standalone. Its management API
+  # is plain HTTP, so `xh` above already reaches it.
+  kcat           # Kafka produce/consume/metadata from the shell (was kafkacat)
+  natscli        # NATS `nats` CLI — pub/sub, JetStream streams and consumers
+  nats-top       # per-connection and per-subject NATS traffic view
+  grpcurl        # curl for gRPC; server reflection means no .proto file needed
+  buf            # proto lint, breaking-change detection against a baseline, codegen
+  ghz            # gRPC load generator — k6/wrk's counterpart on this protocol
+
   # Browser automation / web verification
   #
   # Why this exists: verifying a local web app by eye needs a browser an agent

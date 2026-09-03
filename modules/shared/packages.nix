@@ -171,7 +171,7 @@ with pkgs; [
   monolith       # archive a web page as a single self-contained HTML file
 
   # Editor / LSP toolchain (system-wide; LazyVim/Mason would install these
-  # per-user otherwise)
+  # per-user otherwise). Docs: docs/packages/web-toolchain.md
   helix          # modal editor
   nixd           # Nix LSP (alternative to nil below)
   lua-language-server
@@ -180,6 +180,39 @@ with pkgs; [
   shfmt          # shell formatter
   ruff           # Python linter/formatter (Rust-based)
   tree-sitter    # parser generator CLI
+
+  # Web language servers. Everything above covers nix / lua / shell / python;
+  # these are the Next/Nest half, which is the daily driver.
+  vtsls                             # TypeScript/TSX LSP — drives tsserver the way VSCode does
+  vscode-langservers-extracted      # html / css / json / eslint language servers
+  tailwindcss-language-server       # class-name completion + hover for Tailwind
+  dockerfile-language-server        # Dockerfile LSP (binary is `docker-langserver`)
+  yaml-language-server              # YAML LSP with schema validation (k8s, compose, Actions)
+
+  # JS/TS formatters and linters. A project's own pinned prettier/eslint wins
+  # whenever the project has one — these are the fallback for repos that ship
+  # no config, and the fast path for a one-off check. biome does both jobs in
+  # one binary with no config at all, which makes it the way to verify an edit
+  # in a repo whose toolchain isn't installed yet.
+  biome          # linter + formatter, config-optional
+  prettierd      # prettier as a resident daemon (drops per-call node startup)
+  eslint_d       # eslint as a resident daemon
+
+  # Structural search and rewrite. ripgrep above matches text; this matches
+  # syntax trees, which is what a codemod across a TS/TSX codebase needs —
+  # `ast-grep run -p 'useEffect($$$A)' -l tsx --rewrite '…'`. `--json` output
+  # means a script consumes the matches instead of re-parsing a human-shaped
+  # report. `semgrep` in the security block above is the rule-file counterpart.
+  #
+  # The command is `ast-grep`, not upstream's `sg` alias — nixpkgs drops that
+  # one because shadow already owns `sg` (setgid) on Linux.
+  ast-grep       # the pattern is written as source code, per tree-sitter grammar
+
+  # Text-file linters for the files around the code
+  typos              # source-aware spell check (identifiers and comments, not prose)
+  yamllint           # YAML lint
+  yamlfmt            # YAML formatter
+  markdownlint-cli2  # Markdown lint (this repo's docs/)
 
   # Infra / DB / network
   k9s            # Kubernetes TUI

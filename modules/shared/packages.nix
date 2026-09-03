@@ -356,3 +356,7 @@ with pkgs; [
   nix-tree       # interactive closure browser — where the gigabytes went
   nh             # nix helper; wraps rebuild with nom output and an nvd diff
 ]
+
+# Terminal hobby packages live in their own file — nothing there does any work,
+# and keeping it separate means the whole pile drops by deleting this line.
+++ import ./rice-toys.nix { inherit pkgs; }

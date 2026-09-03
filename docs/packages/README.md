@@ -18,6 +18,7 @@
 | [`nix-hygiene.md`](nix-hygiene.md) | 이 저장소 자체를 고칠 때 — 린트·빌드 관찰·세대 비교 (statix·deadnix·nvd) |
 | [`mobile.md`](mobile.md) | 실기기(폰)에서 보고 조작하기, iOS/Android 툴체인 (adb·scrcpy·…) |
 | [`everyday-tools.md`](everyday-tools.md) | 개발 무관 일상 편의 — 다운로드·이미지·문서·전송·한국어 zip (yt-dlp 짝들) |
+| [`rice-toys.md`](rice-toys.md) | 터미널 취미 영역 — 일을 하지 않는 것들과 녹화 (cmatrix·cbonsai·cava·vhs) |
 
 ## 단독 문서가 없는 것들
 

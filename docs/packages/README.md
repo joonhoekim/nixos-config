@@ -15,6 +15,7 @@
 | [`browser-tooling.md`](browser-tooling.md) | 로컬 웹 앱을 눈으로/스크립트로 확인 (스크린샷·픽셀 비교·HTTP 검사) |
 | [`local-https-proxy.md`](local-https-proxy.md) | prod의 도메인·쿠키·HTTPS 조건을 로컬에서 재현 (caddy·mkcert·cloudflared) |
 | [`security-hygiene.md`](security-hygiene.md) | 시크릿·취약점·정적 검사 게이트 (sops·gitleaks·trivy·semgrep·lefthook) |
+| [`nix-hygiene.md`](nix-hygiene.md) | 이 저장소 자체를 고칠 때 — 린트·빌드 관찰·세대 비교 (statix·deadnix·nvd) |
 | [`mobile.md`](mobile.md) | 실기기(폰)에서 보고 조작하기, iOS/Android 툴체인 (adb·scrcpy·…) |
 | [`everyday-tools.md`](everyday-tools.md) | 개발 무관 일상 편의 — 다운로드·이미지·문서·전송·한국어 zip (yt-dlp 짝들) |
 

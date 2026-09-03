@@ -340,7 +340,13 @@ with pkgs; [
   maestro        # mobile E2E flows (simulator/emulator) — Playwright's mobile counterpart
   bundletool     # AAB ↔ APK — only matters at store-distribution time
 
-  # Nix tooling (handy while editing this config)
+  # Nix tooling (handy while editing this config) — docs: docs/packages/nix-hygiene.md
   nil            # Nix language server
   nixfmt         # Nix formatter (was nixfmt-rfc-style)
+  statix         # Nix linter — antipatterns, with autofix (`statix fix`)
+  deadnix        # unused let-bindings and function arguments
+  nix-output-monitor # `nom` — build progress as a live tree instead of a log wall
+  nvd            # diff two generations: what a switch actually changed
+  nix-tree       # interactive closure browser — where the gigabytes went
+  nh             # nix helper; wraps rebuild with nom output and an nvd diff
 ]

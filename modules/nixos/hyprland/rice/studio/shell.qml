@@ -47,6 +47,22 @@ import qs.Ui
 ShellRoot {
     id: rootScope
 
+    // 창을 닫으면 프로세스도 나간다.
+    //
+    // FloatingWindow 를 닫아도 visible = false 가 될 뿐 ShellRoot 는 계속 돈다.
+    // 그러면 창 없는 quickshell 이 남고, 그 뒤로는 바 조각을 눌러도
+    // apps/rice-studio 의 `-n` 이 "이미 같은 설정이 돈다"며 즉시 나간다 — 창은
+    // 다시 안 뜨고 로그도 안 남아서 pkill 말고는 여는 길이 없다.
+    //
+    // quickshell 0.3.0 에는 Quickshell.quit() 이 없고 lastWindowClosed 시그널만
+    // 있다. 그래서 Qt.quit() 을 쓴다.
+    Connections {
+        target: Quickshell
+        function onLastWindowClosed() {
+            Qt.quit();
+        }
+    }
+
     FloatingWindow {
         id: win
 

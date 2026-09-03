@@ -18,6 +18,9 @@ with pkgs; [
   sops           # secrets-in-repo standard combo with age (env-per-stage .env)
   gitleaks       # secret scanner — pre-push hook / CI gate for cloned template repos
   osv-scanner    # lockfile vulnerability scan against OSV.dev (wider than `pnpm audit`)
+  lefthook       # git hook manager — the thing that actually runs gitleaks on pre-push
+  trivy          # superset scan: container image layers, IaC misconfig, secrets, licenses
+  semgrep        # rule-based SAST; ships TS/JS rulesets and takes custom rules as YAML
 
   # Cloud-related tools and SDKs
   docker          # docker CLI (talks to the colima-managed daemon)
@@ -180,7 +183,14 @@ with pkgs; [
 
   # Infra / DB / network
   k9s            # Kubernetes TUI
+
+  # Container and CI definitions — the files that only get tested by being run
   dive           # docker image layer explorer
+  hadolint       # Dockerfile linter (checks the shell inside RUN too)
+  actionlint     # GitHub Actions workflow linter — expression and matrix errors
+  act            # run those workflows locally in docker instead of push-and-pray
+
+  # Infra / DB / network
   pgcli          # postgres CLI with autocomplete
   iredis         # redis CLI with autocomplete (pgcli counterpart)
   lazysql        # database TUI

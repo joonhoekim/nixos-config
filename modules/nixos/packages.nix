@@ -107,7 +107,6 @@ shared-packages ++ [
   vscode
   brave
   firefox-devedition
-  claude-code     # CLI, but already provided via mise/npm on macOS
   mpv             # video player
   krita           # digital painting
   gimp            # image editor

@@ -108,6 +108,12 @@ with pkgs; [
   procs          # modern `ps`
   lazydocker     # TUI for docker
 
+  # AI coding agent. claude-code 와 달리 nixpkgs 로 둔다 — 래퍼가
+  # OPENCODE_DISABLE_AUTOUPDATE 를 박아 자체 업데이트가 스토어와 싸울 일이
+  # 없고, unstable 이 거의 매일 따라온다. 플러그인(oh-my-openagent)과 설정은
+  # modules/shared/opencode 참고 — 그쪽은 Nix 가 관리하지 않는다.
+  opencode
+
   # Modern CLI / TUI tools — extended set (ported from previous NixOS config).
   # atuin / zoxide / eza / pay-respects are enabled as programs in
   # home-manager.nix, so they're intentionally not listed here.

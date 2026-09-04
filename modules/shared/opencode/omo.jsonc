@@ -1,0 +1,5 @@
+{
+  // oh-my-openagent 설정. 시드는 비어 있다 — `bunx oh-my-openagent install` 로
+  // 채운 뒤 apps/rice-save 로 되받는다. 키·토큰은 여기 두지 않는다
+  // (`opencode auth login` 이 ~/.local/share/opencode/auth.json 에 쓴다).
+}

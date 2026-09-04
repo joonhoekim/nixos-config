@@ -29,6 +29,7 @@
 #   studio      ~/.config/rice-studio (라이싱 스튜디오 QML)          하이프랜드 세션
 #   dms         DankMaterialShell 플러그인 (RiceSwitcher)            두 리눅스 세션
 #   ghostty     config, rices/, shaders/                            양쪽
+#   opencode    opencode.json, ~/.omo/omo.jsonc                   양쪽
 #   fuzzel      fuzzel.ini                                          니리 세션
 #   gtk         gtk-3.0 과 gtk-4.0 의 settings.ini (레포엔 파일 하나) 니리 세션
 #   wezterm     wezterm.lua                                        macOS
@@ -74,6 +75,7 @@ GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\0
 repo="${RICE_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || true)}"
 rice="$repo/modules/nixos/niri/rice"
 gt="$repo/modules/shared/ghostty"
+oc="$repo/modules/shared/opencode"
 hy="$repo/modules/nixos/hyprland/rice"
 dm="$repo/modules/nixos/dms"
 dr="$repo/modules/darwin/rice"
@@ -86,15 +88,16 @@ fi
 
 linux_only="niri profiles hypr studio dms fuzzel gtk"
 mac_only="wezterm rift karabiner linearmouse aerospace helpers peek"
-# 터미널 라이싱만 두 플랫폼이 공유한다.
-all="$linux_only ghostty $mac_only"
+# 터미널 라이싱과 opencode 설정만 두 플랫폼이 공유한다.
+shared="ghostty opencode"
+all="$linux_only $shared $mac_only"
 # 이 플랫폼에서 실제로 다룰 수 있는 것.
 # 판단 기준은 rice-term 과 같은 uname 이다 — `command -v niri` 로 가르면 니리를
 # 아직 안 깐 리눅스 머신에서 조용히 절반만 복원하게 된다.
 if [ "$(uname)" = "Darwin" ]; then
-  usable="ghostty $mac_only"
+  usable="$shared $mac_only"
 else
-  usable="$linux_only ghostty"
+  usable="$linux_only $shared"
 fi
 
 want=""
@@ -244,6 +247,13 @@ plan() {
     item "$gt/config" "$cfg/ghostty/config"
     item "$gt/rices" "$cfg/ghostty/rices"
     item "$gt/shaders" "$cfg/ghostty/shaders"
+    ;;
+  esac
+  case " $want " in *" opencode "*)
+    # 후처리는 없다 — opencode 는 다음 실행에 읽는다. migrations.json 사이드카는
+    # rice-save 와 마찬가지로 건드리지 않는다.
+    item "$oc/opencode.json" "$cfg/opencode/opencode.json"
+    item "$oc/omo.jsonc"     "$HOME/.omo/omo.jsonc"
     ;;
   esac
   case " $want " in *" fuzzel "*)

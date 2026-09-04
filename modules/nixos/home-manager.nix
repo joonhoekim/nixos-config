@@ -8,7 +8,7 @@ in
   # 모듈을 import 한다 — 관리 지점이 하나여야 해서 니리 밑이 아니라 shared 에 둔다.
   # 여기서 import 하는 것도 그래서다: 니리를 안 쓰는(GNOME 만 쓰는) 머신에서도
   # 터미널은 똑같이 필요하다.
-  imports = [ ../shared/ghostty ];
+  imports = [ ../shared/ghostty ../shared/opencode ];
 
   home = {
     enableNixpkgsReleaseCheck = false;

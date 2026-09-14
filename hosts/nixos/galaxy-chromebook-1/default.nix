@@ -13,6 +13,7 @@
     ../../../modules/nixos/intel.nix
     ./hardware-configuration.nix
     ./hardware.nix
+    ./touch.nix
   ];
 
   networking.hostName = "galaxy-chromebook-1";

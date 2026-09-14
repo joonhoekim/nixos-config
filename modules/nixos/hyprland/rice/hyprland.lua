@@ -198,6 +198,13 @@ hl.bind(mod .. " + Return", hl.dsp.exec_cmd("ghostty"))
 -- 니리 쪽과 같은 이유로 남겨 둔 폴백 런처다.
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("fuzzel"))
 
+-- 화면 키보드(wvkbd). `osk` 는 갤럭시 크롬북의 touch.nix 가 깐다 — 터치스크린이
+-- 없는 머신에서 이 키를 누르면 아무 일도 안 일어난다.
+--
+-- 이 바인드는 **노트북 자세용**이다. 화면을 접어 키보드가 등 뒤로 가면 이 키를
+-- 누를 수가 없고, 그쪽은 아래 태블릿 모드 스위치가 맡는다. B 는 자판(Board).
+hl.bind(mod .. " + B", hl.dsp.exec_cmd("osk toggle"))
+
 -- DMS
 hl.bind(mod .. " + space", hl.dsp.exec_cmd("dms ipc call spotlight toggle"))
 hl.bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"))

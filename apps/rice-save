@@ -246,11 +246,23 @@ copy "$cfg/hypr/chains"                       "$hy/chains"
 # 쪽이 원본이고, 고치면 quickshell 이 바로 다시 읽는다(apps/rice-studio).
 copy "$cfg/rice-studio"                       "$hy/studio"
 
-# DMS 런처 플러그인. 시드된 뒤로는 $HOME 쪽이 원본이라는 규칙이 여기도 그대로다 —
+# DMS 플러그인. 시드된 뒤로는 $HOME 쪽이 원본이라는 규칙이 여기도 그대로다 —
 # QML 을 고치면 DMS 가 폴더를 감시하다 바로 다시 읽으므로, 고치는 자리가 곧 여기다.
+#
+# **레포에 있는 폴더를 훑는다.** 이름을 하나 박아 두면 플러그인을 새로 만들 때마다
+# 여기를 같이 고쳐야 하고, 안 고치면 라이브에서 고친 QML 이 조용히 안 돌아온다 —
+# 되받는 스크립트가 말없이 건너뛰는 것이라 다음 rebuild 가 레포의 옛 파일로 도로
+# 덮을 때까지 모른다. 반대 방향(라이브에만 있는 폴더)을 안 훑는 것도 같은 이유로
+# 의도적이다: DMS 설정에서 남의 플러그인을 깔았을 때 그게 레포로 딸려 들어오면 안
+# 된다.
+#
 # plugin_settings.json 은 안 가져온다: DMS 가 켜고 끈 상태를 쓰는 파일이라
-# 레포에는 "riceSwitcher 를 켠다"는 시드 한 줄만 있으면 된다.
-copy "$cfg/DankMaterialShell/plugins/RiceSwitcher" "$dm/plugins/RiceSwitcher"
+# 레포에는 "켠다"는 시드 한 줄만 있으면 된다.
+for p in "$dm"/plugins/*/; do
+  [ -d "$p" ] || continue
+  n="$(basename "$p")"
+  copy "$cfg/DankMaterialShell/plugins/$n" "$dm/plugins/$n"
+done
 
 copy "$cfg/ghostty/config"                    "$gt/config"
 copy "$cfg/ghostty/rices"                     "$gt/rices"

@@ -84,6 +84,18 @@ cat /tmp/dsp.txt
 { mouse = true }      -- 마우스 버튼 바인드
 ```
 
+키 자리에는 **스위치**도 온다. 모양은 `switch:on:<이름>` / `switch:off:<이름>`
+이고, 이름은 `hyprctl devices` 의 `Switches:` 절에 적힌 그대로다 — 대소문자와
+공백까지 맞아야 하고, 틀리면 에러 없이 그냥 안 걸린다.
+
+```lua
+hl.bind("switch:on:Tablet Mode Switch", hl.dsp.exec_cmd("..."), { locked = true })
+```
+
+앞에 쉼표를 붙이지 않는다. 다른 데서 흔히 보는 `bindl = ,switch:on:...` 는
+hyprlang 시절 문법이고, Lua 에서 그대로 옮기면
+`Unknown keysym: ", switch:on:..."` 로 죽는다.
+
 ### `hl.dsp.*` — 디스패처
 
 ```
@@ -222,7 +234,7 @@ Function definition: function toggle(provider: string): string
 
 | 조합 | 비어 있는 글자 |
 |---|---|
-| `Mod` | a b g m p t w x y z |
+| `Mod` | a g m p t w x y z |
 | `Mod+Shift` | a b d e g h m n q s t v x y z |
 | `Mod+Ctrl` | a b c d e f g h m n o p q r s t u v x y z |
 | `Mod+Alt` | w 를 뺀 전부 |
@@ -275,6 +287,24 @@ hl.dsp.layout("colresize zzz")               -> ok                          ← 
 
 **6. `hyprctl keyword` 는 안 된다.** `eval` 만 된다. CRT 셰이더처럼 자주 만지는
 값은 `apps/rice-crt` 가 그 `eval` 을 감싸 두었다.
+
+```sh
+$ hyprctl keyword input:touchdevice:transform 1
+keyword can't work with non-legacy parsers. Use eval.
+$ echo $?
+0
+```
+
+**종료 코드가 0 인 것이 진짜 함정이다.** 저 줄을 쓰는 **남의 프로그램**은 자기가
+실패한 줄 모르고 계속 돈다. `nixpkgs#iio-hyprland` 가 정확히 그래서 못 쓰였고 —
+회전 명령을 전부 `keyword` 로 보낸다 — 남는 증상은 "서비스는 `active` 인데 화면이
+안 돈다" 하나뿐이었다. 인터넷의 하이프랜드 조각을 가져올 때 제일 먼저 볼 자리다.
+같은 일을 하는 `eval` 은 설정 파일에 적을 Lua 를 그대로 받는다:
+
+```sh
+hyprctl eval 'hl.config({ input = { touchdevice = { transform = 1 } } })'
+hyprctl eval 'hl.monitor({ output = "eDP-1", transform = 1 })'
+```
 
 **7. `error:` 가 "문법이 틀렸다"는 뜻은 아니다.** 인자를 맞게 줬는데 지금 그
 대상이 없을 뿐일 때도 같은 메시지가 나온다. 맞는 바인드를 틀렸다고 판정하게 되는

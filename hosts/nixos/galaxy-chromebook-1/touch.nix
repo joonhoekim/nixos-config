@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 # 이 섀시의 터치 자세를 세우는 것들. 화면 키보드, 자동 회전, 태블릿 모드.
 # ./hardware.nix 가 "이 하드웨어가 이래서 이 줄이 있다" 면 여기는 "이 하드웨어로
@@ -33,29 +33,34 @@ let
   # 것은 wvkbd 가 시작할 때 54 개 레이아웃을 컴파일하기 때문이다 — 누를 때마다
   # 그 값을 내면 손가락으로 쓰기엔 느리다.
   #
-  # 상태를 못 읽는 것이 이 물건의 한계다. wvkbd 는 자기가 보이는지 알려주지
-  # 않으므로 `status` 는 **서비스가 도는지**만 답한다. 확실한 상태가 필요한
-  # 쪽(아래 tabletModeCli)은 toggle 이 아니라 on/off 를 쓴다.
+  # `status` 는 wvkbd 에게 안 묻는다 — 물을 방법이 없다. 대신 **컴포지터에게**
+  # 묻는다. 자판이 보이면 레이어 하나가 `wvkbd` 네임스페이스로 올라와 있고,
+  # 감추면 통째로 사라진다(`hyprctl layers -j`, 실측). 이건 상태를 들고 있다가
+  # 틀리는 것보다 낫다 — 자판은 Mod+B 로도, 태블릿 모드 훅으로도, 자판 안의
+  # hide 키로도 움직여서 어디 적어 둔 값은 금방 낡는다.
   oskCli = pkgs.writeShellApplication {
     name = "osk";
-    runtimeInputs = with pkgs; [ systemd ];
+    runtimeInputs = with pkgs; [ systemd hyprland jq ];
     text = ''
       # pkill 이 아니라 systemctl 로 쏜다. 유닛의 cgroup 안으로만 가므로
       # 이름이 겹치는 남의 프로세스를 때릴 일이 없다. SIGRTMIN 도 이름으로
       # 받는다(실측).
       sig() { systemctl --user kill --kill-whom=main --signal="$1" wvkbd.service; }
 
+      visible() {
+        [ "$(hyprctl layers -j 2>/dev/null \
+          | jq '[.. | objects | select(.namespace? == "wvkbd")] | length')" != "0" ]
+      }
+
       case "''${1:-toggle}" in
         on|show)    sig SIGUSR2 ;;
         off|hide)   sig SIGUSR1 ;;
         toggle)     sig SIGRTMIN ;;
         status)
-          if systemctl --user is-active --quiet wvkbd.service; then
-            echo "osk: 서비스 동작 중 (보이는지는 알 수 없다)"
-          else
-            echo "osk: 서비스 꺼짐"
-            exit 1
+          if ! systemctl --user is-active --quiet wvkbd.service; then
+            echo "off"; exit 1
           fi
+          if visible; then echo "on"; else echo "off"; fi
           ;;
         *) echo "usage: osk on|off|toggle|status" >&2; exit 1 ;;
       esac
@@ -168,17 +173,54 @@ let
           echo "touchpad inhibited: $(read_inhibit "$tpd")"
           echo "autorotate: $(autorotate status)"
           ;;
-        *) echo "usage: tablet-mode enter|leave|status" >&2; exit 1 ;;
+        # 태블릿 자세인지 아닌지 한 단어로. 판정은 **키보드가 막혀 있는지**로
+        # 한다 — 스위치 자체(`/dev/input/event6`)를 읽으려면 root 가 필요하고,
+        # 무엇보다 손으로 `tablet-mode enter` 를 부른 경우에는 스위치가 안 서
+        # 있어서 그쪽을 믿으면 UI 가 실제와 어긋난다.
+        is-on)
+          [ "$(read_inhibit "$kbd")" = "1" ] && echo on || echo off
+          ;;
+        *) echo "usage: tablet-mode enter|leave|status|is-on" >&2; exit 1 ;;
       esac
+    '';
+  };
+
+  # `touch-state` — 세 토글의 지금 상태를 JSON 한 덩어리로 준다.
+  #
+  # DMS 플러그인이 이것만 부른다. QML 쪽에 상태 읽는 법을 적지 않는 것은
+  # ../../../modules/nixos/dms 의 RiceSwitcher 가 apps/rice-menu 에게 목록을
+  # 통째로 받아 오는 것과 같은 방향이다 — 판정이 늘거나 바뀌어도 QML 은 그대로다.
+  touchStateCli = pkgs.writeShellApplication {
+    name = "touch-state";
+    runtimeInputs = [ pkgs.jq oskCli autorotateCli tabletModeCli ];
+    text = ''
+      # `|| true` 가 셋 다 붙는다. writeShellApplication 은 `set -e` 라서,
+      # 상태가 off 일 때 exit 1 로 끝나는 CLI 하나가 리포터 전체를 죽인다.
+      # 그러면 플러그인은 빈 화면을 받고, 증상은 "조각을 눌러도 아무것도 없다" 다.
+      o="$(osk status 2>/dev/null || true)"
+      r="$(autorotate status 2>/dev/null || true)"
+      t="$(tablet-mode is-on 2>/dev/null || true)"
+
+      jq -nc \
+        --arg osk "''${o:-off}" \
+        --arg rotate "''${r:-off}" \
+        --arg tablet "''${t:-off}" \
+        '{ osk: $osk, rotate: $rotate, tablet: $tablet }'
     '';
   };
 in
 {
+  # DankBar 조각. 위 세 CLI 를 손가락으로 부르는 유일한 길이라, 그것들을 깔는
+  # 이 파일에서 켠다 — 조각과 CLI 가 따로 놀면 "단추는 있는데 눌러도 아무 일도
+  # 없다" 가 된다.
+  local.dms.touchControls.enable = true;
+
   environment.systemPackages = [
     pkgs.wvkbd
     oskCli
     autorotateCli
     tabletModeCli
+    touchStateCli
   ];
 
   # 화면 키보드. 숨긴 채로 떠 있다가 신호를 받으면 나타난다.

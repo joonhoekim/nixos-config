@@ -103,6 +103,22 @@ hl.config({
     },
 })
 
+-- 태블릿 모드. 화면을 360도로 접으면 EC 가 SW_TABLET_MODE 를 세우고, 하이프랜드는
+-- 그것을 스위치 장치로 본다 — `hyprctl devices` 의 Switches 절에 "Tablet Mode
+-- Switch" 로 나온다. 그 이름이 곧 아래 키 문자열이므로, 다른 섀시에 심으면
+-- 이름이 달라 조용히 안 걸린다(거기엔 접을 화면도 없다).
+--
+-- `tablet-mode` 자체는 갤럭시 크롬북의 touch.nix 가 깐다. 키보드 억제·터치패드·
+-- 자동 회전·화면 키보드 네 가지를 같이 움직이고, 왜 libinput 에 맡기지 않는지는
+-- 그 파일에 적혀 있다.
+--
+-- locked = true 는 잠금 화면에서도 걸리게 한다. 잠긴 채로 접는 것이 오히려
+-- 흔한 동작이고, 그때 자판이 등 뒤에서 눌리는 것이 제일 곤란하다.
+hl.bind("switch:on:Tablet Mode Switch",
+    hl.dsp.exec_cmd("tablet-mode enter"), { locked = true })
+hl.bind("switch:off:Tablet Mode Switch",
+    hl.dsp.exec_cmd("tablet-mode leave"), { locked = true })
+
 
 -------------------
 ---- 모양/배치 ----

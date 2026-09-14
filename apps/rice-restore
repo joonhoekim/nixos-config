@@ -27,7 +27,7 @@
 #   profiles    rice/profiles (프로필당 niri.kdl + dms.json)         니리 세션
 #   hypr        hyprland.lua, shaders/, chains/                     하이프랜드 세션
 #   studio      ~/.config/rice-studio (라이싱 스튜디오 QML)          하이프랜드 세션
-#   dms         DankMaterialShell 플러그인 (RiceSwitcher)            두 리눅스 세션
+#   dms         DankMaterialShell 플러그인 (레포에 있는 것 전부)      두 리눅스 세션
 #   ghostty     config, rices/, shaders/                            양쪽
 #   fuzzel      fuzzel.ini                                          니리 세션
 #   gtk         gtk-3.0 과 gtk-4.0 의 settings.ini (레포엔 파일 하나) 니리 세션
@@ -237,7 +237,13 @@ plan() {
     ;;
   esac
   case " $want " in *" dms "*)
-    item "$dm/plugins/RiceSwitcher" "$cfg/DankMaterialShell/plugins/RiceSwitcher"
+    # 레포에 있는 플러그인 폴더를 전부. 이름을 박지 않는 이유는 apps/rice-save 의
+    # 같은 자리에 적어 뒀다.
+    for p in "$dm"/plugins/*/; do
+      [ -d "$p" ] || continue
+      n="$(basename "$p")"
+      item "$dm/plugins/$n" "$cfg/DankMaterialShell/plugins/$n"
+    done
     ;;
   esac
   case " $want " in *" ghostty "*)
@@ -386,8 +392,17 @@ esac
 # 손으로 할 일을 알려 준다.
 case " $want " in *" dms "*)
   if command -v dms >/dev/null 2>&1; then
-    if dms ipc call plugins reload riceSwitcher >/dev/null 2>&1; then
-      printf "${DIM}RiceSwitcher 플러그인 다시 읽혔다. plugin.json 을 바꿨다면: dms restart${NC}\n"
+    # 매니페스트의 id 는 폴더 이름과 다르다(TouchControls -> touchControls).
+    # reload 가 받는 것은 id 쪽이라 plugin.json 에서 읽는다.
+    reload_failed=0
+    for p in "$dm"/plugins/*/; do
+      [ -f "$p/plugin.json" ] || continue
+      id="$(sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$p/plugin.json" | head -1)"
+      [ -n "$id" ] || continue
+      dms ipc call plugins reload "$id" >/dev/null 2>&1 || reload_failed=1
+    done
+    if [ "$reload_failed" -eq 0 ]; then
+      printf "${DIM}DMS 플러그인 다시 읽혔다. plugin.json 을 바꿨다면: dms restart${NC}\n"
     else
       printf "${YELLOW}플러그인 reload 실패 — 손으로: dms restart${NC}\n"
     fi

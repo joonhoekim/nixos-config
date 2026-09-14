@@ -108,15 +108,19 @@
   # boot menu.
   boot.kernelParams = [ "video=eDP-1:1920x1080@60" ];
 
-  # Failing Synaptics touchpad: default-off, manual control via the `touchpad`
-  # CLI below. Mechanical phantom-touch returned after the 2026-05-24
-  # bottom-panel rebend; keyboard-only is the daily posture now.
-  # Kernel-level inhibit (/sys/.../inhibited) so events stop at the source,
-  # independent of libinput/compositor. udev sets inhibited=1 the moment the
-  # input node appears (works on boot AND on resume/re-enumeration).
-  services.udev.extraRules = ''
-    SUBSYSTEM=="input", KERNEL=="input*", ATTR{name}=="Synaptics TM3579-001", ATTR{inhibited}="1"
-  '';
+  # 이 섀시의 Synaptics 터치패드는 멀쩡하지 않다 — 팬텀 터치가 나는 개체이고,
+  # 아래 `touchpad` CLI 가 있는 이유가 그것이다. 기본값은 켜짐(커널 기본
+  # inhibited=0)이고, 증상이 나면 `touchpad off` 로 소스에서 끊는다.
+  #
+  # 부팅부터 꺼 두고 싶으면 libinput 이나 컴포지터가 아니라 udev 에 건다.
+  # 컴포지터 설정은 세션에만 걸려서 그리터와 TTY 에 안 먹고, 무엇보다
+  # 재개(resume)와 재열거 때 다시 안 걸린다 — 증상은 "껐는데 뚜껑 닫았다 열면
+  # 다시 살아 있다" 다. udev 는 입력 노드가 나타나는 매 순간 건다:
+  #
+  #   services.udev.extraRules = ''
+  #     SUBSYSTEM=="input", KERNEL=="input*", \
+  #       ATTR{name}=="Synaptics TM3579-001", ATTR{inhibited}="1"
+  #   '';
 
   # IIO sensors (accelerometer, gyro, ambient light, lid-angle from
   # cros_ec_sensorhub) — GNOME needs these for auto-rotate, auto-brightness
@@ -222,7 +226,9 @@
     })
 
     # `touchpad on|off|toggle|status` — compositor-agnostic, drives the
-    # kernel inhibit flag set by the udev rule above.
+    # kernel inhibit flag directly (/sys/class/input/inputN/inhibited). The
+    # attribute is standard on every evdev node, so this works with or without
+    # the udev rule described above.
     (pkgs.writeShellApplication {
       name = "touchpad";
       runtimeInputs = with pkgs; [ coreutils ];

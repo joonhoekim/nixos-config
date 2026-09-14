@@ -35,6 +35,13 @@
 #   DMS 설정 → DankBar → 조각 목록에서 Rice 를 원하는 자리에
 #   (또는 settings.json 의 rightWidgets 에 "riceSwitcher" 한 줄)
 #
+# **손으로 고쳤으면 `dms restart` 까지 해야 한다.** 돌고 있는 DMS 는 남이 고친
+# settings.json 을 다시 읽지 않는다 — 시작할 때 한 번 읽고, 그 뒤로는 자기가 쓸
+# 때만 갱신한다. 그래서 설정 GUI 로 옮기면 즉시 보이지만 파일을 직접 고치면
+# 아무 일도 안 일어나고, 증상은 "플러그인은 loaded 인데 바에 아무것도 없다" 다.
+# 플러그인 쪽은 멀쩡하므로 `dms ipc call plugins list` 도 [loaded] 라고 답한다 —
+# 그 말을 믿고 조각을 의심하면 한참 헤맨다.
+#
 # ── 왜 /etc/xdg 가 아니라 $HOME 에 심는가 ─────────────────────────────────
 # DMS 는 플러그인을 두 곳에서 찾는다 (Services/PluginService.qml):
 #

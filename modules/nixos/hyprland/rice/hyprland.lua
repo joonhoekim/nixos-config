@@ -87,6 +87,13 @@ hl.config({
             -- 하나일 때는 증상이 없으므로 케이블을 꽂기 전까지 안 드러난다.
             output = "eDP-1",
         },
+
+        -- 스타일러스도 같은 이유로 같은 패널에 못 박는다. 위키와 예전 이슈에는
+        -- 태블릿 transform 이 없다고 적혀 있지만 0.56 에는 있다 —
+        -- `hyprctl getoption input:tablet:transform` 이 답한다.
+        tablet = {
+            output = "eDP-1",
+        },
     },
 
     gestures = {

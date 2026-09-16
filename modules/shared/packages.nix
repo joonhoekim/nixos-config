@@ -34,7 +34,7 @@ with pkgs; [
   # Media-related packages
   fd
 
-  # Node.js (+ bun, corepack-backed yarn/pnpm): declared in programs.mise
+  # Node.js (+ bun, pnpm): declared in programs.mise
   # globalConfig in home-manager, not nixpkgs. Run `mise install` after
   # rebuild to materialize the declared tool versions.
 

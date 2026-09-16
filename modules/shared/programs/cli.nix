@@ -15,6 +15,11 @@
     globalConfig = {
       tools = {
         node = "lts";
+        # pnpm as its own tool, not via corepack: Node 25+ no longer bundles
+        # corepack, so `node = "lts"` would silently drop pnpm once Node 26
+        # goes LTS. The global pnpm still switches to the version a project
+        # pins in package.json `packageManager`.
+        pnpm = "latest";
         bun = "latest";
         go = "latest";
         rust = "stable";     # mise core plugin wraps rustup
@@ -24,11 +29,6 @@
         # shell `python3` has batteries (pymupdf, ...) pre-imported for quick
         # static analysis, fully declaratively. uv still handles per-project
         # venvs when a project needs pinned/extra deps.
-      };
-      settings = {
-        # Run `corepack enable` after installing node, exposing the
-        # project-pinned yarn/pnpm (package.json `packageManager` field).
-        node.corepack = true;
       };
     };
   };

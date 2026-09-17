@@ -58,5 +58,19 @@ in
   # `mise install` by hand when a project needs it.
   programs = shared-programs // {
     home-manager.enable = true;
+
+    # The shared zsh fragment sources the *multi-user* Nix profile
+    # (/nix/var/nix/profiles/default/...), which the other hosts have. Nix
+    # here is a single-user install inside the chroot, so that path does not
+    # exist and the login shell would come up without ~/.nix-profile/bin on
+    # PATH — every tool home-manager installed would look missing.
+    zsh = shared-programs.zsh // {
+      envExtra = (shared-programs.zsh.envExtra or "") + ''
+        [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ] \
+          && . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+        [ -e "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ] \
+          && . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+      '';
+    };
   };
 }

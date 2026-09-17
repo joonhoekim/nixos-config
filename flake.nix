@@ -135,6 +135,16 @@
       devShells = forAllSystems devShell;
       apps = forAllSystems mkApps;
 
+      # Standalone home-manager for the Debian chroot on the Y705 tablet.
+      # There is no NixOS under it, so the wiring lives here rather than in a
+      # host module:
+      #   home-manager switch --flake ~/nixos-config#jh@y705
+      homeConfigurations."${user}@y705" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages."aarch64-linux";
+        extraSpecialArgs = { inherit user; };
+        modules = [ ./hosts/home/y705.nix ];
+      };
+
       darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system:
         darwin.lib.darwinSystem {
           inherit system;

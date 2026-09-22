@@ -57,7 +57,8 @@ lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
 ## 전체 import 그래프
 
 ```text
-hosts/darwin/default.nix          ← macOS 진입점 (시스템 레벨 설정)
+hosts/darwin/default.nix          ← 공용 macOS 호스트 (imports ./common.nix)
+hosts/darwin/common.nix           ← macOS 진입점 (시스템 레벨 설정)
 │   imports = [
 ├──→ modules/darwin/home-manager.nix   ← macOS 유저/홈 레벨
 │    │   imports ./dock              (Dock 관리 모듈)
@@ -148,11 +149,19 @@ sourced 되는 조각은 목록에 넣지 않는다.
 
 이 fork는 재배포용 템플릿이 아니라 개인 설정이라, 예전의 `%HOST%`/`%DISK%` 플레이스홀더
 치환(`apply`)·비밀키 부트스트랩(`*-keys`)·disko 포맷·`install` 앱은 **전부 제거**했다.
-머신마다 다른 값은 한 곳, 각 호스트의 `hardware-configuration.nix`에만 모인다.
+머신마다 다른 값은 각 호스트의 `hardware-configuration.nix`에, 사람마다 다른 값은
+`users/<이름>.nix`에 모인다 — 둘 다 `./apps/setup`이 만들고, `./apps/doctor`가 어긋난
+것을 짚는다.
 
+- **호스트 목록은 `hosts/<플랫폼>/` 아래의 디렉토리 그 자체다.** `flake.nix`가
+  `builtins.readDir`로 읽으므로 따로 등록하는 목록이 없고, 디렉토리 이름이 곧 flake
+  타겟이자 `networking.hostName`이다(`mkDefault`로 박힌다).
 - NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`, `.evo-t1`,
   `.galaxy-chromebook-1`). 각 `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관
-  설정) + 자기 `hardware-configuration.nix`를 import한다.
+  설정) + 자기 `hardware-configuration.nix` + 누가 쓰는지를 가리키는 `identity.nix`를
+  import/선언한다.
+- macOS는 두 층이다. `hosts/darwin/`이 공용(arch로 키잉)이고, 그 Mac 전용이 필요하면
+  `hosts/darwin/<hostname>/`이 hostname으로 키잉되어 이긴다.
 - `hardware-configuration.nix`는 **그 머신에서 생성한 진짜 파일**이어야 한다. 해당
   머신에서 `nixos-generate-config --show-hardware-config`로 뽑아 커밋한다. 그래서 호스트
   디렉토리는 실제로 존재하는 머신만 만든다 — 빈 placeholder를 커밋해두면 `fileSystems`
@@ -187,7 +196,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 { config, pkgs, lib, ... }:   # 모듈 함수: "이 인자들을 받는 함수야"
 { ... 설정 ... }               #   반환하는 attribute set. ...는 "나머지 인자 무시"
 
-let user = "jh"; in { home = "/Users/${user}"; }   # 지역 변수 + 문자열 보간
+let user = "ada"; in { home = "/Users/${user}"; }  # 지역 변수 + 문자열 보간
 
 import ./packages.nix { inherit pkgs; }   # 파일=함수. 불러와 { pkgs = pkgs; } 넘겨 실행
 { inherit pkgs; }                         # = { pkgs = pkgs; } 축약

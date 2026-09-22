@@ -135,7 +135,7 @@ equalize_nodes = true
 # single default and Alt+Minus / Alt+Equal walk it between the bounds below.
 column_width_ratio = 0.5
 min_column_width_ratio = 0.33
-# 1.0, not 0.9, so the Alt+M monocle toggle can actually fill the display —
+# 1.0, not 0.9, so the Alt+R monocle toggle can actually fill the display —
 # the toggle walks the width between column_width_ratio and this bound.
 max_column_width_ratio = 1.0
 

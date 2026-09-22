@@ -199,7 +199,7 @@
       # 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새 스크립트(rice-decor)
       # 를 빠뜨린 적이 있어서 목록 하나로 접었다.
       mkApps = system: nixpkgs.lib.genAttrs [
-        "build" "build-switch" "rollback" "clean" "doctor"
+        "build" "build-switch" "rollback" "clean" "setup" "doctor"
         "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
         "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
         "rice-knobs" "rice-decor" "rice-colors"

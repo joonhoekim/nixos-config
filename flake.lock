@@ -3,11 +3,11 @@
     "acsandmann-tap": {
       "flake": false,
       "locked": {
-        "lastModified": 1789088530,
-        "narHash": "sha256-4IKfNQYJ8nSASSm+8KE1EMBgAC09O/Ijw5nztmWG4uc=",
+        "lastModified": 1790075478,
+        "narHash": "sha256-nd/rfM1dBNdsrrojO8I9drPTdBmYfOaLz07ggMigz1A=",
         "owner": "acsandmann",
         "repo": "homebrew-tap",
-        "rev": "dee47418594bc9b70ba0745b5102f5b9a3cc22bd",
+        "rev": "3fd6a2a8c9174bc43f0d3cf18009cc99e8e348e5",
         "type": "github"
       },
       "original": {

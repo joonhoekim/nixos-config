@@ -430,10 +430,14 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd('dms ipc call brightness decrem
 --
 -- 이 묶음은 티어 규칙 밖이다. 리눅스 전용이고 방향키도 워크스페이스도 아니라
 -- 어느 티어와도 실제로 부딪히지 않는다.
-hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-switch --next"))
-hl.bind(mod .. " + SHIFT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall"))
-hl.bind(mod .. " + CTRL + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall --pick"))
-hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("$HOME/nixos-config/apps/rice-wall --yazi"))
+-- 경로를 $HOME/nixos-config 로 박아 두지 않는 건 체크아웃을 딴 데 둘 수 있어서다.
+-- exec 는 sh 를 거치므로 ${RICE_REPO:-…} 가 그대로 먹는다. 빗나가면 키가 조용히
+-- 아무 일도 안 한다 — 하이프랜드는 exec 실패를 알려 주지 않는다. apps/doctor 가
+-- 체크아웃 위치를 짚어 주는 이유가 이것이다.
+hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-switch --next"))
+hl.bind(mod .. " + SHIFT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall"))
+hl.bind(mod .. " + CTRL + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --pick"))
+hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --yazi"))
 
 -- 축 하나에 키 하나씩 두는 건 셰이더 값을 고쳐 가며 맞출 때는 오히려 느리다.
 -- 이건 DMS 런처를 RiceSwitcher 플러그인의 트리거(":")를 미리 친 채로 연다 —
@@ -497,7 +501,8 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 -- 그래서 --boot 다: 마지막으로 걸었던 것(~/.config/rice/shader, rice-crt 가
 -- 걸 때마다 적는다)을 도로 걸고, 그게 없을 때만 아래 기본값이다. off 로 꺼
 -- 뒀으면 off 로 남는다.
-local rice_crt = os.getenv("HOME") .. "/nixos-config/apps/rice-crt"
+local rice_crt = (os.getenv("RICE_REPO") or (os.getenv("HOME") .. "/nixos-config"))
+                 .. "/apps/rice-crt"
 
 -- 첫 로그인(아직 아무것도 안 걸어 본 머신)에 걸 것. 갈래/이름 하나여도 되고
 -- 체인 이름이어도 된다:

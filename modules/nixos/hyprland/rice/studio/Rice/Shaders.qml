@@ -26,7 +26,9 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string apps: Quickshell.env("RICE_APPS") || ((Quickshell.env("HOME") || "") + "/nixos-config/apps")
+    readonly property string apps: Quickshell.env("RICE_APPS")
+        || ((Quickshell.env("RICE_REPO")
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
     readonly property string crt: apps + "/rice-crt"
 
     property var values: []

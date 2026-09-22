@@ -27,7 +27,12 @@ PluginComponent {
 
     layerNamespacePlugin: "rice-studio"
 
-    readonly property string studio: (Quickshell.env("HOME") || "") + "/nixos-config/apps/rice-studio"
+    // 체크아웃 위치. RICE_APPS · RICE_REPO 순으로 보고 ~/nixos-config 로
+    // 떨어진다 — 같은 규칙이 hyprland/rice/studio/Rice/*.qml 에도 있다.
+    readonly property string apps: Quickshell.env("RICE_APPS")
+        || ((Quickshell.env("RICE_REPO")
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
+    readonly property string studio: apps + "/rice-studio"
 
     // 인자를 안 받는 함수라야 팝아웃 자리 계산을 건너뛰고 그냥 불린다.
     pillClickAction: function () {

@@ -173,10 +173,12 @@ EOF
   printf "  ${GREEN}+${NC} users/%s.nix\n" "$name"
 fi
 
-if [ "$plat" = nixos ]; then relup=../../../; else relup=../../; fi
+# hosts/<플랫폼>/<hostname>/ 아래에 쓰므로 레포 최상위까지 세 단계다 —
+# 플랫폼과 무관하다. 공용 Mac 설정(hosts/darwin/identity.nix)만 두 단계이고,
+# 그건 이 스크립트가 만들지 않는다.
 cat > "$hostdir/identity.nix" <<EOF
 # 이 기계를 쓰는 사람. 계약은 users/README.md.
-import ${relup}users/$name.nix
+import ../../../users/$name.nix
 EOF
 printf "  ${GREEN}+${NC} hosts/%s/%s/identity.nix\n" "$plat" "$hostname"
 

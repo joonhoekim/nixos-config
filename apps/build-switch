@@ -1,8 +1,10 @@
 #!/bin/sh -e
 #
 # Build and activate this machine's configuration.
-#   macOS  -> darwin-rebuild switch --flake .#<arch>
-#   NixOS  -> nixos-rebuild  switch --flake .#<hostname>   (override: --host NAME)
+#   macOS  -> darwin-rebuild switch --flake .#<hostname 또는 arch>
+#   NixOS  -> nixos-rebuild  switch --flake .#<hostname>
+# 타겟은 build-lib.sh 가 고르고, 없는 이름이면 거기서 목록과 함께 멈춘다.
+# --host NAME 으로 덮어쓴다 — 첫 switch 전(hostname 이 아직 'nixos')에 필요하다.
 #
 # Don't run the whole thing under sudo: it builds as your user and only the
 # activation step escalates. Extra flags pass through, e.g. `-- --show-trace`.
@@ -11,7 +13,6 @@
 . "$(dirname "$0")/build-lib.sh"
 
 if [ "$(uname)" = "Darwin" ]; then
-  target="${arch}-darwin"
   printf "${YELLOW}Building darwinConfigurations.%s...${NC}\n" "$target"
   nix --extra-experimental-features 'nix-command flakes' build ".#darwinConfigurations.${target}.system" $passthru
   printf "${YELLOW}Activating (sudo)...${NC}\n"
@@ -19,8 +20,7 @@ if [ "$(uname)" = "Darwin" ]; then
   sudo ./result/sw/bin/darwin-rebuild switch --flake ".#${target}" $passthru
   unlink ./result 2>/dev/null || true
 else
-  target="${host:-$(hostname)}"
-  printf "${YELLOW}Building nixosConfigurations.%s... (override with --host NAME)${NC}\n" "$target"
+  printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
   # Forward the agent socket so root can fetch any private flake inputs.
   sudo SSH_AUTH_SOCK="$SSH_AUTH_SOCK" nixos-rebuild switch --flake ".#${target}" $passthru
 fi

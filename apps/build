@@ -2,17 +2,17 @@
 #
 # Build this machine's configuration WITHOUT activating it — a safe way to
 # verify the flake evaluates and builds before `build-switch`.
-#   macOS  -> darwinConfigurations.<arch>.system
+#   macOS  -> darwinConfigurations.<hostname 또는 arch>.system
 #   NixOS  -> nixosConfigurations.<hostname>.config.system.build.toplevel
-# Override the NixOS host with --host NAME.
+# 타겟은 build-lib.sh 가 고른다. --host NAME 으로 덮어쓴다.
 
 # --host 파싱, NIXPKGS_ALLOW_UNFREE, $arch. build-switch 와 같은 프롤로그다.
 . "$(dirname "$0")/build-lib.sh"
 
 if [ "$(uname)" = "Darwin" ]; then
-  attr=".#darwinConfigurations.${arch}-darwin.system"
+  attr=".#darwinConfigurations.${target}.system"
 else
-  attr=".#nixosConfigurations.${host:-$(hostname)}.config.system.build.toplevel"
+  attr=".#nixosConfigurations.${target}.config.system.build.toplevel"
 fi
 
 printf "${YELLOW}Building %s...${NC}\n" "$attr"

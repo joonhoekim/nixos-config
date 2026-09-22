@@ -92,24 +92,40 @@
     # SMAppService login item that the app rewrites from its own preferences —
     # exactly the kind of state this repo keeps declarative. Driving it from
     # launchd matches every other GUI app here and survives a reinstall.
-    # If the in-app toggle ever gets flipped on as well, the second launch is
-    # a no-op: Stats is a single-instance app.
+    #
+    # `open -a` for the same reason as linearmouse above: if that in-app toggle
+    # is ever flipped on, both login items fire and a direct Mach-O exec gives
+    # two Stats in the menu bar. Nothing in the app prevents it — what keeps it
+    # to one today is only that its own item happens to be disabled
+    # (`sudo sfltool dumpbtm` prints the disposition of both).
     stats = {
-      command = "/Applications/Stats.app/Contents/MacOS/Stats";
+      command = "/usr/bin/open -a /Applications/Stats.app";
       serviceConfig.RunAtLoad = true;
     };
 
 
     # 마우스 휠 방향 교정 — 트랙패드는 자연스러운 스크롤 그대로, 외장 마우스만 반전.
-    # stats 와 같은 모양이고 같은 이유다: 앱의 "Start at login" 토글은 앱이 자기
-    # 설정에서 다시 쓰는 SMAppService 로그인 항목이라, 선언해 둔 것과 어긋난다.
+    #
+    # 번들 안의 Mach-O 를 직접 exec 하지 않고 `open -a` 를 거치는 것이 요점이다.
+    # LinearMouse 는 자기 "Start at login" 을 SMAppService 로그인 항목으로도
+    # 등록하고, 그게 켜져 있으면 부팅 때 두 군데서 발화한다. 실측:
+    #
+    #   open -a            이미 떠 있으면 아무 일도 안 한다 (LaunchServices 가 막는다)
+    #   .../MacOS/Linear…  막지 않는다 — 두 번째 프로세스가 생긴다
+    #
+    # 두 인스턴스가 같은 스크롤 이벤트를 각각 뒤집으면 서로 상쇄되므로, 증상은
+    # "상단바 아이콘이 둘"과 "휠 방향이 안 바뀐다"로 같이 온다. 하나를 끄면
+    # 낫는다는 게 이 조합의 표식이다.
+    #
+    # launchd 는 이 job 을 곧 끝난 것으로 본다. RunAtLoad 뿐이고 KeepAlive 가
+    # 없으니 그게 맞는 모양이다 — 로그인에 한 번 띄우는 것이 하는 일의 전부다.
     #
     # 읽는 설정은 ~/.config/linearmouse/linearmouse.json (시드는
     # modules/darwin/rice/default.nix, 근거는 그 옆 linearmouse/README.md).
     # 첫 실행에서 입력 모니터링 권한을 한 번 물어본다 — 거부하면 앱은 떠 있는 채로
     # 아무 일도 안 하고, 휠 방향이 안 바뀌는 것 말고는 증상이 없다.
     linearmouse = {
-      command = "/Applications/LinearMouse.app/Contents/MacOS/LinearMouse";
+      command = "/usr/bin/open -a /Applications/LinearMouse.app";
       serviceConfig.RunAtLoad = true;
     };
 
@@ -132,8 +148,9 @@
     # (TeamIdentifier not set), and TCC entries for ad-hoc binaries are keyed to
     # the cdhash, so it was worth checking that a launchd start still resolves
     # the Accessibility grant. It does — CGGetEventTapList shows the same
-    # enabled event tap either way. `open -a` would exit immediately and leave
-    # launchd thinking the job finished, which is a worse fit for RunAtLoad.
+    # enabled event tap either way. The duplication that puts stats and
+    # linearmouse on `open -a` cannot happen here — this app registers no login
+    # item of its own, so this agent is the only thing that starts it.
     workspacepeek = {
       command = "/Applications/WorkspacePeek.app/Contents/MacOS/WorkspacePeek";
       # Reaches rift-cli — the overlay asks rift for the workspace list every

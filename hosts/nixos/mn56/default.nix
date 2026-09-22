@@ -23,7 +23,6 @@
     ./hardware-configuration.nix
   ];
 
-  networking.hostName = "mn56";
 
   # Installed from a 26.05 installer, so it stays at 26.05 — this is what
   # nixos-generate-config wrote, and stateVersion is "the release this

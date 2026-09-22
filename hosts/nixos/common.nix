@@ -73,7 +73,8 @@
 
   time.timeZone = "Asia/Seoul";
 
-  # hostName is set per-host (see ./mn56, ./evo-t1, ./galaxy-chromebook-1).
+  # hostName 은 호스트 디렉토리 이름에서 온다 (flake.nix 의 mkNixosHost 가
+  # mkDefault 로 박는다). 여기서도, 호스트 파일에서도 따로 적지 않는다.
   networking.networkmanager.enable = true;
 
   # Turn on flag for proprietary software

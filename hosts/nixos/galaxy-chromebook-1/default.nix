@@ -16,7 +16,6 @@
     ./touch.nix
   ];
 
-  networking.hostName = "galaxy-chromebook-1";
 
   # No navigation layer on this host, and nothing to configure for it. The
   # layer in modules/nixos/keyboard.nix hangs off held Caps Lock, and this

@@ -18,7 +18,6 @@
     ./hardware-configuration.nix
   ];
 
-  networking.hostName = "evo-t1";
 
   # Installed from a 26.05 installer (confirmed with `nixos-version` on the
   # install media), so it stays at 26.05. stateVersion is "the release this

@@ -4,15 +4,25 @@
 
 macOS(nix-darwin + home-manager)와 NixOS를 위한 개인 Nix 설정.
 
-darwin 설정은 hostname이 아니라 **아키텍처**로 키잉된다: 현재는 `aarch64-darwin`(Apple
-Silicon)뿐이다. 이 이름을 flake 타겟으로 쓴다 — 예: `.#aarch64-darwin`. 인텔 Mac
-(`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 — 되살리려면 26.05 darwin
-브랜치에 고정한 별도 nixpkgs input이 필요하다.
+**호스트 목록은 `hosts/<플랫폼>/` 아래의 디렉토리 그 자체다.** flake에 따로 등록하는
+목록은 없고, 디렉토리 이름이 곧 flake 타겟이자 `networking.hostName`이다. 새 기계를
+붙이는 건 `./apps/setup`이 한다 — [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
 
 NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `evo-t1`, `galaxy-chromebook-1`(모두
-`x86_64-linux`). 이 이름을 flake 타겟으로 쓴다 — 예: `.#mn56`. 호스트 디렉토리는 실제로
-존재하는 머신만 만든다(그 머신에서 생성한 `hardware-configuration.nix`가 필요하다).
-머신별 설정은 [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
+`x86_64-linux`). 예: `.#mn56`. 호스트 디렉토리는 실제로 존재하는 머신만 만든다(그
+머신에서 생성한 `hardware-configuration.nix`가 필요하다).
+
+macOS는 두 층이다. `hosts/darwin/`은 **공용** 설정이고 **아키텍처**로 키잉된다 — 현재는
+`aarch64-darwin`(Apple Silicon)뿐. Mac을 여러 대 쓰면서 계정 이름이 같으면 이 한 벌로
+끝난다. 기계마다 갈라야 할 것이 생기거나 계정 이름이 다른 사람이 끼면 그 Mac에서
+`./apps/setup`을 돌려 `hosts/darwin/<hostname>/`을 만든다 — hostname으로 키잉되고, 있으면
+그쪽이 이긴다. 인텔 Mac(`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 —
+되살리려면 26.05 darwin 브랜치에 고정한 별도 nixpkgs input이 필요하다.
+
+계정 이름·git 신원·authorized key는 `users/<이름>.nix` 한 장에 있고(계약은
+[users/README.md](users/README.md)), 어느 사람을 쓸지는 호스트가
+`hosts/<플랫폼>/<이름>/identity.nix`에서 고른다. 포크해서 쓸 때 고치는 파일이 이 둘뿐이라
+`git pull`이 충돌하지 않는다.
 
 데스크톱 환경은 두 호스트 모두 greetd/tuigreet에서 세 세션을 고를 수 있다 —
 **niri**(스크롤 타일링, 기본), **Hyprland**(uwsm 세션), **GNOME / Wayland**(폴백).
@@ -129,65 +139,89 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 ## NixOS 첫 빌드
 
 위의 flakes 켜기 단계는 NixOS에서도 똑같이 적용된다(첫 flake 명령에
-`--extra-experimental-features 'nix-command flakes'`가 필요). 거기에 더해, 첫 빌드 **전에**
-반드시 정해야 하는 머신 고유 항목이 셋 있다:
+`--extra-experimental-features 'nix-command flakes'`가 필요).
 
-1. **이 머신의 하드웨어 설정을 채운다.** 등록된 호스트(`mn56`, `evo-t1`,
-   `galaxy-chromebook-1`)는 모두 그 머신에서 생성한 진짜
-   `hosts/nixos/<host>/hardware-configuration.nix`를 갖고 있다. 새 머신을 추가할 때는
-   호스트 디렉토리를 만들기 **전에** 이 파일부터 뽑는다 — 빈 placeholder를 커밋해두면
-   `fileSystems` 미정의로 평가만 깨지고 얻는 게 없다:
+그다음은 `./apps/setup`이 한다. **`nix run .#setup`이 아니라 경로로 직접 부른다** — flakes를
+켜는 것이 이 레포 자신이라(`hosts/nixos/common.nix`), 갓 설치한 NixOS에서는 아직 `nix run`이
+안 된다. 이 스크립트는 그래서 sh·coreutils·git·`nixos-generate-config` 말고는 아무것도
+전제하지 않는다.
 
-   ```sh
-   # 기존 NixOS 설치라면:
-   cp /etc/nixos/hardware-configuration.nix hosts/nixos/mn56/hardware-configuration.nix
-   # …또는 라이브 하드웨어 스캔으로:
-   sudo nixos-generate-config --show-hardware-config > hosts/nixos/mn56/hardware-configuration.nix
-   git add hosts/nixos/mn56/hardware-configuration.nix
-   ```
+```sh
+git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
+cd ~/nixos-config
+./apps/setup
+```
 
-   이 파일은 root/boot 파일시스템, swap, initrd 모듈, CPU 마이크로코드를 고정하므로 머신
-   간에 공유할 수 없다.
+묻는 것은 넷이고, 전부 **Nix 평가가 볼 수 없는 값**이다 — 순수 평가는 `/etc/passwd`도
+`hostname`도 못 보기 때문에, 어긋나도 빌드는 성공하고 증상은 한참 뒤에 나온다:
 
-2. **호스트를 고른다.** 호스트는 hostname으로 키잉된다(`mn56`, `evo-t1`,
-   `galaxy-chromebook-1`). 더 추가하려면 `hosts/nixos/<name>/`를 만들고(`../common.nix` +
-   자기 `hardware-configuration.nix`를 import) `flake.nix`의 `mkNixosHost` 목록에 등록한다.
-   flake 속성 이름과 `networking.hostName`을 맞춰두면 `build-switch`가 호스트를 자동으로
-   찾는다.
+| 묻는 것 | 왜 여기서 확인하나 |
+|---|---|
+| 유저명 | 지금 계정과 다르면 activation이 계정을 **하나 더** 만든다. 홈이 둘로 갈린다 |
+| git user.name / email | `users/<이름>.nix`에 들어간다. 없으면 만들고, 있으면 그대로 쓴다 |
+| hostname | 설치 직후 기본값 `nixos`가 그대로 굳는 사고를 막는다. 이 이름이 곧 디렉토리 이름이자 flake 타겟이다 |
+| `system.stateVersion` | 이 기계가 **처음 설치된** 릴리스. 채널이 아니라 상태 호환성을 고정한다 |
 
-3. **SSH 접근 방식을 정한다.** `hosts/nixos/common.nix`는 `openssh`만 켜고 authorized key를
-   선언하지 않으므로 계정 비밀번호(`passwd`로 설정) 로그인이 된다. 키 인증을 쓰려면
-   `users.users.<user>.openssh.authorizedKeys.keys`에 본인 공개키를 넣는다.
+만드는 것은 `users/<이름>.nix`, `hosts/nixos/<hostname>/{default.nix,identity.nix}`,
+그리고 `nixos-generate-config`로 뽑은 `hardware-configuration.nix`다. CPU 벤더를 보고
+`modules/nixos/{intel,amd}.nix`도 알아서 import에 넣는다. 마지막에 `git add`까지 한다 —
+**flake는 git이 추적하는 파일만 본다.** 안 하면 방금 만든 호스트가 없는 것처럼 취급되고,
+에러는 엉뚱한 자리에서 난다.
 
 그다음 빌드:
 
 ```sh
-sudo nixos-rebuild switch --flake .#mn56      # 또는 .#evo-t1, .#galaxy-chromebook-1
-# flakes가 켜져 있고 hostname이 호스트와 일치하면: nix run .#build-switch
+./apps/build-switch --host <hostname>
 ```
 
-> `nix flake check`는 NixOS 호스트까지 평가한다. 등록된 호스트가 전부 진짜
-> hardware-configuration.nix를 갖고 있어야 통과하므로, placeholder 호스트를 남겨두면
-> 여기서 `fileSystems` assertion으로 깨진다.
+`--host`가 필요한 건 이때 한 번뿐이다. 지금 이 기계의 `hostname`은 아직 옛 이름이라
+맨손 호출이 빗나간다 — switch가 끝나면 `networking.hostName`이 디렉토리 이름으로 맞춰지고,
+그 뒤로는 `nix run .#build-switch`로 충분하다. (빗나가면 `build-switch`가 있는 호스트
+목록을 보여주고 멈춘다.)
+
+### 손으로 하고 싶다면
+
+`setup`이 하는 일은 파일 세 개를 쓰는 것뿐이다:
+
+```sh
+mkdir -p hosts/nixos/<hostname>
+sudo nixos-generate-config --show-hardware-config \
+  > hosts/nixos/<hostname>/hardware-configuration.nix
+echo 'import ../../../users/<이름>.nix' > hosts/nixos/<hostname>/identity.nix
+# default.nix 는 ../common.nix 와 ./hardware-configuration.nix 를 import 하고
+# system.stateVersion 만 적는다 — 기존 호스트를 보고 베끼면 된다.
+git add users hosts/nixos/<hostname>
+```
+
+`networking.hostName`은 **적지 않는다.** `flake.nix`가 디렉토리 이름에서 `mkDefault`로
+박는다 — 둘을 따로 적으면 어긋날 수 있고, 어긋나도 빌드는 멀쩡히 되기 때문에 증상이
+"왜 `--host`를 계속 붙여야 하지"로만 보인다.
+
+SSH 키 인증을 쓰려면 `users/<이름>.nix`의 `authorizedKeys`에 공개키를 넣는다. 비워 두면
+`openssh`는 계정 비밀번호 로그인만 받는다.
+
+> `nix flake check`는 등록된 NixOS 호스트를 전부 평가한다. 호스트 디렉토리가 곧 목록이므로,
+> 진짜 `hardware-configuration.nix`가 없는 디렉토리를 남겨두면 여기서 `fileSystems`
+> assertion으로 깨진다. 빈 껍데기를 만들어 두지 말 것.
 
 ### 첫 switch 직후
 
 **유저는 자동 생성되지만 비밀번호는 직접 설정해야 한다.** `common.nix`의 `users.users`가
-계정을 선언하므로 activation이 `jh`를 만들어준다 — 홈 디렉토리 `/home/jh`, 셸 zsh,
-`wheel`/`networkmanager`/`docker` 그룹까지 전부. 하지만 비밀번호는 레포 어디에도 선언돼
-있지 않아서(`hashedPassword`/`initialPassword` 전부 null) 계정이 **잠긴 상태**로 생긴다.
-tuigreet 로그인도, TTY 로그인도, `su - jh`도 안 된다. root로 한 번 풀어준다:
+계정을 선언하므로 activation이 `users/<이름>.nix`의 계정을 만들어준다 — 홈 디렉토리, 셸
+zsh, `wheel`/`networkmanager`/`docker` 그룹까지 전부. 하지만 비밀번호는 레포 어디에도
+선언돼 있지 않아서(`hashedPassword`/`initialPassword` 전부 null) 계정이 **잠긴 상태**로
+생긴다. tuigreet 로그인도, TTY 로그인도, `su - <이름>`도 안 된다. root로 한 번 풀어준다:
 
 ```sh
-passwd jh
+passwd <이름>
 ```
 
 `users.mutableUsers`가 기본값 `true`라 이렇게 잡은 비밀번호는 이후 rebuild에도 유지된다.
 해시를 선언해서 이 단계를 없앨 수도 있지만(`initialHashedPassword`), 공개 저장소라 권하지
-않는다.
+않는다. `./apps/doctor`가 잠긴 계정을 짚어 준다.
 
 > root 셸에서 개발 도구가 안 보이는 건 정상이다. `modules/nixos/packages.nix`는
-> home-manager의 `home.packages`로 들어가므로 `jh`의 프로필에만 깔린다. 시스템 전역
+> home-manager의 `home.packages`로 들어가므로 그 계정의 프로필에만 깔린다. 시스템 전역
 > (`environment.systemPackages`)에 있는 건 `common.nix`의 `gitFull`/`inetutils`와
 > 호스트별 관찰 도구 정도다.
 
@@ -200,9 +234,11 @@ passwd jh
 nix run .#build-switch          # 새 generation을 빌드해 활성화
 ```
 
-- **macOS** → `darwinConfigurations.<arch>`(예: `aarch64-darwin`)를 빌드·활성화.
+- **macOS** → 이 Mac 전용 호스트(`hosts/darwin/<hostname>/`)가 있으면 그것을, 없으면
+  공용 설정(`darwinConfigurations.<arch>`, 예: `aarch64-darwin`)을 빌드·활성화.
 - **NixOS** → `nixosConfigurations.<hostname>`을 활성화. 호스트는 `hostname`에서 가져오며,
   첫 switch 전에는 `nix run .#build-switch -- --host mn56`으로 덮어쓴다.
+- 타겟 이름이 없는 호스트면 빌드를 시작하기 전에 멈추고 **있는 호스트 목록**을 보여준다.
 - **앞에 `sudo`를 붙이지 말 것.** 스크립트는 유저 권한으로 빌드한 뒤 활성화 단계에서만
   `sudo`를 부른다. 전체를 root로 돌리면 저장소의 git 소유권 검사가 깨진다.
 - 추가 플래그는 그대로 전달된다 — 예: `nix run .#build-switch -- --show-trace`.
@@ -221,6 +257,10 @@ sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 nix run .#build               # 빌드만, 활성화 X (평가 검증용)
 nix run .#rollback            # 이전 generation으로 복구
 nix run .#clean               # 구 generation GC (기본 7d; 예: `-- 14d`)
+
+nix run .#setup               # 새 기계를 레포에 붙인다 (대화형). 첫 빌드 전에는
+                              #   flakes 가 아직 안 켜져 있으니 ./apps/setup 으로 부른다
+nix run .#doctor              # 이 기계와 이 체크아웃이 어긋났는지 본다 (고치지 않는다)
 
 nix run .#demo                # 창 관리자 실사용을 빈 워크스페이스에서 자동 재연
 nix run .#rice-menu           # DMS 런처 플러그인의 뒤판 (축 목록을 JSON으로)

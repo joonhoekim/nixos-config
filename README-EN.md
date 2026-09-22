@@ -4,18 +4,29 @@
 
 Personal Nix configuration for macOS (nix-darwin + home-manager) and NixOS.
 
-The darwin configurations are keyed by **architecture**, not hostname; right now
-`aarch64-darwin` (Apple Silicon) is the only one. Use that name as the flake
-target — e.g. `.#aarch64-darwin`. Intel Macs (`x86_64-darwin`) are dropped,
-since nixpkgs 26.11 removed support; reviving one means a separate nixpkgs
-input pinned to the 26.05 darwin branch.
+**The host list is the set of directories under `hosts/<platform>/`.** There is
+no separate registry in the flake: a directory's name is both the flake target
+and its `networking.hostName`. Attaching a new machine is what `./apps/setup`
+does — see [NixOS — first build](#nixos--first-build-on-a-new-machine).
 
 The NixOS configurations are keyed by **hostname** — `mn56`, `evo-t1` and
-`galaxy-chromebook-1` (all `x86_64-linux`). Use that name as the flake target —
-e.g. `.#mn56`. A host directory only exists for a machine that actually exists,
-since it needs that machine's generated `hardware-configuration.nix`. See
-[NixOS — first build](#nixos--first-build-on-a-new-machine) for the
-machine-specific setup.
+`galaxy-chromebook-1` (all `x86_64-linux`), e.g. `.#mn56`. A host directory only
+exists for a machine that actually exists, since it needs that machine's
+generated `hardware-configuration.nix`.
+
+macOS comes in two tiers. `hosts/darwin/` is the **shared** config and is keyed
+by **architecture** — right now `aarch64-darwin` (Apple Silicon) only. Several
+Macs under the same account name need nothing more than that one copy. Once a
+machine needs to diverge, or someone with a different account name joins, run
+`./apps/setup` on that Mac to create `hosts/darwin/<hostname>/`: it is keyed by
+hostname and wins when present. Intel Macs (`x86_64-darwin`) are dropped, since
+nixpkgs 26.11 removed support; reviving one means a separate nixpkgs input
+pinned to the 26.05 darwin branch.
+
+Account name, git identity and authorized keys live in one file,
+`users/<name>.nix` (the contract is in [users/README.md](users/README.md)); each
+host picks whose it is in `hosts/<platform>/<name>/identity.nix`. Those two are
+the only files a fork edits, so `git pull` never conflicts.
 
 Both hosts offer three sessions at the greetd/tuigreet greeter: **niri**
 (scrollable tiling, the default), **Hyprland** (uwsm-managed), and **GNOME on
@@ -114,70 +125,96 @@ one-time step above is never needed again on this machine.
 ## NixOS — first build on a new machine
 
 The flakes-enabling step above applies on NixOS too (the first flake command
-needs `--extra-experimental-features 'nix-command flakes'`). On top of that,
-three things are machine-specific and must be set **before** the first build:
+needs `--extra-experimental-features 'nix-command flakes'`).
 
-1. **Provide this machine's hardware config.** Every registered host (`mn56`,
-   `evo-t1`, `galaxy-chromebook-1`) carries the real
-   `hosts/nixos/<host>/hardware-configuration.nix` generated on that machine.
-   When adding a new machine, produce this file **before** creating the host
-   directory — committing an empty placeholder only breaks evaluation at the
-   `fileSystems` assertion and buys nothing:
+Everything after that is `./apps/setup`'s job. **Call it by path, not as
+`nix run .#setup`** — this repo is what turns flakes on
+(`hosts/nixos/common.nix`), so on a freshly installed NixOS `nix run` does not
+work yet. That is also why the script assumes nothing beyond sh, coreutils, git
+and `nixos-generate-config`.
 
-   ```sh
-   # on an existing NixOS install:
-   cp /etc/nixos/hardware-configuration.nix hosts/nixos/mn56/hardware-configuration.nix
-   # …or from a live hardware scan:
-   sudo nixos-generate-config --show-hardware-config > hosts/nixos/mn56/hardware-configuration.nix
-   git add hosts/nixos/mn56/hardware-configuration.nix
-   ```
+```sh
+git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
+cd ~/nixos-config
+./apps/setup
+```
 
-   It pins your root/boot filesystems, swap, initrd modules, and CPU microcode,
-   so it can't be shared between machines.
+It asks four things, and all four are **facts Nix evaluation cannot see** — pure
+evaluation reads neither `/etc/passwd` nor `hostname`, so when one is wrong the
+build still succeeds and the symptom shows up much later:
 
-2. **Pick the host.** Hosts are keyed by hostname (`mn56`, `evo-t1`,
-   `galaxy-chromebook-1`). To add another, create `hosts/nixos/<name>/`
-   (importing `../common.nix` plus its own `hardware-configuration.nix`) and
-   register it in `flake.nix`'s `mkNixosHost` list. Keep the flake attribute
-   name and `networking.hostName` identical so `build-switch` finds the host
-   on its own.
+| Question | Why it is confirmed here |
+|---|---|
+| account name | If it differs from the current one, activation creates a **second** account and you end up with two homes |
+| git user.name / email | Goes into `users/<name>.nix`; an existing file is reused as-is |
+| hostname | Stops the installer default `nixos` from quietly sticking. This name becomes the directory name and the flake target |
+| `system.stateVersion` | The release this machine was **first installed at** — it pins state compatibility, not the channel |
 
-3. **Decide how you SSH in.** `hosts/nixos/common.nix` enables `openssh` without
-   declaring any authorized key, so access is by account password (set it with
-   `passwd`). For key auth, add your public key to
-   `users.users.<user>.openssh.authorizedKeys.keys`.
+It writes `users/<name>.nix`, `hosts/nixos/<hostname>/{default.nix,identity.nix}`
+and a `hardware-configuration.nix` from `nixos-generate-config`, adding the right
+`modules/nixos/{intel,amd}.nix` based on the CPU vendor. Finally it runs
+`git add` — **a flake only sees files git tracks.** Skip that and the host you
+just created is treated as absent, with the error surfacing somewhere unrelated.
 
 Then build:
 
 ```sh
-sudo nixos-rebuild switch --flake .#mn56      # or .#evo-t1, .#galaxy-chromebook-1
-# once flakes are enabled and the hostname matches a host: nix run .#build-switch
+./apps/build-switch --host <hostname>
 ```
 
-> `nix flake check` evaluates the NixOS hosts too, so every registered host
-> needs its real hardware-configuration.nix for it to pass. Leaving a
-> placeholder host around breaks it at the `fileSystems` assertion.
+`--host` is needed exactly once. This machine's `hostname` is still the old one,
+so the bare call would miss; after the switch `networking.hostName` matches the
+directory name and `nix run .#build-switch` is enough from then on. (When it
+does miss, `build-switch` stops and prints the hosts that do exist.)
+
+### Doing it by hand
+
+All `setup` does is write three files:
+
+```sh
+mkdir -p hosts/nixos/<hostname>
+sudo nixos-generate-config --show-hardware-config \
+  > hosts/nixos/<hostname>/hardware-configuration.nix
+echo 'import ../../../users/<name>.nix' > hosts/nixos/<hostname>/identity.nix
+# default.nix imports ../common.nix and ./hardware-configuration.nix and sets
+# system.stateVersion — copy an existing host.
+git add users hosts/nixos/<hostname>
+```
+
+Do **not** write `networking.hostName`. `flake.nix` sets it from the directory
+name with `mkDefault`; writing it twice lets the two drift, and since the build
+still succeeds the only symptom is "why do I keep needing `--host`".
+
+For SSH key auth, put your public key in `authorizedKeys` in
+`users/<name>.nix`. Leave it empty and `openssh` accepts account passwords only.
+
+> `nix flake check` evaluates every registered NixOS host, and the host
+> directories *are* the registry — so a directory without a real
+> `hardware-configuration.nix` breaks it at the `fileSystems` assertion. Don't
+> leave empty shells around.
 
 ### Right after the first switch
 
 **The account is created for you; the password is not.** `users.users` in
-`common.nix` declares it, so activation creates `jh` — home directory
-`/home/jh`, zsh as the shell, and the `wheel`/`networkmanager`/`docker` groups.
-But no password is declared anywhere in this repo (`hashedPassword` and
-`initialPassword` are both null), so the account is created **locked**: no
-tuigreet login, no TTY login, no `su - jh`. Unlock it once as root:
+`common.nix` declares it, so activation creates the account named in
+`users/<name>.nix` — home directory, zsh as the shell, and the
+`wheel`/`networkmanager`/`docker` groups. But no password is declared anywhere in
+this repo (`hashedPassword` and `initialPassword` are both null), so the account
+is created **locked**: no tuigreet login, no TTY login, no `su - <name>`. Unlock
+it once as root:
 
 ```sh
-passwd jh
+passwd <name>
 ```
 
 `users.mutableUsers` defaults to `true`, so the password you set survives later
 rebuilds. You could declare a hash instead (`initialHashedPassword`) and skip
-this step, but this is a public repo — not recommended.
+this step, but this is a public repo — not recommended. `./apps/doctor` points
+out a locked account.
 
 > Not seeing your dev tools in a root shell is expected.
 > `modules/nixos/packages.nix` feeds home-manager's `home.packages`, so those
-> land in `jh`'s profile only. What's system-wide
+> land in that account's profile only. What's system-wide
 > (`environment.systemPackages`) is just `gitFull`/`inetutils` from
 > `common.nix` plus the per-host inspection tools.
 
@@ -190,10 +227,14 @@ at runtime, so the same command works on either:
 nix run .#build-switch          # build the new generation and activate it
 ```
 
-- **macOS** → builds + activates `darwinConfigurations.<arch>` (e.g. `aarch64-darwin`).
+- **macOS** → builds + activates this Mac's own host
+  (`hosts/darwin/<hostname>/`) when it exists, otherwise the shared
+  `darwinConfigurations.<arch>` (e.g. `aarch64-darwin`).
 - **NixOS** → activates `nixosConfigurations.<hostname>`. The host is taken from
   `hostname`; override it before the first switch with
   `nix run .#build-switch -- --host mn56`.
+- If the target name is not a host, it stops before building and prints the
+  hosts that do exist.
 - **Don't prefix it with `sudo`.** The script builds as your user, then calls
   `sudo` only for the activation step. Running the whole thing as root breaks
   git ownership checks on the repo.
@@ -213,6 +254,10 @@ sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 nix run .#build               # build only, no switch (verify it evaluates)
 nix run .#rollback            # roll back to a previous generation
 nix run .#clean               # garbage-collect old generations (default 7d; e.g. `-- 14d`)
+
+nix run .#setup               # attach a new machine to the repo (interactive). Before
+                              #   the first build use ./apps/setup — flakes are still off
+nix run .#doctor              # check this machine against this checkout (changes nothing)
 
 nix run .#demo                # replay real window-manager usage on an empty workspace
 nix run .#rice-menu           # backend for the DMS launcher plugin (axes as JSON)

@@ -153,8 +153,15 @@ mount /dev/disk/by-label/boot /mnt/boot
 `hardware-configuration.nix`만 새로 뽑아 넣고 그대로 설치**하면 된다. 다만 그 레포를
 어디에 두느냐에 따라 뒤처리가 갈린다.
 
-핵심은 이거다. 설치 중에는 타겟에 `jh` 유저가 아직 없다. 계정은 첫 activation 때
-생기고, 그때 `/home/jh` **자기 자신만** `jh:users`로 넘어간다 —
+아래 예시는 계정 이름을 셸 변수로 둔다. 이 기계를 쓸 이름으로 바꿔 놓고 읽으면
+그대로 붙여 넣을 수 있다:
+
+```bash
+user=jh    # ← 이 기계를 쓸 계정 이름
+```
+
+핵심은 이거다. 설치 중에는 타겟에 그 유저가 아직 없다. 계정은 첫 activation 때
+생기고, 그때 `/home/$user` **자기 자신만** `$user:users`로 넘어간다 —
 `update-users-groups.pl`의 `createHome` 블록이 `chown`을 **재귀로 하지 않는다**. 그래서
 설치 중에 root로 클론한 것은 그 안쪽이 root 소유로 남는다. 두 갈래는 이걸 언제
 정리하느냐의 차이다.
@@ -165,22 +172,22 @@ mount /dev/disk/by-label/boot /mnt/boot
 
 ```bash
 # 1. 홈 경로를 만들고 클론한다 (아직 root 소유)
-mkdir -p /mnt/home/jh
-git clone https://github.com/joonhoekim/nixos-config /mnt/home/jh/nixos-config
-cd /mnt/home/jh/nixos-config
+mkdir -p "/mnt/home/$user"
+git clone https://github.com/joonhoekim/nixos-config "/mnt/home/$user/nixos-config"
+cd "/mnt/home/$user/nixos-config"
 
 # 2. (아래 7~9 절: hardware-configuration.nix 생성 → git add → nixos-install)
 
 # 3. 설치가 끝난 뒤에 소유권을 넘긴다
-chown -R 1000:100 /mnt/home/jh
+chown -R 1000:100 "/mnt/home/$user"
 ```
 
 - `git`은 minimal ISO에 이미 들어 있다(`installation-cd-base.nix`가
   `programs.git.enable`을 켠다). `nix-shell -p git` 안 해도 된다.
-- 숫자로 `chown` 하는 이유: 설치 미디어의 `/etc/passwd`에는 `jh`가 없어서
-  `chown jh:users`가 안 먹는다. NixOS는 일반 유저 uid를 **1000**부터, `users` 그룹은
-  gid **100**으로 준다. `jh`가 이 머신의 첫 일반 유저면 1000이 맞다. 확신이 안 서면
-  이 줄을 건너뛰고 **첫 부팅 후에** `sudo chown -R jh:users ~`를 하면 된다. 그쪽이
+- 숫자로 `chown` 하는 이유: 설치 미디어의 `/etc/passwd`에는 그 계정이 없어서
+  `chown $user:users`가 안 먹는다. NixOS는 일반 유저 uid를 **1000**부터, `users` 그룹은
+  gid **100**으로 준다. 이 계정이 이 머신의 첫 일반 유저면 1000이 맞다. 확신이 안 서면
+  이 줄을 건너뛰고 **첫 부팅 후에** `sudo chown -R "$USER:users" ~`를 하면 된다. 그쪽이
   확실하다.
 - **`chown`을 `nixos-install` 전에 하지 말 것.** 설치는 root로 도는데, git은 남의
   소유인 레포를 만나면 `dubious ownership`으로 거부한다. 굳이 그 상황을 만들 이유가
@@ -188,7 +195,7 @@ chown -R 1000:100 /mnt/home/jh
 
 ### 갈래 B — 루트에 클론하고 나중에 홈으로
 
-설치 중에는 root의 홈에 두고, 부팅한 뒤 `jh`로 다시 가져오는 방식. `evo-t1`은 이쪽으로
+설치 중에는 root의 홈에 두고, 부팅한 뒤 그 계정으로 다시 가져오는 방식. `evo-t1`은 이쪽으로
 했다.
 
 ```bash
@@ -198,7 +205,7 @@ cd /mnt/root/nixos-config
 # ... 7~9 절 진행 ...
 ```
 
-부팅하고 `passwd jh`까지 끝낸 뒤, `jh`로 로그인해서:
+부팅하고 `passwd <계정>`까지 끝낸 뒤, 그 계정으로 로그인해서:
 
 ```bash
 # 방법 1 — 새로 클론한다. 소유권이 처음부터 맞는다.
@@ -208,7 +215,7 @@ git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
 
 # 방법 2 — 있는 걸 그대로 옮긴다. push 안 한 커밋도 살아온다.
 sudo cp -r /root/nixos-config ~/nixos-config
-sudo chown -R jh:users ~/nixos-config
+sudo chown -R "$USER:users" ~/nixos-config
 ```
 
 정리:
@@ -231,11 +238,15 @@ A가 짧고, B가 안전하다. B로 갈 거면 **방법 2(cp + chown)** 를 권
 
 ## 7. hardware-configuration.nix 뽑기
 
+> 이미 부팅한 기계에서라면 7~8절은 `./apps/setup` 한 번이면 끝난다(호스트 디렉토리·
+> 신원 파일·하드웨어 스캔·`git add`를 한자리에서 한다). 설치 미디어에서는 스캔에
+> `--root /mnt`가 필요해서 setup 이 쓸 수 없다 — 아래대로 손으로 한다.
+
 이 파일만은 **그 머신에서 생성한 진짜 파일**이어야 한다. 루트/부트 파일시스템, 스왑,
 initrd 커널 모듈, CPU 마이크로코드를 고정하므로 머신 간에 공유할 수 없다.
 
-레포 안에 호스트 디렉토리를 만들고(`<hostname>`은 `flake.nix`에 등록할 이름과 같게)
-거기에 바로 뽑는다:
+레포 안에 호스트 디렉토리를 만들고 거기에 바로 뽑는다. **이 디렉토리 이름이 곧
+hostname 이자 flake 타겟이다** — 따로 등록하는 자리는 없다:
 
 ```bash
 mkdir -p hosts/nixos/<hostname>
@@ -271,15 +282,21 @@ git add hosts/nixos/<hostname>/hardware-configuration.nix
 커밋까지 할 필요는 없다(`git add`만으로 flake에 보인다). 다만 갈래 B의 방법 1로 갈
 거면 커밋하고 push까지 해야 한다.
 
-## 8. 호스트 등록과 stateVersion
+## 8. 호스트 파일과 stateVersion
 
-`flake.nix`의 `nixosConfigurations`에 한 줄:
+`flake.nix`에 등록하는 자리는 없다. `hosts/nixos/` 아래의 디렉토리가 곧 호스트다.
+채울 파일은 둘이다.
+
+`hosts/nixos/<hostname>/identity.nix` — 이 기계를 쓰는 사람:
 
 ```nix
-<hostname> = mkNixosHost ./hosts/nixos/<hostname>;
+import ../../../users/<이름>.nix
 ```
 
-`hosts/nixos/<hostname>/default.nix`는 최소한 이렇게:
+`users/<이름>.nix`가 아직 없으면 같이 만든다(계약은 `users/README.md`). 계정 이름·git
+신원·authorized key가 거기 한 장에 있다.
+
+`hosts/nixos/<hostname>/default.nix` — 최소한 이렇게:
 
 ```nix
 { ... }:
@@ -289,20 +306,22 @@ git add hosts/nixos/<hostname>/hardware-configuration.nix
     ./hardware-configuration.nix
   ];
 
-  networking.hostName = "<hostname>";
-
   # 2절에서 확인한 nixos-version 의 릴리스를 그대로.
   system.stateVersion = "26.05";
 }
 ```
+
+`networking.hostName`은 **적지 않는다.** `flake.nix`가 디렉토리 이름에서 `mkDefault`로
+박는다 — 두 군데에 적으면 어긋날 수 있고, 어긋나도 빌드는 멀쩡히 되기 때문에 증상이
+"왜 `--host`를 계속 붙여야 하지"로만 보인다.
 
 `system.stateVersion`은 **설치에 쓴 릴리스**를 박는 값이지, 따라갈 채널이 아니다.
 flake는 계속 nixos-unstable을 따라가므로 패키지는 그대로 최신이 된다.
 `common.nix`가 `mkDefault`로 들고 있는 값은 이 레포 체크아웃이 마침 그 릴리스라는
 뜻일 뿐, 새 설치가 받아야 할 값이 아니다.
 
-flake 속성 이름과 `networking.hostName`을 같게 맞춰두면 `apps/build-switch`가 인자
-없이도 호스트를 찾는다.
+두 파일도 `git add` 해야 flake가 본다 — 7절과 같은 이유다. `apps/doctor`가 빠진
+것을 짚어 준다.
 
 ## 9. 설치
 
@@ -335,15 +354,15 @@ reboot
 ### 계정 잠금 풀기
 
 **유저는 자동 생성되지만 비밀번호는 직접 설정해야 한다.** `common.nix`의
-`users.users`가 계정을 선언하므로 activation이 `jh`를 만들어준다 — 홈 디렉토리, 셸,
-`wheel`/`networkmanager`/`docker` 그룹까지. 하지만 비밀번호는 레포 어디에도 선언돼
-있지 않아서(공개 저장소라 일부러 그렇다) 계정이 **잠긴 상태**로 생긴다. tuigreet
-로그인도, TTY 로그인도, `su - jh`도 안 된다.
+`users.users`가 계정을 선언하므로 activation이 `users/<이름>.nix`의 계정을 만들어준다 —
+홈 디렉토리, 셸, `wheel`/`networkmanager`/`docker` 그룹까지. 하지만 비밀번호는 레포
+어디에도 선언돼 있지 않아서(공개 저장소라 일부러 그렇다) 계정이 **잠긴 상태**로
+생긴다. tuigreet 로그인도, TTY 로그인도, `su - <이름>`도 안 된다.
 
 tuigreet 화면에서 `Ctrl+Alt+F2` 등으로 TTY를 열고 root로 로그인해서:
 
 ```bash
-passwd jh
+passwd <이름>
 ```
 
 `users.mutableUsers`가 기본값 `true`라 이렇게 잡은 비밀번호는 이후 rebuild에도
@@ -354,7 +373,7 @@ passwd jh
 6절에서 미뤄뒀다면 지금 한다:
 
 ```bash
-sudo chown -R jh:users ~/nixos-config
+sudo chown -R "$USER:users" ~/nixos-config
 ```
 
 확인:

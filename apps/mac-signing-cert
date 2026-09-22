@@ -63,7 +63,9 @@ fi
 
 # 앱마다 따로 만들지 않고 하나를 나눠 쓴다. 신원이 늘어날수록 재승인해야 할
 # 조합이 늘고, 이 신원이 하는 일은 앱마다 다르지 않다.
-CN="${MAC_SIGN_ID:-jh local codesign}"
+# 기본 이름에 계정 이름이 들어간다. 키체인에서 찾는 열쇠가 이 문자열이므로,
+# 이미 만들어 둔 인증서가 있으면 MAC_SIGN_ID 로 그 이름을 그대로 줘야 한다.
+CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 exists() { security find-certificate -c "$CN" >/dev/null 2>&1; }

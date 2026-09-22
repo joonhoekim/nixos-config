@@ -1,5 +1,5 @@
 {
-  description = "jh's macOS + NixOS configuration — three window managers, one keymap, ricing as ordinary files";
+  description = "macOS + NixOS configuration — three window managers, one keymap, ricing as ordinary files";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

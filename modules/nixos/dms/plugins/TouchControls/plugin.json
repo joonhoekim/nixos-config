@@ -3,7 +3,7 @@
     "name": "Touch",
     "description": "화면 키보드 · 회전 잠금 · 태블릿 모드를 손가락으로 켜고 끈다",
     "version": "1.0.0",
-    "author": "jh",
+    "author": "nixos-config",
     "icon": "touch_app",
     "type": "widget",
     "capabilities": ["dankbar-widget", "command-execution"],

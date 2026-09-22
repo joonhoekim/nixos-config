@@ -104,24 +104,29 @@ run_on_start = [
 ]
 
 [settings.layout]
-# "scrolling" is the niri one: the workspace is an infinite horizontal strip of
-# columns, only some of which are on screen, and focus scrolls the strip rather
-# than re-tiling everything. That is the shape modules/nixos/niri has on the
-# NixOS side, so the two machines now behave the same way.
-#
-# The alternatives are all one word away, and Alt+Ctrl+1..4 switches the active
-# workspace between them live without touching this file:
-#   traditional   i3/sway containers — closest to the AeroSpace this replaced
+# Every workspace's mode. Alt+Ctrl+1..4 puts the active workspace on any of
+# the four live, but that choice is per-session: reload_config (Alt+Ctrl+R)
+# puts all nine back on the value below — measured, not assumed.
+#   traditional   i3/sway containers — nested splits resized as a tree
 #   bsp           binary space partitioning
 #   master_stack  one master pane + a stack
-mode = "scrolling"
+#   scrolling     niri's infinite horizontal strip of columns; the shape
+#                 modules/nixos/niri runs on the NixOS side
+#
+# The [settings.layout.scrolling] block below is still read — it governs any
+# workspace put on that mode with Alt+Ctrl+4, and $HOME/.config/rice/bin/
+# monocle.sh (Alt+R) reads its width bounds whatever the mode is.
+mode = "traditional"
 
-# In a scrolling layout this is what makes a new window open as the next column
-# to the right of the focused one, instead of at the far end of the strip.
+# A new window opens next to the focused one, not at the far end of the
+# workspace. It is not scrolling-only: measured under traditional, where a
+# third window lands between the focused one and its right neighbour.
 window_insertion_point = "next_to_selection"
 
 [settings.layout.traditional]
-# Only consulted when a workspace is on the traditional layout (Alt+Ctrl+1).
+# Siblings in a split share the space evenly when one is added or removed,
+# rather than the new window taking half of the focused one and leaving the
+# rest untouched.
 equalize_nodes = true
 
 [settings.layout.scrolling]

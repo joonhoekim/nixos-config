@@ -69,6 +69,18 @@
           이미 만들었다면 `git add` 했는지 확인할 것 — flake 는 추적되지 않는
           파일을 못 본다. `./apps/setup` 이 둘 다 해 준다.
         '';
+
+      # hosts/<플랫폼>/ 아래의 **디렉토리**가 곧 호스트다. 손으로 적던 목록을
+      # 지운 이유: 새 기계를 붙일 때 고칠 자리가 하나(자기 디렉토리)로 줄어야
+      # 포크한 쪽이 공유 파일을 안 건드린다. common.nix / default.nix /
+      # identity.nix 는 파일이라 자연히 걸러진다.
+      #
+      # 주의: 여기 걸리는 호스트는 `nix flake check` 가 전부 평가한다. 진짜
+      # hardware-configuration.nix 가 없는 디렉토리를 두면 그 자리에서
+      # fileSystems assertion 으로 깨진다 — 빈 껍데기를 만들어 두지 말 것.
+      hostDirs = dir:
+        builtins.attrNames
+          (nixpkgs.lib.filterAttrs (_: t: t == "directory") (builtins.readDir dir));
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       # Apple Silicon only. Nixpkgs 26.11 dropped x86_64-darwin outright — its
       # legacyPackages now `throw` on evaluation — so listing it here does not
@@ -134,36 +146,19 @@
           exec ${self}/apps/${scriptName} "$@"
         '')}/bin/${scriptName}";
       };
-      # The app scripts are shared across platforms and self-detect macOS vs
-      # NixOS at runtime, so every system exposes the same set — macOS 전용인
-      # 것(mac-signing-cert, rice-colors)도 목록에 있고, 잘못 부르면 스크립트가
-      # 스스로 거절한다.
-      #
-      # apps/ 의 실행 파일과 이 목록은 짝이다. rice-lib.sh 처럼 sourced 되는
-      # 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새 스크립트(rice-decor)
-      # 를 빠뜨린 적이 있어서 목록 하나로 접었다.
-      mkApps = system: nixpkgs.lib.genAttrs [
-        "build" "build-switch" "rollback" "clean"
-        "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
-        "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
-        "rice-knobs" "rice-decor" "rice-colors"
-        "ddc-probe"
-        "demo" "mac-signing-cert"
-      ] (name: mkApp name system);
-    in
-    {
-      devShells = forAllSystems devShell;
-      apps = forAllSystems mkApps;
-
-      darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system:
+      # dir 은 호스트 디렉토리, name 은 hostname(공용 호스트면 null).
+      # localHostName 만 디렉토리 이름에서 박는다 — `scutil --get LocalHostName`
+      # 이 돌려주는 값이 정확히 이것이고, apps/build-switch 가 타겟을 그 값으로
+      # 고르기 때문이다. HostName 과 ComputerName 은 건드리지 않는다.
+      mkDarwinHost = dir: name: system:
         let
-          identity = identityOf ./hosts/darwin;
+          identity = identityOf dir;
           user = identity.name;
         in
         darwin.lib.darwinSystem {
           inherit system;
-          # 신원은 hosts/darwin/identity.nix 에서 온다. `user` 는 그 한 줄을
-          # 꺼내 놓은 것뿐 — `${user}` 로 쓰는 자리가 열댓 곳이다.
+          # 신원은 <호스트>/identity.nix 에서 온다. `user` 는 그 한 줄을 꺼내
+          # 놓은 것뿐 — `${user}` 로 쓰는 자리가 열댓 곳이다.
           specialArgs = inputs // { inherit user identity; };
           modules = [
             home-manager.darwinModules.home-manager
@@ -190,20 +185,62 @@
                 autoMigrate = true;
               };
             }
-            ./hosts/darwin
-          ];
-        }
-      );
+            dir
+          ]
+          ++ nixpkgs.lib.optional (name != null)
+               { networking.localHostName = nixpkgs.lib.mkDefault name; };
+        };
+      # The app scripts are shared across platforms and self-detect macOS vs
+      # NixOS at runtime, so every system exposes the same set — macOS 전용인
+      # 것(mac-signing-cert, rice-colors)도 목록에 있고, 잘못 부르면 스크립트가
+      # 스스로 거절한다.
+      #
+      # apps/ 의 실행 파일과 이 목록은 짝이다. rice-lib.sh 처럼 sourced 되는
+      # 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새 스크립트(rice-decor)
+      # 를 빠뜨린 적이 있어서 목록 하나로 접었다.
+      mkApps = system: nixpkgs.lib.genAttrs [
+        "build" "build-switch" "rollback" "clean"
+        "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
+        "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
+        "rice-knobs" "rice-decor" "rice-colors"
+        "ddc-probe"
+        "demo" "mac-signing-cert"
+      ] (name: mkApp name system);
+    in
+    {
+      devShells = forAllSystems devShell;
+      apps = forAllSystems mkApps;
 
-      # NixOS hosts are keyed by hostname (not arch) so multiple physical
-      # machines can share ./hosts/nixos/common.nix while each pins its own
-      # hardware-configuration.nix. Only machines that actually exist are
-      # listed: a host entry is worth nothing without that machine's real
-      # hardware-configuration.nix, and a placeholder one only breaks
-      # `nix flake check`. Build with e.g.:
+      # macOS 는 두 층이다.
+      #
+      #   .#<arch>       hosts/darwin/          공용. 전용 디렉토리가 없는 Mac 이
+      #                                         전부 이것을 쓴다 (여러 대 + 같은
+      #                                         계정이면 이 한 벌로 끝난다).
+      #   .#<hostname>   hosts/darwin/<이름>/   그 Mac 전용. 자기 identity.nix 를
+      #                                         들고 있어서 계정 이름을 따로 갈 수
+      #                                         있다. 있으면 build-switch 가
+      #                                         이쪽을 먼저 고른다.
+      #
+      # 이름이 겹칠 수는 없다 — arch 이름(aarch64-darwin)을 hostname 으로 쓰는
+      # 기계는 없다.
+      darwinConfigurations =
+        nixpkgs.lib.genAttrs darwinSystems (system: mkDarwinHost ./hosts/darwin null system)
+        // nixpkgs.lib.genAttrs (hostDirs ./hosts/darwin)
+             (name: mkDarwinHost (./hosts/darwin + "/${name}") name
+                      (nixpkgs.lib.head darwinSystems));
+
+      # NixOS 호스트는 arch 가 아니라 **hostname** 으로 키잉된다. 목록은
+      # hosts/nixos/ 아래 디렉토리 그 자체다(위 hostDirs). 예:
       #   nixos-rebuild switch --flake .#mn56
-      #   nixos-rebuild switch --flake .#evo-t1
-      #   nixos-rebuild switch --flake .#galaxy-chromebook-1
+      #
+      # 디렉토리 이름이 hostname 의 유일한 출처다 — networking.hostName 을
+      # mkDefault 로 여기서 박는다. 예전에는 호스트가 자기 파일에 따로 적었고,
+      # 그러면 둘이 어긋날 수 있었다: 어긋난 순간 apps/build-switch 의 맨손
+      # 호출(타겟을 `hostname` 에서 잡는다)이 영영 안 맞는데, 빌드는 멀쩡히
+      # 되므로 증상이 "왜 --host 를 계속 붙여야 하지"로만 보인다.
+      #
+      # 설치 직후 기본값인 `nixos` 가 조용히 살아남는 길도 이걸로 막힌다 —
+      # 디렉토리를 그 이름으로 만들지 않는 한.
       nixosConfigurations = let
         # home-manager 배선은 여기 없다 — darwin 이 modules/darwin/home-manager.nix
         # 에 두는 것과 같은 모양으로 hosts/nixos/common.nix 에 있다. flake 는
@@ -216,12 +253,12 @@
           nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = inputs // { inherit identity; user = identity.name; };
-            modules = [ dir ];
+            modules = [
+              dir
+              { networking.hostName = nixpkgs.lib.mkDefault name; }
+            ];
           };
-      in {
-        mn56 = mkNixosHost "mn56";
-        evo-t1 = mkNixosHost "evo-t1";
-        galaxy-chromebook-1 = mkNixosHost "galaxy-chromebook-1";
-      };
+      in
+      nixpkgs.lib.genAttrs (hostDirs ./hosts/nixos) mkNixosHost;
   };
 }

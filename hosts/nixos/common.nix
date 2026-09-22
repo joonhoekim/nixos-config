@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, home-manager, ... }:
+{ config, pkgs, lib, user, identity, home-manager, ... }:
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
@@ -49,7 +49,7 @@
     backupFileExtension = "hm-bak";
     # Thread `user` into home-manager modules (separate arg scope from the
     # system modules' specialArgs).
-    extraSpecialArgs = { inherit user; };
+    extraSpecialArgs = { inherit user identity; };
     users.${user} = import ../../modules/nixos/home-manager.nix;
   };
 
@@ -269,9 +269,9 @@
     # auto-cpufreq — don't enable those alongside it.
     power-profiles-daemon.enable = true;
 
-    # Let's be able to SSH into this machine. No authorized keys are declared,
-    # so access is by account password (set imperatively with `passwd`). To use
-    # key auth instead, add your own pubkey to the user below.
+    # Let's be able to SSH into this machine. Key auth is whatever
+    # users/<이름>.nix declares in `authorizedKeys`; leave that list empty and
+    # access is by account password (set imperatively with `passwd`).
     openssh.enable = true;
 
     # Printing
@@ -386,6 +386,7 @@
         "docker"
       ];
       shell = pkgs.zsh;
+      openssh.authorizedKeys.keys = identity.authorizedKeys;
     };
   };
 

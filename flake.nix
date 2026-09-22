@@ -48,7 +48,11 @@
   # 줄어든다.
   outputs = inputs@{ self, nixpkgs, home-manager, darwin, ... }:
     let
-      user = "jh";
+      # 사람에 딸린 값(유저명 · git 신원 · authorized key)은 users/<이름>.nix
+      # 한 장이다 — 계약은 users/README.md. `user` 는 그 한 줄을 꺼내 놓은 것뿐:
+      # `${user}` 로 쓰는 자리가 열댓 곳이라 매번 identity.name 을 적지 않는다.
+      identity = import ./users/jh.nix;
+      user = identity.name;
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       # Apple Silicon only. Nixpkgs 26.11 dropped x86_64-darwin outright — its
       # legacyPackages now `throw` on evaluation — so listing it here does not
@@ -140,7 +144,7 @@
           inherit system;
           # `user` is the single source of truth (defined once above) threaded
           # into every system module via specialArgs.
-          specialArgs = inputs // { inherit user; };
+          specialArgs = inputs // { inherit user identity; };
           modules = [
             home-manager.darwinModules.home-manager
             inputs.nix-homebrew.darwinModules.nix-homebrew
@@ -186,7 +190,7 @@
         # 순수 배선만 한다.
         mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = inputs // { inherit user; };
+          specialArgs = inputs // { inherit user identity; };
           modules = [ hostModule ];
         };
       in {

@@ -327,7 +327,7 @@ move2 = "Alt + Ctrl"
 #
 # The cost is that this points at the checkout. Nothing else under ~/.config
 # does, so if the repo moves, this key quietly stops working.
-"Alt + H" = { exec = ["/bin/sh", "-c", "open $HOME/nixos-config/docs/keymap.md"] }
+"Alt + H" = { exec = ["/bin/sh", "-c", "open ${RICE_REPO:-$HOME/nixos-config}/docs/keymap.md"] }
 
 # Fullscreen, gentle version: fills the tiling area and leaves the outer gaps,
 # so the menu bar stays reachable. This is the one that used to be on

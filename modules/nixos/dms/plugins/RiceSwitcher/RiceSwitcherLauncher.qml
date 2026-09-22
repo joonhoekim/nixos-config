@@ -36,7 +36,12 @@ Item {
 
     signal itemsChanged
 
-    readonly property string menu: (Quickshell.env("HOME") || "") + "/nixos-config/apps/rice-menu"
+    // 체크아웃 위치. RICE_APPS · RICE_REPO 순으로 보고 ~/nixos-config 로
+    // 떨어진다 — 같은 규칙이 hyprland/rice/studio/Rice/*.qml 에도 있다.
+    readonly property string apps: Quickshell.env("RICE_APPS")
+        || ((Quickshell.env("RICE_REPO")
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
+    readonly property string menu: apps + "/rice-menu"
 
     property var axes: []
     property bool refreshing: false

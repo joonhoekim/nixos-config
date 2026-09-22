@@ -169,19 +169,21 @@ binds {
 	// 레포의 스크립트를 직접 부른다. niri 의 spawn 은 $HOME 을 확장하지 않아서
 	// sh -c 를 한 겹 씌운다. 스크립트를 PATH 에 올리지 않는 건, 리싱 중에는
 	// 스크립트 자체도 자주 고치게 되는데 그때마다 rebuild 하고 싶지 않아서다.
+	// 체크아웃이 ~/nixos-config 가 아닐 수 있어서 RICE_REPO 를 먼저 본다 —
+	// 빗나가면 키가 조용히 아무 일도 안 한다. apps/doctor 가 그걸 짚어 준다.
 	Mod+Shift+P hotkey-overlay-title="Next rice profile" {
-		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-switch --next"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-switch --next"
 	}
 	Mod+Shift+W hotkey-overlay-title="Random wallpaper" {
-		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall"
 	}
 	Mod+Ctrl+W hotkey-overlay-title="Pick wallpaper" {
-		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall --pick"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --pick"
 	}
 	// yazi 는 터미널이 필요해서 스크립트가 ghostty 를 하나 띄운다.
 	// 미리보기(kitty 그래픽 프로토콜)를 보면서 고를 때.
 	Mod+Alt+W hotkey-overlay-title="Pick wallpaper (preview)" {
-		spawn "sh" "-c" "$HOME/nixos-config/apps/rice-wall --yazi"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --yazi"
 	}
 	// 축마다 키를 하나씩 외우는 대신, DMS 런처를 RiceSwitcher 플러그인의
 	// 트리거(":")를 미리 친 채로 연다. 프로필·터미널·월페이퍼가 한 목록에 있고

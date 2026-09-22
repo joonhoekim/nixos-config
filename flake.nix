@@ -49,10 +49,26 @@
   outputs = inputs@{ self, nixpkgs, home-manager, darwin, ... }:
     let
       # 사람에 딸린 값(유저명 · git 신원 · authorized key)은 users/<이름>.nix
-      # 한 장이다 — 계약은 users/README.md. `user` 는 그 한 줄을 꺼내 놓은 것뿐:
-      # `${user}` 로 쓰는 자리가 열댓 곳이라 매번 identity.name 을 적지 않는다.
-      identity = import ./users/jh.nix;
-      user = identity.name;
+      # 한 장이고(계약은 users/README.md), **어느 사람인지는 호스트가 고른다** —
+      # hosts/<플랫폼>/<이름>/identity.nix 가 그걸 가리키는 한 줄짜리 파일이다.
+      #
+      # 왜 호스트 안의 평범한 옵션이 아니라 별도 파일인가: specialArgs 는 모듈이
+      # 평가되기 전에 정해져야 해서, 호스트의 default.nix 안에서는 늦다.
+      #
+      # 없을 때 throw 하는 이유도 같다. 그냥 두면 `import` 가 아니라 한참 뒤
+      # `users.users.""` 근처에서 엉뚱하게 터진다. flake 는 **git 이 추적하는
+      # 파일만** 스토어로 복사하므로, 파일을 만들어 두고 `git add` 를 안 한
+      # 경우도 여기로 떨어진다.
+      identityOf = dir:
+        let f = dir + "/identity.nix"; in
+        if builtins.pathExists f then import f
+        else throw ''
+          ${toString dir}/identity.nix 가 없다.
+          users/<이름>.nix 를 가리키는 한 줄이면 된다 (users/README.md 참고):
+            import ../../../users/<이름>.nix
+          이미 만들었다면 `git add` 했는지 확인할 것 — flake 는 추적되지 않는
+          파일을 못 본다. `./apps/setup` 이 둘 다 해 준다.
+        '';
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       # Apple Silicon only. Nixpkgs 26.11 dropped x86_64-darwin outright — its
       # legacyPackages now `throw` on evaluation — so listing it here does not
@@ -140,10 +156,14 @@
       apps = forAllSystems mkApps;
 
       darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system:
+        let
+          identity = identityOf ./hosts/darwin;
+          user = identity.name;
+        in
         darwin.lib.darwinSystem {
           inherit system;
-          # `user` is the single source of truth (defined once above) threaded
-          # into every system module via specialArgs.
+          # 신원은 hosts/darwin/identity.nix 에서 온다. `user` 는 그 한 줄을
+          # 꺼내 놓은 것뿐 — `${user}` 로 쓰는 자리가 열댓 곳이다.
           specialArgs = inputs // { inherit user identity; };
           modules = [
             home-manager.darwinModules.home-manager
@@ -188,15 +208,20 @@
         # home-manager 배선은 여기 없다 — darwin 이 modules/darwin/home-manager.nix
         # 에 두는 것과 같은 모양으로 hosts/nixos/common.nix 에 있다. flake 는
         # 순수 배선만 한다.
-        mkNixosHost = hostModule: nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          specialArgs = inputs // { inherit user identity; };
-          modules = [ hostModule ];
-        };
+        mkNixosHost = name:
+          let
+            dir = ./hosts/nixos + "/${name}";
+            identity = identityOf dir;
+          in
+          nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = inputs // { inherit identity; user = identity.name; };
+            modules = [ dir ];
+          };
       in {
-        mn56 = mkNixosHost ./hosts/nixos/mn56;
-        evo-t1 = mkNixosHost ./hosts/nixos/evo-t1;
-        galaxy-chromebook-1 = mkNixosHost ./hosts/nixos/galaxy-chromebook-1;
+        mn56 = mkNixosHost "mn56";
+        evo-t1 = mkNixosHost "evo-t1";
+        galaxy-chromebook-1 = mkNixosHost "galaxy-chromebook-1";
       };
   };
 }

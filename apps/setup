@@ -1,0 +1,262 @@
+#!/bin/sh -e
+#
+# 이 기계를 이 레포에 붙인다. 대화형이고, 한 번 돌리면 끝난다.
+#
+#   ./apps/setup
+#
+# 만드는 것:
+#   users/<이름>.nix                          없으면 (계약: users/README.md)
+#   hosts/nixos/<hostname>/default.nix        + hardware-configuration.nix
+#   hosts/darwin/<hostname>/default.nix       (macOS. 하드웨어 스캔은 없다)
+#   …그리고 둘 다 `git add` 한다.
+#
+# ── `nix run .#setup` 이 아니라 `./apps/setup` 인 이유 ───────────────────
+# flakes 를 켜는 것이 이 레포 자신이다(hosts/nixos/common.nix). 갓 설치한
+# NixOS 에서는 experimental-features 가 꺼져 있어서 `nix run` 이 안 된다.
+# 이 스크립트는 그 상태에서 돌아야 하므로 sh + coreutils + git 과
+# nixos-generate-config 말고는 아무것도 전제하지 않는다 — fzf 도 gum 도 jq 도
+# 안 쓰고, 그래서 화면이 `read` 로만 되어 있다(apps/rollback 과 같은 모양).
+#
+# ── 왜 물어보는 것이 이것들인가 ──────────────────────────────────────────
+# 전부 **Nix 평가가 볼 수 없는 사실**이다. 순수 평가는 /etc/passwd 도
+# `hostname` 도 못 본다. 그래서 어긋나도 빌드는 성공하고, 증상은 한참 뒤에
+# 나온다 — 계정이 두 개가 되거나, build-switch 가 영영 `--host` 를 요구하거나.
+# 그 둘을 여기서 확인 단계로 끌어올린다. 사후 점검은 ./apps/doctor 가 한다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+die() { printf "${RED}%s${NC}\n" "$1" >&2; exit 1; }
+note() { printf "  ${DIM}%s${NC}\n" "$1"; }
+
+# <프롬프트> <기본값> → $ans
+ask() {
+  if [ -n "$2" ]; then printf "${YELLOW}%s${NC} ${DIM}[%s]${NC}: " "$1" "$2"
+  else printf "${YELLOW}%s${NC}: " "$1"; fi
+  read ans || die "입력을 읽지 못했다 (터미널에서 돌릴 것)."
+  [ -n "$ans" ] || ans="$2"
+}
+
+# ── 체크아웃 찾기 (apps/doctor 와 같은 방식) ─────────────────────────────
+repo="${NIXOS_CONFIG_REPO:-}"
+[ -n "$repo" ] || repo="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$repo" ] || [ ! -e "$repo/flake.nix" ]; then
+  d="$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd)"
+  [ -n "$d" ] && [ -e "$d/flake.nix" ] && repo="$d"
+fi
+[ -n "$repo" ] && [ -e "$repo/flake.nix" ] \
+  || die "체크아웃을 못 찾았다. 레포 안에서 돌리거나 NIXOS_CONFIG_REPO 를 지정할 것."
+
+if [ "$(uname)" = "Darwin" ]; then
+  plat=darwin; here="$(scutil --get LocalHostName 2>/dev/null || true)"
+else
+  plat=nixos;  here="$(hostname 2>/dev/null || true)"
+fi
+whoami_now="${USER:-$(id -un)}"
+
+printf "\n${YELLOW}레포${NC}      %s\n" "$repo"
+printf "${YELLOW}플랫폼${NC}    %s\n" "$plat"
+printf "${YELLOW}현재 계정${NC} %s\n" "$whoami_now"
+printf "${YELLOW}hostname${NC}  %s\n\n" "${here:-(못 읽었다)}"
+
+# ── 1. 유저명 ────────────────────────────────────────────────────────────
+ask "유저명" "$whoami_now"; name="$ans"
+case "$name" in
+  ""|*[!a-z0-9_-]*) die "계정 이름으로 쓸 수 없다: '$name'" ;;
+esac
+
+if [ "$name" != "$whoami_now" ] && id -u "$whoami_now" >/dev/null 2>&1; then
+  printf "\n  ${YELLOW}⚠${NC} 지금 로그인한 계정은 '%s' 다.\n" "$whoami_now"
+  note "'$name' 으로 선언하면 activation 이 계정을 하나 **더** 만든다 —"
+  note "기존 계정은 지워지지 않고, 이 체크아웃의 소유권도 '$whoami_now' 에 남는다."
+  note "홈이 둘로 갈린 채로 로그인만 새 계정으로 하게 된다."
+  printf "  (a) '%s' 으로 간다   (b) '%s' 를 그대로 쓴다   (c) 그만둔다\n" "$name" "$whoami_now"
+  ask "선택" "a"
+  case "$ans" in
+    b|B) name="$whoami_now" ;;
+    c|C) exit 1 ;;
+  esac
+fi
+printf "\n"
+
+# ── 2. git 신원 ──────────────────────────────────────────────────────────
+userfile="$repo/users/$name.nix"
+if [ -e "$userfile" ]; then
+  printf "  ${GREEN}✓${NC} users/%s.nix 가 이미 있다 — 그대로 쓴다.\n\n" "$name"
+  gname=""; gmail=""
+else
+  ask "git user.name" "$(git config --global user.name 2>/dev/null || echo "$name")"
+  gname="$ans"
+  ask "git user.email" "$(git config --global user.email 2>/dev/null || true)"
+  gmail="$ans"
+  [ -n "$gmail" ] || die "git user.email 은 비워 둘 수 없다."
+  printf "\n"
+fi
+
+# ── 3. hostname ──────────────────────────────────────────────────────────
+# 설치 직후 기본값이 그대로 남는 흔한 사고를 여기서 잡는다. 디렉토리 이름이
+# 곧 hostname 이 되므로(flake.nix), 여기서 정한 것이 그대로 굳는다.
+if [ "$here" = "nixos" ] || [ -z "$here" ]; then
+  printf "  ${YELLOW}⚠${NC} hostname 이 '%s' 다 — nixos-generate-config 의 기본값이다.\n" "${here:-비어 있음}"
+  note "의도한 게 아니라면 이 기계를 부를 이름을 정하는 게 좋다."
+  note "여기서 정한 이름이 곧 디렉토리 이름이자 flake 타겟이 된다."
+fi
+ask "hostname" "$here"; hostname="$ans"
+case "$hostname" in
+  ""|*[!a-zA-Z0-9-]*) die "hostname 으로 쓸 수 없다: '$hostname'" ;;
+esac
+hostdir="$repo/hosts/$plat/$hostname"
+printf "\n"
+
+rescan=yes
+if [ -e "$hostdir" ]; then
+  printf "  ${YELLOW}⚠${NC} hosts/%s/%s/ 가 이미 있다.\n" "$plat" "$hostname"
+  if [ "$plat" = nixos ]; then
+    printf "  (a) 하드웨어 스캔만 다시 한다   (b) 손대지 않는다   (c) 그만둔다\n"
+    ask "선택" "b"
+    case "$ans" in
+      a|A) keep_default=yes ;;
+      c|C) exit 1 ;;
+      *)   keep_default=yes; rescan=no ;;
+    esac
+  else
+    keep_default=yes; rescan=no
+    note "손대지 않는다."
+  fi
+  printf "\n"
+fi
+
+# ── 4. stateVersion (NixOS) ──────────────────────────────────────────────
+# 채널이 아니라 **상태 호환성**을 고정하는 값이라, 이 기계가 처음 설치된
+# 릴리스여야 한다. /etc/os-release 가 그 답을 들고 있다 — 다만 이미 이 레포로
+# 한 번 switch 한 기계에서는 flake 의 nixpkgs 버전이 찍히므로 기본값을 믿지 말 것.
+statever=""
+if [ "$plat" = nixos ] && [ ! -e "$hostdir/default.nix" ]; then
+  guess="$(. /etc/os-release 2>/dev/null; printf '%s' "${VERSION_ID:-}" | cut -d. -f1,2)"
+  note "이 기계가 **처음 설치된** 릴리스여야 한다. 채널과는 무관하다."
+  ask "system.stateVersion" "$guess"; statever="$ans"
+  printf "\n"
+fi
+
+# ── 5. 쓸 목록을 보여주고 확인 ───────────────────────────────────────────
+printf "${YELLOW}쓴다:${NC}\n"
+[ -e "$userfile" ] || printf "  users/%s.nix\n" "$name"
+[ -n "${keep_default:-}" ] || printf "  hosts/%s/%s/default.nix\n" "$plat" "$hostname"
+printf "  hosts/%s/%s/identity.nix\n" "$plat" "$hostname"
+# `[ ... ] && printf` 꼴로 쓰면 안 된다: 조건이 거짓일 때 사슬의 종료값 1 이
+# `sh -e` 를 그 자리에서 죽인다 (apps/build-lib.sh 에 같은 함정이 적혀 있다).
+if [ "$plat" = nixos ] && [ "$rescan" = yes ]; then
+  printf "  hosts/nixos/%s/hardware-configuration.nix ${DIM}(sudo nixos-generate-config)${NC}\n" "$hostname"
+fi
+ask "진행" "Y"
+case "$ans" in n|N|no|NO) exit 1 ;; esac
+printf "\n"
+
+# ── 6. 쓴다 ──────────────────────────────────────────────────────────────
+mkdir -p "$hostdir"
+
+if [ ! -e "$userfile" ]; then
+  mkdir -p "$repo/users"
+  cat > "$userfile" <<EOF
+# 계약은 ./README.md 에 있다.
+{
+  name = "$name";
+
+  git = {
+    name = "$gname";
+    email = "$gmail";
+  };
+
+  # 비어 있으면 sshd 는 비밀번호 로그인만 받는다.
+  authorizedKeys = [ ];
+}
+EOF
+  printf "  ${GREEN}+${NC} users/%s.nix\n" "$name"
+fi
+
+if [ "$plat" = nixos ]; then relup=../../../; else relup=../../; fi
+cat > "$hostdir/identity.nix" <<EOF
+# 이 기계를 쓰는 사람. 계약은 users/README.md.
+import ${relup}users/$name.nix
+EOF
+printf "  ${GREEN}+${NC} hosts/%s/%s/identity.nix\n" "$plat" "$hostname"
+
+if [ -z "${keep_default:-}" ]; then
+  if [ "$plat" = nixos ]; then
+    # CPU 벤더별 공통 모듈. 여기서 고르지 않으면 마이크로코드도 VA-API 도
+    # 안 켜진 채로 첫 부팅을 하게 된다.
+    vendor=""
+    if grep -q GenuineIntel /proc/cpuinfo 2>/dev/null; then vendor=intel
+    elif grep -q AuthenticAMD /proc/cpuinfo 2>/dev/null; then vendor=amd; fi
+    vendorline=""
+    if [ -n "$vendor" ]; then
+      vendorline="    ../../../modules/nixos/$vendor.nix
+"
+    fi
+    cat > "$hostdir/default.nix" <<EOF
+{ ... }:
+
+# $hostname — (어떤 기계인지 여기 적는다)
+#
+# hostname 은 이 디렉토리 이름에서 온다 (flake.nix 의 mkNixosHost 가 mkDefault
+# 로 박는다). 여기에 networking.hostName 을 또 적지 않는다 — 둘이 어긋나면
+# apps/build-switch 의 맨손 호출이 안 맞는다.
+
+{
+  imports = [
+    ../common.nix
+$vendorline    ./hardware-configuration.nix
+  ];
+
+  # 이 기계가 처음 설치된 릴리스. 채널이 아니라 상태 호환성을 고정하므로
+  # 함부로 올리지 않는다.
+  system.stateVersion = "$statever";
+}
+EOF
+  else
+    cat > "$hostdir/default.nix" <<EOF
+{ ... }:
+
+# $hostname — 이 Mac 전용 설정.
+#
+# 공유부는 ../common.nix 에 있다. 여기에는 이 기계에서만 다른 것만 적는다.
+# localHostName 은 이 디렉토리 이름에서 온다 (flake.nix 의 mkDarwinHost).
+
+{
+  imports = [ ../common.nix ];
+}
+EOF
+  fi
+  printf "  ${GREEN}+${NC} hosts/%s/%s/default.nix\n" "$plat" "$hostname"
+fi
+
+if [ "$plat" = nixos ] && [ "$rescan" = yes ]; then
+  printf "  ${DIM}하드웨어 스캔…${NC}\n"
+  sudo nixos-generate-config --show-hardware-config \
+    > "$hostdir/hardware-configuration.nix"
+  printf "  ${GREEN}+${NC} hosts/nixos/%s/hardware-configuration.nix\n" "$hostname"
+fi
+
+# flake 는 **추적되는 파일만** 스토어로 복사한다. 여기서 add 하지 않으면 방금
+# 만든 것이 평가에서 없는 것으로 취급되고, 에러는 엉뚱한 자리에서 난다.
+git -C "$repo" add users "hosts/$plat/$hostname" >/dev/null
+printf "  ${GREEN}✓${NC} git add 완료 (커밋은 직접)\n\n"
+
+# ── 7. 다음에 할 일 ──────────────────────────────────────────────────────
+printf "${YELLOW}다음:${NC}\n"
+if [ "$plat" = nixos ]; then
+  if [ "$here" != "$hostname" ]; then
+    printf "  ./apps/build-switch --host %s\n" "$hostname"
+    note "지금 hostname 이 '$here' 라 --host 가 필요하다. switch 뒤에는 맨손으로 된다."
+  else
+    printf "  ./apps/build-switch\n"
+  fi
+  if ! id -u "$name" >/dev/null 2>&1; then
+    printf "  그리고 root 로: passwd %s\n" "$name"
+    note "비밀번호는 레포 어디에도 선언돼 있지 않아 계정이 잠긴 채로 생긴다."
+  fi
+else
+  printf "  ./apps/build-switch --host %s\n" "$hostname"
+fi
+printf "\n"
+
+"$(dirname -- "$0")/doctor" || true

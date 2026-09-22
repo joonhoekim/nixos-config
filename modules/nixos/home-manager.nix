@@ -1,7 +1,7 @@
-{ config, pkgs, lib, user, ... }:
+{ config, pkgs, lib, user, identity, ... }:
 
 let
-  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib user; };
+  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
 in
 {
   # 터미널 라이싱(셰이더 포함)을 $HOME 에 심는다. macOS 쪽 home-manager 도 같은

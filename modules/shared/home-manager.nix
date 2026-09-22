@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, ... }:
+{ config, pkgs, lib, user, identity, ... }:
 
 # Aggregates the per-program home-manager fragments under ./programs into a
 # single `programs`-shaped attrset. Each fragment returns a plain attrset keyed
@@ -9,7 +9,7 @@
 # cannot resolve a `lib.mkMerge` thunk. Program keys do not overlap across
 # fragments, so a left-fold with `//` is sufficient and order-independent.
 let
-  args = { inherit config pkgs lib user; };
+  args = { inherit config pkgs lib user identity; };
   fragments = [
     ./programs/zsh.nix
     ./programs/git.nix

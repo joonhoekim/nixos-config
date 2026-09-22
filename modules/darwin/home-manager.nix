@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, ... }:
+{ config, pkgs, lib, user, identity, ... }:
 
 # home.file 항목은 여기 없다. macOS 쪽에 심링크로 걸던 셋(karabiner.json,
 # aerospace.toml, rift 의 config.toml)이 2026-08-06 에 전부 시드로 옮겨
@@ -53,7 +53,7 @@
     useUserPackages = true;
     # Thread `user` into home-manager modules (separate arg scope from the
     # system modules' specialArgs).
-    extraSpecialArgs = { inherit user; };
+    extraSpecialArgs = { inherit user identity; };
     # Back up pre-existing dotfiles (e.g. ~/.zshrc) to <name>.backup instead
     # of refusing to overwrite them on first activation.
     backupFileExtension = "backup";
@@ -72,7 +72,7 @@
         # 실패를 삼키는 옛 판이었고, 그 반쪽 수정이 이 조각으로 접은 이유다.
         activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
       };
-      programs = import ../shared/home-manager.nix { inherit config pkgs lib user; };
+      programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
 
       # Marked broken Oct 20, 2022 check later to remove this
       # https://github.com/nix-community/home-manager/issues/3344

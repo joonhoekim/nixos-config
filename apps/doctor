@@ -1,0 +1,169 @@
+#!/bin/sh
+#
+# 이 기계와 이 체크아웃이 서로 맞는지 본다. **아무것도 고치지 않는다.**
+#
+#   ./apps/doctor          전부 본다
+#   nix run .#doctor       첫 switch 뒤에는 이렇게도 된다
+#
+# ── 왜 따로 있나 ─────────────────────────────────────────────────────────
+# 여기서 보는 것들은 전부 **Nix 평가가 볼 수 없는 사실**이다. 순수 평가는
+# /etc/passwd 도, `hostname` 도, 이 디렉토리가 git 에 들어 있는지도 모른다.
+# 그래서 어긋나도 빌드는 멀쩡히 성공하고, 증상은 한참 뒤에 엉뚱한 모양으로
+# 나온다 — 계정이 두 개가 된다든지, `build-switch` 가 영영 `--host` 를
+# 요구한다든지, 만들어 둔 호스트 디렉토리가 없는 것처럼 취급된다든지.
+#
+# `sh -e` 가 아닌 이유: 여기서는 명령이 실패하는 것 자체가 결과다.
+#
+# 신원 파일은 `nix-instantiate` 로 읽는다. flake 평가(`nix eval .#...`)가 아니라
+# 파일 하나를 그대로 평가하는 것이라 flakes 가 꺼져 있어도, 네트워크가 없어도,
+# input 을 하나도 안 받아 와도 즉시 답이 나온다 — 첫 switch 전에 돌아야 하는
+# 스크립트라 그 조건이 중요하다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+warns=0; bads=0
+ok()   { printf "  ${GREEN}✓${NC} %s\n" "$1"; }
+warn() { printf "  ${YELLOW}⚠${NC} %s\n" "$1"; warns=$((warns+1)); }
+bad()  { printf "  ${RED}✗${NC} %s\n" "$1"; bads=$((bads+1)); }
+hint() { printf "      ${DIM}%s${NC}\n" "$1"; }
+
+# ── 체크아웃 찾기 ────────────────────────────────────────────────────────
+# `nix run` 아래서는 $0 가 /nix/store 를 가리키므로 거기서부터 거슬러 올라가는
+# 건 소용이 없다. rice-save 와 같은 방식으로 cwd 의 git 최상위를 먼저 본다.
+repo="${NIXOS_CONFIG_REPO:-}"
+[ -n "$repo" ] || repo="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$repo" ] || [ ! -e "$repo/flake.nix" ]; then
+  d="$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd)"
+  [ -n "$d" ] && [ -e "$d/flake.nix" ] && repo="$d"
+fi
+if [ -z "$repo" ] || [ ! -e "$repo/flake.nix" ]; then
+  printf "${RED}체크아웃을 못 찾았다. 레포 안에서 돌리거나 NIXOS_CONFIG_REPO 를 지정할 것.${NC}\n"
+  exit 1
+fi
+
+# <파일> <어트리뷰트 경로> — 못 읽으면 빈 문자열.
+nixstr() {
+  nix-instantiate --eval --json -E "(import \"$1\").$2" 2>/dev/null \
+    | sed 's/^"//; s/"$//'
+}
+
+if [ "$(uname)" = "Darwin" ]; then
+  plat=darwin
+  here="$(scutil --get LocalHostName 2>/dev/null || true)"
+else
+  plat=nixos
+  here="$(hostname 2>/dev/null || true)"
+fi
+
+printf "\n${YELLOW}레포${NC}  %s\n" "$repo"
+printf "${YELLOW}기계${NC}  %s / %s\n\n" "$plat" "${here:-(hostname 을 못 읽었다)}"
+
+# ── 1. 호스트 ────────────────────────────────────────────────────────────
+hosts="$(find "$repo/hosts/$plat" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
+         | sed 's|.*/||' | sort)"
+
+host=""
+if [ -n "$here" ] && printf '%s\n' "$hosts" | grep -qx "$here"; then
+  host="$here"; hostdir="$repo/hosts/$plat/$host"
+  ok "hostname '$here' → hosts/$plat/$host/"
+elif [ "$plat" = darwin ]; then
+  hostdir="$repo/hosts/darwin"
+  ok "이 Mac 전용 디렉토리는 없다 — 공용 호스트(.#\$(uname -m)-darwin)를 쓴다"
+  hint "기계마다 갈라야 하거나 계정 이름이 다르면: ./apps/setup"
+else
+  hostdir=""
+  bad "hostname '$here' 에 해당하는 호스트가 없다"
+  hint "있는 호스트: $(printf '%s' "$hosts" | tr '\n' ' ')"
+  hint "첫 switch 전이라면 정상이다 — ./apps/setup 으로 만든다"
+fi
+
+# ── 2. 신원 ──────────────────────────────────────────────────────────────
+name=""; email=""
+if [ -n "$hostdir" ]; then
+  if [ ! -e "$hostdir/identity.nix" ]; then
+    bad "$hostdir/identity.nix 가 없다"
+    hint "users/<이름>.nix 를 가리키는 한 줄이면 된다 (users/README.md)"
+  else
+    name="$(nixstr "$hostdir/identity.nix" name)"
+    email="$(nixstr "$hostdir/identity.nix" git.email)"
+    if [ -z "$name" ]; then
+      bad "identity.nix 를 평가하지 못했다"
+      hint "nix-instantiate --eval $hostdir/identity.nix 로 직접 확인할 것"
+    else
+      ok "신원  $name <$email>"
+    fi
+  fi
+fi
+
+# ── 3. flake 가 볼 수 없는 파일 ──────────────────────────────────────────
+# 이게 조용한 실패의 대표다. 파일은 분명히 있는데 flake 는 없는 것으로 친다.
+untracked="$(git -C "$repo" ls-files --others --exclude-standard -- hosts users 2>/dev/null)"
+if [ -n "$untracked" ]; then
+  bad "hosts/ · users/ 아래에 git 이 추적하지 않는 파일이 있다"
+  hint "flake 는 추적되는 파일만 스토어로 복사한다 — 이 파일들은 평가에서 안 보인다"
+  printf '%s\n' "$untracked" | while IFS= read -r f; do
+    printf "      ${DIM}  %s${NC}\n" "$f"
+  done
+  hint "git -C $repo add hosts users"
+else
+  ok "hosts/ · users/ 에 추적 안 되는 파일 없음"
+fi
+
+# ── 4. 계정 ──────────────────────────────────────────────────────────────
+if [ -n "$name" ]; then
+  if ! id -u "$name" >/dev/null 2>&1; then
+    if [ -n "$host" ] || [ "$plat" = darwin ]; then
+      warn "계정 '$name' 이 아직 없다 — 첫 switch 전이면 정상이다"
+    fi
+  else
+    if [ "$name" != "${USER:-$(id -un)}" ]; then
+      warn "지금 로그인한 계정은 '${USER:-$(id -un)}' 인데 선언된 계정은 '$name' 이다"
+      hint "둘 다 존재하므로 홈도 둘이다. 이 체크아웃의 소유자도 확인할 것"
+    else
+      ok "계정 '$name' (로그인 중)"
+    fi
+    # 잠긴 계정: NixOS 는 비밀번호를 선언하지 않으므로 첫 switch 뒤 한 번 풀어야 한다.
+    if [ "$plat" = nixos ] && command -v passwd >/dev/null 2>&1; then
+      st="$(sudo -n passwd -S "$name" 2>/dev/null | awk '{print $2}')"
+      case "$st" in
+        L|LK|"!") warn "계정 '$name' 이 잠겨 있다 — 로그인이 안 된다"
+                  hint "root 로: passwd $name" ;;
+      esac
+    fi
+  fi
+fi
+
+# ── 5. NixOS 호스트마다 hardware-configuration.nix ───────────────────────
+if [ "$plat" = nixos ]; then
+  missing=""
+  for h in $hosts; do
+    [ -e "$repo/hosts/nixos/$h/hardware-configuration.nix" ] || missing="$missing $h"
+  done
+  if [ -n "$missing" ]; then
+    bad "hardware-configuration.nix 가 없는 호스트:$missing"
+    hint "nix flake check 가 fileSystems assertion 으로 깨진다. 빈 호스트는 지울 것"
+  else
+    ok "등록된 호스트 전부 hardware-configuration.nix 를 갖고 있다"
+  fi
+fi
+
+# ── 6. 체크아웃 위치 ─────────────────────────────────────────────────────
+# 라이싱 쪽 설정 파일(키바인드 등)이 $HOME/nixos-config 를 글자 그대로 들고 있다.
+if [ "$repo" != "$HOME/nixos-config" ]; then
+  warn "체크아웃이 ~/nixos-config 가 아니다"
+  hint "라이싱 키바인드는 \$HOME/nixos-config 를 가리킨다 —"
+  hint "  RICE_REPO=$repo 를 세션에 export 하거나 레포를 옮길 것"
+else
+  ok "체크아웃이 ~/nixos-config 에 있다"
+fi
+
+printf "\n"
+if [ "$bads" -gt 0 ]; then
+  printf "${RED}막히는 것 %d개${NC}, 봐둘 것 %d개\n" "$bads" "$warns"
+  exit 1
+fi
+if [ "$warns" -gt 0 ]; then
+  printf "${YELLOW}봐둘 것 %d개.${NC} 막히는 것은 없다.\n" "$warns"
+  exit 0
+fi
+printf "${GREEN}이상 없음.${NC}\n"

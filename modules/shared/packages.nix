@@ -8,6 +8,10 @@ with pkgs; [
   coreutils
   killall
   openssh
+  wireguard-tools # wg / wg-quick, client side only. Tunnel configs and keys are
+                  # per-machine files under /etc/wireguard/ and never enter this
+                  # public repo. On macOS the wrapper puts wireguard-go on PATH,
+                  # so `sudo wg-quick up <if>` needs nothing else.
   sqlite
   wget
   zip

@@ -31,6 +31,8 @@
     # DMS plugins shared by both sessions. The shell itself is enabled in
     # ../../modules/nixos/niri; this is only what sits on top of it.
     ../../modules/nixos/dms
+    # wg0 at boot, from a hand-placed /etc/wireguard/wg0.conf when one exists.
+    ../../modules/nixos/wireguard.nix
     ../../modules/shared
   ];
 

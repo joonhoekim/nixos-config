@@ -208,7 +208,20 @@
         "rice-knobs" "rice-decor" "rice-colors"
         "ddc-probe"
         "demo" "mac-signing-cert"
-      ] (name: mkApp name name system);
+      ] (name: mkApp name name system)
+      # 점검 스크립트는 플랫폼마다 보는 것이 거의 겹치지 않아서 파일이 갈린다.
+      # 그래서 위와 달리 실행 시점이 아니라 여기서 고른다 — `nix run .#check` 는
+      # 어느 쪽에서든 자기 플랫폼의 것을 띄운다. 파일이 아직 없는 플랫폼에는
+      # 노출하지 않는다.
+      // (let
+            plat = if nixpkgs.lib.hasSuffix "darwin" system then "mac" else "nixos";
+          in
+          nixpkgs.lib.optionalAttrs (builtins.pathExists ./apps/check/${plat}) {
+            check = mkApp "check" "check/${plat}" system;
+          })
+      // nixpkgs.lib.optionalAttrs (nixpkgs.lib.hasSuffix "darwin" system) {
+        check-snapshot = mkApp "check-snapshot" "check/snapshot" system;
+      };
     in
     {
       devShells = forAllSystems devShell;

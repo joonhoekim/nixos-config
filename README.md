@@ -261,6 +261,8 @@ nix run .#clean               # 구 generation GC (기본 7d; 예: `-- 14d`)
 nix run .#setup               # 새 기계를 레포에 붙인다 (대화형). 첫 빌드 전에는
                               #   flakes 가 아직 안 켜져 있으니 ./apps/setup 으로 부른다
 nix run .#doctor              # 이 기계와 이 체크아웃이 어긋났는지 본다 (고치지 않는다)
+nix run .#check               # macOS 전용 — 활성화한 설정이 실제로 먹고 있는지 본다
+nix run .#check-snapshot      # macOS 전용 — 상태를 떠 두고 `-- diff` 로 비교 (docs/03 §2)
 
 nix run .#demo                # 창 관리자 실사용을 빈 워크스페이스에서 자동 재연
 nix run .#rice-menu           # DMS 런처 플러그인의 뒤판 (축 목록을 JSON으로)

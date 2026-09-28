@@ -143,7 +143,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 
 실전적 함의:
 
-- 매 메이저 OS 업그레이드 후 일부 `system.defaults`가 조용히 안 먹을 수 있다(에러도 없이). 직후엔 눈으로 확인.
+- 매 메이저 OS 업그레이드 후 일부 `system.defaults`가 조용히 안 먹을 수 있다(에러도 없이). 아래 절차로 확인한다.
 - nix-darwin만의 문제가 아니라 `defaults`를 쓰는 모든 도구의 공통 리스크. 오히려 커뮤니티가 빠르게 패치해 안전망이 있다.
 - 절대 안 바뀌어야 할 설정(보안 정책)은 `system.defaults`보다 Configuration Profile이 견고(Apple 공식).
 - 패키지(`/nix/store`)·CLI·홈브루·dotfile은 이 리스크와 무관. 흔들리는 건 `system.defaults`뿐.
@@ -153,6 +153,42 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 [nix-darwin #1207](https://github.com/nix-darwin/nix-darwin/issues/1207) ·
 [#1148](https://github.com/nix-darwin/nix-darwin/issues/1148) ·
 [Configuration Profiles](https://gordonbeeming.com/blog/2025-11-22/locking-down-macos-settings-the-real-way)
+
+### 메이저 업그레이드 전후 점검
+
+도구는 둘이다. 둘 다 아무것도 고치지 않고, nix 가 망가진 상태에서도 돈다(기대값을
+`/run/current-system` 에서 읽는다).
+
+- `./apps/check/mac` (`nix run .#check`) — 활성화된 세대가 실제로 먹고 있는지 단언한다.
+  `/etc` 링크, nix-daemon, launchd job(crash-loop 포함), `defaults` 값과 타입,
+  LaunchServices 핸들러의 실제 해석 결과, rift 의 창 목록(손쉬운 사용 권한), Karabiner
+  DriverKit 확장, Brewfile. 무엇을 어떻게 보는지는 스크립트 머리말.
+- `./apps/check/snapshot` (`nix run .#check-snapshot`) — 선언 밖의 변화까지 보도록 상태를
+  텍스트로 떠 두고 `diff` 로 비교한다. 체크아웃의 `local/snapshot/` 에 쌓이고, `local/` 은
+  gitignore 되어 있다(계정명·경로·앱 목록이 그대로 들어 있어서).
+
+순서:
+
+1. 업그레이드 전에 `check` 가 초록이 되게 맞춘다. 기준선이 초록이 아니면 나중의 빨강이
+   회귀인지 원래 있던 문제인지 구분되지 않는다. 그리고 `check --record` — 통과한 조합을
+   [os-support.md](os-support.md) 에 남기고 스냅숏도 함께 뜬다.
+2. rift · Karabiner · nix-darwin · LinearMouse 의 이슈 트래커에서 새 버전 대응을 본다.
+   macOS 는 메이저 다운그레이드가 사실상 재설치라, 점검이 회귀를 잡아도 되돌리는 비용이 크다.
+   private API 를 쓰는 rift 가 가장 위험하다.
+3. 업그레이드 직후, **`build-switch` 전에** `check` 와 `snapshot` → `snapshot diff`.
+   OS 가 무엇을 되돌렸는지가 여기서 보인다.
+4. `build-switch` 뒤 `check`. 여기서도 빨강이면 nix-darwin 으로 복구되지 않는 진짜 회귀다.
+5. 로그아웃 후 재로그인하고 `check` 한 번 더. WindowServer 와 LaunchServices 는 로그인
+   때만 읽는 값이 있다.
+6. 전부 초록이 되면 커밋하고 `check --record`.
+
+스크립트로 확인할 수 없어서 손으로 보는 것:
+
+- 한/영 전환(F18 → 입력 소스), Karabiner 매핑 몇 개
+- rift 키바인드로 창 이동·워크스페이스 전환, WorkspacePeek 오버레이(Option+Ctrl+W)
+- 외장 마우스 휠 방향(LinearMouse — 입력 모니터링 권한은 끊겨도 증상이 이것뿐이다)
+- Stats 메뉴바, 스크린샷 단축키, Touch ID sudo
+- System Settings > General > Login Items 에서 "백그라운드 허용"을 다시 묻는 항목
 
 ---
 

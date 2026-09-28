@@ -34,21 +34,21 @@ macOS는 두 층이다. `hosts/darwin/`은 **공용** 설정이고 **아키텍�
 niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범한 쓰기 가능한
 파일이라 저장하면 niri가 바로 리로드하고, DMS 설정 GUI도 정상 동작한다. 레포의
 [modules/nixos/niri/rice](modules/nixos/niri/rice)는 백업 겸 새 머신용 시드이며
-(없을 때만 복사된다), 살아있는 설정을 되받아 저장하는 건 `apps/rice-save`다.
+(없을 때만 복사된다), 살아있는 설정을 되받아 저장하는 건 `apps/rice/save`다.
 반대 방향 — 레포를 먼저 고쳤거나 다른 머신의 커밋을 가져왔을 때 그것을 라이브에
-얹는 것 — 은 `apps/rice-restore`다. 리빌드로는 안 된다(시드는 없을 때만 복사한다).
+얹는 것 — 은 `apps/rice/restore`다. 리빌드로는 안 된다(시드는 없을 때만 복사한다).
 
 룩은 프로필로 나눠 두었고 전환은 즉시 반영된다 — 재시작도 리빌드도 없다:
 
 ```sh
-apps/rice-switch              # 현재 프로필 + 목록          (Mod+Shift+P = 다음 것)
-apps/rice-switch frosted      # amoled | frosted | matugen
-apps/rice-wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+W)
-apps/rice-wall --pick         # fuzzel 로 고르기 (빠름)          (Mod+Ctrl+W)
-apps/rice-wall --yazi         # yazi 로 미리보기 보며 고르기      (Mod+Alt+W)
+apps/rice/switch              # 현재 프로필 + 목록          (Mod+Shift+P = 다음 것)
+apps/rice/switch frosted      # amoled | frosted | matugen
+apps/rice/wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+W)
+apps/rice/wall --pick         # fuzzel 로 고르기 (빠름)          (Mod+Ctrl+W)
+apps/rice/wall --yazi         # yazi 로 미리보기 보며 고르기      (Mod+Alt+W)
 
-apps/rice-term                # 현재 터미널 룩 + 목록
-apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
+apps/rice/term                # 현재 터미널 룩 + 목록
+apps/rice/term crt            # off | glow | crt (브라운관 셰이더)
 ```
 
 터미널 룩은 **프로필과 별개 축**이다. 색은 어차피 프로필을 따라오므로(아래) 엮을
@@ -61,17 +61,17 @@ apps/rice-term crt            # off | glow | crt (브라운관 셰이더)
 ([modules/nixos/hyprland/rice/shaders](modules/nixos/hyprland/rice/shaders)).
 
 ```sh
-apps/rice-crt                 # 현재 것과 목록
-apps/rice-crt crt/crt         # 한 장 걸기 (--next 는 키바인드와 같은 순환)
-apps/rice-crt water/still print/paper   # 즉석 체인 — 순서대로 겹친다
-apps/rice-crt --reload        # .frag 값을 고쳐 가며 맞출 때
-apps/rice-crt off             # 탈출구
+apps/rice/crt                 # 현재 것과 목록
+apps/rice/crt crt/crt         # 한 장 걸기 (--next 는 키바인드와 같은 순환)
+apps/rice/crt water/still print/paper   # 즉석 체인 — 순서대로 겹친다
+apps/rice/crt --reload        # .frag 값을 고쳐 가며 맞출 때
+apps/rice/crt off             # 탈출구
 ```
 
-고르고 겹치고 값을 맞추는 GUI는 **라이싱 스튜디오**다(`apps/rice-studio`, DankBar의
-팔레트 조각으로도 뜬다). 셰이더 손잡이는 `apps/rice-knobs`, 하이프랜드 장식
-값(투명도·흐리게·그림자)은 `apps/rice-decor`가 뒤판이고, 체인 합성은
-`apps/rice-chain`이 한다 — 각 스크립트 머리말이 곧 문서다.
+고르고 겹치고 값을 맞추는 GUI는 **라이싱 스튜디오**다(`apps/rice/studio`, DankBar의
+팔레트 조각으로도 뜬다). 셰이더 손잡이는 `apps/rice/knobs`, 하이프랜드 장식
+값(투명도·흐리게·그림자)은 `apps/rice/decor`가 뒤판이고, 체인 합성은
+`apps/rice/chain`이 한다 — 각 스크립트 머리말이 곧 문서다.
 
 셰이더를 거는 길은 `hyprctl eval` 뿐이다 — 이 세션은 `hyprland.lua`로 설정하는데
 lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드와 이 스크립트는
@@ -79,7 +79,7 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 서로 어긋나지 않는다.
 
 런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
-주는 팔레트를 직접 읽고, fuzzel은 `apps/rice-fuzzel`이 그 팔레트에서 색을 만들어
+주는 팔레트를 직접 읽고, fuzzel은 `apps/rice/fuzzel`이 그 팔레트에서 색을 만들어
 넣는다 — 투명도와 곡률은 활성 프로필의 값을 그대로 쓴다.
 
 한 프로필은 두 조각(`niri.kdl` / `dms.json`)이고, DMS 쪽만

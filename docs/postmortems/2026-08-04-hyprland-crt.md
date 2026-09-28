@@ -20,7 +20,7 @@ DP-1 2560x1440@59.95 + HDMI-A-1 1920x1080@60 (transform=1).
 
 ## 원인 1 — `debug:damage_tracking` 의 판정 기준이 틀렸다
 
-`apps/rice-crt` 와 `hyprland.lua` 가 같은 규칙을 쓰고 있었다.
+`apps/rice/crt` 와 `hyprland.lua` 가 같은 규칙을 쓰고 있었다.
 
 ```sh
 # 셰이더 파일이 `uniform float time` 을 쓰면 → damage_tracking = 0, 아니면 → 2
@@ -108,7 +108,7 @@ WARNING:(Disabling damage tracking will *massively* increase GPU utilization!
 
 ## 고침
 
-`apps/rice-crt` 와 `modules/nixos/hyprland/rice/hyprland.lua` 가 같은 행렬을 쓴다.
+`apps/rice/crt` 와 `modules/nixos/hyprland/rice/hyprland.lua` 가 같은 행렬을 쓴다.
 
 | | `damage_tracking` | `vfr` |
 |---|---|---|
@@ -121,7 +121,7 @@ WARNING:(Disabling damage tracking will *massively* increase GPU utilization!
 기기별로(노트북이라고) 가르지 않는다.
 
 **주의.** `hyprland.lua` 를 저장할 때마다 `apply_crt` 가 다시 돌아서, off 로 둔 채
-그 파일을 고치면 도로 켜진다. 값을 맞춰 가는 중이라면 `apps/rice-crt --reload` 를
+그 파일을 고치면 도로 켜진다. 값을 맞춰 가는 중이라면 `apps/rice/crt --reload` 를
 쓴다(그쪽은 걸린 것을 그대로 다시 읽는다).
 
 ---

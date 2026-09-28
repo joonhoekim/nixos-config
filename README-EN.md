@@ -35,16 +35,16 @@ DankMaterialShell; see [modules/nixos/niri](modules/nixos/niri) and
 [modules/nixos/hyprland](modules/nixos/hyprland). Hyprland is there for the one
 thing niri cannot do: an output-wide shader (`decoration:screen_shader`) —
 `Mod+Shift+C` cycles the list (off · saved chains · per-branch shaders), and
-`apps/rice-crt` does the same from a shell (`--reload` re-reads the `.frag`,
+`apps/rice/crt` does the same from a shell (`--reload` re-reads the `.frag`,
 which is how you tune its values). Picking, stacking and tuning has a GUI —
-the ricing studio (`apps/rice-studio`), with `apps/rice-knobs` and
-`apps/rice-decor` as its shell backends.
+the ricing studio (`apps/rice/studio`), with `apps/rice/knobs` and
+`apps/rice/decor` as its shell backends.
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
 works normally. [modules/nixos/niri/rice](modules/nixos/niri/rice) is a backup
 and a seed for a fresh machine (copied in only when the file is missing);
-`apps/rice-save` snapshots the live config back into it. `apps/rice-restore` goes
+`apps/rice/save` snapshots the live config back into it. `apps/rice/restore` goes
 the other way, for when you edited the repo first or pulled someone else's
 commit — a rebuild will not do it, since the seed only copies when the file is
 missing.
@@ -53,15 +53,15 @@ Looks are split into profiles and switching applies instantly — no restart, no
 rebuild:
 
 ```sh
-apps/rice-switch              # current profile + list      (Mod+Shift+P = next)
-apps/rice-switch frosted      # amoled | frosted | matugen
-apps/rice-wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+Shift+W)
-apps/rice-wall --pick         # pick through fuzzel, fast                  (Mod+Ctrl+W)
-apps/rice-wall --yazi         # pick through yazi, with image previews      (Mod+Alt+W)
+apps/rice/switch              # current profile + list      (Mod+Shift+P = next)
+apps/rice/switch frosted      # amoled | frosted | matugen
+apps/rice/wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+Shift+W)
+apps/rice/wall --pick         # pick through fuzzel, fast                  (Mod+Ctrl+W)
+apps/rice/wall --yazi         # pick through yazi, with image previews      (Mod+Alt+W)
 ```
 
 The launcher (fuzzel) and the terminal (ghostty) have no per-profile piece.
-The terminal reads the palette DMS generates for it; `apps/rice-fuzzel` derives
+The terminal reads the palette DMS generates for it; `apps/rice/fuzzel` derives
 fuzzel's colors from that same palette, taking opacity and radius from whatever
 profile is active.
 

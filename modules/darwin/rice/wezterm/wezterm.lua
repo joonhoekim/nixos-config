@@ -1,7 +1,7 @@
 -- wezterm 설정.
 --
 -- 이 레포에서 wezterm 은 보조 터미널이다. 일상용은 ghostty 이고
--- (modules/shared/ghostty, apps/rice-term), 여기 있는 이유는 두 가지다:
+-- (modules/shared/ghostty, apps/rice/term), 여기 있는 이유는 두 가지다:
 -- 설정이 Lua 라 pywal 이 뱉은 JSON 을 파일 하나 더 만들지 않고 그대로 읽을 수
 -- 있고, 그 파일을 감시 목록에 넣어 두면 팔레트가 바뀔 때 스스로 다시 뜬다.
 --
@@ -13,7 +13,7 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 -- ── pywal 팔레트 ──────────────────────────────────────────────────────────
--- ~/.cache/wal/colors.json 은 apps/rice-colors 가 `wal` 을 돌릴 때마다 다시
+-- ~/.cache/wal/colors.json 은 apps/rice/colors 가 `wal` 을 돌릴 때마다 다시
 -- 쓰인다. 없을 수도 있다는 게 정상 상태다 — 새 머신은 wal 을 한 번도 안 돌렸다.
 -- 그때는 색 지정을 통째로 건너뛰고 wezterm 기본 스킴으로 뜬다. 억지로 색을
 -- 만들어 넣으면 "wal 을 돌렸는데 안 바뀐다"와 구별이 안 된다.

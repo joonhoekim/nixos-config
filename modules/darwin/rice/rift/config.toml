@@ -3,7 +3,7 @@
 # This copy is a *seed*. modules/darwin/rice plants it at
 # ~/.config/rift/config.toml on a machine that has none, and after that the
 # live file is the original — edit that one, watch rift hot-reload it, and run
-# `apps/rice-save rift` to bring the result back here. `apps/rice-restore rift`
+# `apps/rice/save rift` to bring the result back here. `apps/rice/restore rift`
 # pushes the other way. If a change does not seem to take, press Alt+Ctrl+R
 # (reload_config, bound below); it also prints the reason when the file is bad.
 #
@@ -89,7 +89,7 @@ run_on_start = [
   #
   # The trade: no rift, no borders. Acceptable — borders only mean anything
   # while something is tiling. bordersrc is seeded by modules/darwin/rice and
-  # rewritten by apps/rice-colors on every palette change.
+  # rewritten by apps/rice/colors on every palette change.
   #
   # `sh -c` is load-bearing. rift splits these strings into words and execs the
   # result directly — it does NOT run them through a shell, so `$HOME` written

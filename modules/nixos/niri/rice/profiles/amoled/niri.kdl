@@ -1,6 +1,6 @@
 // amoled — 순검정 배경, 얇은 단색 보더, 그림자·블러 없음, 좁은 갭.
 //
-// apps/rice-switch 가 이 파일을 ~/.config/niri/profile.kdl 로 복사하고,
+// apps/rice/switch 가 이 파일을 ~/.config/niri/profile.kdl 로 복사하고,
 // config.kdl 의 `include "profile.kdl"` 이 그걸 읽는다. niri 는 include 된
 // 파일의 변경도 감지하므로 저장 즉시 반영된다.
 //

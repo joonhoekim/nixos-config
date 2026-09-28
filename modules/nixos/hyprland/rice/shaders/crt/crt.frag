@@ -58,7 +58,7 @@
 // ── 데미지 트래킹 ─────────────────────────────────────────────────────────
 // `debug:damage_tracking = 0` 은 흐르는 것과 무관하게 늘 필요하다. curve()·
 // gun()·bloom() 이 자기 픽셀 밖을 읽어서, 바뀐 사각형만 다시 합성하면 그 바깥
-// 이웃이 낡기 때문이다. 자세한 건 ~/nixos-config 의 apps/rice-crt 머리말.
+// 이웃이 낡기 때문이다. 자세한 건 ~/nixos-config 의 apps/rice/crt 머리말.
 //
 // ── 뿌리 ─────────────────────────────────────────────────────────────────
 // nixos-config 의 ghostty 터미널 셰이더(modules/shared/ghostty/shaders/crt.glsl)

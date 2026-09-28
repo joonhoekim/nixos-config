@@ -2,24 +2,24 @@
 #
 # Switch the Hyprland output shader, live.
 #
-#   apps/rice-crt                        현재 것과 목록만 출력
-#   apps/rice-crt crt/crt                한 장 걸기
-#   apps/rice-crt water/still print/paper  즉석 체인 — 순서대로 겹쳐 건다
-#   apps/rice-crt chain/bad-signal        저장해 둔 체인
-#   apps/rice-crt --next                 목록 순서대로 다음 것 (Mod+Shift+C 와 같은 순환)
-#   apps/rice-crt --reload               지금 걸린 것을 파일에서 다시 읽는다 (값 튜닝용)
-#   apps/rice-crt --save <이름>           지금 걸린 체인을 이름 붙여 저장
-#   apps/rice-crt --stages               지금 걸린 칸들을 한 줄에 하나씩
-#   apps/rice-crt off                    셰이더 없는 상태로 (탈출구)
+#   apps/rice/crt                        현재 것과 목록만 출력
+#   apps/rice/crt crt/crt                한 장 걸기
+#   apps/rice/crt water/still print/paper  즉석 체인 — 순서대로 겹쳐 건다
+#   apps/rice/crt chain/bad-signal        저장해 둔 체인
+#   apps/rice/crt --next                 목록 순서대로 다음 것 (Mod+Shift+C 와 같은 순환)
+#   apps/rice/crt --reload               지금 걸린 것을 파일에서 다시 읽는다 (값 튜닝용)
+#   apps/rice/crt --save <이름>           지금 걸린 체인을 이름 붙여 저장
+#   apps/rice/crt --stages               지금 걸린 칸들을 한 줄에 하나씩
+#   apps/rice/crt off                    셰이더 없는 상태로 (탈출구)
 #
 # 룩 하나 = ~/.config/hypr/shaders/<갈래>/<이름>.frag 파일 하나, 또는 그런 파일
 # 여럿을 순서대로 겹친 체인. decoration:screen_shader 에 절대 경로를 넣으면
 # 렌더링이 끝난 화면 한 장에 그 프래그먼트 셰이더가 한 번 더 걸린다 — 벽지도
 # 바도 창도 커서도 같은 유리 뒤로 들어간다. 니리에 없는 훅이고, 하이프랜드
-# 세션이 이 레포에 있는 이유다(../modules/nixos/hyprland).
+# 세션이 이 레포에 있는 이유다(../../modules/nixos/hyprland).
 #
 # ── 체인은 파일 하나로 접혀서 들어간다 ────────────────────────────────────
-# decoration:screen_shader 는 한 장만 받는다. 그래서 여러 칸은 apps/rice-chain 이
+# decoration:screen_shader 는 한 장만 받는다. 그래서 여러 칸은 apps/rice/chain 이
 # 전처리기로 한 파일에 접어서 캐시에 두고, 여기서는 그 결과 경로를 건다. 왜 그
 # 방법뿐인지, 왜 비용이 합이 아니라 곱인지는 그 파일 머리말에 있다.
 #
@@ -35,7 +35,7 @@
 # 하나뿐이다. hyprland.lua 의 Mod+Shift+C 도 결국 같은 hl.config 를 부른다.
 #
 # ── 현재값은 컴포지터에게 묻고, 파일은 리로드 복원용으로만 둔다 ───────────
-# 다른 스위처들은 ~/.config/rice/<축> 파일이 곧 진실이지만(rice-lib.sh 의
+# 다른 스위처들은 ~/.config/rice/<축> 파일이 곧 진실이지만(lib.sh 의
 # rice_current_file) 이 축의 "지금 걸린 것"은 컴포지터에게 묻는다(rice_current).
 # 파일을 진실로 삼으면 hyprctl eval 로 직접 건 경우와 어긋나고, 낡은 파일을 보고
 # 고른 "다음 것"은 엉뚱한 데로 뛴다. hyprland.lua 의 키바인드도 같은 이유로
@@ -53,7 +53,7 @@
 #
 # 체인이 생기면서 그 되읽기가 한 단 늘었다. 컴포지터가 돌려주는 것은 캐시 안의
 # 합성본 경로 하나뿐이라 어떤 칸들이었는지가 안 보인다. 그래서 합성본 머리에
-# `// rice-chain: …` 이 적혀 있고(apps/rice-chain), 여기서 그 줄을 되읽는다.
+# `// rice-chain: …` 이 적혀 있고(apps/rice/chain), 여기서 그 줄을 되읽는다.
 #
 # ── 같이 움직이는 두 축 ───────────────────────────────────────────────────
 # 셰이더 하나를 걸면 하이프랜드 쪽 옵션 둘이 따라온다. 둘은 서로 다른 조건에
@@ -72,17 +72,17 @@
 #   갈린다 — 정지 셰이더는 켜 둔 채로 두는 게 맞고(놀 때 안 그린다), 끄는 건
 #   흐르는 것이 있는 셰이더뿐이다. 배터리 비용은 여기 붙어 있다.
 #
-#   판정은 apps/rice-chain --motion 이 한다. `time` 유니폼이 선언돼 있는지만 보면
+#   판정은 apps/rice/chain --motion 이 한다. `time` 유니폼이 선언돼 있는지만 보면
 #   안 된다 — crt.frag 은 그레인·험 바·클릭 파문을 손잡이로 끌 수 있고, 전부 0 인
 #   crt.frag 은 정지 셰이더다. 그 손잡이가 어느 것인지는 셰이더가 `!motion` 으로
 #   스스로 선언한다.
 #
 # 셰이더를 새로 넣어도 두 판단 다 자동이다.
 
-# 목록·순환·거절은 apps/rice-switch, apps/rice-term 과 같은 모양이어야 해서
-# rice-lib.sh 에 있다. rice_current 는 아래에서 갈아치운다(머리말 참고).
+# 목록·순환·거절은 apps/rice/switch, apps/rice/term 과 같은 모양이어야 해서
+# lib.sh 에 있다. rice_current 는 아래에서 갈아치운다(머리말 참고).
 here="$(dirname "$0")"
-. "$here/rice-lib.sh"
+. "$here/lib.sh"
 
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 shaders="${RICE_SHADERS:-$cfg/hypr/shaders}"
@@ -96,7 +96,7 @@ rice_kind="화면 셰이더"
 # 그냥 두면 eval 이 조용히 실패하고 "바꿨는데 아무 일도 안 일어났다"가 된다.
 #
 # 다만 여기서 바로 나가지는 않는다. **읽기는 세션이 없어도 된다** — 목록도 탭
-# 수도 합성도 파일만 보면 되는 일이고, apps/rice-studio 가 하이프랜드 밖에서도
+# 수도 합성도 파일만 보면 되는 일이고, apps/rice/studio 가 하이프랜드 밖에서도
 # 열려서 값을 맞추거나 조합을 검증할 수 있는 것이 갈라 놓은 실익 중 하나다.
 # 세션이 필요한 것은 컴포지터에게 묻고 거는 일뿐이라, 그 자리에서만 거절한다.
 session=1
@@ -109,7 +109,7 @@ need_session() {
 		return 0
 	fi
 	printf "${RED}하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.${NC}\n"
-	printf "${DIM}터미널 창 하나에만 거는 브라운관은 양쪽에서 된다: apps/rice-term crt${NC}\n"
+	printf "${DIM}터미널 창 하나에만 거는 브라운관은 양쪽에서 된다: apps/rice/term crt${NC}\n"
 	exit 1
 }
 
@@ -137,7 +137,7 @@ rice_list() {
 		printf '%s\n' "${f%.*}"
 	done | sort
 
-	# 터미널 셰이더도 화면 전체에 걸 수 있다(apps/rice-chain 의 `term/`). 다만
+	# 터미널 셰이더도 화면 전체에 걸 수 있다(apps/rice/chain 의 `term/`). 다만
 	# 고스티 전용 유니폼을 읽는 것은 빼야 한다 — 목록에 뜨는데 누르면 거절당하는
 	# 것은 목록이 거짓말을 하는 것이다.
 	for f in "$termshaders"/*.glsl; do
@@ -199,7 +199,7 @@ rice_current() {
 		printf 'off\n'
 		;;
 	*)
-		st="$("$here/rice-chain" --stages "$cur" 2>/dev/null || true)"
+		st="$("$here/chain" --stages "$cur" 2>/dev/null || true)"
 		if [ -n "$st" ]; then
 			# shellcheck disable=SC2086
 			name_of $st
@@ -229,9 +229,9 @@ apply() { # apply <칸>...
 	else
 		# 합성이 실패하면 여기서 끝난다. 앞의 것만 걸어 두면 브라운관 뒤에 오던
 		# 망점이 조용히 빠진 화면이 되는데, 그건 안 바뀐 화면보다 알아채기 어렵다.
-		src="$("$here/rice-chain" "$@")" || exit 1
+		src="$("$here/chain" "$@")" || exit 1
 		damage=0 # 이웃을 읽는 셰이더는 부분 재합성과 같이 못 산다 (머리말)
-		if [ "$("$here/rice-chain" --motion "$@")" = yes ]; then
+		if [ "$("$here/chain" --motion "$@")" = yes ]; then
 			vfr=false # 흐르는 것이 있다 — 데미지가 없어도 그려야 한다
 		else
 			vfr=true
@@ -265,13 +265,13 @@ case "${1:-}" in
 	want="$(cat "$state" 2>/dev/null || true)"
 	if [ -n "$want" ] && [ "$want" != off ]; then
 		# shellcheck disable=SC2086
-		"$here/rice-chain" --check $want >/dev/null 2>&1 || want=""
+		"$here/chain" --check $want >/dev/null 2>&1 || want=""
 	fi
 	if [ -z "$want" ]; then
 		want="$(stages_of "$def")"
 		if [ -n "$want" ] && [ "$want" != off ]; then
 			# shellcheck disable=SC2086
-			"$here/rice-chain" --check $want >/dev/null 2>&1 || want=off
+			"$here/chain" --check $want >/dev/null 2>&1 || want=off
 		else
 			want=off
 		fi
@@ -292,12 +292,12 @@ case "${1:-}" in
 	# 문법에 안 맞는다. 손잡이를 고친 뒤 여기를 부르면 다시 접혀서 반영된다.
 	name="$(rice_current)"
 	if [ "$name" = off ]; then
-		printf "${DIM}지금은 off 다 — 고친 값을 보려면 셰이더를 먼저 걸 것 (apps/rice-crt --next).${NC}\n"
+		printf "${DIM}지금은 off 다 — 고친 값을 보려면 셰이더를 먼저 걸 것 (apps/rice/crt --next).${NC}\n"
 		exit 0
 	fi
 	;;
 --stages)
-	# 손잡이 UI 가 "지금 걸린 체인의 칸들"을 알아야 해서 낸다(apps/rice-knobs).
+	# 손잡이 UI 가 "지금 걸린 체인의 칸들"을 알아야 해서 낸다(apps/rice/knobs).
 	# --current 는 chain/이름 으로 접어서 주므로 거기서는 칸이 안 보인다.
 	cur="$(rice_current)"
 	[ "$cur" = off ] && exit 0
@@ -305,12 +305,12 @@ case "${1:-}" in
 	exit 0
 	;;
 --json)
-	# apps/rice-studio 가 창을 그릴 때 쓰는 것 전부를 한 번에. 프로세스 하나인 게
-	# 요점이다 — 예전에는 값마다 apps/rice-chain --info 를 불러서 목록 한 번에
+	# apps/rice/studio 가 창을 그릴 때 쓰는 것 전부를 한 번에. 프로세스 하나인 게
+	# 요점이다 — 예전에는 값마다 apps/rice/chain --info 를 불러서 목록 한 번에
 	# 예순 번쯤 포크했고, 창을 닫았다 여는 런처에서는 그걸 2 초 캐시로 가렸지만
 	# 열어 두고 만지는 창에서는 가려지지 않는다.
 	#
-	# 곱 한도는 여기서 안 센다. 무엇을 더할 수 있는지는 apps/rice-chain --addable
+	# 곱 한도는 여기서 안 센다. 무엇을 더할 수 있는지는 apps/rice/chain --addable
 	# 이 답하고, 여기서는 그 답을 옮겨 담기만 한다 — 규칙이 두 벌이 되면 한쪽만
 	# 고친 날 목록이 거짓말을 한다.
 	cur="$(rice_current)"
@@ -320,9 +320,9 @@ case "${1:-}" in
 	# 탭 수가 이 자리의 뜻과 다르다.
 	singles="$(printf '%s\n' "$list" | grep -v '^off$' | grep -v '^chain/' || true)"
 	# shellcheck disable=SC2086
-	meta="$("$here/rice-chain" --info-all $singles 2>/dev/null || true)"
+	meta="$("$here/chain" --info-all $singles 2>/dev/null || true)"
 	# shellcheck disable=SC2086
-	add="$(printf '%s\n' "$singles" | "$here/rice-chain" --addable $st 2>/dev/null || true)"
+	add="$(printf '%s\n' "$singles" | "$here/chain" --addable $st 2>/dev/null || true)"
 
 	jq -n \
 		--arg cur "$cur" \
@@ -330,7 +330,7 @@ case "${1:-}" in
 		--arg stages "$st" \
 		--arg meta "$meta" \
 		--arg add "$add" \
-		--argjson limit "$("$here/rice-chain" --limit)" \
+		--argjson limit "$("$here/chain" --limit)" \
 		--argjson session "$session" '
 		def rows: split("\n") | map(select(length > 0) | split("\t"));
 		( $meta | rows
@@ -358,7 +358,7 @@ case "${1:-}" in
 	exit 0
 	;;
 --save)
-	label="${2:?이름이 필요하다  (예: apps/rice-crt --save my-look)}"
+	label="${2:?이름이 필요하다  (예: apps/rice/crt --save my-look)}"
 	case "$label" in
 	*/* | .*) printf "${RED}이름에 / 나 앞점은 못 쓴다: %s${NC}\n" "$label" >&2; exit 1 ;;
 	esac
@@ -369,9 +369,9 @@ case "${1:-}" in
 	}
 	mkdir -p "$chains"
 	{
-		printf '# %s — apps/rice-crt --save 가 적었다.\n' "$label"
+		printf '# %s — apps/rice/crt --save 가 적었다.\n' "$label"
 		printf '# 한 줄에 한 칸, 위에서 아래 순서로 겹친다.\n'
-		printf '# 레포에 남기려면 apps/rice-save.\n'
+		printf '# 레포에 남기려면 apps/rice/save.\n'
 		# shellcheck disable=SC2086
 		for s in $(stages_of "$cur"); do printf '%s\n' "$s"; done
 	} >"$chains/$label.chain"
@@ -418,4 +418,4 @@ fi
 
 # 셰이더가 깨지면 화면이 새까매지거나 알아볼 수 없게 된다. 그 상태에서도 이 줄은
 # 다른 tty 나 눈 감고 친 명령으로 돌릴 수 있다.
-printf "${DIM}화면이 이상해지면: apps/rice-crt off${NC}\n"
+printf "${DIM}화면이 이상해지면: apps/rice/crt off${NC}\n"

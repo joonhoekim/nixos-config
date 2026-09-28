@@ -383,7 +383,7 @@ stat -c '%U:%G' ~/nixos-config ~/nixos-config/flake.nix
 ```
 
 `root:root`가 나오면 아직 안 된 것이다. 안 고치면 `git`이 `dubious ownership`으로
-거부하고 `apps/rice-save`류가 전부 막힌다. **`nix run .#build-switch`는 읽기만 해서
+거부하고 `apps/rice/save`류가 전부 막힌다. **`nix run .#build-switch`는 읽기만 해서
 멀쩡히 돌아간다** — 그래서 한참 모르고 지나가기 쉬운 종류의 고장이다.
 
 ### 세션

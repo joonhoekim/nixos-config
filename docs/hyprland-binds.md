@@ -286,7 +286,7 @@ hl.dsp.layout("colresize zzz")               -> ok                          ← 
 **5. 함수 본문에서는 `hl.dispatch` 로 감싸야 한다.** 위 "조회 함수" 절 참고.
 
 **6. `hyprctl keyword` 는 안 된다.** `eval` 만 된다. CRT 셰이더처럼 자주 만지는
-값은 `apps/rice-crt` 가 그 `eval` 을 감싸 두었다.
+값은 `apps/rice/crt` 가 그 `eval` 을 감싸 두었다.
 
 ```sh
 $ hyprctl keyword input:touchdevice:transform 1

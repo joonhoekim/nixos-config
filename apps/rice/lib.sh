@@ -1,7 +1,7 @@
 # 라이싱 스위처들이 공유하는 부분. 실행 파일이 아니라 sourced 되는 조각이라
 # flake 의 apps 목록에도 없다.
 #
-#   . "$(dirname "$0")/rice-lib.sh"
+#   . "$(dirname "$0")/lib.sh"
 #
 # `nix run .#rice-switch` 로 돌 때도 이 경로가 맞는다. mkApp 이
 # `exec ${self}/apps/<name>` 를 하므로 $0 이 스토어 안의 apps 디렉터리이고,

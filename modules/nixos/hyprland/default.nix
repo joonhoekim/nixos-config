@@ -29,7 +29,7 @@
 # ./rice/chains 에 그중 몇을 겹쳐 둔 체인이 있다.
 #
 # 고르고 겹치고 값을 맞추는 것은 **라이싱 스튜디오**가 한다 — ./rice/studio 의
-# QML 이고 apps/rice-studio 가 띄운다. DMS 안이 아니라 별도 창인 이유는 그
+# QML 이고 apps/rice/studio 가 띄운다. DMS 안이 아니라 별도 창인 이유는 그
 # 스크립트 머리말에 있다(요약: 이 축만 성질이 달라서 런처의 항목 계약을 깨고
 # 있었다).
 #
@@ -44,7 +44,7 @@
 # 사본이라는 뜻이라, 한쪽에서 값을 고쳤으면 다른 쪽도 봐야 한다.
 #
 # ── 겹치기는 파일 하나로 접어서 넣는다 ────────────────────────────────────
-# decoration:screen_shader 는 한 장만 받는다. 여러 칸은 apps/rice-chain 이
+# decoration:screen_shader 는 한 장만 받는다. 여러 칸은 apps/rice/chain 이
 # 전처리기로 한 파일에 접어 캐시에 두고, 스위처가 그 경로를 건다. 셰이더 소스는
 # 한 글자도 안 고쳐진다 — 왜 그 방법뿐인지, 왜 비용이 합이 아니라 곱인지는 그
 # 파일 머리말에 있다.
@@ -53,7 +53,7 @@
 # 셰이더가 걸리면 debug:damage_tracking 은 무조건 0 이다(자기 픽셀 밖을 읽는
 # 셰이더는 부분 재합성과 같이 못 산다). debug:vfr 은 흐르는 셰이더에서만 끈다.
 # 배터리 값은 vfr 쪽에 붙어 있고, 판정은 `!motion` 표시가 붙은 손잡이가 0 인지로
-# 갈린다 — 자세한 건 apps/rice-crt 머리말.
+# 갈린다 — 자세한 건 apps/rice/crt 머리말.
 #
 # ── Installation is declarative, ricing is not ─────────────────────────────
 # Same split as ../niri: this module installs and wires the session, and the
@@ -101,7 +101,7 @@ in
       # the one mode a bare `grim -g "$(slurp)"` cannot do.
       hyprshot
 
-      # 셰이더 검증기. apps/rice-chain 이 있으면 쓰고 없으면 넘어가지만, 이
+      # 셰이더 검증기. apps/rice/chain 이 있으면 쓰고 없으면 넘어가지만, 이
       # 세션에서는 있어야 한다 — 체인은 **생성된 GLSL** 을 거는 것이고,
       # 하이프랜드는 컴파일 실패를 알려 주지 않기 때문이다. 셰이더를 걸어 두고
       # 다음 프레임에 컴파일하며, 실패해도 hyprctl 은 ok 를 돌려주고 로그에도
@@ -163,7 +163,7 @@ in
         rice_sync ${./rice/hyprland.lua} "$HOME/.config/hypr/hyprland.lua"
 
         # 장식 조각의 배선 한 줄. decor.lua 자체는 심지 않는다 — 생성물이고,
-        # apps/rice-decor 가 값을 처음 바꿀 때 만든다.
+        # apps/rice/decor 가 값을 처음 바꿀 때 만든다.
         #
         # rice_sync 가 아니라 rice_ensure 인 이유는 판정표 4행(양쪽 다 고침)이다.
         # 거기서 rice_sync 는 일부러 손을 떼는데, 이 줄이 없을 때의 증상은
@@ -176,7 +176,7 @@ in
         # 지운다(rice/hyprland.lua 의 장식 조각 주석).
         rice_ensure "$HOME/.config/hypr/hyprland.lua" \
           'pcall(dofile, os.getenv("HOME") .. "/.config/hypr/decor.lua")' \
-          '-- 장식 값(투명도·흐리게·어둡게·그림자). apps/rice-decor 가 쓴다.'
+          '-- 장식 값(투명도·흐리게·어둡게·그림자). apps/rice/decor 가 쓴다.'
 
         # DMS 가 자기 설정을 쓰는 자리. 빈 조각을 미리 깔아 두는 건 DMS 가 처음
         # 뜨기 전에도 hyprland.lua 의 require 가 뭔가를 찾게 하려는 것이다.
@@ -186,7 +186,7 @@ in
         # 화면 셰이더. 갈래 폴더 한 단(crt / water / cyberpunk / print)이고, 그
         # 폴더 이름이 곧 스위처와 런처에서 부르는 이름의 앞부분이다 — `crt/crt`.
         # decoration:screen_shader 는 경로만 받고 ~ 를 풀지 않으므로 전부 절대
-        # 경로로 다뤄진다(apps/rice-crt).
+        # 경로로 다뤄진다(apps/rice/crt).
         #
         # ── 왜 폴더 하나씩 심는가 ────────────────────────────────────────
         # 판정 단위가 곧 인자이기 때문이다. `rice_sync ${./rice/shaders}
@@ -219,19 +219,19 @@ in
         done
 
         # 이름 붙인 체인. 한 줄에 한 칸이고, 위에서 아래 순서로 겹친다.
-        # `apps/rice-crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은
-        # apps/rice-save 다 — 다른 라이싱 파일과 같은 방향이다.
+        # `apps/rice/crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은
+        # apps/rice/save 다 — 다른 라이싱 파일과 같은 방향이다.
         rice_sync ${./rice/chains} "$HOME/.config/hypr/chains"
 
-        # 라이싱 스튜디오. quickshell 설정 하나이고 apps/rice-studio 가
+        # 라이싱 스튜디오. quickshell 설정 하나이고 apps/rice/studio 가
         # `quickshell -p` 로 띄운다. 하이프랜드 밑에 두는 것은 화면 셰이더가
         # 이 세션에만 있는 훅이기 때문이고, 창 자체는 니리에서 열어도 뜬다 —
-        # 거기서는 값만 고칠 수 있고 거는 것은 안 된다(apps/rice-crt 의 need_session).
+        # 거기서는 값만 고칠 수 있고 거는 것은 안 된다(apps/rice/crt 의 need_session).
         #
         # 셰이더와 달리 폴더 통째로 심는다. 갈래처럼 나중에 늘어나는 것이 아니라
         # 한 벌이고, 안의 파일이 서로를 참조해서 반쪽만 새로 들어가면 오히려
         # 깨진다. 이미 있는 머신에 새 파일이 안 들어가는 대가는 그대로다 —
-        # QML 을 고쳤으면 apps/rice-save 로 되받는 것이 이 레포의 방향이다.
+        # QML 을 고쳤으면 apps/rice/save 로 되받는 것이 이 레포의 방향이다.
         rice_sync ${./rice/studio} "$HOME/.config/rice-studio"
 
         # 터미널·런처·GTK 는 여기서 심지 않는다. ../niri 와 ../../shared/ghostty

@@ -136,7 +136,7 @@ hl.config({
     },
 
     -- 투명도·흐리게·어둡게·그림자는 여기 없다. 손으로 정하는 값이 아니라 화면을
-    -- 보면서 맞추는 값이라 apps/rice-decor 가 ~/.config/hypr/decor.lua 에 쓰고,
+    -- 보면서 맞추는 값이라 apps/rice/decor 가 ~/.config/hypr/decor.lua 에 쓰고,
     -- 그 조각을 이 파일 맨 끝에서 부른다. 둥글기만 여기 남는데, 그것도 DMS 가
     -- 덮는다(맨 아래 조각 주석).
     decoration = {
@@ -434,16 +434,16 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd('dms ipc call brightness decrem
 -- exec 는 sh 를 거치므로 ${RICE_REPO:-…} 가 그대로 먹는다. 빗나가면 키가 조용히
 -- 아무 일도 안 한다 — 하이프랜드는 exec 실패를 알려 주지 않는다. apps/doctor 가
 -- 체크아웃 위치를 짚어 주는 이유가 이것이다.
-hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-switch --next"))
-hl.bind(mod .. " + SHIFT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall"))
-hl.bind(mod .. " + CTRL + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --pick"))
-hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --yazi"))
+hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice/switch --next"))
+hl.bind(mod .. " + SHIFT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall"))
+hl.bind(mod .. " + CTRL + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall --pick"))
+hl.bind(mod .. " + ALT + W", hl.dsp.exec_cmd("${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall --yazi"))
 
 -- 축 하나에 키 하나씩 두는 건 셰이더 값을 고쳐 가며 맞출 때는 오히려 느리다.
 -- 이건 DMS 런처를 RiceSwitcher 플러그인의 트리거(":")를 미리 친 채로 연다 —
 -- 프로필·터미널·월페이퍼가 한 목록에 있고, 지금 걸린 것에 ✓ 가 붙는다.
--- 플러그인은 ../../dms/plugins/RiceSwitcher, 값은 apps/rice-menu 에서 온다.
--- 화면 셰이더는 이 목록에 값이 없다 — 고르는 자리가 별도 창이라(apps/rice-studio)
+-- 플러그인은 ../../dms/plugins/RiceSwitcher, 값은 apps/rice/menu 에서 온다.
+-- 화면 셰이더는 이 목록에 값이 없다 — 고르는 자리가 별도 창이라(apps/rice/studio)
 -- 여기에는 그 창을 여는 줄과 탈출구(off · 다음 것)만 있다.
 hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQuery ':'"))
 
@@ -457,9 +457,9 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 --
 -- ── 목록과 순환은 여기 없다 ───────────────────────────────────────────────
 -- 예전에는 이 파일이 셰이더 셋을 배열로 들고 직접 순환했다. 지금은
--- `apps/rice-crt --next` 를 부른다. 옮긴 이유는 셰이더가 열 몇 장이 된 것보다
+-- `apps/rice/crt --next` 를 부른다. 옮긴 이유는 셰이더가 열 몇 장이 된 것보다
 -- **체인** 쪽이 크다 — 여러 장을 겹치면 하이프랜드에 걸 파일을 만들어 내야
--- 하는데(apps/rice-chain), 그건 lua 설정 안에서 할 일이 아니다. 게다가 순환
+-- 하는데(apps/rice/chain), 그건 lua 설정 안에서 할 일이 아니다. 게다가 순환
 -- 목록을 두 곳에 두면 갈래를 하나 늘릴 때마다 둘을 같이 고쳐야 하고, 안 고친
 -- 쪽이 조용히 낡는다.
 --
@@ -487,7 +487,7 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 --   판정은 `time` 유니폼이 있는지가 아니라 **흐르는 것을 여는 손잡이가 0 이 아닌지**
 --   다. crt.frag 은 그레인·험 바·클릭 파문을 전부 0 으로 내리면 그 자리에서 정지
 --   셰이더가 되고, 그때는 VFR 을 켜 두는 것이 맞다. 그 손잡이가 어느 것인지는
---   셰이더가 `!motion` 으로 스스로 선언한다(apps/rice-chain --motion).
+--   셰이더가 `!motion` 으로 스스로 선언한다(apps/rice/chain --motion).
 --
 -- 배터리 비용은 damage_tracking 이 아니라 이 vfr 쪽에 붙어 있다.
 --
@@ -502,13 +502,13 @@ hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("dms ipc call spotlight toggleQue
 -- 걸 때마다 적는다)을 도로 걸고, 그게 없을 때만 아래 기본값이다. off 로 꺼
 -- 뒀으면 off 로 남는다.
 local rice_crt = (os.getenv("RICE_REPO") or (os.getenv("HOME") .. "/nixos-config"))
-                 .. "/apps/rice-crt"
+                 .. "/apps/rice/crt"
 
 -- 첫 로그인(아직 아무것도 안 걸어 본 머신)에 걸 것. 갈래/이름 하나여도 되고
 -- 체인 이름이어도 된다:
 --   "crt/crt"  "water/still"  "chain/bad-signal"  "off"
 -- 한 번이라도 스위처로 골랐으면 그쪽이 이긴다 — 여기를 고쳐서 바꾸는 게
--- 아니라 apps/rice-crt 로 걸면 된다.
+-- 아니라 apps/rice/crt 로 걸면 된다.
 local crt_start = "crt/crt"
 
 -- hl.dsp.exec_cmd 가 아니라 hl.exec_cmd 다. 이름이 같아서 헷갈리는데 뜻이 다르다:
@@ -525,8 +525,8 @@ hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 -- 이 바인드가 안 먹으면 같은 일을 밖에서 할 수 있다. `hyprctl keyword` 는 못 쓴다 —
 -- lua 설정에서는 파서가 통째로 거절한다("keyword can't work with non-legacy
 -- parsers. Use eval."). 남는 길은 eval 뿐이고, 그걸 감싼 게 rice-crt 다:
---   apps/rice-crt off | crt/crt | water/still | chain/bad-signal | --next | --reload
---   apps/rice-crt water/still print/paper     즉석 체인
+--   apps/rice/crt off | crt/crt | water/still | chain/bad-signal | --next | --reload
+--   apps/rice/crt water/still print/paper     즉석 체인
 --   hyprctl eval 'hl.config({decoration={screen_shader=""}})'
 
 
@@ -553,7 +553,7 @@ hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd(rice_crt .. " --next"))
 --
 -- 못 찾으면 파일 끝에 그 줄을 덧붙인다. 이름을 런타임에 조립하면(`"dms." ..
 -- fragment`) 리터럴이 파일에 안 나타나므로, 이미 읽고 있는 조각을 한 번 더
--- require 하는 줄이 붙고 그게 apps/rice-save 를 타고 레포까지 간다. 니리 쪽
+-- require 하는 줄이 붙고 그게 apps/rice/save 를 타고 레포까지 간다. 니리 쪽
 -- (../../niri/rice/config.kdl)은 `include "dms/cursor.kdl"` 이 그대로 적혀 있어
 -- 같은 일이 없다.
 --
@@ -567,7 +567,7 @@ end
 ---- 장식 조각 ----
 -------------------
 
--- 투명도·흐리게·어둡게·그림자. apps/rice-decor 가 쓰는 생성물이고, 라이싱
+-- 투명도·흐리게·어둡게·그림자. apps/rice/decor 가 쓰는 생성물이고, 라이싱
 -- 스튜디오의 "장식" 탭이 그 스크립트를 부른다.
 --
 -- DMS 조각 **뒤에** 오는 것이 요점이다. 지금은 겹치는 키가 없지만(그쪽은

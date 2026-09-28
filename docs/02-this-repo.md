@@ -12,8 +12,9 @@
 
 - `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
 - `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
-- `apps.<system>.<name>` → `apps/<name>` (`nix run`의 실체) — 빌드 4종(build-switch,
-  build, rollback, clean)과 라이싱 도구들(rice-*), demo, mac-signing-cert.
+- `apps.<system>.<name>` → `apps/` 아래 스크립트 (`nix run`의 실체) — 빌드 4종(build-switch,
+  build, rollback, clean), 라이싱 도구들(rice-* → `apps/rice/`), 점검(check → `apps/check/`),
+  demo, mac-signing-cert.
   전체 목록은 `flake.nix`의 `mkApps` 한 곳이다
 - `devShells`
 
@@ -99,31 +100,32 @@ modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
 노출되어 `nix run .#<name>`으로 실행된다. Nix가 진입점을 주고 실제 일은 셸이 한다.
 
 예전 dustinlyons 템플릿은 system마다 디렉터리를 두고 스크립트를 중복시켰지만, 지금은
-**스크립트 한 벌을 `apps/`에 평평하게 두고 런타임에 macOS/NixOS를 자동 감지**한다.
+**스크립트 한 벌을 `apps/`에 두고 런타임에 macOS/NixOS를 자동 감지**한다. 묶음이 큰 것은
+하위 디렉터리로 나눈다 — 라이싱은 `apps/rice/`, 점검은 `apps/check/`.
 
 연결 고리(`flake.nix`):
 
 ```nix
-mkApp = scriptName: system: {
+mkApp = name: path: system: {
   type = "app";
-  program = "${(writeScriptBin scriptName ''
+  program = "${(writeScriptBin name ''
     #!/usr/bin/env bash
-    PATH=${git}/bin:$PATH                  # git을 PATH에 보장
-    exec ${self}/apps/${scriptName} "$@"   # 공유 스크립트 실행, 인자 전달
-  '')}/bin/${scriptName}";
+    PATH=${git}/bin:$PATH             # git을 PATH에 보장
+    exec ${self}/apps/${path} "$@"    # 공유 스크립트 실행, 인자 전달
+  '')}/bin/${name}";
 };
-# 스크립트가 플랫폼을 자체 감지하므로 모든 system이 같은 앱을 노출.
-# 이름 목록 하나가 전부다 — 스크립트를 추가하면 여기 이름만 넣는다.
-mkApps = system: nixpkgs.lib.genAttrs [
-  "build" "build-switch" "rollback" "clean"
-  "rice-save" "rice-restore" ...  # 전체는 flake.nix
-] (name: mkApp name system);
+mkApps = system:
+  genAttrs [ "build" "build-switch" "rollback" "clean" ... ] (name: mkApp name name system)
+  // (rice-<n> → apps/rice/<n>)          # rice-save, rice-switch, ...
+  // { check = ...; }                    # 플랫폼별 apps/check/{mac,nixos}
+  // { check-snapshot = ...; };          # 전체는 flake.nix
 ```
 
-`${self}`는 flake 소스 루트. 흐름: `nix run .#build-switch` → writeScriptBin 래퍼 →
-`apps/build-switch` → `uname`으로 OS 판별 → macOS면 `darwinConfigurations.<arch>`,
-NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화. 새 app은 `apps/`에 스크립트를 두고
-`mkApps`의 이름 목록에 넣으면 모든 플랫폼에 노출된다. `rice-lib.sh`·`build-lib.sh`처럼
+앱 이름은 `nix run .#<이름>`과 스토어 경로에 그대로 쓰이므로 평평하고(`rice-switch`),
+파일 경로는 디렉터리를 가질 수 있다(`apps/rice/switch`). 흐름: `nix run .#build-switch` →
+writeScriptBin 래퍼 → `apps/build-switch` → `uname`으로 OS 판별 → macOS면
+`darwinConfigurations.<arch>`, NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화.
+새 app은 스크립트를 두고 `mkApps`에 넣으면 노출된다. `rice/lib.sh`·`build-lib.sh`처럼
 sourced 되는 조각은 목록에 넣지 않는다.
 
 ### 각 app이 하는 일
@@ -182,7 +184,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 - macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고
-  `apps/rice-save`로 되받는다 — files.nix 류의 심링크는 이제 없다
+  `apps/rice/save`로 되받는다 — files.nix 류의 심링크는 이제 없다
 - 외부 의존성: `flake.nix`의 `inputs`
 
 ---

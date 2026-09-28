@@ -2,14 +2,14 @@
 #
 # 화면 셰이더 여러 장을 하이프랜드가 받을 수 있는 한 장으로 접는다.
 #
-#   apps/rice-chain water/still print/paper  합성해서 결과 파일 경로를 낸다
-#   apps/rice-chain --check crt/crt        합성과 검증만 (경로는 안 낸다)
-#   apps/rice-chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
-#   apps/rice-chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
-#   apps/rice-chain --motion crt/crt       이 조합이 흐르는가 (yes/no)
-#   apps/rice-chain --info-all <칸>...     칸마다 `<칸> <탭> <흐름>` (캐시된다)
-#   apps/rice-chain --addable <지금칸>...  후보를 stdin 으로, 붙일 수 있는 것만
-#   apps/rice-chain --limit                탭 한도 하나
+#   apps/rice/chain water/still print/paper  합성해서 결과 파일 경로를 낸다
+#   apps/rice/chain --check crt/crt        합성과 검증만 (경로는 안 낸다)
+#   apps/rice/chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
+#   apps/rice/chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
+#   apps/rice/chain --motion crt/crt       이 조합이 흐르는가 (yes/no)
+#   apps/rice/chain --info-all <칸>...     칸마다 `<칸> <탭> <흐름>` (캐시된다)
+#   apps/rice/chain --addable <지금칸>...  후보를 stdin 으로, 붙일 수 있는 것만
+#   apps/rice/chain --limit                탭 한도 하나
 #
 # 칸 이름은 `갈래/이름` 이다 — ~/.config/hypr/shaders/<갈래>/<이름>.frag.
 # 절대 경로도 받는다.
@@ -22,7 +22,7 @@
 #
 # 이 길을 낸 것은 창 하나에 걸던 룩을 화면 전체로 올려 볼 수 있어서만은 아니다.
 # 맥 레포는 crt/glow.glsl 을 자기 shaders/ 안에 복사해 들고 있는데, 그 파일은
-# 이 레포의 ../modules/shared/ghostty/shaders/glow.glsl 과 사실상 같은 파일이다.
+# 이 레포의 ../../modules/shared/ghostty/shaders/glow.glsl 과 사실상 같은 파일이다.
 # 가져오면서 그 사본을 또 만들면 같은 셰이더가 한 레포 안에 두 벌이 되고, 그건
 # 맥 쪽 crt.frag/crt-motion.frag 이 이미 한 번 보여 준 실패다(그 파일 머리말 —
 # 값이 실제로 어긋나 있었다). 그래서 복사 대신 부르기로 했다.
@@ -72,7 +72,7 @@
 #
 # ── 결과 파일 ─────────────────────────────────────────────────────────────
 # ${XDG_CACHE_HOME:-~/.cache}/rice/shaders/ 에 쓴다. 손잡이를 고치면 원본이
-# 바뀌므로 걸 때마다 다시 접는다(apps/rice-crt --reload). 캐시가 통째로 없어져도
+# 바뀌므로 걸 때마다 다시 접는다(apps/rice/crt --reload). 캐시가 통째로 없어져도
 # 다음에 걸 때 다시 만들어지므로 잃을 것이 없다.
 #
 # 첫 줄에 `// rice-chain: <칸> <칸>` 을 적어 둔다. 컴포지터에게 "지금 뭐가
@@ -91,7 +91,7 @@ termshaders="${RICE_TERM_SHADERS:-$cfg/ghostty/shaders}"
 # 판단하고 싶으면 환경변수로 올릴 수 있다.
 #
 # 한 탭짜리 마감이 term/glow 하나뿐인 것은 print/riso 와 print/dither 를 지운
-# 뒤의 상태다(../modules/nixos/hyprland/rice/README.md). 그전에는 이 한도가
+# 뒤의 상태다(../../modules/nixos/hyprland/rice/README.md). 그전에는 이 한도가
 # 훨씬 덜 조였다.
 max_taps="${RICE_CHAIN_MAX_TAPS:-64}"
 
@@ -283,7 +283,7 @@ taps() { # taps <파일>
 # 판정이 두 단이다. `time` 을 아예 안 읽으면 끔이다. 읽더라도 흐르는 것을 여닫는
 # 손잡이가 전부 0 이면 역시 끔이다 — crt.frag 은 GRAIN·HUM·RIPPLE 을 0 으로
 # 내리면 그 자리에서 정지 셰이더가 된다. 어느 손잡이가 그런 손잡이인지는
-# 셰이더가 `@범위` 옆에 `!motion` 으로 스스로 선언한다(apps/rice-knobs 와 같은
+# 셰이더가 `@범위` 옆에 `!motion` 으로 스스로 선언한다(apps/rice/knobs 와 같은
 # 문법이고, 맥 판이 그 문법을 여기서 가져갔다).
 #
 # 체인은 한 칸이라도 흐르면 전체가 흐른다. 시간을 읽는 칸이 안 흐르면 그 칸만
@@ -422,14 +422,14 @@ compose() { # compose <파일>...
 	# ("statement must appear first in es-profile shader; before comments or
 	# newlines"). 그래서 우리 머리말이 아래로 내려간다.
 	printf '#version 300 es\n'
-	printf '// 이 파일은 apps/rice-chain 이 만든다. 고치지 말 것 — 다시 접히면\n'
+	printf '// 이 파일은 apps/rice/chain 이 만든다. 고치지 말 것 — 다시 접히면\n'
 	printf '// 통째로 날아간다. 고칠 것은 아래 칸들의 원본이다.\n'
 	printf '// rice-chain:'
 	for s in $stage_names; do printf ' %s' "$s"; done
 	printf '\n'
 
 	# 어느 유니폼이 실제로 쓰이는지 먼저 본다. 안 쓰는 것까지 다 선언해 두면
-	# apps/rice-crt 의 재그리기 판정이 `time` 을 보고 늘 켜진 것으로 읽는다.
+	# apps/rice/crt 의 재그리기 판정이 `time` 을 보고 늘 켜진 것으로 읽는다.
 	# 셰이더토이 이름은 여기서 하이프랜드 이름으로 접힌다 — iTime 을 쓰는 칸이
 	# 하나라도 있으면 이 합성본은 시간을 읽는 셰이더다.
 	# awk 에서 \b 를 쓰면 안 된다 — gawk 는 그걸 낱말 경계가 아니라 백스페이스
@@ -636,7 +636,7 @@ case "${1:-}" in
 -*) die "알 수 없는 옵션: $1" ;;
 esac
 
-[ $# -gt 0 ] || die "칸을 하나 이상 줘야 한다  (예: apps/rice-chain water/still print/paper)"
+[ $# -gt 0 ] || die "칸을 하나 이상 줘야 한다  (예: apps/rice/chain water/still print/paper)"
 
 stage_names="$*"
 files=""
@@ -690,7 +690,7 @@ for f in "$@"; do
 	if [ -n "$unknown" ]; then
 		printf "${RED}%s 가 선언한 유니폼을 하이프랜드가 줄 수 없다: %s${NC}\n" \
 			"$(basename "$f")" "$unknown" >&2
-		printf "${DIM}컴포지터가 주는 것은 tex · screen_size · time · pointer_* 뿐이다. 값을 밖에서 넣고 싶으면 유니폼이 아니라 #define 으로 두고 apps/rice-knobs 를 쓸 것.${NC}\n" >&2
+		printf "${DIM}컴포지터가 주는 것은 tex · screen_size · time · pointer_* 뿐이다. 값을 밖에서 넣고 싶으면 유니폼이 아니라 #define 으로 두고 apps/rice/knobs 를 쓸 것.${NC}\n" >&2
 		die "안 막으면 그 값이 0 인 채로 조용히 걸린다 — 검증기는 이걸 안 잡는다."
 	fi
 
@@ -715,7 +715,7 @@ if [ "$product" -gt "$max_taps" ]; then
 	printf "${RED}이 조합은 픽셀당 tex 를 %d 번 읽는다 (한도 %d). 안 건다.${NC}\n" \
 		"$product" "$max_taps" >&2
 	printf "${DIM}%s${NC}\n" "$detail" >&2
-	printf "${DIM}인라인 합성이라 비용이 곱이다 — 순서를 바꿔도 안 준다. 탭 많은 칸은 하나만 두고 나머지는 한 탭짜리로 (apps/rice-chain 머리말).${NC}\n" >&2
+	printf "${DIM}인라인 합성이라 비용이 곱이다 — 순서를 바꿔도 안 준다. 탭 많은 칸은 하나만 두고 나머지는 한 탭짜리로 (apps/rice/chain 머리말).${NC}\n" >&2
 	exit 1
 fi
 

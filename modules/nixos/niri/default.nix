@@ -30,16 +30,16 @@
 # silently fails against a read-only target.
 #
 # ./rice/ holds what a fresh machine needs to start from, seeded into $HOME only
-# when the file is missing. Round-trip it with `apps/rice-save`. What is NOT in
+# when the file is missing. Round-trip it with `apps/rice/save`. What is NOT in
 # there is DMS's settings.json: it is 21KB of GUI state, and the look it encodes
-# is already captured by ./rice/profiles/*/dms.json, which apps/rice-switch
+# is already captured by ./rice/profiles/*/dms.json, which apps/rice/switch
 # merges onto whatever defaults DMS writes for itself on first run.
 
 let
   cfg = config.local.niri;
 
   # Which of ./rice/profiles/* a machine with no config yet starts on. This is
-  # only a rice_sync — apps/rice-switch owns the choice from the first switch on, and
+  # only a rice_sync — apps/rice/switch owns the choice from the first switch on, and
   # nothing re-reads this value afterwards. Not an option because a NixOS option
   # would imply the profile is declarative, which is the opposite of the point.
   seedProfile = "amoled";
@@ -85,7 +85,7 @@ in
     #
     # `[ -e ]` guards every copy: an existing config is never touched, so a
     # rebuild mid-ricing cannot clobber unsaved work. Snapshot the other
-    # direction with apps/rice-save.
+    # direction with apps/rice/save.
     #
     # Runs after linkGeneration because on the machine this module was written
     # for, config.kdl is still the home-manager symlink from the previous
@@ -105,7 +105,7 @@ in
         rice_ensure "$HOME/.config/niri/config.kdl" 'include "animations.kdl" optional=true' \
           '// 창 열림/닫힘 셰이더. 파일을 지우면 니리 기본 애니메이션으로 돌아간다.'
 
-        # Look profiles, swapped live by apps/rice-switch.
+        # Look profiles, swapped live by apps/rice/switch.
         rice_sync ${./rice/profiles} "$HOME/.config/rice/profiles"
 
         # ...and the pieces the seeded profile is made of, so a fresh machine
@@ -126,14 +126,14 @@ in
         # 터미널 색을 어디서도 선언하지 않는다.
 
         # fuzzel 은 형태(폰트/여백/줄높이)만 레포에 두고, 색과 화면에 맞춰
-        # 계산되는 lines/radius 는 apps/rice-fuzzel 이 dank-rice.ini 에 쓴다.
+        # 계산되는 lines/radius 는 apps/rice/fuzzel 이 dank-rice.ini 에 쓴다.
         # include 줄은 여기서 붙여 내보낸다. 레포 파일에 넣어둘 수 없는 건
         # fuzzel 이 절대 경로만 받기 때문인데, 홈 경로는 이 모듈이 알고 있다.
         # rice-fuzzel 도 같은 줄을 붙일 줄 알지만, 그건 손으로 만든 설정을 위한
         # 안전망이고 — 첫 로그인에 런처가 fuzzel 기본 테마(솔라라이즈드 라이트)로
         # 뜨지 않으려면 이 시점에 이미 배선돼 있어야 한다.
         rice_sync ${pkgs.writeText "fuzzel.ini" (''
-          # apps/rice-fuzzel 이 쓰는 색 파일. 기본 섹션이어야 해서 맨 위다.
+          # apps/rice/fuzzel 이 쓰는 색 파일. 기본 섹션이어야 해서 맨 위다.
           include=/home/${user}/.config/fuzzel/dank-rice.ini
 
         '' + builtins.readFile ./rice/fuzzel.ini)} "$HOME/.config/fuzzel/fuzzel.ini"
@@ -144,7 +144,7 @@ in
         # story. Both toolkits read the same keys, so one file serves both.
         # This is a *niri* need, not a GNOME one: there is no settings daemon
         # here to broadcast XSettings, so GTK apps read the file directly.
-        # apps/rice-save takes gtk-3.0 back as the canonical one.
+        # apps/rice/save takes gtk-3.0 back as the canonical one.
         rice_sync ${./rice/gtk-settings.ini} "$HOME/.config/gtk-3.0/settings.ini"
         rice_sync ${./rice/gtk-settings.ini} "$HOME/.config/gtk-4.0/settings.ini"
       '';

@@ -9,16 +9,16 @@
 # arrangement — the repo copy is a backup and a seed for the next machine, and
 # it only gets updated when you say so.
 #
-# Flow:  edit in ~/.config -> live-test -> apps/rice-save -> git diff -> commit
+# Flow:  edit in ~/.config -> live-test -> apps/rice/save -> git diff -> commit
 #
 # ── 기준선을 보고 되받는다 ───────────────────────────────────────────────
 # "레포와 다르면 되받는다"는 방향을 못 가린다. 레포에만 더해 둔 것(다른 머신에서
 # 온 커밋, 손으로 쓴 주석)도 "다름"이라, 라이브를 손도 안 댄 파일이 되받기 한
 # 번에 레포에서 지워진다.
 #
-# 그래서 기준선(rice-baseline.sh)을 함께 본다. 라이브가 기준선과 같으면 아무도
+# 그래서 기준선(baseline.sh)을 함께 본다. 라이브가 기준선과 같으면 아무도
 # 라이브를 안 고쳤다는 **증명**이므로, 레포와 달라도 되받지 않고 "레포가 앞섬"
-# 이라고만 말한다. 맞추는 건 반대 방향(apps/rice-restore)이나 리빌드의 몫이다.
+# 이라고만 말한다. 맞추는 건 반대 방향(apps/rice/restore)이나 리빌드의 몫이다.
 #
 #   --check          validate + report what differs, write nothing (dry run)
 #   --dms <profile>  DMS 설정 GUI 로 만진 룩을 그 프로필로 먼저 회수한다.
@@ -31,7 +31,7 @@ GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\0
 
 # 기준선. 이걸 봐야 "레포와 다르다"를 "라이브가 바뀌었다"로 오해하지 않는다.
 # $0 은 스토어 안일 수 있지만 형제 파일이 같이 들어 있어 이 경로가 양쪽에서 맞는다.
-. "$(dirname "$0")/rice-baseline.sh"
+. "$(dirname "$0")/baseline.sh"
 
 # Find the repo from the *working directory*, not from $0: under
 # `nix run .#rice-save` this script executes from a read-only store copy of the
@@ -100,7 +100,7 @@ fi
 #
 # 기준선 키는 기본이 <live> 다. fuzzel 처럼 걸러 낸 임시 파일을 <live> 로 넘기는
 # 자리에서만 진짜 라이브 경로를 세 번째 인자로 준다 — 기준선은 경로로 찾고
-# 내용은 걸러진 것을 담아야 하기 때문이다(rice-baseline.sh 의 거르개 문단).
+# 내용은 걸러진 것을 담아야 하기 때문이다(baseline.sh 의 거르개 문단).
 copy() {
   src="$1"; dst="$2"; key="${3:-$1}"
   rel="${dst#"$repo"/}"
@@ -117,7 +117,7 @@ copy() {
     if diff -rq "$dst" "$src" >/dev/null 2>&1; then
       printf "  unchanged  %s\n" "$rel"
     else
-      printf "  ${YELLOW}레포가 앞섬${NC} %s ${DIM}(라이브는 손 안 댔다 — apps/rice-restore)${NC}\n" "$rel"
+      printf "  ${YELLOW}레포가 앞섬${NC} %s ${DIM}(라이브는 손 안 댔다 — apps/rice/restore)${NC}\n" "$rel"
     fi
     return 0
   fi
@@ -179,7 +179,7 @@ if [ -n "$dms_profile" ]; then
   if [ "$current" != "$dms_profile" ] && [ "$dms_force" -eq 0 ]; then
     printf "${RED}지금 켜 둔 프로필은 %s 인데 %s 로 회수하려 한다.${NC}\n" \
       "${current:-(unknown)}" "$dms_profile"
-    printf "  화면에 없는 룩이 박힌다. 먼저 전환하거나(apps/rice-switch %s), 정말이면 --force.\n" \
+    printf "  화면에 없는 룩이 박힌다. 먼저 전환하거나(apps/rice/switch %s), 정말이면 --force.\n" \
       "$dms_profile"
     exit 1
   fi
@@ -228,7 +228,7 @@ copy "$cfg/rice/profiles"                     "$rice/profiles"
 
 # 하이프랜드. 니리와 같은 이유로 Nix 가 관리하지 않는다
 # (modules/nixos/hyprland/default.nix 의 seed). hyprland.lua 는 저장하면 컴포지터가
-# 바로 다시 읽고, shaders/ 는 apps/rice-crt 로 값을 고쳐 가며 맞추는 자리라 둘 다
+# 바로 다시 읽고, shaders/ 는 apps/rice/crt 로 값을 고쳐 가며 맞추는 자리라 둘 다
 # 라이브 쪽이 원본이다. 이 두 줄이 없던 동안 레포와 라이브가 조용히 갈라졌다.
 #
 # ~/.config/hypr/dms 는 뺐다. DMS 가 settings.json 에서 매번 새로 만들어 내는
@@ -237,13 +237,13 @@ copy "$cfg/rice/profiles"                     "$rice/profiles"
 copy "$cfg/hypr/hyprland.lua"                 "$hy/hyprland.lua"
 copy "$cfg/hypr/shaders"                      "$hy/shaders"
 
-# 이름 붙인 체인. `apps/rice-crt --save <이름>` 이 여기에 쓰고, 그 스크립트가
-# "레포에 남기려면 apps/rice-save" 라고 말한다 — 이 줄이 그 말을 참으로 만든다.
+# 이름 붙인 체인. `apps/rice/crt --save <이름>` 이 여기에 쓰고, 그 스크립트가
+# "레포에 남기려면 apps/rice/save" 라고 말한다 — 이 줄이 그 말을 참으로 만든다.
 # 체인이 생긴 뒤로 한동안 이 줄이 없어서, 저장한 체인이 그 머신에만 남았다.
 copy "$cfg/hypr/chains"                       "$hy/chains"
 
 # 라이싱 스튜디오의 QML. 다른 라이싱 파일과 같은 규칙이다 — 시드된 뒤로는 $HOME
-# 쪽이 원본이고, 고치면 quickshell 이 바로 다시 읽는다(apps/rice-studio).
+# 쪽이 원본이고, 고치면 quickshell 이 바로 다시 읽는다(apps/rice/studio).
 copy "$cfg/rice-studio"                       "$hy/studio"
 
 # DMS 플러그인. 시드된 뒤로는 $HOME 쪽이 원본이라는 규칙이 여기도 그대로다 —
@@ -289,7 +289,7 @@ copy "$cfg/aerospace/aerospace.toml"          "$dr/aerospace/aerospace.toml"
 copy "$cfg/rice/bin"                          "$dr/bin"
 copy "$cfg/workspacepeek/config.json"         "$dr/workspacepeek/config.json"
 #
-# borders/bordersrc 는 일부러 뺐다. apps/rice-colors 가 벽지 색으로 통째로 다시
+# borders/bordersrc 는 일부러 뺐다. apps/rice/colors 가 벽지 색으로 통째로 다시
 # 쓰는 파생물이라, 되받으면 그때 걸려 있던 벽지의 색이 레포에 박힌다. 레포의 것은
 # wal 을 한 번도 안 돌린 머신을 위한 폴백이고, 모양(width/style)을 바꾸려면
 # rice-colors 안의 그 블록을 고쳐야 한다. ghostty 의 themes/ 를 빼는 것과 같은 이유.
@@ -298,7 +298,7 @@ copy "$cfg/workspacepeek/config.json"         "$dr/workspacepeek/config.json"
 # 받는다), 그 너머의 dank-rice.ini 는 파생물이라 아예 저장하지 않는다.
 #
 # 줄을 설명하는 주석까지 같이 지운다. 문구가 두 가지인데(니리 모듈이 시드하며 붙인
-# 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice-fuzzel` 로 시작한다.
+# 것과 rice-fuzzel 이 붙인 것) 둘 다 `# apps/rice/fuzzel` 로 시작한다.
 #
 # 거르는 자리가 여기인 것이 중요하다. 예전에는 복사한 *뒤에* 레포 파일을 sed -i 로
 # 손봤는데, 그러면 --check 가 걸러지기 전의 라이브 파일을 레포와 비교해서 언제나
@@ -320,7 +320,7 @@ fi
 
 # GTK. 이건 GNOME 용이 아니라 **니리 용**이다: 니리 세션에는 XSettings 를 방송하는
 # 데몬이 없어서 GTK 앱이 이 파일을 직접 읽는다. GNOME 쪽 경로는 따로 있다
-# (../modules/nixos/home-manager.nix 의 dconf 블록). 그래서 GNOME 을 걷어내도
+# (../../modules/nixos/home-manager.nix 의 dconf 블록). 그래서 GNOME 을 걷어내도
 # 이 파일은 남고, 오히려 유일한 경로가 된다.
 #
 # 되받을 값이 실제로 생기는 건 DMS 가 여기 쓰기 때문이다 — SettingsData.qml 의

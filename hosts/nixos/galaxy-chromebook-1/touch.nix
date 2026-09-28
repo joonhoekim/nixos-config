@@ -188,7 +188,7 @@ let
   # `touch-state` — 세 토글의 지금 상태를 JSON 한 덩어리로 준다.
   #
   # DMS 플러그인이 이것만 부른다. QML 쪽에 상태 읽는 법을 적지 않는 것은
-  # ../../../modules/nixos/dms 의 RiceSwitcher 가 apps/rice-menu 에게 목록을
+  # ../../../modules/nixos/dms 의 RiceSwitcher 가 apps/rice/menu 에게 목록을
   # 통째로 받아 오는 것과 같은 방향이다 — 판정이 늘거나 바뀌어도 QML 은 그대로다.
   touchStateCli = pkgs.writeShellApplication {
     name = "touch-state";

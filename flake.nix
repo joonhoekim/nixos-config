@@ -138,13 +138,16 @@
           '';
         };
       };
-      mkApp = scriptName: system: {
+      # 앱 이름과 apps/ 아래 경로를 따로 받는다. 경로에는 `/` 가 들어갈 수 있지만
+      # (apps/check/mac) 이름은 스토어 경로와 `nix run .#<이름>` 에 그대로 쓰이므로
+      # 평평해야 한다.
+      mkApp = name: path: system: {
         type = "app";
-        program = "${(nixpkgs.legacyPackages.${system}.writeScriptBin scriptName ''
+        program = "${(nixpkgs.legacyPackages.${system}.writeScriptBin name ''
           #!/usr/bin/env bash
           PATH=${nixpkgs.legacyPackages.${system}.git}/bin:$PATH
-          exec ${self}/apps/${scriptName} "$@"
-        '')}/bin/${scriptName}";
+          exec ${self}/apps/${path} "$@"
+        '')}/bin/${name}";
       };
       # dir 은 호스트 디렉토리, name 은 hostname(공용 호스트면 null).
       # localHostName 만 디렉토리 이름에서 박는다 — `scutil --get LocalHostName`
@@ -205,7 +208,7 @@
         "rice-knobs" "rice-decor" "rice-colors"
         "ddc-probe"
         "demo" "mac-signing-cert"
-      ] (name: mkApp name system);
+      ] (name: mkApp name name system);
     in
     {
       devShells = forAllSystems devShell;

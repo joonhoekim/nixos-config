@@ -5,16 +5,16 @@
 니리에 없는 훅이라 이 세션이 이 레포에 있는 이유가 된다(`../default.nix`).
 
 ```sh
-apps/rice-crt                        지금 걸린 것과 목록
-apps/rice-crt crt/crt                한 장
-apps/rice-crt water/still print/paper  즉석 체인 — 순서대로 겹친다
-apps/rice-crt chain/bad-signal        저장해 둔 체인
-apps/rice-crt --save 이름             지금 체인에 이름 붙이기
-apps/rice-crt --next                 목록 순환 (Mod+Shift+C 와 같다)
-apps/rice-crt off                    탈출구
+apps/rice/crt                        지금 걸린 것과 목록
+apps/rice/crt crt/crt                한 장
+apps/rice/crt water/still print/paper  즉석 체인 — 순서대로 겹친다
+apps/rice/crt chain/bad-signal        저장해 둔 체인
+apps/rice/crt --save 이름             지금 체인에 이름 붙이기
+apps/rice/crt --next                 목록 순환 (Mod+Shift+C 와 같다)
+apps/rice/crt off                    탈출구
 ```
 
-손으로 하는 자리는 **라이싱 스튜디오**다 — `apps/rice-studio`, 또는 DankBar 의
+손으로 하는 자리는 **라이싱 스튜디오**다 — `apps/rice/studio`, 또는 DankBar 의
 조각. 왼쪽에서 갈래별로 고르고, `＋` 로 얹고, 오른쪽에서 순서를 바꾸고 값을
 맞춘다. 얹을 수 없는 칸은 목록에서 빠지는 게 아니라 흐려지고 이유가 옆에 붙는다
 (「값이 곱이라는 것」).
@@ -63,7 +63,7 @@ chains/           bad-signal
 | `pointer_pressed_times[32]` | 그 클릭 **이후** 흐른 초 |
 
 셰이더토이 규약(`mainImage` · `iChannel0` · `iResolution` · `iTime` · `iMouse` ·
-`iFrame`)으로 쓴 파일도 칸이 된다. `apps/rice-chain` 이 껍데기를 둘러서 위
+`iFrame`)으로 쓴 파일도 칸이 된다. `apps/rice/chain` 이 껍데기를 둘러서 위
 이름으로 접어 준다 — 터미널 셰이더가 그쪽이다.
 
 ## 체인
@@ -71,7 +71,7 @@ chains/           bad-signal
 `decoration:screen_shader` 는 **한 장만 받는다.** 상류도 여러 장을 겹치는 기능을
 안 만들고 "합쳐서 써라"로 답해 왔다(hyprwm/Hyprland#14101).
 
-그래서 `apps/rice-chain` 이 전처리기로 한 파일에 접는다. 칸마다 껍데기를 앞뒤에
+그래서 `apps/rice/chain` 이 전처리기로 한 파일에 접는다. 칸마다 껍데기를 앞뒤에
 두르고 파일 내용을 **그대로** 사이에 끼운다 — 이름을 갈라 놓고, 뒷칸의 `tex` 를
 앞칸의 출력으로 바꿔치기한다. **셰이더 소스는 한 글자도 안 고쳐진다.** 그래야
 같은 파일이 혼자 걸릴 때도, 맥에서도 그대로 돈다.
@@ -84,7 +84,7 @@ chains/           bad-signal
 넘기므로 비용이 **합**이지만, 여기는 인라인이라 **곱**이다 — 뒷칸이 `tex` 를 N 번
 읽으면 앞칸이 픽셀당 N 번 돈다.
 
-측정값 (픽셀당 `texture()` 평가 횟수, `apps/rice-chain --cost`):
+측정값 (픽셀당 `texture()` 평가 횟수, `apps/rice/chain --cost`):
 
 ```
 crt/crt           23      cyberpunk/neon    21      print/paper        5
@@ -99,7 +99,7 @@ cyberpunk/neon → glitch      =  63    아슬아슬하게 들어간다
 crt/crt → cyberpunk/neon     ≈ 483    못 쓴다
 ```
 
-곱이라 순서를 바꿔도 안 준다. 한도(64)를 넘으면 `apps/rice-chain` 이 거절하고,
+곱이라 순서를 바꿔도 안 준다. 한도(64)를 넘으면 `apps/rice/chain` 이 거절하고,
 런처의 "칸 더하기" 목록에는 애초에 안 뜬다.
 
 한 탭짜리가 `term/glow` 하나뿐인 것이 지금의 제약이다. 예전에는 `print/riso` 와
@@ -155,11 +155,11 @@ term/glow          끔
 
 표시된 손잡이가 하나라도 0 이 아니면 흐르는 것이고, 전부 0 이면 그 자리에서
 끔이 된다. 표시가 하나도 없는데 `time` 을 읽으면 켬이다. 판정은
-`apps/rice-chain --motion`, 그걸 보고 축을 맞추는 것은 `apps/rice-crt` 다.
+`apps/rice/chain --motion`, 그걸 보고 축을 맞추는 것은 `apps/rice/crt` 다.
 
 `@` 표시는 슬라이더 선언이기도 하다. 붙은 것만 손잡이가 되고, 설명은 바로 위
 주석 덩어리와 `@범위` 뒤에 남은 글자를 쓴다. 새 셰이더를 넣어도 스크립트는 안
-고친다 — `apps/rice-knobs`.
+고친다 — `apps/rice/knobs`.
 
 ## 승격이 안 되는 셰이더
 
@@ -169,7 +169,7 @@ term/glow          끔
 하나는 뜻이다. 탭 수는 "얼마나"가 아니라 셰이더의 **모양**이라, 값을 밀면 룩이
 부드럽게 변하는 게 아니라 다른 셰이더가 된다.
 
-또 하나는 `apps/rice-chain` 이 그 값을 **정적으로 읽어야 한다**는 것이다. 체인
+또 하나는 `apps/rice/chain` 이 그 값을 **정적으로 읽어야 한다**는 것이다. 체인
 비용이 곱이라 탭 수를 미리 세야 하고, 루프 횟수를 못 읽으면 세는 것을 포기하고
 실패를 낸다. 모르는 값을 1 로 치면 무거운 조합이 조용히 통과하기 때문이다.
 
@@ -183,19 +183,19 @@ term/glow          끔
   거기서 감마 LUT 과 블렌드 오버레이가 탈락하는 것이 이 이유다. 하이프랜드에서는
   컴포지터가 화면을 직접 넘겨주므로 그 선택 자체가 없다.
 - **합성본은 캐시에 산다.** `${XDG_CACHE_HOME:-~/.cache}/rice/shaders/`. 손잡이를
-  고치면 원본이 바뀌므로 걸 때마다 다시 접는다(`apps/rice-crt --reload`). 통째로
+  고치면 원본이 바뀌므로 걸 때마다 다시 접는다(`apps/rice/crt --reload`). 통째로
   지워도 다음에 걸 때 다시 만들어진다.
 - **컴파일 실패는 하이프랜드가 안 알려 준다.** 셰이더를 걸어 두고 다음 프레임에
   컴파일하며, 실패해도 `hyprctl` 은 ok 를 돌려주고 로그에도 안 남는다(0.56.1
-  실측). 그래서 이 세션은 `glslang` 을 깔아 두고 `apps/rice-chain` 이 걸기 전에
+  실측). 그래서 이 세션은 `glslang` 을 깔아 두고 `apps/rice/chain` 이 걸기 전에
   한 번 돌린다.
-- **화면이 알아볼 수 없게 되면** 다른 tty 에서든 눈 감고든 `apps/rice-crt off`.
+- **화면이 알아볼 수 없게 되면** 다른 tty 에서든 눈 감고든 `apps/rice/crt off`.
   스튜디오 창을 그 상태에서 찾을 수 있다고 가정하지 말 것 — 그 창도 같은 유리
   뒤에 있다. 런처의 `off` 와 `Mod+Shift+C` 가 남아 있는 이유다.
 - **읽는 일에는 컴포지터가 필요 없다.** 목록·탭 수·흐름 판정·합성·검증은 전부
-  파일만 보면 되는 일이라 니리에서도 맥에서도 돈다(`apps/rice-chain`). 세션이
-  필요한 것은 컴포지터에게 묻고 거는 일뿐이고, `apps/rice-crt` 는 그 자리에서만
+  파일만 보면 되는 일이라 니리에서도 맥에서도 돈다(`apps/rice/chain`). 세션이
+  필요한 것은 컴포지터에게 묻고 거는 일뿐이고, `apps/rice/crt` 는 그 자리에서만
   거절한다. 그래서 스튜디오는 하이프랜드 밖에서도 열려서 값을 고칠 수 있다.
 - **설정은 선언적이지 않다.** `./shaders` · `./chains` · `./studio` 는 없을 때만
   `$HOME` 으로 시드된다(`../default.nix`). 라이싱 중에 고친 값이 rebuild 로
-  날아가지 않게 하려는 것이고, 되받아 레포에 넣는 것은 `apps/rice-save` 다.
+  날아가지 않게 하려는 것이고, 되받아 레포에 넣는 것은 `apps/rice/save` 다.

@@ -4,18 +4,18 @@ pragma Singleton
 //
 // ── 아는 것이 하나도 없다 ─────────────────────────────────────────────────
 // 목록도, 지금 걸린 것도, 탭 수도, 무엇을 더할 수 있는지도 여기서 계산하지
-// 않는다. `apps/rice-crt --json` 한 번이 그걸 전부 준다. 특히 **곱 한도**는
-// 여기서 세면 안 된다 — 규칙은 apps/rice-chain 에 있고, 예전 런처 플러그인이
+// 않는다. `apps/rice/crt --json` 한 번이 그걸 전부 준다. 특히 **곱 한도**는
+// 여기서 세면 안 된다 — 규칙은 apps/rice/chain 에 있고, 예전 런처 플러그인이
 // 그걸 QML 에서 한 번 더 세다가 값이 갈렸다(`now * taps > (maxTaps || 64)`).
 //
 // ── 왜 한 번인가 ──────────────────────────────────────────────────────────
-// 예전에는 값마다 apps/rice-chain --info 를 불렀다. 열 몇 장이면 프로세스가
+// 예전에는 값마다 apps/rice/chain --info 를 불렀다. 열 몇 장이면 프로세스가
 // 예순 개고, 런처는 창을 닫았다 여는 물건이라 2 초 캐시로 가릴 수 있었다. 창을
 // 열어 두고 만지는 여기서는 못 가린다. --json 은 프로세스 하나이고, 그 안의
-// 탭·흐름은 mtime 으로 캐시된다(apps/rice-chain --info-all).
+// 탭·흐름은 mtime 으로 캐시된다(apps/rice/chain --info-all).
 //
 // ── 스크립트 경로 ─────────────────────────────────────────────────────────
-// RICE_APPS 를 apps/rice-studio 가 넣어 준다. 그게 없으면 관례 경로다 — 라이싱
+// RICE_APPS 를 apps/rice/studio 가 넣어 준다. 그게 없으면 관례 경로다 — 라이싱
 // 중에는 스크립트를 자주 고치므로 스토어가 아니라 체크아웃을 부르는 것이 기본이고,
 // `nix run` 으로 띄웠을 때만 스토어 쪽이 env 로 들어온다.
 
@@ -28,8 +28,8 @@ Singleton {
 
     readonly property string apps: Quickshell.env("RICE_APPS")
         || ((Quickshell.env("RICE_REPO")
-             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
-    readonly property string crt: apps + "/rice-crt"
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps/rice")
+    readonly property string crt: apps + "/crt"
 
     property var values: []
     property string current: "off"

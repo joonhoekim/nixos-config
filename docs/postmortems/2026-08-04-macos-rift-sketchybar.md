@@ -193,7 +193,7 @@ tail -f /tmp/rift.log
 
 ### 증상
 
-`apps/rice-colors` 가 안 끝난다. 에러도 없고 그냥 영원히 매달려 있다.
+`apps/rice/colors` 가 안 끝난다. 에러도 없고 그냥 영원히 매달려 있다.
 
 ### 원인
 

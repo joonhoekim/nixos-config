@@ -5,14 +5,14 @@
 //
 // ── 이 파일이 하지 않는 일 ────────────────────────────────────────────────
 // 축이 몇 개인지, 값이 무엇인지, 지금 무엇이 걸려 있는지 전부 모른다. 그건
-// ~/nixos-config/apps/rice-menu 가 JSON 으로 알려 준다. 새 축이 생기거나 스위처의
+// ~/nixos-config/apps/rice/menu 가 JSON 으로 알려 준다. 새 축이 생기거나 스위처의
 // 인터페이스가 바뀌어도 이 파일은 그대로다 — 셸 쪽만 고치면 된다.
 //
 // **한동안 사실이 아니었다.** 화면 셰이더가 체인을 갖게 되면서 이 파일이 갈래
 // 이름을 자르고, 탭 수를 곱하고, 한도(64)를 자기 안에 적어 두고, `add`/`save` 라는
 // 그 축에만 있는 동사를 알게 됐다. 축 하나의 성질이 "값 하나 고르기"에서 벗어난
 // 것이라 계약을 못 지킨 쪽은 축이었는데, 대가는 이 파일이 치렀다. 그래서 셰이더는
-// 별도 창으로 나갔고(apps/rice-studio), 여기 남은 것은 **탈출구**다 — off 와 다음
+// 별도 창으로 나갔고(apps/rice/studio), 여기 남은 것은 **탈출구**다 — off 와 다음
 // 것. 셰이더가 화면을 못 알아보게 만들면 그 창도 같은 유리 뒤에 있어서, 끄는 길이
 // 거기에만 있으면 안 된다.
 //
@@ -40,8 +40,8 @@ Item {
     // 떨어진다 — 같은 규칙이 hyprland/rice/studio/Rice/*.qml 에도 있다.
     readonly property string apps: Quickshell.env("RICE_APPS")
         || ((Quickshell.env("RICE_REPO")
-             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
-    readonly property string menu: apps + "/rice-menu"
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps/rice")
+    readonly property string menu: apps + "/menu"
 
     property var axes: []
     property bool refreshing: false

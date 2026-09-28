@@ -39,7 +39,7 @@ Karabiner 에도 같은 기능이 있고(`devices[].mouse_flip_vertical_wheel`) 
 
 ```sh
 rm ~/.config/linearmouse/linearmouse.json
-apps/rice-restore linearmouse
+apps/rice/restore linearmouse
 ```
 
 고치는 방향은 다른 축과 같다. 라이브를 고치고(설정 GUI 로 하든 파일을 열든) 체감을 본 뒤
@@ -47,7 +47,7 @@ apps/rice-restore linearmouse
 
 ```sh
 python3 -m json.tool ~/.config/linearmouse/linearmouse.json > /dev/null   # JSON 유효성
-apps/rice-save              # 라이브 → 레포
+apps/rice/save              # 라이브 → 레포
 ```
 
 JSON5 가 아니라 **주석을 쓰면 파싱 에러**다. 설명은 이 파일에 적는다.

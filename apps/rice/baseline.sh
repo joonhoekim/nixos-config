@@ -1,8 +1,8 @@
 # 기준선(baseline). 라이싱 파일이 **마지막으로 동기화된 시점의 내용**을 따로
 # 한 벌 보관해서, 레포와 라이브가 다를 때 "누가 고쳤나"를 답할 수 있게 한다.
 #
-#   . "$(dirname "$0")/rice-baseline.sh"        (apps/rice-save · apps/rice-restore)
-#   . ${../../apps/rice-baseline.sh}            (modules/shared/rice-seed-helpers.nix)
+#   . "$(dirname "$0")/baseline.sh"        (apps/rice/save · apps/rice/restore)
+#   . ${../../apps/rice/baseline.sh}            (modules/shared/rice-seed-helpers.nix)
 #
 # 두 자리에서 같은 파일을 읽는 것이 요점이다. 판정 규칙이 두 벌이 되면 한쪽만
 # 고친 날 조용히 어긋나고, 그건 이 파일이 없애려는 문제 그 자체다.
@@ -38,7 +38,7 @@
 #
 # ── 거르개(filter) ─────────────────────────────────────────────────────────
 # 몇몇 파일은 라이브에만 있는 파생 줄을 달고 산다(fuzzel.ini 맨 위의 include —
-# apps/rice-fuzzel 이 이 머신의 절대 경로로 붙인다). 그걸 그대로 담으면 스위처가
+# apps/rice/fuzzel 이 이 머신의 절대 경로로 붙인다). 그걸 그대로 담으면 스위처가
 # 한 번 돌 때마다 "라이브가 바뀌었다"가 되어 판정이 무의미해진다. 그래서 기준선에는
 # **비교에 쓰는 형태**(거른 뒤)를 담는다. rice-save 와 rice-restore 가 이미 같은
 # 거르개를 비교에 쓰므로 규칙이 하나로 맞는다.

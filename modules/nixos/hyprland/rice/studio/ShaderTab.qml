@@ -146,7 +146,7 @@ Item {
                 if (saveName.text.length === 0)
                     return;
                 Shaders.save(saveName.text);
-                root.note("chain/" + saveName.text + " 으로 저장했다 — 레포에 넣으려면 apps/rice-save");
+                root.note("chain/" + saveName.text + " 으로 저장했다 — 레포에 넣으려면 apps/rice/save");
                 saveName.text = "";
                 open = false;
             }

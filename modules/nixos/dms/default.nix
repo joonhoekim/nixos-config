@@ -9,7 +9,7 @@
 # 면이 둘인 composite 플러그인이다(PLUGINS/plugin-schema.json 의 components).
 #
 #   launcher  라이싱 축을 런처(Mod+space)에서 고른다. 값도 목록도 여기 없다 —
-#             apps/rice-menu 가 JSON 으로 주고, 그건 다시 축별 스위처에게 묻는다.
+#             apps/rice/menu 가 JSON 으로 주고, 그건 다시 축별 스위처에게 묻는다.
 #             그래서 축을 추가해도 QML 은 그대로다.
 #   widget    DankBar 조각 하나. 누르면 라이싱 스튜디오를 띄우는 것이 전부다.
 #
@@ -20,7 +20,7 @@
 # 계약에 우겨넣다 보니 QML 이 갈래 이름을 자르고 탭 수를 곱하고 한도(64)를 자기
 # 안에 적어 두게 됐고, "이 파일은 축이 뭔지 모른다"는 자기 머리말과 어긋났다.
 #
-# 그래서 셰이더는 별도 창으로 나갔다(apps/rice-studio · ../hyprland/rice/studio).
+# 그래서 셰이더는 별도 창으로 나갔다(apps/rice/studio · ../hyprland/rice/studio).
 # 여기 남은 것은 그 창을 여는 단추와, 화면이 망가졌을 때 쓰는 탈출구(off ·
 # 다음 것)다 — 셰이더가 화면을 못 알아보게 만들면 그 창도 같은 유리 뒤에 있다.
 #
@@ -51,7 +51,7 @@
 # 시스템 쪽에 environment.etc 로 두면 선언적이고 rebuild 마다 갱신된다는 장점이
 # 있지만, 스토어 심볼릭 링크라 고쳐 볼 수가 없다. 이 레포의 라이싱 파일이 전부
 # $HOME 에 시드되는 것과 같은 이유로 여기도 사용자 쪽이다 — QML 을 고치면 DMS 가
-# 폴더를 감시하다 바로 다시 읽는다. 되받아 저장하는 건 apps/rice-save.
+# 폴더를 감시하다 바로 다시 읽는다. 되받아 저장하는 건 apps/rice/save.
 #
 # ── plugin_settings.json ───────────────────────────────────────────────────
 # 플러그인은 파일만 놓아서는 안 뜬다. DMS 가 `enabled: true` 를 봐야 로드한다

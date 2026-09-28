@@ -2,9 +2,9 @@
 #
 # Switch the desktop look between rice profiles, live.
 #
-#   apps/rice-switch              현재 프로필과 목록만 출력
-#   apps/rice-switch frosted      전환
-#   apps/rice-switch --next       목록 순서대로 다음 것 (키에 바인딩하기 좋다)
+#   apps/rice/switch              현재 프로필과 목록만 출력
+#   apps/rice/switch frosted      전환
+#   apps/rice/switch --next       목록 순서대로 다음 것 (키에 바인딩하기 좋다)
 #
 # 재시작도 리빌드도 없다. 세 소비자가 전부 파일을 감시하기 때문이다:
 #
@@ -20,8 +20,8 @@
 # 프로필, 위젯 사용 기록 등)가 같이 들어 있어서, 통째로 갈아끼우면 그것까지
 # 날아간다. 월페이퍼는 애초에 여기 없다 — session.json 에 따로 산다.
 
-# 목록·순환·거절은 apps/rice-term 과 같은 모양이어야 해서 rice-lib.sh 에 있다.
-. "$(dirname "$0")/rice-lib.sh"
+# 목록·순환·거절은 apps/rice/term 과 같은 모양이어야 해서 lib.sh 에 있다.
+. "$(dirname "$0")/lib.sh"
 
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 rice="$cfg/rice"
@@ -107,13 +107,13 @@ printf '%s\n' "$name" > "$rice_current_file"
 # 테마가 그대로면 팔레트도 그대로라 기다릴 이유가 없다.
 # 실패해도 전환 자체는 성공이니 죽이지 않는다 — 런처 색이 한 박자 늦을 뿐이다.
 if [ "$theme_changed" -eq 1 ]; then
-  "$(dirname "$0")/rice-fuzzel" --wait || true
+  "$(dirname "$0")/fuzzel" --wait || true
 else
-  "$(dirname "$0")/rice-fuzzel" || true
+  "$(dirname "$0")/fuzzel" || true
 fi
 
 printf "${GREEN}프로필 전환: %s${NC}\n" "$name"
 
 if [ "$name" = "matugen" ] && ! dms ipc call wallpaper get >/dev/null 2>&1; then
-  printf "${DIM}월페이퍼가 없으면 matugen 이 뽑을 색이 없다 — apps/rice-wall 로 하나 고르자.${NC}\n"
+  printf "${DIM}월페이퍼가 없으면 matugen 이 뽑을 색이 없다 — apps/rice/wall 로 하나 고르자.${NC}\n"
 fi

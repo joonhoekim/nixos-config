@@ -1,6 +1,6 @@
 # rice 프로필
 
-한 프로필 = 룩 하나. `apps/rice-switch <name>` 으로 전환하고, 반영은 즉시다 —
+한 프로필 = 룩 하나. `apps/rice/switch <name>` 으로 전환하고, 반영은 즉시다 —
 재시작도 리빌드도 없다. niri 는 `config.kdl` 과 그것이 include 한 파일까지
 감시하고, DMS 는 `settings.json` 에 `watchChanges` 가 걸려 있기 때문이다
 (`Common/SettingsData.qml`).
@@ -26,7 +26,7 @@ DMS 만 오버레이인 이유: `settings.json` 에는 룩과 무관한 머신 �
 
 터미널(ghostty)은 프로필에 조각이 없다. DMS/matugen 이 써 주는
 `~/.config/ghostty/themes/dankcolors` 를 읽으므로 색은 이미 따라온다. 형태는
-`modules/shared/ghostty/config` 가 기본값을 정하고, 그 위에 `apps/rice-term` 이 고른
+`modules/shared/ghostty/config` 가 기본값을 정하고, 그 위에 `apps/rice/term` 이 고른
 `modules/shared/ghostty/rices/<name>.conf` 가 얹힌다 — 그건 프로필과 **독립된 축**이라
 프로필을 바꿔도 터미널 룩은 그대로 남는다. 자세한 건 `modules/shared/ghostty/README.md`.
 
@@ -51,7 +51,7 @@ DMS 만 오버레이인 이유: `settings.json` 에는 룩과 무관한 머신 �
 | 블러 | 없음 | 켬, 바 투명도 0.6 | 켬, 0.85 |
 | 색 | monochrome | blue | 월페이퍼에서 추출 |
 
-`matugen` 은 월페이퍼가 있어야 제 모습이 나온다 — `apps/rice-wall` 참고.
+`matugen` 은 월페이퍼가 있어야 제 모습이 나온다 — `apps/rice/wall` 참고.
 
 ## 설정 GUI 로 만진 값 되받기
 
@@ -59,10 +59,10 @@ DMS 만 오버레이인 이유: `settings.json` 에는 룩과 무관한 머신 �
 때가 많다. 그렇게 찾은 값은 `settings.json` 에만 남으므로 프로필로 회수해야 한다:
 
 ```sh
-apps/rice-switch frosted          # 고칠 프로필을 켜고
+apps/rice/switch frosted          # 고칠 프로필을 켜고
 # ...설정 GUI 에서 곡률·투명도·블러를 만진다...
-apps/rice-save --check --dms frosted   # 뭐가 달라졌는지만 본다
-apps/rice-save --dms frosted           # 프로필로 회수하고 레포까지 저장
+apps/rice/save --check --dms frosted   # 뭐가 달라졌는지만 본다
+apps/rice/save --dms frosted           # 프로필로 회수하고 레포까지 저장
 ```
 
 `settings.json` 을 통째로 뜨는 게 아니라 **이미 그 프로필에 있는 키만** 라이브
@@ -80,6 +80,6 @@ apps/rice-save --dms frosted           # 프로필로 회수하고 레포까지 
 ```sh
 cp -r ~/.config/rice/profiles/amoled ~/.config/rice/profiles/mine
 $EDITOR ~/.config/rice/profiles/mine/{niri.kdl,dms.json}
-apps/rice-switch mine     # 바로 확인
-apps/rice-save            # 마음에 들면 레포에 저장
+apps/rice/switch mine     # 바로 확인
+apps/rice/save            # 마음에 들면 레포에 저장
 ```

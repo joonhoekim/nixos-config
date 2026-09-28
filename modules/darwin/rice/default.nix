@@ -4,7 +4,7 @@ let
   # 벽지가 바뀌면 팔레트를 다시 뽑는 감시자. launchd.user.agents.wal-watch 가
   # 이걸 돌린다 — 왜 필요한지는 그 블록의 주석에.
   #
-  # 실제 작업은 apps/rice-colors 가 한다. 여기서 wal 을 직접 부르지 않는 이유는,
+  # 실제 작업은 apps/rice/colors 가 한다. 여기서 wal 을 직접 부르지 않는 이유는,
   # "팔레트를 뽑고 소비자들에게 밀어 넣는" 절차가 두 벌이 되면 반드시 한쪽만
   # 고치는 날이 오기 때문이다. 손으로 부르든 감시자가 부르든 같은 파일이다.
   # 벽지 경로를 Index.plist 에서 직접 꺼낸다.
@@ -66,7 +66,7 @@ print(url[len("file://"):])
       mkdir -p "$(dirname "$state")"
       printf '%s' "$img" > "$state"
       echo "wallpaper -> $img"
-      ${../../../apps/rice-colors} "$img" || echo "rice-colors 실패"
+      ${../../../apps/rice/colors} "$img" || echo "rice-colors 실패"
     }
 
     # 로그인 직후 한 번. state 검사가 있으니 벽지가 그대로면 아무 일도 안 한다 —
@@ -117,8 +117,8 @@ in
 # a store symlink every nudge costs a rebuild.
 #
 # So the trees here are starting points, not the live config. Once seeded,
-# ~/.config is the original — `apps/rice-save` carries changes back to the repo
-# and `apps/rice-restore` pushes the repo the other way.
+# ~/.config is the original — `apps/rice/save` carries changes back to the repo
+# and `apps/rice/restore` pushes the repo the other way.
 #
 # ── Where the colours come from ───────────────────────────────────────────
 # pywal (`wal`) reads a wallpaper and writes a 16-colour palette to
@@ -126,13 +126,13 @@ in
 # cache and falls back to a built-in palette when it is absent (a fresh machine
 # has never run `wal`):
 #
-#   jankyborders  apps/rice-colors pushes new args into the running instance
+#   jankyborders  apps/rice/colors pushes new args into the running instance
 #   wezterm       ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
 #   WorkspacePeek reads ~/.cache/wal/colors.json itself (useWalColors)
 #
-# `apps/rice-colors <image>` runs wal and then pokes them. Ghostty is
+# `apps/rice/colors <image>` runs wal and then pokes them. Ghostty is
 # deliberately not in that list: its palette is owned by the other ricing axis
-# (modules/shared/ghostty + apps/rice-term), and having two generators
+# (modules/shared/ghostty + apps/rice/term), and having two generators
 # write the same theme file is how you get a look that flips back on the next
 # switch.
 
@@ -157,7 +157,7 @@ in
   environment.systemPackages = with pkgs; [ jankyborders ];
 
   # ── Wallpaper → palette, automatically ───────────────────────────────────
-  # Without this, `apps/rice-colors` has to be run by hand every time the
+  # Without this, `apps/rice/colors` has to be run by hand every time the
   # wallpaper changes. macOS records the current desktop picture in
   #
   #   ~/Library/Application Support/com.apple.wallpaper/Store/Index.plist
@@ -200,7 +200,7 @@ in
       # pywal16 rather than pywal: same `wal` command and the same
       # ~/.cache/wal/ layout, but the maintained fork — it emits all 16 colours
       # (upstream pywal only really varies 8) which is what wezterm's brights
-      # and the border luminance ranking in apps/rice-colors consume.
+      # and the border luminance ranking in apps/rice/colors consume.
       #
       # The nixpkgs wrapper already puts imagemagick on its PATH, so the
       # default backend works with nothing else installed.
@@ -239,7 +239,7 @@ in
       rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
       # 창 테두리. rift 가 run_on_start 에서 이 파일을 실행하고, 팔레트가 바뀔
-      # 때마다 apps/rice-colors 가 다시 쓴다.
+      # 때마다 apps/rice/colors 가 다시 쓴다.
       rice_sync ${./borders} "$HOME/.config/borders"
 
       # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
@@ -314,7 +314,7 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R, Karabiner 는 설정 앱에서
       # 프로파일을 다시 고르면 된다.
       #
-      # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice-restore 는
+      # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice/restore 는
       # rm+cp 로 덮어서 감시가 걸려 있던 아이노드를 날리므로, 그쪽은 복원 뒤에
       # 명시적으로 reload 를 부른다.
     '';

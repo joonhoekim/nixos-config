@@ -85,7 +85,7 @@ tccutil reset Accessibility com.example.workspacepeek       # 옛 허가를 버�
 - `windowManager.backend = "auto"` → rift 를 자동으로 잡는다 (`rift-cli query
   workspaces` 를 쓴다)
 - `colors.useWalColors = true` → `~/.cache/wal/colors.json` 을 직접 읽는다.
-  `apps/rice-colors` 가 팔레트를 바꾸면 이 오버레이도 같이 따라온다
+  `apps/rice/colors` 가 팔레트를 바꾸면 이 오버레이도 같이 따라온다
 - `glyphs.appGlyphs` 는 Nerd Font 의 Material Design 영역(U+F0000~) 글리프다.
   `modules/shared/fonts.nix` 가 깔아 주는 JetBrainsMono Nerd Font 안에 들어 있다
 
@@ -111,7 +111,7 @@ WallpaperPeek 은 부르지 않는다 — 그래서 권한이 없어도 프롬�
 벽지를 바꾸는 것 자체는 시스템 설정으로 되고, 팔레트는 그것과 무관하게 따라온다:
 macOS 가 `~/Library/Application Support/com.apple.wallpaper/Store/Index.plist` 를
 다시 쓰고, 그걸 지켜보는 감시자(`launchd.user.agents.wal-watch`)가
-`apps/rice-colors` 를 부른다. 연결 고리는 전적으로 저 plist 라, 벽지를 **어떻게**
+`apps/rice/colors` 를 부른다. 연결 고리는 전적으로 저 plist 라, 벽지를 **어떻게**
 바꿨는지는 상관이 없다.
 
 ## 안 되는 것 같을 때
@@ -170,7 +170,7 @@ open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibil
 
 ### 설정을 고쳤으면 재시작
 
-설정은 시작할 때 한 번만 읽는다. `apps/rice-restore peek` 는 이걸 알아서 해 준다.
+설정은 시작할 때 한 번만 읽는다. `apps/rice/restore peek` 는 이걸 알아서 해 준다.
 
 ```sh
 launchctl kickstart -k gui/$(id -u)/org.nixos.workspacepeek

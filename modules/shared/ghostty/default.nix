@@ -13,7 +13,7 @@
 # 쓰는 머신이라면 이 모듈은 아무 효과가 없다 — 그때는 그쪽 config 에서
 # `config-file = ~/.config/ghostty/config` 한 줄로 끌어오면 된다.
 #
-# 룩을 고르는 건 apps/rice-term 이고, 그쪽도 두 플랫폼에서 돈다.
+# 룩을 고르는 건 apps/rice/term 이고, 그쪽도 두 플랫폼에서 돈다.
 # 자세한 건 ./README.md.
 
 {
@@ -29,19 +29,19 @@
     # 그 생성기가 없을 때를 위한 팔레트. macOS 에는 DMS 가 아예 없고, 리눅스도
     # 첫 로그인에는 matugen 이 아직 안 돌아 있다. 없는 테마는 ghostty 가 설정
     # 에러로 잡으므로 — 색만 기본값이 되는 게 아니라 config 전체가 무효가 되고,
-    # apps/rice-term 은 그걸 자기가 넣은 조각 탓으로 읽어 룩 전환을 되돌린다 —
+    # apps/rice/term 은 그걸 자기가 넣은 조각 탓으로 읽어 룩 전환을 되돌린다 —
     # 이 파일은 색보다 "설정이 항상 유효하다"를 위해 있다. matugen 이 이미 쓴
     # 팔레트를 덮지 않는 것은 rice_sync 가 기준선을 보기 때문이다 — matugen 이
     # 쓴 순간 라이브가 기준선에서 벗어나므로 그 뒤로는 손대지 않는다. 복사본은
     # 쓰기 가능해서 리눅스에서 나중에 덮어써지는 것도 그대로다.
     rice_sync ${./themes}  "$HOME/.config/ghostty/themes"
 
-    # 룩 조각과 셰이더. apps/rice-term 이 rices/<name>.conf 를 rice.conf 로
+    # 룩 조각과 셰이더. apps/rice/term 이 rices/<name>.conf 를 rice.conf 로
     # 복사하고, config 끝의 include 가 그걸 읽는다. rice.conf 자체는 파생물이라
     # 시드하지 않는다 — `?` 덕에 없는 게 정상 상태이고, 첫 로그인은 셰이더 없이 뜬다.
     rice_sync ${./rices}   "$HOME/.config/ghostty/rices"
     rice_sync ${./shaders} "$HOME/.config/ghostty/shaders"
     rice_ensure "$HOME/.config/ghostty/config" "config-file = ?rice.conf" \
-      '# apps/rice-term 이 갈아끼우는 룩 조각. 없어도 되도록 ? 를 붙인다.'
+      '# apps/rice/term 이 갈아끼우는 룩 조각. 없어도 되도록 ? 를 붙인다.'
   '';
 }

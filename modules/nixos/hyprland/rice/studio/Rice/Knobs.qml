@@ -1,12 +1,12 @@
 pragma Singleton
 
-// 셰이더 값(손잡이)을 읽고 쓴다. 뒤판은 apps/rice-knobs 이고, 그건 다시 셰이더
+// 셰이더 값(손잡이)을 읽고 쓴다. 뒤판은 apps/rice/knobs 이고, 그건 다시 셰이더
 // 파일 안의 `// @0..1` 표시를 읽는다 — 무엇이 손잡이인지 여기 목록은 없다.
 // 셰이더에 값을 하나 더 만들고 표시만 붙이면 이 파일을 안 고쳐도 슬라이더가 는다.
 //
 // ── 쓰는 곳은 언제나 $HOME ────────────────────────────────────────────────
 // 레포는 비교 대상으로만 읽힌다("레포와 다름" 표시와 되돌리기). 레포에 넣는 것은
-// 값이 자리 잡은 뒤 apps/rice-save 로 한 번에, 사람이 판단해서.
+// 값이 자리 잡은 뒤 apps/rice/save 로 한 번에, 사람이 판단해서.
 //
 // ── 디바운스 ──────────────────────────────────────────────────────────────
 // 값을 하나 쓰면 파일을 고치고 셰이더를 다시 건다(90ms 쯤). 슬라이더가 움직일
@@ -22,8 +22,8 @@ Singleton {
 
     readonly property string apps: Quickshell.env("RICE_APPS")
         || ((Quickshell.env("RICE_REPO")
-             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
-    readonly property string bin: apps + "/rice-knobs"
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps/rice")
+    readonly property string bin: apps + "/knobs"
 
     property var targets: []
     property string target: ""
@@ -67,7 +67,7 @@ Singleton {
                     // 걸려 있는 칸을 앞으로 당긴다. 대상이 열 몇 개인데 지금 만질
                     // 것은 거의 언제나 화면에 보이는 것이라, 그 줄에서 눈이 제일
                     // 오래 걸리는 곳이 여기다. pass 는 체인에서 몇째 칸인지고
-                    // (apps/rice-knobs), 안 걸린 것은 없으므로 뒤로 간다.
+                    // (apps/rice/knobs), 안 걸린 것은 없으므로 뒤로 간다.
                     root.targets = (d.targets || []).slice().sort(function (a, b) {
                         return (a.pass || 99) - (b.pass || 99);
                     });

@@ -3,7 +3,7 @@
 // This file is the ricing scratchpad. The live copy at ~/.config/niri/config.kdl
 // is a plain writable file: niri watches it and hot-reloads on save, and a
 // broken edit only prints an error while the previous config keeps running.
-// So iterate there, then run `apps/rice-save` to snapshot it back here.
+// So iterate there, then run `apps/rice/save` to snapshot it back here.
 //
 // The repo copy is a seed + backup, never a source of truth. Nothing in Nix
 // reads it except the activation script that copies it in when the file is
@@ -172,23 +172,23 @@ binds {
 	// 체크아웃이 ~/nixos-config 가 아닐 수 있어서 RICE_REPO 를 먼저 본다 —
 	// 빗나가면 키가 조용히 아무 일도 안 한다. apps/doctor 가 그걸 짚어 준다.
 	Mod+Shift+P hotkey-overlay-title="Next rice profile" {
-		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-switch --next"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice/switch --next"
 	}
 	Mod+Shift+W hotkey-overlay-title="Random wallpaper" {
-		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall"
 	}
 	Mod+Ctrl+W hotkey-overlay-title="Pick wallpaper" {
-		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --pick"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall --pick"
 	}
 	// yazi 는 터미널이 필요해서 스크립트가 ghostty 를 하나 띄운다.
 	// 미리보기(kitty 그래픽 프로토콜)를 보면서 고를 때.
 	Mod+Alt+W hotkey-overlay-title="Pick wallpaper (preview)" {
-		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice-wall --yazi"
+		spawn "sh" "-c" "${RICE_REPO:-$HOME/nixos-config}/apps/rice/wall --yazi"
 	}
 	// 축마다 키를 하나씩 외우는 대신, DMS 런처를 RiceSwitcher 플러그인의
 	// 트리거(":")를 미리 친 채로 연다. 프로필·터미널·월페이퍼가 한 목록에 있고
 	// 지금 걸린 것에 ✓ 가 붙는다(화면 셰이더 축은 하이프랜드 세션에서만 뜬다).
-	// 플러그인은 ../../dms/plugins/RiceSwitcher, 값은 apps/rice-menu 에서 온다.
+	// 플러그인은 ../../dms/plugins/RiceSwitcher, 값은 apps/rice/menu 에서 온다.
 	Mod+Shift+R hotkey-overlay-title="Rice menu" {
 		spawn "dms" "ipc" "call" "spotlight" "toggleQuery" ":"
 	}

@@ -2,8 +2,8 @@
 #
 # fuzzel 을 DMS 팔레트에 맞춘다.
 #
-#   apps/rice-fuzzel              지금 팔레트로 다시 만든다
-#   apps/rice-fuzzel --wait       팔레트 파일이 갱신될 때까지 잠깐 기다렸다가
+#   apps/rice/fuzzel              지금 팔레트로 다시 만든다
+#   apps/rice/fuzzel --wait       팔레트 파일이 갱신될 때까지 잠깐 기다렸다가
 #
 # DMS 의 matugen 템플릿 목록은 소스에 하드코딩돼 있어서(Common/Theme.qml) fuzzel
 # 을 끼워 넣을 수 없다. 대신 DMS 는 뽑아낸 팔레트를 통째로
@@ -54,7 +54,7 @@ fi
 # 시드에 못 넣는 것도 (1) 때문이다: 홈 경로는 머신마다 다르다.
 if [ -f "$ini" ] && ! grep -q "^include=$gen\$" "$ini"; then
   tmp="$(mktemp)"
-  printf '# apps/rice-fuzzel 이 붙임. 기본 섹션이어야 해서 맨 위다.\ninclude=%s\n\n' "$gen" > "$tmp"
+  printf '# apps/rice/fuzzel 이 붙임. 기본 섹션이어야 해서 맨 위다.\ninclude=%s\n\n' "$gen" > "$tmp"
   cat "$ini" >> "$tmp"
   mv "$tmp" "$ini"
   printf "${DIM}  include 줄을 fuzzel.ini 맨 위에 추가했다${NC}\n"
@@ -132,7 +132,7 @@ mkdir -p "$(dirname "$gen")"
 jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" --arg n "$lines" '
   .colors[$m] as $c
   | def hex(k): ($c[k] | ltrimstr("#"));
-    "# 자동 생성 — apps/rice-fuzzel. 직접 고치지 말 것(다음 프로필 전환에 덮어쓴다).",
+    "# 자동 생성 — apps/rice/fuzzel. 직접 고치지 말 것(다음 프로필 전환에 덮어쓴다).",
     "# 형태는 fuzzel.ini 에서, 화면에 맞춰 계산되는 값과 색만 여기서.",
     "",
     (if $n == "" then empty else "[main]", "lines=\($n)", "" end),

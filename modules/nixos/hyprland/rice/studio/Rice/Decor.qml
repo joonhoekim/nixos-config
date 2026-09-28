@@ -1,7 +1,7 @@
 pragma Singleton
 
 // 하이프랜드 장식 값(투명도·흐리게·어둡게·그림자)을 읽고 쓴다. 뒤판은
-// apps/rice-decor 이고, 그건 ~/.config/hypr/decor.lua 를 통째로 다시 쓴 뒤
+// apps/rice/decor 이고, 그건 ~/.config/hypr/decor.lua 를 통째로 다시 쓴 뒤
 // `hyprctl eval` 로 지금 화면에 건다.
 //
 // ── 여기 목록이 없는 것은 Knobs 와 같다 ───────────────────────────────────
@@ -27,8 +27,8 @@ Singleton {
 
     readonly property string apps: Quickshell.env("RICE_APPS")
         || ((Quickshell.env("RICE_REPO")
-             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
-    readonly property string bin: apps + "/rice-decor"
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps/rice")
+    readonly property string bin: apps + "/decor"
 
     property var groups: []
     property string file: ""

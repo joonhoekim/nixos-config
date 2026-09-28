@@ -1,5 +1,5 @@
 # build 와 build-switch 가 공유하는 부분. 실행 파일이 아니라 sourced 되는 조각이라
-# flake 의 apps 목록에도 없다 — rice-lib.sh 와 같은 방식이고, `nix run` 아래서도
+# flake 의 apps 목록에도 없다 — rice/lib.sh 와 같은 방식이고, `nix run` 아래서도
 # $0 옆에 이 파일이 같이 있다는 전제도 같다(그쪽 머리말 참고).
 #
 #   . "$(dirname "$0")/build-lib.sh"

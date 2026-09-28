@@ -125,8 +125,8 @@ $ stat -c %w ~/.config/hypr/dms
 
 **고침.** 두 방향을 다 뚫었다.
 
-- 레포 → 라이브: `apps/rice-restore hypr` (이번에 `hypr` 대상을 추가했다)
-- 라이브 → 레포: `apps/rice-save` (`~/.config/hypr/{hyprland.lua,shaders}` 추가)
+- 레포 → 라이브: `apps/rice/restore hypr` (이번에 `hypr` 대상을 추가했다)
+- 라이브 → 레포: `apps/rice/save` (`~/.config/hypr/{hyprland.lua,shaders}` 추가)
 
 이 둘이 없던 동안 하이프랜드 설정은 **회수 경로 자체가 없었다** — 손으로 튜닝한
 값이 레포로 돌아갈 길이 없어 조용히 갈라지고 있었다.
@@ -140,8 +140,8 @@ $ stat -c %w ~/.config/hypr/dms
 **다음에 빨리 잡는 법.**
 
 ```sh
-apps/rice-save --check       # 레포 대비 라이브가 무엇이 다른지 (아무것도 안 씀)
-apps/rice-restore --check    # 반대 방향
+apps/rice/save --check       # 레포 대비 라이브가 무엇이 다른지 (아무것도 안 씀)
+apps/rice/restore --check    # 반대 방향
 ```
 
 "고쳤는데 안 바뀐다" 가 나오면 리빌드를 다시 하지 말고 **이 두 줄부터** 친다.
@@ -167,7 +167,7 @@ keyword can't work with non-legacy parsers. Use eval.
 hyprctl eval 'hl.config({decoration={screen_shader="/path/to/crt.frag"}})'
 ```
 
-이걸 감싼 게 이번에 추가한 `apps/rice-crt` 다. 덤으로 `hl.get_config()` 로 지금
+이걸 감싼 게 이번에 추가한 `apps/rice/crt` 다. 덤으로 `hl.get_config()` 로 지금
 걸린 값을 읽을 수 있다는 것도 이때 알았고, 그게 다음 항목을 낳았다.
 
 **설계로 옮긴 것.** 원래 키바인드는 lua 안에 카운터(`local crt = 1`)를 들고 있었다.
@@ -254,10 +254,10 @@ journalctl -b -1 -p warning      # 직전 부팅에서 진짜 죽었는지 확�
 
 그래서 이 저장소에서 "고쳤는데 안 바뀐다"를 만나면 순서가 이렇다.
 
-1. **라이브 파일이 실제로 바뀌었나** — `apps/rice-save --check`
+1. **라이브 파일이 실제로 바뀌었나** — `apps/rice/save --check`
    (레포를 고친 것과 화면이 읽는 것은 다른 파일이다)
 2. **그 파일을 읽는 것이 다시 읽었나** — 스위처를 한 번 돌린다
-   (`apps/rice-crt --reload`, `apps/rice-term`, `hyprctl reload`)
+   (`apps/rice/crt --reload`, `apps/rice/term`, `hyprctl reload`)
 3. **그것을 띄우는 유닛이 애초에 떴나** — `systemctl --user status`,
    그리고 `journalctl --user -b | grep -i cycle`
 

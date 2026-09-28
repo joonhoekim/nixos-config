@@ -4,7 +4,7 @@
 // 셰이더 목록도, 지금 걸린 것도, 탭 수도 모른다. 창이 알아야 할 것은 창이 셸에게
 // 직접 묻는다(../../../hyprland/rice/studio). 여기서 상태를 하나라도 들고 있으면
 // **DMS 안에 셰이더 지식이 다시 고이기 시작한다** — 갈라 놓은 이유가 정확히
-// 그것이었다(apps/rice-studio 머리말).
+// 그것이었다(apps/rice/studio 머리말).
 //
 // 그래서 폴링도 안 한다. 바 조각이 지금 걸린 셰이더 이름을 보여 주려면 셸을
 // 주기적으로 불러야 하고, 상시로 떠 있는 자리에서 그건 값에 비해 비싸다. 아이콘
@@ -31,8 +31,8 @@ PluginComponent {
     // 떨어진다 — 같은 규칙이 hyprland/rice/studio/Rice/*.qml 에도 있다.
     readonly property string apps: Quickshell.env("RICE_APPS")
         || ((Quickshell.env("RICE_REPO")
-             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps")
-    readonly property string studio: apps + "/rice-studio"
+             || ((Quickshell.env("HOME") || "") + "/nixos-config")) + "/apps/rice")
+    readonly property string studio: apps + "/studio"
 
     // 인자를 안 받는 함수라야 팝아웃 자리 계산을 건너뛰고 그냥 불린다.
     pillClickAction: function () {

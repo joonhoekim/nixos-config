@@ -3,8 +3,8 @@
 # This copy is a *seed*. modules/darwin/rice plants it at
 # ~/.config/aerospace/aerospace.toml on a machine that has none, and after that
 # the live file is the original — edit that one and reload (`alt-shift-;` ->
-# `esc`, or it re-reads on next launch), then `apps/rice-save aerospace` to
-# bring the result back here. `apps/rice-restore aerospace` pushes the other way.
+# `esc`, or it re-reads on next launch), then `apps/rice/save aerospace` to
+# bring the result back here. `apps/rice/restore aerospace` pushes the other way.
 #
 # Reference: https://nikitabobko.github.io/AeroSpace/guide
 

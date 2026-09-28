@@ -198,17 +198,25 @@
       # 것(mac-signing-cert, rice-colors)도 목록에 있고, 잘못 부르면 스크립트가
       # 스스로 거절한다.
       #
-      # apps/ 의 실행 파일과 이 목록은 짝이다. rice-lib.sh 처럼 sourced 되는
-      # 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새 스크립트(rice-decor)
-      # 를 빠뜨린 적이 있어서 목록 하나로 접었다.
+      # apps/ 의 실행 파일과 이 목록은 짝이다. build-lib.sh · rice/lib.sh 처럼
+      # sourced 되는 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새
+      # 스크립트(rice-decor)를 빠뜨린 적이 있어서 목록 하나로 접었다.
+      #
+      # 라이싱 스크립트는 apps/rice/ 에 있고 앱 이름에만 rice- 가 붙는다
+      # (apps/rice/switch → `nix run .#rice-switch`).
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "setup" "doctor"
-        "rice-save" "rice-restore" "rice-switch" "rice-wall" "rice-fuzzel"
-        "rice-term" "rice-crt" "rice-chain" "rice-studio" "rice-menu"
-        "rice-knobs" "rice-decor" "rice-colors"
         "ddc-probe"
         "demo" "mac-signing-cert"
       ] (name: mkApp name name system)
+      // nixpkgs.lib.listToAttrs (map (n: {
+        name = "rice-${n}";
+        value = mkApp "rice-${n}" "rice/${n}" system;
+      }) [
+        "save" "restore" "switch" "wall" "fuzzel"
+        "term" "crt" "chain" "studio" "menu"
+        "knobs" "decor" "colors"
+      ])
       # 점검 스크립트는 플랫폼마다 보는 것이 거의 겹치지 않아서 파일이 갈린다.
       # 그래서 위와 달리 실행 시점이 아니라 여기서 고른다 — `nix run .#check` 는
       # 어느 쪽에서든 자기 플랫폼의 것을 띄운다. 파일이 아직 없는 플랫폼에는

@@ -2,21 +2,21 @@
 
 이 디렉터리는 **NixOS 와 macOS 가 같이 쓴다.** `./default.nix` 가 양쪽
 home-manager 에서 import 되어 같은 파일을 `~/.config/ghostty/` 에 심고,
-`apps/rice-term` 도 두 플랫폼에서 돈다. 그래서 `modules/nixos/niri/rice/` 가
+`apps/rice/term` 도 두 플랫폼에서 돈다. 그래서 `modules/nixos/niri/rice/` 가
 아니라 `modules/shared/` 에 있다 — 니리는 리눅스 전용이지만 터미널 룩은 아니다.
 
 macOS 에서 다른 점은 세 가지다. [아래](#macos-에서-다른-점)에 정리했다.
 
 `config` 는 어느 룩에서나 같은 것(폰트, 팔레트)을 정하고, 바뀌는 것은
-`rices/<name>.conf` 조각 하나로 뺐다. `apps/rice-term <name>` 이 고른 조각을
+`rices/<name>.conf` 조각 하나로 뺐다. `apps/rice/term <name>` 이 고른 조각을
 `~/.config/ghostty/rice.conf` 로 복사하고 D-Bus 로 리로드를 시킨다. 재시작도
 리빌드도 없고, 열려 있는 창에 바로 적용된다.
 
 ```sh
-apps/rice-term            # 현재 + 목록
-apps/rice-term crt        # 전환
-apps/rice-term --next     # 다음 것
-apps/rice-term off        # 탈출구
+apps/rice/term            # 현재 + 목록
+apps/rice/term crt        # 전환
+apps/rice/term --next     # 다음 것
+apps/rice/term off        # 탈출구
 ```
 
 ## 왜 이렇게 붙나
@@ -87,7 +87,7 @@ A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `../../nixos/n
 
 ## 고치는 자리는 `~/.config` 다
 
-**레포 파일을 고치고 `apps/rice-term` 을 돌리면 아무 일도 일어나지 않는다.**
+**레포 파일을 고치고 `apps/rice/term` 을 돌리면 아무 일도 일어나지 않는다.**
 `rice-term` 이 복사하는 건 `rices/<name>.conf` 뿐이고, 셰이더 파일은 건드리지
 않는다. 레포는 시드일 뿐이라 `./default.nix` 도 **파일이 없을 때만** 넣어 준다 —
 이미 있는 `~/.config/ghostty/shaders/crt.glsl` 은 리빌드를 해도 덮이지 않는다.
@@ -98,21 +98,21 @@ A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `../../nixos/n
 
 ```sh
 $EDITOR ~/.config/ghostty/shaders/crt.glsl   # 여기서 고치고
-apps/rice-term crt                            # 바로 확인
-apps/rice-save                                # 마음에 들면 레포로
+apps/rice/term crt                            # 바로 확인
+apps/rice/save                                # 마음에 들면 레포로
 ```
 
-지금 둘이 어긋났는지 보려면 `apps/rice-save --check` 다.
+지금 둘이 어긋났는지 보려면 `apps/rice/save --check` 다.
 
 그래도 레포 쪽을 고쳐야 할 때가 있다 — 다른 머신에서 온 커밋이거나, git 에서
 되돌린 변경이거나, 그냥 편집기가 열어 둔 게 레포 파일이었거나. 그때는 손으로
-`cp` 하지 말고 `apps/rice-restore` 를 쓴다. 덮기 전에 무엇이 달라지는지 보여주고
+`cp` 하지 말고 `apps/rice/restore` 를 쓴다. 덮기 전에 무엇이 달라지는지 보여주고
 (`--check`), 지금 것을 `~/.config/rice/backups/<시각>/` 으로 옮겨 두고, 끝나면
 `rice-term` 을 다시 돌려 `rice.conf` 까지 새로 만든다.
 
 ```sh
-apps/rice-restore ghostty --check   # 무엇이 덮이는지만
-apps/rice-restore ghostty           # 확인을 받고 덮는다
+apps/rice/restore ghostty --check   # 무엇이 덮이는지만
+apps/rice/restore ghostty           # 확인을 받고 덮는다
 ```
 
 macOS 에서는 `ghostty` 가 유일한 대상이다. 나머지는 니리 세션 것이라 그쪽에는
@@ -127,8 +127,8 @@ macOS 에서는 `ghostty` 가 유일한 대상이다. 나머지는 니리 세션
 cd ~/.config/ghostty
 cp shaders/crt.glsl shaders/amber.glsl     # TINT 를 vec3(1.15, 0.85, 0.45) 로
 sed 's|shaders/crt.glsl|shaders/amber.glsl|' rices/crt.conf > rices/amber.conf
-apps/rice-term amber                        # 바로 확인
-apps/rice-save                              # 마음에 들면 레포에 저장
+apps/rice/term amber                        # 바로 확인
+apps/rice/save                              # 마음에 들면 레포에 저장
 ```
 
 셰이더는 Shadertoy 포맷이다 — `mainImage(out vec4, in vec2)` 를 정의하고
@@ -144,10 +144,10 @@ ghostty +show-config --default --docs | grep -B120 '^custom-shader = '
 
 셰이더 컴파일 실패는 **설정 에러로 잡히지 않는다.** ghostty 문서가 명시하듯
 설정 로딩이 끝난 뒤 렌더 스레드에서 컴파일되므로 `+validate-config` 는 통과하고,
-로그에만 남는다. 최악의 경우 창이 새까매진다. `apps/rice-term` 은 존재하지 않는
+로그에만 남는다. 최악의 경우 창이 새까매진다. `apps/rice/term` 은 존재하지 않는
 셰이더 경로까지는 잡아 주지만 컴파일까지는 못 본다.
 
-그 상태에서도 다른 터미널이나 fuzzel(`Mod+D`)에서 `apps/rice-term off` 를 돌리면
+그 상태에서도 다른 터미널이나 fuzzel(`Mod+D`)에서 `apps/rice/term off` 를 돌리면
 돌아온다. 그마저 안 되면 `~/.config/ghostty/rice.conf` 를 지우면 된다 — `?` 덕에
 없는 게 정상 상태다.
 

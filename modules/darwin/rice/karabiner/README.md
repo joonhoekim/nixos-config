@@ -121,14 +121,14 @@ Karabiner 에는 장치별로 휠을 뒤집는 `devices[].mouse_flip_vertical_wh
 
 ```sh
 python3 -m json.tool ~/.config/karabiner/karabiner.json > /dev/null   # JSON 유효성
-apps/rice-save              # 라이브 → 레포 (축을 안 가리고 전부 훑는다)
+apps/rice/save              # 라이브 → 레포 (축을 안 가리고 전부 훑는다)
 git diff                    # 확인하고 커밋
 ```
 
 **되받기 전에는 이 레포에 아무것도 안 들어간다.** 라이브가 원본이라, 안 하면 다음
 머신에는 옛 키맵이 깔린다.
 
-반대 방향(다른 머신에서 온 커밋을 이 머신에 밀어 넣기)은 `apps/rice-restore karabiner`
+반대 방향(다른 머신에서 온 커밋을 이 머신에 밀어 넣기)은 `apps/rice/restore karabiner`
 다. 복원 뒤 유저 서버를 다시 띄우는 것까지 그쪽이 한다.
 
 > 2026-08-06 까지 이 파일은 `modules/darwin/files.nix` 가 거는 읽기 전용 스토어

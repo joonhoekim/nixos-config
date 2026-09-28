@@ -12,6 +12,7 @@ let
   args = { inherit config pkgs lib user identity; };
   fragments = [
     ./programs/zsh.nix
+    ./programs/bash.nix
     ./programs/git.nix
     ./programs/cli.nix
     ./programs/vim.nix

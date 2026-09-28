@@ -14,8 +14,29 @@
     name = "${user}";
     home = "/Users/${user}";
     isHidden = false;
-    shell = pkgs.zsh;
+    # 이 값만으로는 로그인 셸이 바뀌지 않는다. nix-darwin 은 users.knownUsers 에
+    # 든 계정에만 UserShell 을 쓰고, 관리자 계정은 거기 넣지 말라고 한다
+    # (modules/users/default.nix). 여기서는 bash 를 시스템에 까는 역할과 아래
+    # 활성화 스크립트가 가리킬 경로를 정하는 역할만 한다.
+    shell = pkgs.bashInteractive;
   };
+
+  # 로그인 셸 = nix 의 bash 5. 에이전트가 셸 스크립트를 bash 로 가정하고 쓰는데
+  # macOS 기본인 zsh 에서 돌면 단어 분리 같은 차이로 조용히 다르게 동작한다.
+  # /bin/bash 는 3.2 라 연관 배열 등이 없어서 쓰지 않는다.
+  #
+  # /etc/shells 에 없는 셸은 chsh 가 거절하고 일부 도구(sshd 등)가 로그인을
+  # 막으므로 먼저 등록한다. 경로는 세대가 바뀌어도 같은 /run/current-system/sw/bin/bash.
+  environment.shells = [ pkgs.bashInteractive ];
+  #
+  # 경로를 변수로 빼지 않고 글자 그대로 쓴다 — apps/check/mac 이 activate 에서
+  # `dscl . -create ... UserShell <경로>` 줄을 읽어 기대값으로 삼는다.
+  system.activationScripts.postActivation.text = ''
+    if [ "$(dscl . -read /Users/${user} UserShell | awk '{ print $2 }')" != /run/current-system/sw/bin/bash ]; then
+      echo "setting login shell of ${user} to bash..." >&2
+      dscl . -create /Users/${user} UserShell /run/current-system/sw/bin/bash
+    fi
+  '';
 
   homebrew = {
     enable = true;

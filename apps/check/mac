@@ -1,0 +1,353 @@
+#!/bin/sh
+#
+# 활성화된 nix-darwin 세대가 실제로 먹고 있는지 본다. **아무것도 고치지 않는다.**
+#
+#   ./apps/check/mac [--host NAME]
+#   ./apps/check/mac --record     통과하면 docs/os-support.md 에 한 행 + 스냅숏
+#   nix run .#check
+#
+# ── 왜 따로 있나 ─────────────────────────────────────────────────────────
+# macOS 쪽 설정은 빌드도 switch 도 성공한 채로 조용히 안 먹을 수 있다. defaults
+# key 가 이름을 바꾸거나, LaunchAgent 가 crash-loop 을 돌거나, LaunchServices 가
+# 옛 핸들러를 캐시하고 있거나. 전부 종료 코드 0 이다
+# (docs/postmortems/2026-08-04-macos-rift-sketchybar.md). 그래서 결과를 직접 읽어
+# 선언과 비교한다. 메이저 macOS 업그레이드 전후가 주 용도다 — 절차는
+# docs/03-operating-on-macos.md 의 업그레이드 절.
+#
+# ── 기대값은 체크아웃이 아니라 /run/current-system 에서 ─────────────────
+# activate 스크립트의 `defaults write` 줄, 세대에 든 launchd plist, etc 트리를
+# 그대로 읽는다. nix-darwin 이 실제로 쓴 것과 같은 출처라 도메인 매핑표 같은
+# 두 번째 사본이 없다. 체크아웃을 `nix eval` 하지 않는 이유는 둘이다:
+#   - 묻는 것이 "활성화한 것이 지금도 먹고 있나"다. 체크아웃을 기준으로 하면
+#     아직 switch 하지 않은 변경이 전부 회귀처럼 보인다.
+#   - OS 업그레이드 직후 nix 가 망가져 있어도(/etc/zshrc 가 되돌려진 경우 등) 돈다.
+# 체크아웃과 세대가 어긋나는지는 마지막 절에서 따로 알린다.
+#
+# `sh -e` 가 아닌 이유는 doctor 와 같다: 명령이 실패하는 것 자체가 결과다.
+
+here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+. "$here/lib.sh"
+
+if [ "$(uname)" != Darwin ]; then
+  printf "macOS 전용이다. NixOS 는 apps/check/nixos.\n" >&2
+  exit 1
+fi
+
+# --host 파싱과 $target 은 build-switch 와 같은 규칙으로 고른다. build-lib.sh 는
+# 체크아웃 안을 cwd 로 가정하므로 먼저 옮겨 둔다.
+# --record 는 build-lib.sh 가 모르는 인자라 먼저 걸러 낸다.
+record=0
+for a do
+  shift
+  if [ "$a" = --record ]; then record=1; else set -- "$@" "$a"; fi
+done
+find_repo && cd "$repo" || true
+. "$here/../build-lib.sh"
+
+sys=/run/current-system
+act="$sys/activate"
+uid="$(id -u)"
+# PATH 에서 nix 를 못 찾는 것도 이 스크립트가 잡으려는 증상 중 하나다.
+nix="$sys/sw/bin/nix"; [ -x "$nix" ] || nix=nix
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+tab="$(printf '\t')"
+
+printf "\n${YELLOW}macOS${NC}  %s (%s)\n" "$(sw_vers -productVersion)" "$(sw_vers -buildVersion)"
+printf "${YELLOW}세대${NC}   %s\n" "$(readlink "$sys" 2>/dev/null || echo '(없음)')"
+
+# ── Nix ──────────────────────────────────────────────────────────────────
+section "Nix"
+if mount | grep -q ' on /nix '; then
+  ok "/nix 볼륨이 마운트되어 있다"
+else
+  bad "/nix 가 마운트되어 있지 않다"
+  hint "/etc/synthetic.conf 와 /etc/fstab 에 nix 항목이 남아 있는지 볼 것"
+fi
+if "$nix" store info >/dev/null 2>&1; then
+  ok "nix-daemon 에 붙는다"
+else
+  bad "nix-daemon 에 붙지 못한다"
+  hint "sudo launchctl kickstart -k system/org.nixos.nix-daemon"
+fi
+if [ ! -e "$act" ]; then
+  bad "$act 가 없다 — 활성화된 세대가 없으므로 나머지는 볼 수 없다"
+  summary
+fi
+
+# nix-darwin 은 /etc/<파일> 을 /etc/static/<파일> 로 링크한다. macOS 업그레이드는
+# /etc/zshrc 같은 파일을 자기 것으로 되돌리고, 그러면 셸에서 nix 가 사라진다.
+n=0; broken=""
+for f in $(cd "$sys/etc" && find . -mindepth 1 -type l | sed 's|^\./||'); do
+  n=$((n+1))
+  [ "$(readlink "/etc/$f")" = "/etc/static/$f" ] || broken="$broken $f"
+done
+if [ -z "$broken" ]; then
+  ok "/etc 의 nix-darwin 링크 ${n}개가 그대로다"
+else
+  bad "/etc/static 을 가리키지 않는 파일:$broken"
+  hint "그 자리에 일반 파일이 있으면 activation 이 덮어쓰지 않고 멈춘다 —"
+  hint "  sudo mv /etc/<파일> /etc/<파일>.before-nix-darwin 뒤 ./apps/build-switch"
+fi
+
+# ── launchd ──────────────────────────────────────────────────────────────
+section "launchd"
+# KeepAlive 인 job 은 떠 있어야 하고, 아닌 job(로그인에 한 번 띄우고 끝나는
+# `open -a` 류)은 마지막 종료가 0 이어야 한다. crash-loop 은 "running" 과 "안 떠
+# 있음" 사이를 오가므로 runs 로 본다.
+check_job() {  # <launchd 도메인> <plist>
+  label="$(plutil -extract Label raw -o - "$2" 2>/dev/null)"
+  keep="$(plutil -extract KeepAlive raw -o - "$2" 2>/dev/null)"
+  if ! info="$(launchctl print "$1/$label" 2>/dev/null)"; then
+    bad "$label 이 launchd 에 올라와 있지 않다"
+    hint "launchctl bootstrap $1 $2"
+    return
+  fi
+  field() { printf '%s\n' "$info" | awk -F' = ' -v k="$1" '$1 == "\t" k { print $2; exit }'; }
+  state="$(field state)"; runs="$(field runs)"; last="$(field 'last exit code')"
+  if [ "$keep" = true ]; then
+    if [ "$state" != running ]; then
+      bad "$label 이 안 돌고 있다 (last exit code = $last, runs = $runs)"
+      hint "바이너리를 터미널에서 직접 실행하면 이유가 보인다: launchctl print $1/$label"
+    elif [ "${runs:-0}" -gt 3 ]; then
+      warn "$label 은 떠 있지만 ${runs}번 다시 시작됐다"
+      hint "crash-loop 이었을 수 있다 — StandardOutPath 가 있으면 그 로그부터"
+    else
+      ok "$label 실행 중"
+    fi
+  else
+    case "$last" in
+      0|"(never exited)") ok "$label (last exit code = $last)" ;;
+      *) bad "$label 의 마지막 종료가 $last 다"
+         hint "launchctl print $1/$label" ;;
+    esac
+  fi
+}
+for p in "$sys"/Library/LaunchDaemons/*.plist; do
+  [ -e "$p" ] && check_job system "$p"
+done
+for p in "$sys"/user/Library/LaunchAgents/*.plist; do
+  [ -e "$p" ] && check_job "gui/$uid" "$p"
+done
+
+# ── defaults ─────────────────────────────────────────────────────────────
+section "defaults"
+# activate 안의 nix-darwin 이 쓰는 모양:
+#   ... defaults write <도메인> <키> '<?xml ...
+#   <plist version="1.0">
+#   <integer>2</integer>
+#   </plist>'
+# 값 줄을 `defaults read-type` 이 쓰는 타입 이름과 함께 한 행으로 뽑는다.
+# -dict-add 는 모양이 달라서 아래에서 따로 본다.
+awk -v OFS="$tab" '
+  /defaults write / {
+    pend = 0
+    if (index($0, "-dict-add")) next
+    for (i = 1; i <= NF; i++) if ($i == "write") break
+    dom = $(i + 1); key = $(i + 2); gsub(/'\''/, "", key); pend = 1; next
+  }
+  !pend { next }
+  /^<true\/>$/  { print dom, key, "boolean", 1; pend = 0; next }
+  /^<false\/>$/ { print dom, key, "boolean", 0; pend = 0; next }
+  /^<(integer|real|string)>/ {
+    t = $0; sub(/^</, "", t); sub(/>.*/, "", t); if (t == "real") t = "float"
+    v = $0; sub(/^<[a-z]+>/, "", v); sub(/<\/[a-z]+>$/, "", v)
+    gsub(/&lt;/, "<", v); gsub(/&gt;/, ">", v); gsub(/&amp;/, "\\&", v)
+    print dom, key, t, v; pend = 0; next
+  }
+  /^<(dict|array)/ { print dom, key, "complex", "-"; pend = 0; next }
+  /<\/plist>/ { pend = 0 }
+' "$act" > "$tmp/defaults.tsv"
+
+n=0; fails=0; skipped=0
+while IFS="$tab" read -r dom key type want; do
+  n=$((n+1))
+  disp="$dom"; [ "$dom" = -g ] && disp=NSGlobalDomain
+  if [ "$type" = complex ]; then skipped=$((skipped+1)); continue; fi
+  if ! got="$(defaults read "$dom" "$key" 2>/dev/null)"; then
+    bad "$disp $key 가 없다 (기대: $want)"; fails=$((fails+1)); continue
+  fi
+  gtype="$(defaults read-type "$dom" "$key" 2>/dev/null | sed 's/^Type is //')"
+  if [ "$type" = float ]; then
+    same="$(awk -v a="$got" -v b="$want" 'BEGIN { d = a - b; print (d < 1e-6 && d > -1e-6) }')"
+  else
+    same=0; [ "$got" = "$want" ] && same=1
+  fi
+  if [ "$same" != 1 ]; then
+    bad "$disp $key = $got (기대: $want)"; fails=$((fails+1))
+  elif [ "$gtype" != "$type" ]; then
+    # 값이 같아 보여도 타입이 다르면 macOS 가 무시하는 key 가 있다 —
+    # bool 자리에 integer 1 이 들어간 경우가 대표적이다.
+    bad "$disp $key 의 타입이 $gtype 다 (기대: $type)"; fails=$((fails+1))
+  fi
+done < "$tmp/defaults.tsv"
+if [ "$n" -eq 0 ]; then
+  warn "activate 에서 defaults write 줄을 하나도 못 찾았다 — nix-darwin 이 모양을 바꿨을 수 있다"
+else
+  if [ "$fails" -eq 0 ]; then
+    ok "선언된 defaults $((n - skipped))개가 값·타입까지 일치"
+  else
+    hint "나머지 $((n - fails - skipped))개는 일치. build-switch 뒤에도 다르면 macOS 가"
+    hint "이 key 를 더 이상 읽지 않거나 덮어쓰는 것이다"
+  fi
+  [ "$skipped" -gt 0 ] && warn "dict/array 값 ${skipped}개는 비교하지 않았다"
+fi
+
+# `defaults write <도메인> <키> -dict-add <하위키> '<xml>'` — 줄 이음(\)을 먼저
+# 붙이고, 양쪽을 plutil 로 정규화해서 문자열로 비교한다.
+awk '{ if (sub(/\\$/, "")) { buf = buf $0; next } print buf $0; buf = "" }' "$act" \
+  | grep 'defaults write .* -dict-add ' > "$tmp/dictadd"
+while IFS= read -r line; do
+  set -- $(printf '%s\n' "$line" | awk '{ for (i = 1; i <= NF; i++) if ($i == "write") { print $(i+1), $(i+2), $(i+4); exit } }')
+  dom="$1"; key="$2"; sub="$3"
+  xml="$(printf '%s\n' "$line" | sed "s/^[^']*'//; s/'[[:space:]]*\$//")"
+  want="$(printf '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0">%s</plist>' "$xml" \
+          | plutil -convert xml1 -o - - 2>/dev/null)"
+  got="$(defaults export "$dom" - 2>/dev/null | plutil -extract "$key.$sub" xml1 -o - - 2>/dev/null)"
+  if [ -n "$want" ] && [ "$want" = "$got" ]; then
+    ok "$dom $key.$sub 일치"
+  else
+    bad "$dom $key.$sub 가 선언과 다르다"
+    hint "defaults export $dom - | plutil -extract $key.$sub xml1 -o - -"
+  fi
+done < "$tmp/dictadd"
+
+# ── 기본 앱 ──────────────────────────────────────────────────────────────
+# modules/darwin/default-apps.nix 가 넘기는 uti=bundle 인자를 activate 에서 읽고,
+# plist 가 아니라 LaunchServices 의 해석 결과와 비교한다(handlers.swift).
+grep -o 'set-default-handlers.py [^|]*' "$act" | head -1 | tr ' ' '\n' | grep '=' \
+  | tr '=' "$tab" > "$tmp/want.tsv"
+if [ -s "$tmp/want.tsv" ]; then
+  section "기본 앱"
+  # /usr/bin/swift 는 CLT 가 없으면 설치 창을 띄우는 껍데기라 먼저 확인한다.
+  if ! { d="$(xcode-select -p 2>/dev/null)" && [ -d "$d" ] && xcrun --find swift >/dev/null 2>&1; }; then
+    warn "swift 가 없어 확인하지 못했다"
+    hint "업그레이드 뒤라면 xcode-select --install — Homebrew 도 같은 이유로 멈춘다"
+  elif ! swift "$here/handlers.swift" $(cut -f1 "$tmp/want.tsv") > "$tmp/got.tsv" 2>"$tmp/swift.err"; then
+    warn "handlers.swift 실행 실패: $(head -1 "$tmp/swift.err")"
+  else
+    n=0; fails=0
+    while IFS="$tab" read -r uti want; do
+      n=$((n+1))
+      got="$(awk -F"$tab" -v u="$uti" '$1 == u { print $2 }' "$tmp/got.tsv")"
+      if [ "$got" != "$want" ]; then
+        bad "$uti → $got (기대: $want)"; fails=$((fails+1))
+      fi
+    done < "$tmp/want.tsv"
+    if [ "$fails" -eq 0 ]; then
+      ok "핸들러 ${n}개가 선언한 앱으로 열린다"
+    else
+      hint "나머지 $((n - fails))개는 일치. 다른 앱이 이미 잡고 있던 타입은 로그아웃"
+      hint "뒤에야 바뀐다 (default-apps.nix 머리말)"
+    fi
+  fi
+fi
+
+# ── rift ─────────────────────────────────────────────────────────────────
+# 창 목록이 돌아오면 rift 가 떠 있고 손쉬운 사용 권한도 살아 있다는 뜻이다.
+# TCC 는 직접 읽을 수 없으므로 이게 권한을 확인하는 유일한 방법이다.
+if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift.plist" ]; then
+  section "rift"
+  if ! out="$(/opt/homebrew/bin/rift-cli query windows 2>&1)"; then
+    bad "rift-cli 가 응답하지 않는다: $(printf '%s' "$out" | head -1)"
+  else
+    cnt="$(printf '%s' "$out" | grep -o '"bundle_id"' | wc -l | tr -d ' ')"
+    if [ "$cnt" -gt 0 ]; then
+      ok "rift 가 창 ${cnt}개를 보고 있다 (손쉬운 사용 권한 살아 있음)"
+    else
+      warn "rift 가 보는 창이 없다 — 창을 하나 띄우고 다시 볼 것"
+      hint "그래도 0 이면 손쉬운 사용 권한이 끊긴 것이다 (체크박스는 켜진 채로 보일 수 있다)"
+    fi
+  fi
+fi
+
+# ── Homebrew ─────────────────────────────────────────────────────────────
+brewfile="$(grep -o "brew bundle --file='[^']*'" "$act" | head -1 | sed "s/.*='//; s/'\$//")"
+if [ -n "$brewfile" ]; then
+  section "Homebrew"
+  if d="$(xcode-select -p 2>/dev/null)" && [ -d "$d" ]; then
+    ok "개발자 도구: $d"
+  else
+    bad "xcode-select 가 가리키는 개발자 도구가 없다"
+    hint "xcode-select --install"
+  fi
+  if [ ! -x /opt/homebrew/bin/brew ]; then
+    bad "/opt/homebrew/bin/brew 가 없다"
+  else
+    # mas 항목은 뺀다. mas 가 PATH 에 없으면 brew bundle check 는 설치된 앱도
+    # 없다고 판정한다 — 그건 아래에서 /Applications 로 따로 본다.
+    grep -v '^mas ' "$brewfile" > "$tmp/Brewfile"
+    if HOMEBREW_NO_AUTO_UPDATE=1 /opt/homebrew/bin/brew bundle check --no-upgrade --verbose \
+         --file="$tmp/Brewfile" > "$tmp/brew.out" 2>&1; then
+      ok "Brewfile 의 brew · cask $(grep -cE '^(brew|cask) ' "$tmp/Brewfile")개가 설치되어 있다"
+    else
+      bad "Brewfile 과 맞지 않는 항목이 있다"
+      grep '^→' "$tmp/brew.out" | while IFS= read -r l; do hint "$l"; done
+      hint "./apps/build-switch 가 brew bundle 을 다시 돈다"
+    fi
+  fi
+  # 파이프가 아니라 파일로 넘긴다 — 파이프 끝의 while 은 subshell 이라 bad 가
+  # 센 개수가 사라진다.
+  grep '^mas ' "$brewfile" | sed 's/^mas "\([^"]*\)".*/\1/' > "$tmp/mas"
+  while IFS= read -r app; do
+    if [ -d "/Applications/$app.app" ]; then ok "App Store: $app"; else bad "App Store: $app 가 없다"; fi
+  done < "$tmp/mas"
+
+  # Karabiner 는 가상 키보드를 DriverKit 확장으로 띄운다. 확장이 꺼지면 앱은
+  # 멀쩡히 떠 있는데 매핑만 전부 사라진다.
+  if grep -q '^cask "karabiner-elements"' "$brewfile"; then
+    if systemextensionsctl list 2>/dev/null \
+         | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'; then
+      ok "Karabiner DriverKit 확장 activated enabled"
+    else
+      bad "Karabiner DriverKit 확장이 켜져 있지 않다"
+      hint "System Settings > General > Login Items & Extensions > Driver Extensions"
+    fi
+  fi
+fi
+
+# ── 체크아웃 ─────────────────────────────────────────────────────────────
+section "체크아웃"
+if want="$("$nix" eval --raw "$repo#darwinConfigurations.$target.system.outPath" 2>/dev/null)"; then
+  if [ "$want" = "$(readlink "$sys")" ]; then
+    ok "활성화된 세대가 .#$target 과 같다"
+    gen_matches=1
+  else
+    warn "활성화된 세대가 .#$target 과 다르다 — 위 결과는 활성화된 세대 기준이다"
+    hint "switch 하지 않은 변경이 있다: ./apps/build-switch"
+  fi
+else
+  warn ".#$target 을 평가하지 못해 세대와 비교하지 않았다"
+fi
+
+# ── 기록 ─────────────────────────────────────────────────────────────────
+# 레포가 public 이라 공개하는 것은 "이 날짜에 이 OS·기종·커밋에서 통과했다" 한 행
+# 뿐이다. 무엇이 어땠는지의 세부는 스냅숏으로 local/ 에 남는다(gitignore).
+#
+# 행이 뜻을 가지려면 커밋이 곧 활성화된 설정이어야 한다. 그래서 세대가 체크아웃과
+# 같고 작업 트리가 깨끗할 때만 쓴다 — 아니면 적힌 커밋이 실제로 검사한 것과 다르다.
+if [ "$record" = 1 ]; then
+  section "기록"
+  support="$repo/docs/os-support.md"
+  if [ "$bads" -gt 0 ]; then
+    warn "깨진 것이 있어 기록하지 않는다"
+  elif [ "${gen_matches:-0}" != 1 ]; then
+    warn "활성화된 세대가 체크아웃과 달라 기록하지 않는다"
+  elif [ ! -w "$support" ]; then
+    warn "$support 에 쓸 수 없다 — 체크아웃 안에서 돌릴 것"
+  elif [ -n "$(git -C "$repo" status --porcelain 2>/dev/null)" ]; then
+    warn "작업 트리가 깨끗하지 않아 기록하지 않는다 — 커밋 뒤 다시"
+  else
+    row="| $(date +%Y-%m-%d) | macOS $(sw_vers -productVersion) | $(sw_vers -buildVersion) | $(sysctl -n hw.model) | nix-darwin $(cat "$sys/darwin-version") | $(git -C "$repo" rev-parse --short HEAD) |"
+    # 날짜만 다른 같은 조합은 다시 쓰지 않는다.
+    key="$(printf '%s' "$row" | cut -d'|' -f3-)"
+    if grep -qF -- "$key" "$support"; then
+      ok "이미 기록된 조합이다"
+    else
+      printf '%s\n' "$row" >> "$support"
+      ok "docs/os-support.md 에 한 행 추가 — 커밋할 것"
+    fi
+    "$here/snapshot" > /dev/null && ok "세부는 스냅숏으로: local/snapshot/"
+  fi
+fi
+
+summary

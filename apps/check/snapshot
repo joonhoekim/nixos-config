@@ -1,0 +1,117 @@
+#!/bin/sh
+#
+# macOS 상태를 텍스트로 떠 두고, 두 시점을 diff 한다. **아무것도 고치지 않는다.**
+#
+#   ./apps/check/snapshot           지금 상태를 한 벌 저장
+#   ./apps/check/snapshot diff      가장 최근 두 벌을 비교
+#   ./apps/check/snapshot diff A B  이름을 골라 비교 (ls 로 본 디렉토리 이름)
+#   ./apps/check/snapshot list
+#
+# apps/check/mac 은 **예상한 것**만 본다 — 선언한 값이 맞는가. 이 스크립트는
+# 예상하지 못한 변화를 보기 위한 것이다: 메이저 업그레이드 전에 한 벌, 뒤에 한
+# 벌 떠서 diff 하면 OS 가 바꾼 것이 선언 밖의 것까지 보인다.
+#
+# 저장 위치는 체크아웃의 local/snapshot/<빌드번호>-<시각>/ 이고 local/ 은
+# .gitignore 에 있다. defaults 덤프와 로그인 항목 목록에는 계정명·경로·설치한 앱이
+# 그대로 들어 있어서, public 레포에는 올리지 않고 체크아웃 옆에만 둔다. 어느
+# 시점에 어느 OS 에서 통과했는지만 docs/os-support.md 로 공개한다
+# (apps/check/mac --record).
+#
+# 대상 도메인 목록은 /run/current-system/activate 에서 읽으므로 nix 가 동작하지
+# 않아도(업그레이드 직후 흔하다) 뜰 수 있다.
+
+here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+. "$here/lib.sh"
+
+if [ "$(uname)" != Darwin ]; then
+  printf "macOS 전용이다.\n" >&2
+  exit 1
+fi
+
+# `nix run` 아래서 find_repo 가 스토어 사본으로 떨어지면 거기엔 쓸 수 없다.
+if ! find_repo || [ ! -w "$repo" ]; then
+  printf "쓸 수 있는 체크아웃을 못 찾았다. 레포 안에서 돌리거나 NIXOS_CONFIG_REPO 를 지정할 것.\n" >&2
+  exit 1
+fi
+root="$repo/local/snapshot"
+
+case "${1:-}" in
+  list)
+    ls -1 "$root" 2>/dev/null
+    exit 0 ;;
+  diff)
+    if [ $# -ge 3 ]; then
+      a="$2"; b="$3"
+    else
+      set -- $(ls -1 "$root" 2>/dev/null | tail -2)
+      [ $# -eq 2 ] || { printf "비교할 스냅숏이 두 벌 이상 있어야 한다.\n" >&2; exit 1; }
+      a="$1"; b="$2"
+    fi
+    printf "${DIM}%s → %s${NC}\n" "$a" "$b"
+    diff -ru "$root/$a" "$root/$b"
+    exit 0 ;;
+  "") ;;
+  *)
+    sed -n '3,8p' "$0" | sed 's/^# \{0,1\}//'
+    exit 1 ;;
+esac
+
+out="$root/$(sw_vers -buildVersion)-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$out/defaults"
+act=/run/current-system/activate
+
+sw_vers > "$out/sw_vers.txt"
+readlink /run/current-system > "$out/generation.txt" 2>&1
+
+# ── defaults ─────────────────────────────────────────────────────────────
+# 이 레포가 쓰는 도메인 전부 + 선언은 안 했지만 업그레이드가 자주 건드리는 것
+# (입력 소스, 단축키, 기본 앱). 도메인 전체를 읽으므로 선언하지 않은 이웃 key 의
+# 변화도 diff 에 나온다.
+{
+  [ -e "$act" ] && grep -o 'defaults write [^ ]*' "$act" | awk '{ print $3 }'
+  printf '%s\n' com.apple.symbolichotkeys com.apple.HIToolbox \
+    "$HOME/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure"
+} | sort -u > "$out/defaults/.domains"
+while IFS= read -r dom; do
+  case "$dom" in
+    -g) name=NSGlobalDomain ;;
+    *)  name="$(basename "$dom")" ;;
+  esac
+  defaults read "$dom" > "$out/defaults/$name.txt" 2>&1
+done < "$out/defaults/.domains"
+
+# ── launchd ──────────────────────────────────────────────────────────────
+# pid 는 매번 달라서 뺀다. 상태와 종료 코드, 재시작 횟수만.
+for p in /run/current-system/Library/LaunchDaemons/*.plist \
+         /run/current-system/user/Library/LaunchAgents/*.plist; do
+  [ -e "$p" ] || continue
+  label="$(plutil -extract Label raw -o - "$p" 2>/dev/null)"
+  case "$p" in */user/*) dom="gui/$(id -u)" ;; *) dom=system ;; esac
+  printf '%s\n' "$label"
+  launchctl print "$dom/$label" 2>&1 \
+    | awk -F' = ' '$1 ~ /^\t(state|runs|last exit code)$/ { print "  " $0 }'
+done > "$out/launchd.txt"
+
+# ── 시스템 ───────────────────────────────────────────────────────────────
+(
+  cd /run/current-system/etc 2>/dev/null && find . -mindepth 1 -type l | sed 's|^\./||' \
+    | while IFS= read -r f; do printf '%s -> %s\n' "$f" "$(readlink "/etc/$f")"; done
+) > "$out/etc-links.txt"
+for f in synthetic.conf fstab; do
+  cp "/etc/$f" "$out/etc-$f" 2>/dev/null
+done
+mount | grep ' on /nix ' > "$out/nix-mount.txt"
+systemextensionsctl list > "$out/system-extensions.txt" 2>&1
+xcode-select -p > "$out/xcode-select.txt" 2>&1
+# 로그인 항목·백그라운드 항목(System Settings > General > Login Items). 업그레이드가
+# "백그라운드에서 허용" 을 다시 묻게 만드는 자리다. root 가 필요해서, 암호 없이
+# sudo 가 안 되면 건너뛴다.
+sudo -n sfltool dumpbtm > "$out/btm.txt" 2>/dev/null || rm -f "$out/btm.txt"
+
+if [ -x /opt/homebrew/bin/brew ]; then
+  /opt/homebrew/bin/brew list --formula --versions > "$out/brew-formula.txt" 2>&1
+  /opt/homebrew/bin/brew list --cask --versions > "$out/brew-cask.txt" 2>&1
+fi
+
+printf "${GREEN}저장했다${NC}  %s\n" "$out"
+printf "${DIM}비교는 같은 명령에 diff 를 붙인다.${NC}\n"

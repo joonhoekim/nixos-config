@@ -2,3 +2,7 @@ result
 .claude/
 _temp/
 __pycache__/
+
+# 기계별 점검 결과(apps/check/snapshot). 계정명·경로·앱 목록이 들어 있어서
+# public 레포에 올리지 않는다. 공개하는 것은 docs/os-support.md 뿐이다.
+local/

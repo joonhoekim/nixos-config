@@ -89,6 +89,24 @@ else
   hint "  sudo mv /etc/<파일> /etc/<파일>.before-nix-darwin 뒤 ./apps/build-switch"
 fi
 
+# 로그인 셸. modules/darwin/home-manager.nix 가 dscl 로 쓰는 값이다 — nix-darwin 의
+# users.users.<이름>.shell 은 관리자 계정에는 적용되지 않아서 그렇게 한다.
+grep -o 'dscl \. -create /Users/[^ ]* UserShell /[^ ]*' "$act" | sort -u > "$tmp/shell"
+while read -r _ _ _ u _ want; do
+  name="${u#/Users/}"
+  got="$(dscl . -read "$u" UserShell 2>/dev/null | awk '{ print $2 }')"
+  if [ "$got" != "$want" ]; then
+    bad "$name 의 로그인 셸이 $got 이다 (기대: $want)"
+    hint "./apps/build-switch 가 다시 쓴다"
+  elif ! grep -qx "$want" /etc/shells; then
+    bad "$want 가 /etc/shells 에 없다 — chsh 와 일부 로그인 경로가 거절한다"
+  elif [ ! -x "$want" ]; then
+    bad "로그인 셸 $want 가 실행 파일이 아니다 — 새 터미널이 바로 닫힌다"
+  else
+    ok "$name 의 로그인 셸 $want"
+  fi
+done < "$tmp/shell"
+
 # ── launchd ──────────────────────────────────────────────────────────────
 section "launchd"
 # KeepAlive 인 job 은 떠 있어야 하고, 아닌 job(로그인에 한 번 띄우고 끝나는

@@ -8,7 +8,8 @@
 # NOTE: an already-created colima VM keeps its prior CPU/MEM; run
 # `colima delete` first (or `colima stop && colima-up`) to resize.
 #
-# Sourced into ~/.zshrc (Darwin only) by modules/shared/programs/zsh.nix.
+# Sourced into both ~/.bashrc and ~/.zshrc (Darwin only) by
+# modules/shared/shell-init.nix, so it has to parse in both shells.
 colima-up() {
   local phys mem_total cpu mem
   phys=$(sysctl -n hw.physicalcpu)

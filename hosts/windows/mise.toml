@@ -1,0 +1,13 @@
+# mise 전역 설정 — Windows 판. ./cli.ps1 이 ~/.config/mise/config.toml 로 복사한다.
+# 값은 modules/shared/programs/cli.nix 의 programs.mise.globalConfig 와 맞춘다.
+# mise 자체는 ./cli.winget 의 jdx.mise 로 깐다.
+#
+# 줄 맨 앞의 `#` 를 지우면 켜진다.
+
+[tools]
+# node = "lts"
+# pnpm = "latest"
+# bun = "latest"
+# go = "latest"
+# rust = "stable"
+# java = "temurin-25"  # maestro, bundletool 이 쓴다

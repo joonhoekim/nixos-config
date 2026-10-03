@@ -1,0 +1,195 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+#
+# Windows CLI 도구. modules/shared/packages.nix 를 winget 으로 옮긴 것이다. 순서와
+# 묶음도 그 파일을 따른다. ./cli.ps1 이 적용한다.
+#
+# 줄 맨 앞의 `#` 를 지우면 켜진다. winget 에 없는 것은 ./cli.ps1 의 Scoop·uv·npm
+# 목록에 있고, Windows 에서 직접 돌지 않는 것은 맨 아래에 이유와 함께 적는다.
+# ID 와 버전은 2026-10-03 에 `winget show --exact` 로 확인했다.
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    # --- 모바일 (docs/packages/mobile.md) ------------------------------------
+    # adb + fastboot. ./cli.ps1 이 환경 변수 ADB 를 이 adb 로 고정한다 — scrcpy 가
+    # 자기 zip 에 든 다른 버전의 adb 를 띄우면 두 adb 서버가 서로를 죽이고 다시
+    # 띄우면서 기기 연결이 수시로 끊긴다("adb server version doesn't match").
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: platform-tools, settings: { id: Google.PlatformTools, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: scrcpy, settings: { id: Genymobile.scrcpy, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: qrencode, settings: { id: PedroAlbanese.QREncode, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: watchman, settings: { id: facebook.watchman, source: winget } }
+
+    # --- 일반 ---------------------------------------------------------------
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: bat, settings: { id: sharkdp.bat, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: btop, settings: { id: aristocratos.btop4win, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: coreutils, settings: { id: uutils.coreutils, source: winget } }
+    # Windows 에는 OpenSSH 클라이언트가 기본으로 있다. 이것은 더 새 판이다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: openssh, settings: { id: Microsoft.OpenSSH.Preview, source: winget } }
+    # wireguard-tools 대응. GUI 클라이언트지만 wg.exe 도 같이 깔린다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: wireguard, settings: { id: WireGuard.WireGuard, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: sqlite, settings: { id: SQLite.SQLite, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: wget, settings: { id: JernejSimoncic.Wget, source: winget } }
+    # zip/unzip/p7zip/xz 대응
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: 7zip, settings: { id: 7zip.7zip, source: winget } }
+
+    # --- 암호·보안 (docs/packages/security-hygiene.md) ------------------------
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: age, settings: { id: FiloSottile.age, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gnupg, settings: { id: GnuPG.GnuPG, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: sops, settings: { id: SecretsOPerationS.SOPS, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gitleaks, settings: { id: Gitleaks.Gitleaks, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: osv-scanner, settings: { id: Google.OSVScanner, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: lefthook, settings: { id: evilmartians.lefthook, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: trivy, settings: { id: AquaSecurity.Trivy, source: winget } }
+
+    # --- 컨테이너 -------------------------------------------------------------
+    # CLI 만이다. 컨테이너를 돌리는 데몬은 Windows 에서 결국 Linux VM 위에 있다
+    # (Docker Desktop 은 WSL2, Podman 은 WSL2 나 Hyper-V). colima/lima 는 대응이 없다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: docker, settings: { id: Docker.DockerCLI, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: docker-compose, settings: { id: Docker.DockerCompose, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: lazydocker, settings: { id: JesseDuffield.Lazydocker, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: dive, settings: { id: wagoodman.dive, source: winget } }
+
+    # --- 텍스트·터미널 --------------------------------------------------------
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: fd, settings: { id: sharkdp.fd, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: jq, settings: { id: jqlang.jq, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gron, settings: { id: TomHudson.gron, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: jd, settings: { id: josephburnett.jd, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: ripgrep, settings: { id: BurntSushi.ripgrep.MSVC, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: yq, settings: { id: MikeFarah.yq, source: winget } }
+    # tmux 대응. 0.45 부터 Windows 를 지원한다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: zellij, settings: { id: Zellij.Zellij, source: winget } }
+
+    # --- 개발 도구 ------------------------------------------------------------
+    # gh 는 이미 설치돼 있다 (configuration.winget 의 gh 항목).
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: terraform, settings: { id: Hashicorp.Terraform, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: awscli, settings: { id: Amazon.AWSCLI, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: lazygit, settings: { id: JesseDuffield.lazygit, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: fzf, settings: { id: junegunn.fzf, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: uv, settings: { id: astral-sh.uv, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: delta, settings: { id: dandavison.delta, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: poppler, settings: { id: oschwartz10612.Poppler, source: winget } }
+    # 런타임 버전 관리. 버전 선언은 ./mise.toml
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mise, settings: { id: jdx.mise, source: winget } }
+    # 전역 python. shared 쪽은 분석 라이브러리를 얹은 nix 인터프리터다 — 여기서는
+    # 라이브러리를 `uv` 프로젝트별로 둔다.
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: python, settings: { id: Python.Python.3.13, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: cmake, settings: { id: Kitware.CMake, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: pkg-config, settings: { id: bloodrock.pkg-config-lite, source: winget } }
+
+    # --- 현대식 CLI·TUI --------------------------------------------------------
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: difftastic, settings: { id: Wilfred.difftastic, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: neovim, settings: { id: Neovim.Neovim, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: yazi, settings: { id: sxyazi.yazi, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: tealdeer, settings: { id: dbrgn.tealdeer, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: dust, settings: { id: bootandy.dust, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: procs, settings: { id: dalance.procs, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: zoxide, settings: { id: ajeetdsouza.zoxide, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: eza, settings: { id: eza-community.eza, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: atuin, settings: { id: Atuinsh.Atuin, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: duf, settings: { id: muesli.duf, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: fastfetch, settings: { id: Fastfetch-cli.Fastfetch, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: glow, settings: { id: charmbracelet.glow, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: d2, settings: { id: Terrastruct.D2, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: hyperfine, settings: { id: sharkdp.hyperfine, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: tokei, settings: { id: XAMPPRocky.Tokei, source: winget } }
+    # entr 대응도 겸한다
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: watchexec, settings: { id: watchexec.watchexec, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: just, settings: { id: Casey.Just, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gum, settings: { id: charmbracelet.gum, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: onefetch, settings: { id: o2sh.onefetch, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: bottom, settings: { id: Clement.bottom, source: winget } }
+    # ncdu 대응
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gdu, settings: { id: dundee.gdu, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gitui, settings: { id: StephanDilly.gitui, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: chafa, settings: { id: hpjansson.Chafa, source: winget } }
+
+    # --- 미디어·문서 (docs/packages/everyday-tools.md) -------------------------
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: yt-dlp, settings: { id: yt-dlp.yt-dlp, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: ffmpeg, settings: { id: Gyan.FFmpeg, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gallery-dl, settings: { id: mikf.gallery-dl, source: winget } }
+    - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: aria2, settings: { id: aria2.aria2, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: streamlink, settings: { id: Streamlink.Streamlink, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mediainfo, settings: { id: MediaArea.MediaInfo, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: exiftool, settings: { id: OliverBetz.ExifTool, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: jpegoptim, settings: { id: TimoKokkonen.Jpegoptim, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gifski, settings: { id: ImageOptim.gifski, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: imagemagick, settings: { id: ImageMagick.ImageMagick, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: pandoc, settings: { id: JohnMacFarlane.Pandoc, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: qpdf, settings: { id: QPDF.QPDF, source: winget } }
+    # 한국어 traineddata 는 설치 때 언어를 골라야 들어간다
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: tesseract, settings: { id: UB-Mannheim.TesseractOCR, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: rclone, settings: { id: Rclone.Rclone, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: croc, settings: { id: schollz.croc, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: speedtest, settings: { id: Ookla.Speedtest.CLI, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: monolith, settings: { id: Y2Z.Monolith, source: winget } }
+    # unrar 대응
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: winrar, settings: { id: RARLab.WinRAR, source: winget } }
+
+    # --- 편집기·LSP (docs/packages/web-toolchain.md) ---------------------------
+    # 웹 LSP·prettierd·eslint_d·markdownlint 는 npm 이라 ./cli.ps1 의 npm 목록에 있다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: helix, settings: { id: Helix.Helix, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: lua-language-server, settings: { id: LuaLS.lua-language-server, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: stylua, settings: { id: JohnnyMorganz.StyLua, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: shellcheck, settings: { id: koalaman.shellcheck, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: shfmt, settings: { id: mvdan.shfmt, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: ruff, settings: { id: astral-sh.ruff, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: tree-sitter, settings: { id: tree-sitter.tree-sitter-cli, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: biome, settings: { id: BiomeJS.Biome, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: ast-grep, settings: { id: ast-grep.ast-grep, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: typos, settings: { id: Crate-CI.Typos, source: winget } }
+
+    # --- Kubernetes·CI --------------------------------------------------------
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: kubectl, settings: { id: Kubernetes.kubectl, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: k9s, settings: { id: Derailed.k9s, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: helm, settings: { id: Helm.Helm, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: kustomize, settings: { id: Kubernetes.kustomize, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: stern, settings: { id: stern.stern, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: kubectx, settings: { id: ahmetb.kubectx, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: kubeconform, settings: { id: YannHamon.kubeconform, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: hadolint, settings: { id: hadolint.hadolint, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: actionlint, settings: { id: rhysd.actionlint, source: winget } }
+    # act 는 워크플로를 docker 로 돌린다 — 위 컨테이너 절의 제약을 그대로 진다
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: act, settings: { id: nektos.act, source: winget } }
+
+    # --- 인프라·DB·네트워크 -----------------------------------------------------
+    # psql 이 필요해도 PostgreSQL.PostgreSQL.17 은 서버까지 깐다. redis-cli 대응인
+    # Redis.Redis 는 3.0.504 — 오래전에 버려진 Microsoft 포팅판이다. 둘 다 넣지 않고
+    # ./cli.ps1 의 uv 목록(pgcli, iredis)으로 대신한다.
+    # 7.80 으로 오래됐다
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: nmap, settings: { id: Insecure.Nmap, source: winget } }
+    # mtr 대응 (GUI)
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: winmtr, settings: { id: leeter.WinMTR, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: iperf3, settings: { id: ar51an.iPerf3, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: gping, settings: { id: orf.gping, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: xh, settings: { id: ducaale.xh, source: winget } }
+    # dog 대응
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: doggo, settings: { id: MrKaran.Doggo, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mkcert, settings: { id: FiloSottile.mkcert, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: caddy, settings: { id: CaddyServer.Caddy, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: cloudflared, settings: { id: Cloudflare.cloudflared, source: winget } }
+
+    # --- 메시지 브로커·gRPC (docs/packages/backend-protocols.md) ---------------
+    # kcat 은 Windows 판이 없다. natscli·ghz 는 ./cli.ps1 의 Scoop 목록에 있다.
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: grpcurl, settings: { id: fullstorydev.grpcurl, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: buf, settings: { id: bufbuild.buf, source: winget } }
+
+    # --- 로컬 백킹 서비스·브라우저 검증 (docs/packages/local-backing-services.md,
+    #     browser-tooling.md) -------------------------------------------------
+    # seaweedfs 는 winget·Scoop 모두에 없다 (GitHub 릴리스에는 Windows 바이너리가 있다).
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mailpit, settings: { id: axllent.mailpit, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: minio-client, settings: { id: MinIO.Client, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: lychee, settings: { id: lycheeverse.lychee, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: hurl, settings: { id: Orange-OpenSource.Hurl, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mitmproxy, settings: { id: mitmproxy.mitmproxy, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: miniserve, settings: { id: svenstaro.miniserve, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: k6, settings: { id: GrafanaLabs.k6, source: winget } }
+    # wrk 대응도 겸한다
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: oha, settings: { id: hatoo.oha, source: winget } }
+    # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: tidy, settings: { id: HTACG.tidy, source: winget } }
+
+# Windows 에서 직접 돌지 않는 것 (packages.nix 기준):
+#   tmux → zellij · htop → btop4win/bottom · entr → watchexec · wrk → oha
+#   lsof/killall → Sysinternals handle, Stop-Process · file → Git for Windows 에 포함
+#   unar(cp949 zip) → 7-Zip · colima/lima → Docker Desktop·Podman (WSL2/Hyper-V)
+#   zbar CLI, kcat, pg_activity(리눅스 전용), seaweedfs(winget·Scoop 에 없음) — 대응 없음
+#   semgrep — 공식 Windows 지원이 실험 단계
+#   nix 도구(nil, nixfmt, statix, nom, nvd, nh …), rice-toys.nix — 해당 없음

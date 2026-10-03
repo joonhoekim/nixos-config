@@ -67,6 +67,7 @@ properties:
     - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: uv, settings: { id: astral-sh.uv, source: winget } }
     # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: delta, settings: { id: dandavison.delta, source: winget } }
     # - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: poppler, settings: { id: oschwartz10612.Poppler, source: winget } }
+    # MSVC 빌드 도구(rust·node-gyp 의 링커)는 워크로드 인자가 필요해 ./cli.ps1 에서 깐다.
     # 런타임 버전 관리. 버전 선언은 ./mise.toml
     - { resource: Microsoft.WinGet.DSC/WinGetPackage, id: mise, settings: { id: jdx.mise, source: winget } }
     # 전역 python. shared 쪽은 분석 라이브러리를 얹은 nix 인터프리터다 — 여기서는

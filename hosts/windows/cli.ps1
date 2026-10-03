@@ -2,7 +2,7 @@
 #
 #   powershell -ExecutionPolicy Bypass -File hosts\windows\cli.ps1
 #
-# 순서: winget(./cli.winget) → ADB 고정 → Scoop → mise(./mise.toml) → uv tool → npm.
+# 순서: winget(./cli.winget) → MSVC 빌드 도구 → ADB 고정 → Scoop → mise(./mise.toml) → uv tool → npm.
 # 목록마다 줄 맨 앞의 `#` 를 지우면 켜진다. 빈 목록인 단계는 건너뛴다.
 
 $ErrorActionPreference = 'Continue'
@@ -18,6 +18,23 @@ function Update-Path
 # --- winget -----------------------------------------------------------------
 winget configure -f "$PSScriptRoot\cli.winget" --accept-configuration-agreements --disable-interactivity
 Update-Path
+
+# --- MSVC 빌드 도구 ---------------------------------------------------------
+# rust 의 msvc 툴체인(./mise.toml)과 node-gyp 가 link.exe·cl.exe 를 찾는다. 없으면
+# rustc 는 깔려 있어도 "linker `link.exe` not found" 로 모든 빌드가 실패한다.
+# 워크로드를 --override 로 넘겨야 해서 ./cli.winget 의 WinGetPackage 로는 못 쓴다.
+# 설치 프로그램이 UAC 로 스스로 권한을 올린다. 수 GB 다.
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$vcTools = if (Test-Path $vswhere)
+{
+	& $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+}
+if (-not $vcTools)
+{
+	winget install --exact --id Microsoft.VisualStudio.BuildTools --source winget `
+		--accept-package-agreements --accept-source-agreements --disable-interactivity `
+		--override '--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended'
+}
 
 # --- ADB 고정 ---------------------------------------------------------------
 # scrcpy 는 자기 zip 에 든 adb 를 쓰는데 platform-tools 의 adb 와 버전이 다르다.

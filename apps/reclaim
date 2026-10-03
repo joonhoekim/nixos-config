@@ -1,0 +1,495 @@
+#!/bin/sh
+#
+# 디스크를 돌려받는다 — 대상을 **재서 보여주고**, 고른 것만 지운다. macOS 전용.
+#
+#   ./apps/reclaim           대화형. 표에서 번호로 고르고 y 로 실행
+#   nix run .#reclaim
+#   ./apps/reclaim --list    재서 표만 뿌린다. 아무것도 지우지 않는다
+#   ./apps/reclaim --all     10MB 미만 대상도 숨기지 않는다
+#   ./apps/reclaim claude homebrew    고른 것만. 확인은 그래도 받는다
+#
+# ── 왜 apps/clean 과 따로 있나 ───────────────────────────────────────────
+# apps/clean 은 nix 세대 GC 하나만 하고 양쪽 플랫폼에서 돈다. 이 스크립트가
+# 다루는 것은 그게 아니라 **macOS 쪽 잔재**다 — 앱이 다시 받아 올 수 있는
+# 캐시, 받아 둔 모델 가중치, 시뮬레이터 런타임 같은 것들. 묻는 질문도 다르다:
+# clean 은 "오래된 세대를 지워라"고, 이쪽은 "지금 뭘 지우면 몇 G 가 나오나"다.
+#
+# nix 세대는 여기서 대상 하나로 들어 있지만 실제 삭제는 apps/clean 을 부른다.
+# GC 명령이 두 곳에 적히면 한쪽만 고치게 된다.
+#
+# ── 왜 클리너 앱을 쓰지 않나 ──────────────────────────────────────────────
+# 이 기계에서 /nix/store 는 40G 짜리 하드링크 농장이고, 설정 > 저장 공간은 그걸
+# 통째로 "System Data" 로 집계한다. 범용 클리너는 그 트리를 orphaned files 나
+# broken symlinks 로 읽는다 — 지우면 선언적으로 관리하는 시스템이 깨진다.
+# 반대로 실제로 줄일 수 있는 것은 아래처럼 전부 경로가 특정되는 것들이라서,
+# 휴리스틱이 할 일이 애초에 없다. 그래서 목록을 손으로 들고 있는 편이 낫다.
+#
+# ── 지우는 방식 ───────────────────────────────────────────────────────────
+# 디렉터리는 **안을 비우고 자기는 남긴다**(find -mindepth 1 -maxdepth 1). 통째로
+# rm 하고 mkdir 로 되돌리면 소유자 · 권한 · ACL 이 날아가는데, 여기 대상 중 몇
+# 개는 샌드박스 컨테이너 안이라 그게 조용한 고장이 된다.
+#
+# 가드(guard)가 붙은 대상은 그 프로세스가 돌고 있으면 **거절한다**. 실행 중인
+# 앱의 캐시를 밑에서 빼면 앱이 다시 받는 게 아니라 깨진 상태로 남는 경우가 있다.
+#
+# `sh -e` 가 아닌 이유는 doctor · check 와 같다: 개별 명령의 실패가 그 자체로
+# 결과이고, 하나 실패했다고 나머지 대상을 안 지울 이유가 없다.
+
+here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'
+DIM='\033[2m'; BOLD='\033[1m'; NC='\033[0m'
+
+if [ "$(uname)" != Darwin ]; then
+	printf "macOS 전용이다. NixOS 의 디스크 회수는 nix run .#clean 이면 거의 끝난다.\n" >&2
+	exit 1
+fi
+
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+
+# 표 안에서 `|` 는 필드 구분자다. 경로에 쓰는 일은 없고, 설명에도 쓰지 않는다.
+AS="$HOME/Library/Application Support"
+CA="$HOME/Library/Caches"
+CO="$HOME/Library/Containers"
+
+# ── 대상 등록 ─────────────────────────────────────────────────────────────
+# 필드: id | 라벨 | 가드 | sudo | 경로들 | 설명
+#
+#   가드    ; 로 구분한 프로세스 이름(pgrep -x, 대소문자 구분). 없으면 -
+#   sudo    경로가 root 소유라 sudo rm 이 필요하면 1
+#   경로들  ; 로 구분. 안을 비운다. `-` 면 경로가 아니라 measure_<id>/purge_<id>
+#   설명    표에 그대로 접혀 들어간다. 되돌릴 수 없는 것은 거기에 적는다
+#
+# 경로를 고를 때의 원칙: **앱이 다시 만들 수 있는 것만.** 그래서 aerials 는
+# 들어가고 그 옆의 Store(현재 고른 배경이 뭔지)는 안 들어간다. 컨테이너도
+# 통째로가 아니라 그 안의 Caches 만 짚는다.
+targets() {
+	cat <<EOF
+nix|nix 오래된 세대 · 죽은 스토어 경로|-|1|-|주간 자동 GC(일 02:00 · 30일)와 같은 일을 지금 한다. 표의 수치는 하한이다 — 세대를 먼저 지우면 더 나온다.
+claude|Claude 데스크톱 VM 번들 · 캐시|Claude|0|$AS/Claude/vm_bundles;$AS/Claude/Cache;$AS/Claude/Code Cache;$AS/Claude/GPUCache|claude-code 샌드박스 이미지와 Electron 캐시. 앱이 다시 받는다. 대화 기록은 다른 곳에 있어 안 건드린다.
+chrome-ai|Chrome 온디바이스 AI 모델|Google Chrome|0|$AS/Google/Chrome/OptGuideOnDeviceModel|Chrome 설정에서 AI 기능을 끄지 않으면 며칠 안에 다시 받는다.
+simulator|Xcode 시뮬레이터 캐시 · 안 쓰는 런타임|Simulator;Xcode|1|/Library/Developer/CoreSimulator/Caches|simctl delete unavailable 도 같이 돈다. 쓰는 런타임은 남는다.
+homebrew|Homebrew 다운로드 캐시|-|0|$CA/Homebrew|받아 둔 병과 소스. 다음 설치 때 다시 받는다.
+browser|브라우저 캐시|Google Chrome;Brave Browser;firefox;zen|0|$CA/Google;$CA/BraveSoftware;$CA/com.brave.Browser;$CA/Firefox;$CA/zen|로그인 · 프로필 · 확장은 Caches 밖이라 안 건드린다.
+wallpaper|Apple 배경화면 · 스크린세이버 영상|-|0|$AS/com.apple.wallpaper/aerials;$CO/com.apple.wallpaper.agent/Data/Library/Caches|공중촬영 영상 묶음. 지금 고른 배경은 남고, 다시 고르면 그때 받는다.
+colima|colima 이미지 캐시|colima;limactl;qemu-system-aarch64|0|$CA/colima|내려받은 디스크 이미지. VM 자체(~/.colima)는 안 건드린다.
+xcode|Xcode DerivedData|Xcode|0|$HOME/Library/Developer/Xcode/DerivedData|다음 빌드에서 다시 만든다. 첫 빌드가 느려진다.
+vscode|VS Code 캐시|Code|0|$AS/Code/Cache;$AS/Code/CachedData;$AS/Code/Code Cache;$AS/Code/CachedExtensionVSIXs|확장과 설정은 안 건드린다.
+trash|휴지통|-|0|$HOME/.Trash|비우기와 같다. 당연히 되돌릴 수 없다.
+EOF
+}
+
+# ── 측정 ──────────────────────────────────────────────────────────────────
+# du -sk 를 쓴다. -k 로 단위를 고정하지 않으면 BLOCKSIZE 환경변수에 끌려간다.
+kb_of_paths() { # kb_of_paths "경로;경로" -> KB
+	total=0
+	old="$IFS"; IFS=';'
+	for p in $1; do
+		IFS="$old"
+		[ -e "$p" ] || continue
+		kb="$(du -sk "$p" 2>/dev/null | awk 'NR==1 {print $1; exit}')"
+		total=$((total + ${kb:-0}))
+		IFS=';'
+	done
+	IFS="$old"
+	printf '%s\n' "$total"
+}
+
+# nix 는 경로가 아니라 스토어에 묻는다. --print-dead 는 **지금 당장** 죽은 것만
+# 세고, 30일 넘은 세대를 지워서 새로 죽을 경로는 못 센다(--dry-run 도 세대를
+# 실제로 안 지우니 같은 수를 돌려준다). 그래서 이 값은 하한이고, 설명에 적어 둔다.
+#
+# xargs 가 인자를 쪼개면 배치가 갈리면서 하드링크를 중복으로 세기도 한다.
+# 어느 쪽이든 "대충 이만큼"을 보려는 칸이라 정확도를 더 살 이유가 없다.
+measure_nix() {
+	nix-store --gc --print-dead 2>/dev/null \
+		| tr '\n' '\0' \
+		| xargs -0 du -sk 2>/dev/null \
+		| awk '{ s += $1 } END { print s + 0 }'
+}
+
+# ── 지우기 ────────────────────────────────────────────────────────────────
+# 디렉터리면 안을 비우고(점 파일 포함) 자기는 남긴다. 파일이면 그냥 지운다.
+# $as_root 는 호출자가 "sudo" 또는 빈 문자열로 세팅한다 — 빈 값이면 단어 분리로
+# 사라져서 그냥 find 가 된다.
+empty_path() { # empty_path <경로>
+	[ -e "$1" ] || return 0
+	if [ -d "$1" ]; then
+		$as_root find "$1" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+	else
+		$as_root rm -f -- "$1"
+	fi
+}
+
+# nix 세대는 apps/clean 이 한다 — GC 명령을 여기 또 적지 않는다.
+# 30d 는 hosts/darwin/common.nix 의 주간 자동 GC 와 같은 값이다. 둘을 맞춰 두면
+# "손으로 돌렸는데 자동 GC 가 또 뭘 지웠다"가 없다.
+purge_nix() {
+	"$here/clean" "${RECLAIM_NIX_AGE:-30d}"
+}
+
+# 캐시 디렉터리를 지우기 전에 brew 에게 먼저 묻는다. brew cleanup 은 지금 깔린
+# 것과 짝이 안 맞는 병만 고르는데, 그 판단을 우리가 복제할 수는 없다. 남은
+# 것(부분 다운로드 등)은 경로 쪽에서 쓸어 간다.
+purge_homebrew() {
+	brew="$(command -v brew || echo /opt/homebrew/bin/brew)"
+	[ -x "$brew" ] || return 0
+	"$brew" cleanup -s --prune=all 2>&1 | sed 's/^/      /'
+}
+
+# Caches 는 경로 쪽에서 비운다. 여기서는 더 큰 것 — 지금 Xcode 로 못 띄우는
+# 런타임과 기기들 — 을 지운다. xcrun 이 없으면(CLT 만 있는 기계) 조용히 넘긴다.
+purge_simulator() {
+	command -v xcrun >/dev/null 2>&1 || return 0
+	xcrun simctl delete unavailable 2>&1 | sed 's/^/      /'
+}
+
+# ── 표 ───────────────────────────────────────────────────────────────────
+# 정렬을 awk 에 맡긴다. 한글은 한 글자가 바이트 셋이고 터미널에서 두 칸이라
+# printf "%-30s" 로는 줄이 안 맞는다. LC_ALL=C 로 awk 를 바이트 단위로 고정하고
+# UTF-8 을 직접 디코드해서 **표시 폭**을 센다 — 로케일에 따라 awk 가 멀티바이트를
+# 알기도 모르기도 해서, 아는 쪽에 기대면 기계마다 표가 달라진다.
+#
+# 설명은 자르지 않고 접는다. 잘라 버리면 "되돌릴 수 없다" 같은 말이 사라진다.
+render() { # render < 레코드(고름|번호|라벨|크기|설명)
+	LC_ALL=C awk \
+		-v cols="${COLUMNS_:-100}" \
+		-v g="$GREEN" -v d="$DIM" -v b="$BOLD" -v n="$NC" '
+	function wide(c) {
+		return (c >=   4352 && c <=   4447) ||   # 한글 자모
+		       (c >=  11904 && c <=  42191) ||   # CJK 전반
+		       (c >=  44032 && c <=  55203) ||   # 한글 음절
+		       (c >=  63744 && c <=  64255) ||
+		       (c >=  65072 && c <=  65103) ||
+		       (c >=  65280 && c <=  65376) ||   # 전각
+		       (c >=  65504 && c <=  65510) ||
+		       (c >= 131072)                     # 이모지 등 4바이트
+	}
+	# 바이트 열을 코드포인트로 읽어 폭을 더한다. 2바이트(라틴 · 키릴)는 폭 1,
+	# 3바이트는 실제 코드포인트를 봐야 한다 — ─ 와 … 는 3바이트인데 폭 1이다.
+	function dwidth(s,   i, len, w, c, cp, adv) {
+		len = length(s); w = 0; i = 1
+		while (i <= len) {
+			c = ord[substr(s, i, 1)]
+			if (c < 128)      { cp = c;      adv = 1 }
+			else if (c < 224) { cp = 0;      adv = 2 }
+			else if (c < 240) { adv = 3
+				cp = (c - 224) * 4096 \
+				   + (ord[substr(s, i+1, 1)] - 128) * 64 \
+				   +  ord[substr(s, i+2, 1)] - 128
+			}
+			else              { cp = 131072; adv = 4 }
+			w += wide(cp) ? 2 : 1
+			i += adv
+		}
+		return w
+	}
+	function pad(s, w,   gap) {
+		gap = w - dwidth(s)
+		return (gap > 0) ? s sprintf("%" gap "s", "") : s
+	}
+	function lpad(s, w,   gap) {
+		gap = w - dwidth(s)
+		return (gap > 0) ? sprintf("%" gap "s", "") s : s
+	}
+	# 폭 w 로 접고, 둘째 줄부터 ind 칸 들여쓴다.
+	function wrap(s, w, ind,   m, parts, i, line, cand, out) {
+		m = split(s, parts, " ")
+		for (i = 1; i <= m; i++) {
+			cand = (line == "") ? parts[i] : line " " parts[i]
+			if (line != "" && dwidth(cand) > w) {
+				out = out line "\n" sprintf("%" ind "s", "")
+				line = parts[i]
+			} else line = cand
+		}
+		return out line
+	}
+	BEGIN {
+		FS = "|"
+		# 바이트값 역인덱스. awk 에 ord() 가 없어서 만들어 둔다. 0 은 넣지 않는다 —
+		# sprintf("%c", 0) 이 NUL 이라 키로 못 쓰고, 올바른 UTF-8 에 나오지도 않는다.
+		for (i = 1; i < 256; i++) ord[sprintf("%c", i)] = i
+		lw = dwidth("대상"); sw = dwidth("확보")
+	}
+	{
+		k++
+		sel[k] = $1; num[k] = $2; lab[k] = $3; siz[k] = $4; dsc[k] = $5
+		if (dwidth($3) > lw) lw = dwidth($3)
+		if (dwidth($4) > sw) sw = dwidth($4)
+	}
+	END {
+		if (k == 0) exit
+		# 들여쓰기 2 · 선택 3 · 간격 2 · 번호 2 · 간격 2 · 라벨 · 간격 2 · 확보 · 간격 2
+		head = 2 + 3 + 2 + 2 + 2 + lw + 2 + sw + 2
+		dw = cols - head - 1
+		if (dw < 24) dw = 24
+
+		printf "  %s%s  %s  %s  %s  %s%s\n", b,
+			pad("선택", 3), pad("#", 2), pad("대상", lw),
+			lpad("확보", sw), "설명", n
+		# 구분선은 터미널 끝까지가 아니라 **실제로 찬 폭**까지만 긋는다. 창이
+		# 넓을 때 표보다 한참 긴 줄이 그어지는 것이 제일 눈에 거슬린다.
+		rule = head + dwidth("설명")
+		for (i = 1; i <= k; i++) {
+			w = head + (dwidth(dsc[i]) < dw ? dwidth(dsc[i]) : dw)
+			if (w > rule) rule = w
+		}
+		printf "  %s", d
+		for (i = 2; i < rule; i++) printf "─"
+		printf "%s\n", n
+
+		for (i = 1; i <= k; i++) {
+			on = (sel[i] == "x")
+			printf "  %s%s  %s  %s  %s  %s%s%s\n",
+				on ? g : "",
+				pad(on ? "[x]" : "[ ]", 3),
+				lpad(num[i], 2),
+				pad(lab[i], lw),
+				lpad(siz[i], sw),
+				on ? "" : d, wrap(dsc[i], dw, head), n
+		}
+	}'
+}
+
+human() { # human <KB> -> 1.2G 꼴
+	awk -v k="$1" 'BEGIN {
+		if (k >= 1048576) printf "%.1fG\n", k / 1048576
+		else if (k >= 1024) printf "%.0fM\n", k / 1024
+		else if (k > 0) printf "%dK\n", k
+		else printf "0\n"
+	}'
+}
+
+guard_running() { # guard_running "A;B" -> 돌고 있는 이름들
+	[ "$1" = - ] && return 0
+	old="$IFS"; IFS=';'
+	for p in $1; do
+		IFS="$old"
+		pgrep -qx "$p" 2>/dev/null && printf '%s ' "$p"
+		IFS=';'
+	done
+	IFS="$old"
+}
+
+avail_kb() { df -k / | awk 'NR == 2 { print $4 }'; }
+
+# ── 인자 ──────────────────────────────────────────────────────────────────
+show_all=0; list_only=0; want=""
+for a do
+	case "$a" in
+	--all | -a)   show_all=1 ;;
+	--list | -l)  list_only=1 ;;
+	-h | --help)  sed -n '3,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+	-*)
+		printf "${RED}알 수 없는 옵션: %s${NC}\n" "$a" >&2
+		exit 1
+		;;
+	*)            want="$want $a" ;;
+	esac
+done
+
+# 이름을 줬다면 그게 실제 대상인지 먼저 본다. 오타를 낸 채로 측정 2분을 기다리고
+# "그런 건 없다"를 듣는 것보다 낫다.
+for w in $want; do
+	if ! targets | cut -d'|' -f1 | grep -qxF "$w"; then
+		printf "${RED}그런 대상은 없다: %s${NC}\n" "$w" >&2
+		printf "${DIM}%s${NC}\n" "$(targets | cut -d'|' -f1 | tr '\n' ' ')" >&2
+		exit 1
+	fi
+done
+
+# ── 측정 ──────────────────────────────────────────────────────────────────
+# 전부 du 로 재니 찬 캐시에서는 1~2분 걸린다. 진행 상황을 한 줄로 덮어쓴다.
+total_n="$(targets | grep -c .)"
+i=0
+: >"$tmp/rows"
+targets | while IFS='|' read -r id label guard needsudo paths desc; do
+	i=$((i + 1))
+	printf "\r\033[K${DIM}재는 중… %d/%d  %s${NC}" "$i" "$total_n" "$label" >&2
+	if command -v "measure_$id" >/dev/null 2>&1; then
+		kb="$("measure_$id")"
+	else
+		kb="$(kb_of_paths "$paths")"
+	fi
+	printf '%s|%s|%s|%s|%s|%s|%s\n' \
+		"$id" "$label" "$guard" "$needsudo" "${kb:-0}" "$paths" "$desc" >>"$tmp/rows"
+done
+printf "\r\033[K" >&2
+
+# 작은 것은 숨긴다 — 표가 길어지는 값이 300K 를 돌려받는 것보다 크다. --all 로 본다.
+floor=10240
+[ "$show_all" = 1 ] && floor=1
+awk -F'|' -v f="$floor" '$5 >= f' "$tmp/rows" >"$tmp/shown"
+
+if [ ! -s "$tmp/shown" ]; then
+	printf "${GREEN}돌려받을 만한 것이 없다.${NC} ${DIM}(%s 미만은 숨긴다 — --all)${NC}\n" \
+		"$(human "$floor")"
+	exit 0
+fi
+
+# ── 선택 상태 ─────────────────────────────────────────────────────────────
+# 기본은 **아무것도 안 고른 상태**다. 지우는 도구에서 미리 체크해 두면 엔터 한 번에
+# 사고가 난다.
+: >"$tmp/sel"
+if [ -n "$want" ]; then
+	for w in $want; do printf '%s\n' "$w" >>"$tmp/sel"; done
+fi
+
+is_sel() { grep -qxF "$1" "$tmp/sel" 2>/dev/null; }
+toggle() { if is_sel "$1"; then grep -vxF "$1" "$tmp/sel" >"$tmp/s2"; mv "$tmp/s2" "$tmp/sel"
+	   else printf '%s\n' "$1" >>"$tmp/sel"; fi; }
+
+id_at() { awk -F'|' -v n="$1" 'NR == n { print $1 }' "$tmp/shown"; }
+sel_kb() {
+	awk -F'|' 'NR == FNR { s[$0]; next } ($1 in s) { t += $5 } END { print t + 0 }' \
+		"$tmp/sel" "$tmp/shown"
+}
+
+COLUMNS_="$(tput cols 2>/dev/null || echo 100)"
+[ "$COLUMNS_" -gt 40 ] 2>/dev/null || COLUMNS_=100
+
+screen() {
+	avail="$(avail_kb)"
+	pick="$(sel_kb)"
+	printf "\n${YELLOW}디스크${NC}  %s 중 %s 남음 ${DIM}· /nix/store 는 설정 > 저장 공간에서 System Data 로 잡힌다${NC}\n\n" \
+		"$(human "$(df -k / | awk 'NR == 2 { print $2 }')")" "$(human "$avail")"
+
+	num=0
+	while IFS='|' read -r id label guard needsudo kb paths desc; do
+		num=$((num + 1))
+		mark=" "; is_sel "$id" && mark="x"
+		printf '%s|%s|%s|%s|%s\n' "$mark" "$num" "$label" "$(human "$kb")" "$desc"
+	done <"$tmp/shown" | COLUMNS_="$COLUMNS_" render
+
+	printf "\n  고른 것 ${BOLD}%s${NC}" "$(human "$pick")"
+	[ "$pick" -gt 0 ] && printf " ${DIM}→ 남는 공간 %s${NC}" "$(human "$((avail + pick))")"
+	printf "\n"
+}
+
+if [ "$list_only" = 1 ]; then
+	screen
+	printf "\n${DIM}지우려면 --list 없이 부른다.${NC}\n"
+	exit 0
+fi
+
+# 대화형인데 tty 가 없으면(파이프 · CI) 표만 주고 끝낸다. 읽을 수 없는 입력을
+# 기다리며 멈춰 있는 것이 제일 나쁘다.
+if [ ! -t 0 ] && [ -z "$want" ]; then
+	screen
+	printf "\n${YELLOW}tty 가 아니라 고를 수 없다.${NC} ${DIM}대상 이름을 인자로 주면 비대화형으로 돈다.${NC}\n"
+	exit 0
+fi
+
+# ── 실행 ──────────────────────────────────────────────────────────────────
+run_selected() {
+	# 가드를 지금 다시 본다. 표를 띄워 둔 사이에 앱을 켰을 수 있다.
+	blocked=0
+	while IFS='|' read -r id label guard needsudo kb paths desc; do
+		is_sel "$id" || continue
+		busy="$(guard_running "$guard")"
+		[ -z "$busy" ] && continue
+		printf "  ${RED}✗${NC} %s ${DIM}— 먼저 끌 것: %s${NC}\n" "$label" "$busy"
+		blocked=1
+	done <"$tmp/shown"
+	if [ "$blocked" = 1 ]; then
+		printf "\n${YELLOW}켜져 있는 앱의 캐시는 건드리지 않는다.${NC} 끄고 다시 고를 것.\n"
+		return 1
+	fi
+
+	printf "\n${BOLD}지울 것${NC}\n"
+	while IFS='|' read -r id label guard needsudo kb paths desc; do
+		is_sel "$id" || continue
+		printf "  ${YELLOW}%s${NC}  ${DIM}%s${NC}\n" "$label" "$(human "$kb")"
+		if [ "$paths" = - ]; then
+			printf "      ${DIM}%s${NC}\n" "apps/clean ${RECLAIM_NIX_AGE:-30d}"
+		else
+			old="$IFS"; IFS=';'
+			for p in $paths; do
+				IFS="$old"
+				[ -e "$p" ] && printf "      ${DIM}%s/*${NC}\n" "$p"
+				IFS=';'
+			done
+			IFS="$old"
+		fi
+	done <"$tmp/shown"
+
+	printf "\n${RED}%s 를 지운다. 되돌릴 수 없다.${NC} 계속하려면 ${BOLD}yes${NC} 를 입력: " \
+		"$(human "$(sel_kb)")"
+	read -r ans </dev/tty || ans=""
+	[ "$ans" = yes ] || { printf "${DIM}그만둔다.${NC}\n"; return 1; }
+
+	# sudo 가 필요한 대상이 하나라도 있으면 미리 한 번만 묻는다. 지우는 중간에
+	# 암호 프롬프트가 끼면 진행 표시와 섞여서 뭘 묻는지 안 보인다.
+	if awk -F'|' 'NR == FNR { s[$0]; next } ($1 in s) && $4 == 1 { f = 1 }
+		END { exit !f }' "$tmp/sel" "$tmp/shown"; then
+		sudo -v || return 1
+	fi
+
+	before="$(avail_kb)"
+	printf "\n"
+	while IFS='|' read -r id label guard needsudo kb paths desc; do
+		is_sel "$id" || continue
+		printf "  ${YELLOW}▸${NC} %s\n" "$label"
+		as_root=""; [ "$needsudo" = 1 ] && as_root="sudo"
+		command -v "purge_$id" >/dev/null 2>&1 && "purge_$id"
+		if [ "$paths" != - ]; then
+			old="$IFS"; IFS=';'
+			for p in $paths; do
+				IFS="$old"
+				empty_path "$p"
+				IFS=';'
+			done
+			IFS="$old"
+		fi
+	done <"$tmp/shown"
+
+	after="$(avail_kb)"
+	printf "\n${GREEN}%s 돌려받았다.${NC} 남은 공간 %s\n" \
+		"$(human "$((after - before))")" "$(human "$after")"
+	printf "${DIM}설정 > 저장 공간의 숫자는 spotlight 가 다시 셀 때까지 그대로일 수 있다.${NC}\n"
+	return 0
+}
+
+# 이름을 인자로 받았으면 메뉴를 거치지 않는다 — 확인만 받고 바로 한다.
+if [ -n "$want" ]; then
+	screen
+	run_selected
+	exit $?
+fi
+
+# ── 메뉴 ──────────────────────────────────────────────────────────────────
+while :; do
+	screen
+	printf "\n  ${DIM}번호 토글 (여럿은 띄어서) · ${NC}a${DIM} 전체 · ${NC}n${DIM} 해제 · ${NC}r${DIM} 다시 재기 · ${NC}y${DIM} 실행 · ${NC}q${DIM} 그만${NC}\n"
+	printf "  > "
+	read -r line </dev/tty || break
+	for tok in $line; do
+		case "$tok" in
+		q | Q) printf "\n"; exit 0 ;;
+		a | A) awk -F'|' '{ print $1 }' "$tmp/shown" >"$tmp/sel" ;;
+		n | N) : >"$tmp/sel" ;;
+		r | R)
+			# 다시 재는 길은 스크립트를 다시 띄우는 것이다. 측정 결과를 자리에서
+			# 갱신하려면 선택 상태를 보존하며 rows 를 다시 쓰는 코드가 하나 더
+			# 필요한데, 다시 재는 일 자체가 드물어서 값이 안 맞는다.
+			if [ "$show_all" = 1 ]; then exec "$0" --all; else exec "$0"; fi
+			;;
+		y | Y)
+			if [ ! -s "$tmp/sel" ]; then
+				printf "  ${YELLOW}고른 것이 없다.${NC}\n"
+				continue
+			fi
+			run_selected && exit 0
+			;;
+		[0-9] | [0-9][0-9])
+			id="$(id_at "$tok")"
+			if [ -z "$id" ]; then
+				printf "  ${YELLOW}그런 번호는 없다: %s${NC}\n" "$tok"
+			else
+				toggle "$id"
+			fi
+			;;
+		*) printf "  ${YELLOW}모르는 입력: %s${NC}\n" "$tok" ;;
+		esac
+	done
+done

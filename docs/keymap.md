@@ -114,7 +114,6 @@ rift-cli execute config get | jq -r '.key_specs[] | "\(.[0])\t\(.[1])"'
 | `Mod+/` | 방향 토글 | rift |
 | `Mod+,` | 스택 토글 | rift |
 | `Mod+Ctrl+Space` | 플로팅 창으로 포커스 | rift |
-| `Mod+Ctrl+W` | WorkspacePeek 오버레이 | macOS |
 | `Print` `Ctrl+Print` `Alt+Print` | 영역 / 화면 / 창 스크린샷 | 리눅스 |
 | `Mod+Shift+P` `Mod+Shift+W` `Mod+Ctrl+W` `Mod+Alt+W` | 리싱 스크립트 | 리눅스 |
 | `Mod+Shift+R` | 리싱 메뉴 | 리눅스 |

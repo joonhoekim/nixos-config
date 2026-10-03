@@ -128,37 +128,6 @@
       command = "/usr/bin/open -a /Applications/LinearMouse.app";
       serviceConfig.RunAtLoad = true;
     };
-
-    # Workspace-switcher overlay (Option+Ctrl+W). Same shape as stats: start it,
-    # but a manual quit stays quit.
-    #
-    # It has to be here because the app registers no Login Item of its own —
-    # its install.sh builds and signs the bundle and stops there. Nothing was
-    # starting it, so after every reboot the hotkey did nothing while the app
-    # looked perfectly installed.
-    #
-    # nix does not install this one; it is a Swift .app built imperatively
-    # (modules/darwin/rice/workspacepeek/README.md). On a machine where it has not been
-    # built yet this agent fails once at login and is never retried — which is
-    # the behaviour we want, not a restart loop. `command -v` cannot guard a
-    # LaunchAgent, and KeepAlive would turn the absence into one.
-    #
-    # Launching the bundle's Mach-O directly, rather than `open -a`, is
-    # deliberate and was verified rather than assumed: the app is ad-hoc signed
-    # (TeamIdentifier not set), and TCC entries for ad-hoc binaries are keyed to
-    # the cdhash, so it was worth checking that a launchd start still resolves
-    # the Accessibility grant. It does — CGGetEventTapList shows the same
-    # enabled event tap either way. The duplication that puts stats and
-    # linearmouse on `open -a` cannot happen here — this app registers no login
-    # item of its own, so this agent is the only thing that starts it.
-    workspacepeek = {
-      command = "/Applications/WorkspacePeek.app/Contents/MacOS/WorkspacePeek";
-      # Reaches rift-cli — the overlay asks rift for the workspace list every
-      # time it opens (config.json: windowManager.backend = "auto"). Without
-      # this the overlay draws but finds no workspaces.
-      path = [ "/opt/homebrew/bin" config.environment.systemPath ];
-      serviceConfig.RunAtLoad = true;
-    };
   };
 
   # environment.systemPackages 는 없다. shared 패키지는 home-manager 의

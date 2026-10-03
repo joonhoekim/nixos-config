@@ -185,7 +185,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 스크립트로 확인할 수 없어서 손으로 보는 것:
 
 - 한/영 전환(F18 → 입력 소스), Karabiner 매핑 몇 개
-- rift 키바인드로 창 이동·워크스페이스 전환, WorkspacePeek 오버레이(Option+Ctrl+W)
+- rift 키바인드로 창 이동·워크스페이스 전환
 - 외장 마우스 휠 방향(LinearMouse — 입력 모니터링 권한은 끊겨도 증상이 이것뿐이다)
 - Stats 메뉴바, 스크린샷 단축키, Touch ID sudo
 - System Settings > General > Login Items 에서 "백그라운드 허용"을 다시 묻는 항목

@@ -1,4 +1,4 @@
-# Defender 실시간 보호를 끈다 (-Enable 이면 되돌린다). 관리자 권한으로 실행한다.
+﻿# Defender 실시간 보호를 끈다 (-Enable 이면 되돌린다). 관리자 권한으로 실행한다.
 #
 #   powershell -ExecutionPolicy Bypass -File hosts\windows\defender-realtime.ps1
 #   powershell -ExecutionPolicy Bypass -File hosts\windows\defender-realtime.ps1 -Enable

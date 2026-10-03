@@ -1,0 +1,100 @@
+;; Caps Lock 레이어 — Windows 판. 정본은 modules/nixos/keyboard.nix 와
+;; modules/nixos/pointer/pointerd.py 이고, 키 배치와 수치는 거기서 그대로 옮긴다.
+;;
+;;   Caps 탭   Caps Lock 토글
+;;   Caps 홀드 [nav]: 오른손 커서(TouchCursor 배치), 왼손 마우스
+;;   오른쪽 Alt 한/영 — kanata 가 아니라 Windows 한국어 자판 배열이 한다 (아래 defcfg)
+;;
+;; 시험 실행 (콘솔에 로그가 보이는 tty 빌드, Ctrl+C 로 끝):
+;;   & "$env:LOCALAPPDATA\Programs\kanata\kanata_windows_tty_winIOv2_x64.exe" `
+;;       --cfg modules\windows\kanata\kanata.kbd
+;;
+;; 비상 탈출: 왼쪽 Ctrl + Space + Esc 를 함께 누르면 kanata 가 종료된다
+;; (kanata 내장, 설정과 무관).
+
+;; 오른쪽 Alt 는 kanata 가 아예 잡지 않는다 — 한/영은 Windows 한국어 자판 배열이
+;; 스캔코드 E038 을 VK_HANGUL 로 번역해서 한다 (MapVirtualKeyA(0xE038, 3) = 0x15).
+;; 잡아서 다시 내보내면 두 가지가 깨진다:
+;;   - `ralt kana` 로 매핑하면 왼쪽 Alt 가 나간다. kanata 의 스캔코드 표
+;;     (src/oskbd/windows/scancode_to_usvk.rs osc_to_u16)에 KEY_HANGEUL 이 없어서
+;;     MapVirtualKeyA(VK_HANGUL) 로 떨어지고, 그 값이 0x38(왼쪽 Alt)이다.
+;;   - 그대로 통과시키면 전환은 되지만, kanata 는 RAlt 를 누른 것으로 알고
+;;     Windows 는 VK_HANGUL 을 누른 것으로 안다. 상태 동기화
+;;     (src/kanata/windows/llhook.rs, GetAsyncKeyState)가 이 차이를 매번
+;;     "Unexpected keycode ... Clearing kanata states: RAlt" 에러로 찍는다.
+(defcfg
+  process-unmapped-keys (all-except ralt)
+)
+
+(defsrc)
+
+;; 포인터: kanata 의 틱은 1ms. 10ms 마다 7px = 700 px/s.
+;; Shift 저속은 movemouse-speed 로 거리에 14% 를 곱해 1px/10ms = 100 px/s.
+;; 배율은 이동을 한 번 보낼 때마다 다시 계산되므로(kanata src/kanata/mod.rs
+;; handle_move_mouse) 움직이는 도중에 Shift 를 눌러도 그 자리에서 느려진다 —
+;; pointerd 가 Shift 를 직접 읽는 것과 같은 동작이다.
+;;
+;; 이동은 상대 이동(MOUSEEVENTF_MOVE)이라 Windows 의 포인터 속도와 "포인터 정확도
+;; 향상"(가속)을 그대로 탄다. 가속이 켜져 있으면 1px 짜리 저속 이동이 더 작게
+;; 깎여 체감 속도가 위 수치와 어긋난다.
+;;
+;; 휠: 67ms 마다 한 칸(120) ≈ 15칸/s.
+(defalias
+  ms↑ (movemouse-up 10 7)
+  ms← (movemouse-left 10 7)
+  ms↓ (movemouse-down 10 7)
+  ms→ (movemouse-right 10 7)
+
+  ;; Shift 는 [nav] 가 아니라 기본 레이어에 건다. Shift 를 Caps 보다 먼저
+  ;; 눌렀을 때도 저속이 걸려야 하고, [nav] 밖에서는 움직이는 포인터가 없으니
+  ;; 배율은 아무 일도 하지 않는다.
+  sl (multi lsft (movemouse-speed 14))
+  sr (multi rsft (movemouse-speed 14))
+
+  ;; Shift 가 눌려 있으면 가로 스크롤. Shift 자체도 앱에 그대로 전달된다.
+  wq (fork (mwheel-up 67 120) (mwheel-left 67 120) (lsft rsft))
+  we (fork (mwheel-down 67 120) (mwheel-right 67 120) (lsft rsft))
+
+  ;; tap-hold-press: 다른 키가 눌리는 순간 홀드로 확정된다. Caps+i 를 빠르게
+  ;; 굴려도 i 가 글자로 새지 않는다. 다른 키 없이 200ms 를 넘겨 떼면 아무 일도
+  ;; 하지 않는다 (keyd 의 overload 는 이때도 Caps Lock 을 토글한다).
+  caps (tap-hold-press 200 200 caps (layer-while-held nav))
+)
+
+(deflayermap (base)
+  caps @caps
+  lsft @sl
+  rsft @sr
+)
+
+;; 매핑하지 않은 키는 투명이라 Caps 를 누른 채로도 제 글자가 나온다.
+(deflayermap (nav)
+  ;; 오른손 — 커서. Shift 가 붙어도 그대로 통과해서 선택 확장이 된다.
+  i up
+  j left
+  k down
+  l rght
+  u home
+  o end
+  h pgup
+  n pgdn
+  p bspc
+  m del
+  y ins
+  / C-f
+
+  ;; 왼손 — 마우스
+  w @ms↑
+  a @ms←
+  s @ms↓
+  d @ms→
+  q @wq
+  e @we
+
+  ;; 버튼은 누르고 있는 동안만 눌린다. f 를 잡은 채 wasd 로 드래그.
+  f mlft
+  8 mlft
+  r mrgt
+  0 mrgt
+  9 mmid
+)

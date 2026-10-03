@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 # GMKtec EVO-T1 (NucBox_EVO-T1, board V1.1, firmware V2.03 2025-12-16) —
 # Core Ultra 9 285H (Arrow Lake-H): 16 cores / 16 threads, no SMT, 400 MHz to
@@ -61,6 +61,20 @@
   # `xe.force_probe=` would swap drivers. There is no reason to: it would
   # trade a mature driver for a newer one on hardware the newer one does not
   # target, and the feature set above is already complete.
+
+  # ── thermald: off on this host ───────────────────────────────────────
+  # thermald 2.5.12 lists Arrow Lake (6:197) as adaptive_only in its CPU
+  # table (src/thd_platform_intel.cpp). Adaptive mode needs a GDDV in the
+  # firmware's DPTF tables and this firmware has none, so it falls back to the
+  # default engine, which rejects the CPU because the packaged
+  # thermal-conf.xml has no platform match ("Unsupported cpu model ... THD
+  # engine init failed", exit 2). The service then fails on every boot, and
+  # `nixos-rebuild switch` exits 4 even though the switch went through.
+  #
+  # `services.thermald.ignoreCpuidCheck` would get it running again, but only
+  # by forcing the mode that upstream has excluded for this CPU. Throttling is
+  # left to the firmware and the kernel's own thermal zones.
+  services.thermald.enable = lib.mkForce false;
 
   # ── The monitor on DP-1: its speakers ────────────────────────────────
   # DP-1 carries an HCS 40LGD5K (5120x2160, over USB-C DP Alt Mode) and that

@@ -82,8 +82,8 @@ show_status() {
 }
 
 # ── sign: 이미 깔린 .app 을 이 신원으로 다시 서명한다 ─────────────────────
-# 남의 install.sh 가 임의 서명으로 끝내는 앱(WorkspacePeek 이 그렇다)을 위한
-# 것이다. 서명만 갈아 끼우면 그 앱의 TCC 허가도 재빌드를 견디게 된다.
+# 남의 install.sh 가 임의 서명으로 끝내는 앱을 위한 것이다. 서명만 갈아 끼우면
+# 그 앱의 TCC 허가도 재빌드를 견디게 된다.
 if [ "${1:-}" = "sign" ]; then
   app="${2:-}"
   if [ -z "$app" ] || [ ! -d "$app" ]; then
@@ -181,10 +181,8 @@ fi
 printf "\n"
 show_status
 printf "\n"
-printf "이 신원을 쓰는 것들:\n"
+printf "이 신원을 쓰는 것:\n"
 printf "  ${DIM}global-shader${NC}  build.sh 가 알아서 집는다 (GS_SIGN_ID 로 덮을 수 있다)\n"
-printf "  ${DIM}WorkspacePeek${NC}  install.sh 뒤에 한 번:\n"
-printf "                 ${DIM}apps/mac-signing-cert sign /Applications/WorkspacePeek.app${NC}\n"
 printf "\n"
 printf "${YELLOW}각 앱마다 TCC 허가를 한 번씩 다시 줘야 한다.${NC} 옛 허가는 옛 서명에 묶여 있다.\n"
 printf "${DIM}  tccutil reset ScreenCapture dev.jh.global-shader${NC}\n"

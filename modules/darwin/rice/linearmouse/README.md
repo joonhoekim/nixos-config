@@ -71,8 +71,8 @@ JSON5 가 아니라 **주석을 쓰면 파싱 에러**다. 설명은 이 파일�
 
 ## 로그인 실행
 
-`hosts/darwin/default.nix` 의 `launchd.user.agents.linearmouse`. stats · WorkspacePeek 과
-같은 모양이다 — 앱 자체의 "Start at login" 토글은 앱이 자기 설정에서 다시 쓰는
+`hosts/darwin/default.nix` 의 `launchd.user.agents.linearmouse`. stats 와 같은
+모양이다 — 앱 자체의 "Start at login" 토글은 앱이 자기 설정에서 다시 쓰는
 SMAppService 로그인 항목이라, 이 레포가 선언적으로 들고 있는 것과 어긋난다.
 
 첫 실행에서 **입력 모니터링** 권한을 한 번 요구한다. 거부하면 앱은 멀쩡히 떠 있는 채로

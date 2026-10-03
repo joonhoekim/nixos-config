@@ -18,8 +18,6 @@
 #                properties of the already running instance"). 재시작 아님.
 #   wezterm      아무것도 안 해도 된다. wezterm.lua 가 colors.json 을 감시
 #                목록에 넣어 뒀다(add_to_config_reload_watch_list).
-#   WorkspacePeek 역시 아무것도 안 해도 된다. 오버레이를 띄울 때마다
-#                colors.json 을 새로 읽는다(useWalColors).
 #
 # ghostty 는 일부러 빠져 있다. 터미널 팔레트는 다른 축(apps/rice/term +
 # modules/shared/ghostty)이 갖고 있고, 생성기 둘이 같은 테마 파일을 쓰면

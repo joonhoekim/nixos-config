@@ -128,7 +128,6 @@ in
 #
 #   jankyborders  apps/rice/colors pushes new args into the running instance
 #   wezterm       ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
-#   WorkspacePeek reads ~/.cache/wal/colors.json itself (useWalColors)
 #
 # `apps/rice/colors <image>` runs wal and then pokes them. Ghostty is
 # deliberately not in that list: its palette is owned by the other ricing axis
@@ -295,18 +294,10 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 같이 옮겨야 하고, 그건 이 변경과 별개다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # WorkspacePeek(Option+Ctrl+W) 설정. 앱 자체는 nix 가 안 깐다 — Swift 로
-      # 빌드하는 .app 이라 명령형으로 두었다. 자세한 건 ./workspacepeek/README.md.
-      #
-      # 설정만 여기서 관리하는 게 가능한 이유는 앱이 loadOrCreate 로 *없을 때만*
-      # 쓰기 때문이다. 파일이 이미 있으면 앱은 읽기만 하므로, 여기 심어 둔 값이
-      # 앱의 기본값에 덮이지 않는다.
-      rice_sync ${./workspacepeek/config.json} "$HOME/.config/workspacepeek/config.json"
-
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 일곱 다 그럴 필요가 없기
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 여섯 다 그럴 필요가 없기
       # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고, bordersrc 와
       # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
-      # WorkspacePeek·rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
+      # rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
       # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
       # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
       #

@@ -71,7 +71,7 @@ FUSE 셀프 마운트를 포기하고 **압축을 풀어서 가짜 FHS 샌드박
 
 nixpkgs의 패키지 이름이 `appimage-run-bwrap`인 이유다. 호스트에서 빌려오는 것도 있다 —
 `/etc/fonts`, `/etc/ssl/certs`, 그리고 `/nix`와 최상위 디렉터리들(`/mnt` 포함)이 bind mount 된다.
-**`/mnt/ai` 같은 별도 디스크에 데이터를 두어도 샌드박스 안에서 그대로 보인다.**
+**`/mnt` 아래 별도 디스크에 데이터를 두어도 샌드박스 안에서 그대로 보인다.**
 
 첫 실행이 느린 것은 이 구조의 대가다. LM Studio는 1.1 GB AppImage에서 746 MB를 푼다.
 
@@ -191,9 +191,9 @@ sha256sum ~/Downloads/*.AppImage | awk '{print $1}'       # 살릴 디렉터리 
 
 ---
 
-## 실전: 앱이 만드는 것을 전부 다른 디스크로 보내기
+## 실전: 앱이 만드는 것을 전부 한 디렉터리로 보내기
 
-evo-t1에서 LM Studio를 `/mnt/ai`(로컬 추론용 스크래치 디스크)에 통째로 얹은 구성이다.
+evo-t1에서 LM Studio를 `~/.local/share/ai` 하나 아래에 통째로 얹은 구성이다.
 앱이 쓰는 곳이 셋이고 **각각 제어 수단이 다르다**는 게 요점이다.
 
 | 대상 | 크기 | 수단 |
@@ -205,15 +205,14 @@ evo-t1에서 LM Studio를 `/mnt/ai`(로컬 추론용 스크래치 디스크)에 
 `~/.local/bin/lm-studio`가 셋을 한 번에 처리한다. 핵심만 옮기면:
 
 ```sh
-export XDG_CACHE_HOME=/mnt/ai/cache
-export XDG_CONFIG_HOME=/mnt/ai/config
-printf '%s' /mnt/ai/lmstudio > "$HOME/.lmstudio-home-pointer"
+AI_ROOT="$HOME/.local/share/ai"
+export XDG_CACHE_HOME="$AI_ROOT/cache"
+export XDG_CONFIG_HOME="$AI_ROOT/config"
+printf '%s' "$AI_ROOT/lmstudio" > "$HOME/.lmstudio-home-pointer"
 exec appimage-run "$APPIMAGE" "$@"
 ```
 
-`XDG_*`를 런처 안에서만 export 하므로 시스템의 다른 앱은 영향받지 않는다. 런처는 시작 전에
-`mountpoint -q /mnt/ai`로 마운트를 확인하고, 없으면 **실행을 거부한다** — 디스크가 빠진 채로
-앱이 조용히 홈에 2.5 GB를 다시 만드는 것을 막기 위해서다(`/mnt/ai`는 `nofail`로 붙는다).
+`XDG_*`를 런처 안에서만 export 하므로 시스템의 다른 앱은 영향받지 않는다.
 
 ### 심볼릭 링크로 하지 말 것
 

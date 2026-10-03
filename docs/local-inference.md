@@ -1,11 +1,11 @@
-# 로컬 추론 — evo-t1의 LM Studio와 `/mnt/ai`
+# 로컬 추론 — evo-t1의 LM Studio
 
-evo-t1에서 로컬 모델을 돌리는 구성 전체. **디스크를 세우는 것부터 iGPU 추론 속도를
+evo-t1에서 로컬 모델을 돌리는 구성 전체. **앱을 띄우는 것부터 iGPU 추론 속도를
 재는 것까지** 한 번에 적는다.
 
-이 문서만 유일하게 선언적이지 않은 부분을 서술한다. `/mnt/ai` 파일시스템은
-`hosts/nixos/evo-t1/default.nix`가 선언하지만, **그 위의 LM Studio 구성은 전부 명령형**이다.
-시험 단계라 일부러 그렇게 뒀고, 클린 설치 후에는 이 문서를 보고 손으로 재현해야 한다.
+이 문서만 유일하게 선언적이지 않은 부분을 서술한다. **LM Studio 구성은 전부 명령형**이고
+NixOS 설정에는 한 줄도 없다. 시험 용도라 일부러 그렇게 뒀고, 클린 설치 후에는 이 문서를
+보고 손으로 재현해야 한다.
 AppImage 자체의 동작 원리는 [AppImage와 NixOS](appimage-on-nixos.md)에 따로 있다.
 
 측정값은 전부 2026-08-15 evo-t1 실측이다.
@@ -17,47 +17,41 @@ AppImage 자체의 동작 원리는 [AppImage와 NixOS](appimage-on-nixos.md)에
 | | |
 |---|---|
 | 하드웨어 | Core Ultra 9 285H (16코어, P6+E8+LPE2), Arc Pro 130T/140T iGPU, 62 GiB RAM |
-| 디스크 | `/dev/nvme0n1p1` ext4 `ai` → `/mnt/ai` (469 G) |
+| 위치 | `~/.local/share/ai` (시스템 디스크) |
 | 앱 | `~/Downloads/LM-Studio-0.4.21-2-x64.AppImage` |
 | 런처 | `~/.local/bin/lm-studio` |
-| CLI | `~/.local/bin/lms` → `/mnt/ai/lmstudio/bin/lms` |
+| CLI | `~/.local/bin/lms` → `~/.local/share/ai/lmstudio/bin/lms` |
 | 추론 엔진 | `llama.cpp-linux-x86_64-vulkan-avx2@2.28.2` (자동 선택) |
 
-`/mnt/ai` 아래 구조:
+`~/.local/share/ai` 아래 구조:
 
 ```
-/mnt/ai/cache/appimage-run/<sha256>/   AppImage 추출 캐시   746 M
-/mnt/ai/config/LM Studio/              Electron userData    2.5 M
-/mnt/ai/lmstudio/                      앱 홈: 모델·런타임·설정
-/mnt/ai/lmstudio/models/               GGUF                 20.6 G
+cache/appimage-run/<sha256>/   AppImage 추출 캐시   746 M
+config/LM Studio/              Electron userData    2.5 M
+lmstudio/                      앱 홈: 모델·런타임·설정
+lmstudio/models/               GGUF                 20.6 G
 ```
 
 ---
 
-## 1. 디스크
+## 1. 위치 — 한 디렉터리 아래
 
-`nvme0n1`은 Windows 시절 exFAT 그대로 놀고 있던 512 G NVMe다. GPT 단일 파티션 ext4로
-다시 세웠다. 선택 근거(왜 btrfs가 아닌지, `-m 0`과 `noatime`, label 주소지정)는
-`hosts/nixos/evo-t1/default.nix`의 `── nvme0n1: scratch space` 절에 있다.
+앱이 쓰는 것을 전부 `~/.local/share/ai` 하나 아래에 모은다. LM Studio를 걷어내는 일이
+그 디렉터리 하나를 지우는 일이 되게 하려는 것이다. 홈 아래라 소유권 설정이나 tmpfiles
+규칙, NixOS 쪽 선언이 필요 없다.
+
+**이 디렉터리를 옮길 때는 복사만으로 끝나지 않는다.** 앱이 절대경로를 자기 파일에 굽는다
+(`settings.json`, `.internal/*.json`, vendor venv의 `pyvenv.cfg`와 `sitecustomize.py`).
+앱을 멈추고 복사한 뒤 옛 경로를 새 경로로 치환한다. 대상은 전부 텍스트 파일이라 길이가
+다른 경로로 바꿔도 깨지지 않는다 — 치환 전에 바이너리가 걸리지 않는지 확인할 것.
 
 ```sh
-sudo wipefs -a /dev/nvme0n1p1 /dev/nvme0n1p2 /dev/nvme0n1
-printf 'g\nn\n1\n\n\nw\n' | sudo fdisk /dev/nvme0n1
-sudo mkfs.ext4 -L ai -m 0 /dev/nvme0n1p1
-sudo mkdir -p /mnt/ai && sudo chown $USER /mnt/ai
+grep -rlI '<옛 경로>' lmstudio config | grep -vE 'LOG|\.log$'   # 로그는 놔둔다
+sed -i 's|<옛 경로>|<새 경로>|g' <파일들>
 ```
 
-마운트는 선언이 맡는다. 디스크가 빠져도 부팅을 막지 않는다(`nofail`).
-
-```nix
-fileSystems."/mnt/ai" = {
-  label = "ai";
-  fsType = "ext4";
-  options = [ "noatime" "nofail" ];
-};
-```
-
-쓰기 속도는 3.1 GB/s (256 MiB, O_DIRECT).
+그다음 런처의 `AI_ROOT`와 `lms` 링크를 바꾼다. 앱 로그에 `is broken`이 없고 `lms ls`가
+모델을 보여 주면 끝이다.
 
 ---
 
@@ -75,7 +69,7 @@ NixOS에는 `/lib64/ld-linux-x86-64.so.2`가 없어 AppImage가 직접 실행되
 
 ---
 
-## 3. 모든 것을 `/mnt/ai`에 두기
+## 3. 모든 것을 한 디렉터리에 두기
 
 앱이 쓰는 곳이 셋이고 **각각 제어 수단이 다르다.** 이게 이 구성의 핵심이다.
 
@@ -88,14 +82,15 @@ NixOS에는 `/lib64/ld-linux-x86-64.so.2`가 없어 AppImage가 직접 실행되
 `~/.local/bin/lm-studio`가 셋을 처리한다. 핵심만:
 
 ```sh
-export XDG_CACHE_HOME=/mnt/ai/cache
-export XDG_CONFIG_HOME=/mnt/ai/config
-printf '%s' /mnt/ai/lmstudio > "$HOME/.lmstudio-home-pointer"
+AI_ROOT="$HOME/.local/share/ai"
+export XDG_CACHE_HOME="$AI_ROOT/cache"
+export XDG_CONFIG_HOME="$AI_ROOT/config"
+printf '%s' "$AI_ROOT/lmstudio" > "$HOME/.lmstudio-home-pointer"
 exec appimage-run "$APPIMAGE" "$@"
 ```
 
-런처는 시작 전에 `mountpoint -q /mnt/ai`로 확인하고 **안 붙어 있으면 실행을 거부한다.**
-`nofail` 디스크라 없을 수 있고, 없는 채로 띄우면 앱이 조용히 홈에 2.5 G를 다시 만든다.
+**런처를 거치지 않고 띄우면** 앱은 조용히 홈의 기본 위치(`~/.cache`, `~/.config`)에
+2.5 G를 새로 만든다.
 
 결과적으로 홈에 남는 것은 텍스트 파일 둘뿐이다 — pointer(16 B)와 런처(2 KB).
 
@@ -107,7 +102,7 @@ exec appimage-run "$APPIMAGE" "$@"
 
 ## 4. `lms` CLI — PATH에 안 걸리는 이유
 
-앱에서 CLI를 설치하면 바이너리는 `/mnt/ai/lmstudio/bin/lms`(109 M)에 제대로 놓인다.
+앱에서 CLI를 설치하면 바이너리는 `~/.local/share/ai/lmstudio/bin/lms`(109 M)에 제대로 놓인다.
 그런데 **PATH에는 안 걸린다.** LM Studio는 셸 rc에 PATH 한 줄을 덧붙이는 방식인데,
 
 ```
@@ -118,10 +113,8 @@ home-manager가 관리하는 스토어 심볼릭 링크라 읽기 전용이다. 
 `~/.local/bin`은 이미 PATH에 있으므로 거기로 링크한다.
 
 ```sh
-ln -sfn /mnt/ai/lmstudio/bin/lms ~/.local/bin/lms
+ln -sfn ~/.local/share/ai/lmstudio/bin/lms ~/.local/bin/lms
 ```
-
-`/mnt/ai`가 빠지면 이 링크는 끊어져 `command not found`가 된다. 정상 동작이다.
 
 ---
 
@@ -136,7 +129,7 @@ HF가 막힌 지역을 위한 것이고, **여기서는 순수 손해다.**
 | huggingface.co 직접 | **39 MB/s** |
 
 **약 110배.** 16.8 G짜리 모델이 2시간 대 7분의 차이가 된다. 앱 설정에서 끄거나,
-앱을 멈추고 `/mnt/ai/lmstudio/settings.json`의 `useHFProxy`를 `false`로 바꾼다
+앱을 멈추고 `~/.local/share/ai/lmstudio/settings.json`의 `useHFProxy`를 `false`로 바꾼다
 (앱이 켜져 있으면 종료할 때 덮어쓴다).
 
 ### 받다 만 것은 이어받을 수 있다

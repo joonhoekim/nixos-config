@@ -5,9 +5,9 @@
 # 줄 맨 앞의 `#` 를 지우면 켜진다.
 
 [tools]
-# node = "lts"
+node = "lts"
 # pnpm = "latest"
 # bun = "latest"
-# go = "latest"
-# rust = "stable"
+go = "latest"
+rust = "stable"
 # java = "temurin-25"  # maestro, bundletool 이 쓴다

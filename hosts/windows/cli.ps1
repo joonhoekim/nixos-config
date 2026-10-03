@@ -72,6 +72,18 @@ if (Get-Command mise -ErrorAction SilentlyContinue)
 	New-Item -ItemType Directory -Force $dir | Out-Null
 	Copy-Item -Force "$PSScriptRoot\mise.toml" "$dir\config.toml"
 	mise install
+
+	# mise 는 PATH 를 건드리지 않는다. shims 가 PATH 에 없으면 설치는 성공해도 새
+	# 셸에서 node·go·cargo 가 "not recognized" 로 나온다. 프로필의 `mise activate`
+	# 대신 shims 를 쓰는 것은 Git Bash·cmd·IDE 처럼 프로필을 안 읽는 쪽에서도 보이게
+	# 하려는 것이다.
+	$shims = "$env:LOCALAPPDATA\mise\shims"
+	$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+	if (($userPath -split ';') -notcontains $shims)
+	{
+		[Environment]::SetEnvironmentVariable('Path', "$shims;$userPath", 'User')
+		Update-Path
+	}
 }
 
 # --- uv tool: 파이썬 CLI -----------------------------------------------------

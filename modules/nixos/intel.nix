@@ -30,11 +30,10 @@
   ];
 
   # Proactive thermal management. thermald prefers the firmware's own DPTF
-  # tables and falls back to its packaged thermal-conf.xml when there are none
-  # — which is what happens on evo-t1 (the log line naming the config file is
-  # the tell, and `--adaptive` found no GDDV to read). Useful either way, and it
-  # matters most in small/passive chassis, which is what both Intel machines
-  # here are.
+  # tables and falls back to its packaged thermal-conf.xml when there are none.
+  # It matters most in small/passive chassis. evo-t1 turns it off — its CPU is
+  # one thermald only runs in adaptive mode, and that firmware can't provide
+  # it (see hosts/nixos/evo-t1/default.nix).
   services.thermald.enable = true;
 
   # NOTE: powerManagement.cpuFreqGovernor is intentionally NOT set. On Intel

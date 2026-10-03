@@ -298,6 +298,11 @@ nix-collect-garbage -d        # 유저 프로필 오래된 generation
 sudo nix-collect-garbage -d   # 시스템 프로필까지
 nix run .#clean               # 저장소 정리 앱
 # (이 저장소는 hosts/darwin에서 주간 자동 GC: 30일 이상 삭제)
+nix run .#reclaim             # 대화형 — 대상별로 재서 표로 보여주고 고른 것만 지운다
+nix run .#reclaim -- --list   # 측정만. 아무것도 지우지 않는다
+# "System Data"가 커 보이는 주원인은 보통 업데이트 잔재가 아니라 /nix/store 다
+# (설정 > 저장 공간이 스토어를 그 칸으로 집계한다). 범용 클리너는 쓰지 말 것 —
+# 스토어 트리를 orphaned/broken symlink 로 읽는다. apps/reclaim 머리말 참고.
 
 # ── 적용 후 반영 ──
 killall Dock ; killall Finder ; killall SystemUIServer   # 일부 macOS 설정 반영

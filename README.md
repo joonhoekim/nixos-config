@@ -257,6 +257,8 @@ sudo nixos-rebuild  switch --flake .#mn56              # NixOS
 nix run .#build               # 빌드만, 활성화 X (평가 검증용)
 nix run .#rollback            # 이전 generation으로 복구
 nix run .#clean               # 구 generation GC (기본 7d; 예: `-- 14d`)
+nix run .#reclaim             # macOS 전용 — 지울 것을 재서 표로 보여주고 고른 것만 지운다
+                              #   `-- --list` 면 측정만. nix 세대는 .#clean 을 불러서 지운다
 
 nix run .#setup               # 새 기계를 레포에 붙인다 (대화형). 첫 빌드 전에는
                               #   flakes 가 아직 안 켜져 있으니 ./apps/setup 으로 부른다

@@ -205,7 +205,7 @@
       # 라이싱 스크립트는 apps/rice/ 에 있고 앱 이름에만 rice- 가 붙는다
       # (apps/rice/switch → `nix run .#rice-switch`).
       mkApps = system: nixpkgs.lib.genAttrs [
-        "build" "build-switch" "rollback" "clean" "setup" "doctor"
+        "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe"
         "demo" "mac-signing-cert"
       ] (name: mkApp name name system)

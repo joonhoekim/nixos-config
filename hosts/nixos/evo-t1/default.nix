@@ -334,88 +334,36 @@
   # to be enabled explicitly or TB devices stop being authorizable.
   # OCuLink is plain PCIe and has no OS-side switch.
 
-  # ── Storage: two drives, not one ─────────────────────────────────────
-  # The first draft of this file said "one NVMe". Both M.2 slots are
-  # populated, with the same model in each — SOLIDIGM SSDPFKKW512H7, 512 GB:
+  # ── Storage: two drives, only one of them NixOS's ────────────────────
+  # Both M.2 slots are populated with the same model — SOLIDIGM SSDPFKKW512H7,
+  # 512 GB — and the serials differ only in the last two characters. The
+  # kernel's nvme0/nvme1 numbering is not stable across boots here (it has
+  # been observed both ways round), so tell the drives apart by serial, never
+  # by nvmeXn1:
   #
-  #   nvme1n1  this system. p1 = 2 G ESP at /boot, p2 = 474.9 G ext4 "nixos"
-  #            at /. 36 G used.
-  #   nvme0n1  p1 = 476.9 G ext4 "ai" at /mnt/ai. Until 2026-08-14 this was
-  #            still the Windows data disk it shipped as — 16 M Microsoft
-  #            reserved plus 476.9 G exFAT "New Volume", unmounted and in no
-  #            fileSystems entry. Repartitioned GPT single-partition and
-  #            reformatted; the exFAT contents were backed up elsewhere first.
+  #   …2502602  this system. p1 = 2 G ESP at /boot, p2 = 474.9 G ext4 "nixos"
+  #             at /.
+  #   …250262S  not NixOS's. Kept empty for a Windows 11 install and in no
+  #             fileSystems entry, so NixOS neither mounts nor waits for it.
   #
-  # Neither drive is new — nvme1 has 3,902 power-on hours and 22.2 TB written,
-  # nvme0 has 2,522 hours and 11.0 TB. Both report percentage_used 1-2%, zero
-  # warning and zero critical composite-temperature time, and idle at ~38 °C
-  # composite in this actively cooled chassis (mn56's single NVMe idles at
-  # ~64 °C in a passive one — same class of part, very different thermal
-  # story).
+  #   cat /sys/block/nvme*/device/serial     which nvmeXn1 is which right now
   #
-  # nvme0n1 still carries no ESP — the new table is one Linux filesystem
-  # partition and nothing else — so the "firmware may prefer the other disk's
-  # boot entry" failure that galaxy-chromebook-1 keeps efibootmgr around for
-  # cannot happen as things stand. That would change the moment anything
-  # writes an EFI System Partition to it.
-
-  # ── nvme0n1: scratch space for local model work ──────────────────────
-  # What it is for: LM Studio and whatever llama.cpp runtimes it downloads
-  # for itself, plus room for inference and pipelining experiments. ~/.lmstudio
-  # is a symlink to /mnt/ai/lmstudio, so both the weights and the several GB of
-  # engine binaries land here rather than on /. That symlink is imperative on
-  # purpose — the point of this disk is to be the part of the machine that can
-  # be thrown away and redone without a rebuild.
+  # Health as of 2026-10-03 (nvme smart-log): the system drive has 3,917
+  # power-on hours and 22.6 TB written, the other 2,537 hours and 11.0 TB.
+  # Both report percentage_used 1-2%, zero warning and zero critical
+  # composite-temperature time, and idle at ~38 °C composite in this actively
+  # cooled chassis (mn56's single NVMe idles at ~64 °C in a passive one —
+  # same class of part, very different thermal story).
   #
-  # Nothing authored lives here. Every byte is a re-downloadable model or
-  # engine, and that is what picks the filesystem: ext4, one partition, no
-  # LVM. btrfs is the alternative worth naming and it is the wrong one here —
-  # GGUF weights are large immutable files read through mmap, so CoW buys
-  # nothing and costs fragmentation unless every directory gets chattr +C,
-  # compression is dead weight on already-quantized tensors, and snapshots
-  # would be protecting data that a re-download replaces. xfs would be fine
-  # and is not enough better to justify a second filesystem in the repo.
+  # Once Windows writes its own EFI System Partition to the second drive, this
+  # machine has the "firmware may prefer the other disk's boot entry" failure
+  # that galaxy-chromebook-1 keeps efibootmgr around for: Windows Setup puts
+  # Windows Boot Manager first in the firmware boot order. systemd-boot only
+  # lists loaders on its own ESP, so a Windows on its own ESP does not appear
+  # in its menu either — it is reached from the firmware's boot menu.
   #
-  # Two deliberate departures from the mkfs/mount defaults:
-  #   -m 0      no root reserve. The 5% default would fence off ~24 G on a
-  #             469 G filesystem that no daemon writes to and that root will
-  #             never need free space on to recover.
-  #   noatime   model loads are read-mostly and mmap-heavy; even relatime
-  #             turns the first read of each file into a metadata write.
-  # The inode ratio is left at the 16 K default rather than -T largefile.
-  # largefile would save ~7 G of inode tables and looks obviously right for a
-  # weights store, but this disk is also where pipelining work will put repos
-  # and virtualenvs, and those are precisely the small-file workload a sparse
-  # inode table runs out of room for.
-  #
-  # /mnt/ai is chowned to jh — that lives in the filesystem's own root inode,
-  # so it needs no tmpfiles rule here and survives rebuilds on its own.
-  #
-  # nofail because this is a convenience, not a dependency: without it a drive
-  # that fails to appear takes the boot to emergency mode instead of just
-  # leaving /mnt/ai empty. It also keeps the mount out of local-fs.target's
-  # ordering, so a missing disk costs no boot time either.
-  #
-  # Addressed by label, not by-uuid, and that is the one place this entry
-  # departs from the rest of the repo — every fileSystems entry in the three
-  # hardware-configuration.nix files uses by-uuid, because nixos-generate-config
-  # writes it that way and a root filesystem is never reformatted casually.
-  # This disk is the opposite: it exists to be wiped and rebuilt while trying
-  # things out, and a UUID is regenerated by every mkfs. Pinning to one would
-  # mean editing this file after each reformat, with a window in between where
-  # the declaration is confidently wrong. `-L ai` costs nothing to repeat and
-  # keeps this true. Labels are not guaranteed unique — the by-label symlink
-  # goes to the last device claiming the name — but the only labels on this
-  # machine are boot, nixos, ai and zram0.
-  #
-  # by-partuuid would also survive mkfs and by-id would survive both, but
-  # by-id pins to this specific drive's serial, which is exactly what should
-  # not be pinned on a disk that may be pulled or swapped.
-  fileSystems."/mnt/ai" = {
-    label = "ai";
-    fsType = "ext4";
-    options = [ "noatime" "nofail" ];
-  };
+  # LM Studio and its models live under ~/.local/share/ai on the system
+  # drive; that setup is imperative and described in docs/local-inference.md.
 
   # ── Swap ──────────────────────────────────────────────────────────────
   # No swap partition on either drive: zram alone is the whole swap story

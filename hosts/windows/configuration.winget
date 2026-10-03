@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+#
+# Windows 앱 목록. modules/darwin/casks.nix 와 modules/nixos/packages.nix 의 GUI
+# 앱에 대응한다.
+#
+#   winget configure -f hosts/windows/configuration.winget   # 적용
+#   winget configure test -f hosts/windows/configuration.winget  # 어긋난 것만 보기
+#
+# 여기서 줄을 지우거나 주석으로 돌려도 이미 깔린 앱은 지워지지 않는다. 관리
+# 대상에서 빠질 뿐이다.
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    # --- 개발 도구 ---------------------------------------------------------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives: { description: Git }
+      settings: { id: Git.Git, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: gh
+      directives: { description: GitHub CLI }
+      settings: { id: GitHub.cli, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vscode
+      directives: { description: Visual Studio Code }
+      settings: { id: Microsoft.VisualStudioCode, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dbeaver
+      directives: { description: DBeaver Community }
+      settings: { id: DBeaver.DBeaver.Community, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: redisinsight
+      directives: { description: Redis Insight }
+      settings: { id: RedisInsight.RedisInsight, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: zed
+    #   directives: { description: Zed }
+    #   settings: { id: ZedIndustries.Zed, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: postman
+    #   directives: { description: Postman }
+    #   settings: { id: Postman.Postman, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: bruno
+    #   directives: { description: Bruno }
+    #   settings: { id: Bruno.Bruno, source: winget }
+
+    # --- 터미널 ------------------------------------------------------------
+    # ghostty 는 공식 Windows 빌드가 없다 (winget 에는 비공식 포크
+    # AmanThanvi.winghostty 뿐). 그래서 여기서는 wezterm 이 주 터미널이다.
+    # nightly 인 이유: 안정판 wez.wezterm 은 2024-02 빌드에서 멈춰 있다.
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: wezterm
+      directives: { description: WezTerm (nightly) }
+      settings: { id: wez.wezterm.nightly, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: windows-terminal
+      directives: { description: Windows Terminal }
+      settings: { id: Microsoft.WindowsTerminal, source: winget }
+
+    # --- 키보드 / 마우스 / 창 관리 -----------------------------------------
+    # 키 리매핑(Keyboard Manager, karabiner-elements 대응) 말고도 런처·창 고정·
+    # 색 추출 같은 유틸리티 묶음이라 둔다. 리매핑만 필요하면
+    # AutoHotkey.AutoHotkey 가 대안이다.
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: powertoys
+      directives: { description: PowerToys }
+      settings: { id: Microsoft.PowerToys, source: winget }
+    # linearmouse 대신. 마우스 휠만 뒤집고 트랙패드는 그대로 둔다. 레지스트리
+    # FlipFlopWheel 로도 되지만 장치(VID/PID)마다 따로 넣어야 한다.
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: xmouse
+    #   directives: { description: X-Mouse Button Control }
+    #   settings: { id: Highresolution.X-MouseButtonControl, source: winget }
+    # aerospace / rift 대신
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: glazewm
+    #   directives: { description: GlazeWM }
+    #   settings: { id: glzr-io.glazewm, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: komorebi
+    #   directives: { description: komorebi }
+    #   settings: { id: LGUG2Z.komorebi, source: winget }
+
+    # --- 브라우저 ----------------------------------------------------------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chrome
+      directives: { description: Google Chrome }
+      settings: { id: Google.Chrome, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: brave
+      directives: { description: Brave }
+      settings: { id: Brave.Brave, source: winget }
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: firefox-dev
+      directives: { description: Firefox Developer Edition }
+      settings: { id: Mozilla.Firefox.DeveloperEdition, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: zen
+    #   directives: { description: Zen Browser }
+    #   settings: { id: Zen-Team.Zen-Browser, source: winget }
+
+    # --- 유틸리티 ----------------------------------------------------------
+    # stats 대신
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: trafficmonitor
+    #   directives: { description: TrafficMonitor }
+    #   settings: { id: zhongyang219.TrafficMonitor.Full, source: winget }
+
+    # --- 미디어 / 그래픽 ---------------------------------------------------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: mpv
+      directives: { description: mpv }
+      settings: { id: shinchiro.mpv, source: winget }
+    # iina 는 macOS 전용이다. 대신 쓸 것은 위의 mpv.
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: krita
+    #   directives: { description: Krita }
+    #   settings: { id: KDE.Krita, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: gimp
+    #   directives: { description: GIMP }
+    #   settings: { id: GIMP.GIMP.3, source: winget }
+    # - resource: Microsoft.WinGet.DSC/WinGetPackage
+    #   id: inkscape
+    #   directives: { description: Inkscape }
+    #   settings: { id: Inkscape.Inkscape, source: winget }
+
+    # --- 문서 --------------------------------------------------------------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: onlyoffice
+      directives: { description: ONLYOFFICE }
+      settings: { id: ONLYOFFICE.DesktopEditors, source: winget }
+    # zathura 대신
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: sumatrapdf
+      directives: { description: SumatraPDF }
+      settings: { id: SumatraPDF.SumatraPDF, source: winget }
+
+    # --- 폰트 --------------------------------------------------------------
+    # modules/shared/fonts.nix 중 winget 에 있는 것은 이것 하나다. 나머지는
+    # 별도 설치 경로가 필요하다.
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: font-jetbrains-mono-nerd
+      directives: { description: JetBrainsMono Nerd Font }
+      settings: { id: DEVCOM.JetBrainsMonoNerdFont, source: winget }

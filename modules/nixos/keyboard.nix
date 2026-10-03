@@ -18,13 +18,13 @@
 # arrow cluster. Nothing about it has to be memorised.
 #
 # It is here rather than a vim layer (which this file used to hold; the parked
-# version is ./keyboard.nix.vim) because it is what the Windows machines run,
-# and TouchCursor cannot import a config — every box is set up by hand, so one
-# vocabulary across all of them is worth more than notational purity.
+# version is ./keyboard.nix.vim) because it is the layout the hands already
+# know, and the same layer runs on macOS (../darwin/rice/karabiner) and Windows
+# (../windows/kanata) — one vocabulary across every machine is worth more than
+# notational purity.
 #
-# The trigger is Caps Lock on every machine, which is the single setting
-# changed from stock TouchCursor there and the one thing this file has to
-# match. It also happens to be the trigger the mapping wants: TouchCursor's
+# The trigger is Caps Lock on every machine, the one departure from stock
+# TouchCursor. It also happens to be the trigger the mapping wants: TouchCursor's
 # default is space, and a space trigger has to be defended against the typing
 # it sits in the middle of (an idle timeout so fast rolls don't open the layer,
 # plus emitting the swallowed space ahead of any key the layer doesn't map).

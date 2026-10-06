@@ -215,7 +215,7 @@
       }) [
         "save" "restore" "switch" "wall" "fuzzel"
         "term" "crt" "chain" "studio" "menu"
-        "knobs" "decor" "colors"
+        "knobs" "decor" "layout" "colors"
       ])
       # 점검 스크립트는 플랫폼마다 보는 것이 거의 겹치지 않아서 파일이 갈린다.
       # 그래서 위와 달리 실행 시점이 아니라 여기서 고른다 — `nix run .#check` 는

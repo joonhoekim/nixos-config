@@ -1,0 +1,395 @@
+#!/bin/sh -e
+#
+# 하이프랜드 배치(레이아웃)를 라이브로 갈아끼운다 — scrolling · dwindle · ….
+#
+#   apps/rice/layout                   현재 것과 목록
+#   apps/rice/layout dwindle           갈아끼운다 (리로드 없이, 지금 세션에)
+#   apps/rice/layout --next            목록 순서대로 다음 것
+#   apps/rice/layout --reload          지금 것을 파일에서 다시 돌린다 (손으로 고친 뒤)
+#   apps/rice/layout --json            라이싱 스튜디오가 창을 그리는 데 쓰는 것 전부
+#   apps/rice/layout get [이름]         그 배치의 손잡이 (JSON). 안 주면 지금 것
+#   apps/rice/layout set <이름> <키> <값>
+#   apps/rice/layout reset <이름> [키]   레포 값으로 (안 주면 전부)
+#   apps/rice/layout --file [이름]      그 배치의 파일 경로
+#
+# 배치 하나 = ~/.config/hypr/layouts/<이름>.lua 파일 하나. general.layout 과 그
+# 레이아웃의 값 블록과, **그 레이아웃에서만 뜻이 있는 키바인드**가 한 파일에
+# 있다. 어느 것을 쓰는지는 ~/.config/rice/layout 한 줄이고, hyprland.lua 가 뜰 때
+# 그걸 읽어 dofile 한다(파일이 없으면 scrolling).
+#
+# ── 왜 값 하나가 아니라 파일 하나인가 ─────────────────────────────────────
+# general.layout 만 바꾸면 컬럼 사이 이동·폭·합치기 키가 `Unknown layoutmsg` 로
+# 조용히 죽는다 — 레이아웃마다 디스패처 이름이 다르다(scrolling 의 colresize,
+# dwindle 의 togglesplit). 값과 키를 한 파일에 묶으면 그 어긋남이 생길 자리가
+# 없고, 새 레이아웃을 만드는 일도 파일 하나를 쓰는 일이 된다.
+#
+# ── 리로드 없이 갈아끼운다 ────────────────────────────────────────────────
+# `hyprctl reload` 는 설정을 통째로 다시 읽으면서 걸어 둔 화면 셰이더까지 지운다
+# (apps/rice/crt 머리말). 그래서 eval 로 한다:
+#
+#   1. 옛 파일을 hl.bind 를 "키만 받아 적는 함수"로 바꿔 둔 채 한 번 돌려서,
+#      그 파일이 걸었던 키를 전부 알아낸다. 파일을 파싱하지 않는다 — 키 문자열이
+#      `mod .. " + J"` 처럼 조립돼 있어도 실제 값이 나온다.
+#   2. 그 키들을 hl.unbind 한다. 새 파일이 안 쓰는 키(dwindle 의 T/P/대괄호)가
+#      남아서 두 레이아웃의 키가 섞이는 일이 이것으로 없어진다.
+#   3. hl.bind 를 "먼저 풀고 거는 함수"로 바꾼 채 새 파일을 돌린다. 하이프랜드는
+#      같은 키에 걸린 바인드를 전부 실행하므로(hyprland.lua 의 키바인드 절) 그냥
+#      걸면 한 키가 두 번 뛴다.
+#
+# 그래서 배치 파일은 **몇 번을 다시 돌려도 같은 결과**여야 한다 — 선언만 하고
+# 상태를 쌓지 않는다. layouts/*.lua 머리말에도 적어 뒀다.
+#
+# 돌리기 전에 loadfile 로 문법만 먼저 본다. 중간에 깨지면 옛 키는 풀렸는데 새
+# 키는 반만 걸린 상태가 되는데, 그건 hl.bind 를 되돌린 뒤 에러를 다시 던져서
+# 적어도 소리는 나게 한다.
+#
+# ── 값은 파일이 스스로 선언한다 ───────────────────────────────────────────
+# 셰이더의 `// @0..1` 과 같은 규약이다. `name = 0.5, -- @0.2..0.9:0.05 설명` 처럼
+# `@` 가 붙은 값만 손잡이가 되고, 불리언은 `-- @bool`. 설명은 바로 위 주석 덩어리와
+# `@범위` 뒤의 글자, 구역은 `-- ── 이름 ──` 줄이다. 어느 값이 손잡이인지를 여기
+# 표로 들고 있지 않으므로, 새 배치 파일을 넣어도 이 스크립트는 안 고친다.
+#
+# 손잡이 이름은 키 이름 하나다(`column_width`). 한 파일 안에서 같은 키가 두 테이블에
+# 있으면 첫 것만 고쳐진다 — 배치 파일에 그런 일은 없고, 있으면 파일을 고칠 일이다.
+#
+# ── 로컬만 고친다 ─────────────────────────────────────────────────────────
+# 쓰는 곳은 언제나 $HOME 쪽이다. 레포는 비교 대상으로만 읽어서 "레포와 다른 값"을
+# 표시하고 되돌릴 수 있게 한다. 레포에 넣는 것은 apps/rice/save 다.
+
+here="$(dirname "$0")"
+. "$here/lib.sh"
+
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+layouts="${RICE_LAYOUTS:-$cfg/hypr/layouts}"
+
+# 레포 경로. 스튜디오 안에서 불리므로 cwd 를 못 믿는다 — apps/rice/knobs 와 같다.
+repo="${RICE_REPO:-$(git -C "$here" rev-parse --show-toplevel 2>/dev/null || echo "$HOME/nixos-config")}"
+repo_layouts="$repo/modules/nixos/hyprland/rice/layouts"
+
+rice_kind="배치"
+rice_current_file="$cfg/rice/layout"
+rice_list() {
+	for f in "$layouts"/*.lua; do
+		[ -f "$f" ] || continue
+		f="${f##*/}"
+		printf '%s\n' "${f%.lua}"
+	done | sort
+}
+
+# 파일이 없으면 scrolling 이다. hyprland.lua 의 「배치」절이 같은 기본값을 쓰므로
+# 둘이 어긋나지 않는다 — lib.sh 의 "(unknown)" 은 여기서는 거짓말이 된다.
+rice_current() {
+	if [ -f "$rice_current_file" ]; then
+		cat "$rice_current_file"
+	else
+		printf 'scrolling\n'
+	fi
+}
+
+# 거는 것은 하이프랜드에서만 된다. 읽기·값 고치기·다음 로그인용 선택은 세션 없이도
+# 된다(apps/rice/crt 와 같은 갈래).
+session=1
+if ! command -v hyprctl >/dev/null 2>&1 || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+	session=0
+fi
+
+if [ ! -d "$layouts" ]; then
+	printf "${RED}%s 가 없다. 한 번 rebuild 하면 시드된다 (apps/build-switch).${NC}\n" "$layouts" >&2
+	exit 1
+fi
+
+file_of() { printf '%s/%s.lua\n' "$layouts" "$1"; }
+repo_of() { printf '%s/%s.lua\n' "$repo_layouts" "$1"; }
+
+need_name() { # need_name <이름> — 목록에 없으면 거절
+	[ -f "$(file_of "$1")" ] || rice_reject "$1"
+}
+
+# ── 머리말 ────────────────────────────────────────────────────────────────
+# 파일 첫 주석 덩어리. 첫 줄의 ` — ` 앞이 제목, 그 뒤부터 빈 주석 줄 전까지가
+# 설명이다. 스튜디오 목록이 이름 옆에 띄우는 글이고, 파일을 열어 보지 않고
+# 무엇인지 알게 하는 자리다.
+head_of() { # head_of <파일> → "제목\t설명"
+	awk '
+		NR == 1 && /^--/ {
+			t = $0; sub(/^--[[:space:]]?/, "", t)
+			if (i = index(t, " — ")) { title = substr(t, 1, i - 1); doc = substr(t, i + length(" — ")) }
+			else title = t
+			next
+		}
+		/^--[[:space:]]*$/ { exit }
+		/^--/ { l = $0; sub(/^--[[:space:]]?/, "", l); doc = (doc == "" ? l : doc " " l); next }
+		{ exit }
+		END { printf "%s\t%s\n", title, doc }
+	' "$1"
+}
+
+# ── 손잡이 파서 ───────────────────────────────────────────────────────────
+# 파일 하나에서 `키 = 값, -- @…` 줄을 TSV 로. `all` 을 주면 표시 없는 숫자·불리언
+# 값도 뽑는다 — 레포 사본을 읽을 때 쓴다(되돌릴 값은 표시 유무와 무관하다).
+#
+#   구역 \t 이름 \t 값(불리언은 1/0) \t 최소 \t 최대 \t 눈금 \t 설명 \t 타입 \t 원문
+parse() { # parse <파일> [all]
+	[ -f "$1" ] || return 0
+	awk -v all="${2:-}" '
+		/^[[:space:]]*--[[:space:]]*──/ {
+			g = $0
+			sub(/^[[:space:]]*--[[:space:]]*──[[:space:]]*/, "", g)
+			sub(/[[:space:]]*─.*$/, "", g)
+			group = g; doc = ""; next
+		}
+		/^[[:space:]]*--/ {
+			l = $0
+			sub(/^[[:space:]]*--[[:space:]]?/, "", l)
+			doc = (doc == "" ? l : doc " " l)
+			next
+		}
+		{
+			if (match($0, /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*(-?[0-9]+(\.[0-9]+)?|true|false)[[:space:]]*,?/)) {
+				head = substr($0, RSTART, RLENGTH)
+				tail = substr($0, RSTART + RLENGTH)
+				name = head; sub(/^[[:space:]]*/, "", name); sub(/[[:space:]]*=.*$/, "", name)
+				raw = head; sub(/^[^=]*=[[:space:]]*/, "", raw); sub(/[[:space:]]*,?$/, "", raw)
+
+				ann = ""; rest = ""
+				if (match(tail, /--[[:space:]]*@[^[:space:]]+/)) {
+					ann = substr(tail, RSTART, RLENGTH)
+					rest = substr(tail, RSTART + RLENGTH)
+					sub(/^--[[:space:]]*@/, "", ann)
+					gsub(/^[[:space:]]+|[[:space:]]+$/, "", rest)
+					if (rest != "") doc = (doc == "" ? rest : doc " " rest)
+				}
+
+				if (ann != "" || all != "") {
+					if (raw == "true" || raw == "false") {
+						type = "bool"; val = (raw == "true" ? 1 : 0)
+						mn = 0; mx = 1; step = 1
+					} else {
+						type = (raw ~ /\./ ? "float" : "int"); val = raw
+						n = split(ann, ps, ":")
+						step = (n > 1 ? ps[2] : "")
+						split(ps[1], mm, /\.\./)
+						mn = mm[1]; mx = mm[2]
+						# 정수인데 눈금을 안 적었으면 1 이다. 범위의 1/100 은
+						# 0/1/2 같은 열거값에서 뜻이 없다.
+						if (step == "" && type == "int") step = 1
+					}
+					printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+						group, name, val, mn, mx, step, doc, type, raw
+				}
+			}
+			doc = ""
+		}
+	' "$1"
+}
+
+# 손잡이 JSON. 레포 값이 있으면 같이 넣고 dirty 를 매긴다 — Knobs 와 같은 기준이다.
+knobs_json() { # knobs_json <이름>
+	name="$1"
+	reposnap="$(mktemp)"
+	parse "$(repo_of "$name")" all | jq -Rs '
+		[ split("\n")[] | select(length > 0) | split("\t") | { key: .[1], value: .[2] } ] | from_entries
+	' >"$reposnap"
+
+	parse "$(file_of "$name")" | jq -Rs --arg name "$name" --arg file "$(file_of "$name")" \
+		--slurpfile repo "$reposnap" '
+		[ split("\n")[] | select(length > 0) | split("\t")
+		  | { group: .[0], name: .[1],
+		      value: (.[2] | tonumber),
+		      min:   (.[3] | tonumber),
+		      max:   (.[4] | tonumber),
+		      step:  (if .[5] == "" then (((.[4] | tonumber) - (.[3] | tonumber)) / 100 * 10000 | round) / 10000
+		              else (.[5] | tonumber) end),
+		      doc:   .[6],
+		      type:  .[7],
+		      repo:  ($repo[0][.[1]] // null | if . == null then null else tonumber end) } ]
+		| map(. + { dirty: (.repo != null and (.repo - .value | fabs) > 1e-9) })
+		| { target: $name, file: $file,
+		    groups: (reduce .[] as $k ([];
+		               if (length > 0 and (.[-1].label == $k.group))
+		               then .[0:-1] + [ .[-1] + { knobs: (.[-1].knobs + [$k]) } ]
+		               else . + [ { label: $k.group, knobs: [$k] } ] end)) }'
+	rm -f "$reposnap"
+}
+
+# ── 거는 것 ───────────────────────────────────────────────────────────────
+# 머리말의 세 단계. 옛 파일과 새 파일이 같으면(--reload) 자기 키를 풀고 다시 거는
+# 것이 된다.
+switch_lua() { # switch_lua <옛 파일> <새 파일>
+	cat <<LUA
+local B, C = hl.bind, hl.config
+local old = {}
+hl.bind = function(k) old[#old + 1] = k end
+hl.config = function() end
+pcall(dofile, '$1')
+hl.bind, hl.config = B, C
+for _, k in ipairs(old) do hl.unbind(k) end
+hl.bind = function(k, ...) hl.unbind(k); return B(k, ...) end
+local ok, err = pcall(dofile, '$2')
+hl.bind = B
+if not ok then error(err, 0) end
+LUA
+}
+
+apply() { # apply <이름>
+	name="$1"
+	new="$(file_of "$name")"
+	old="$(file_of "$(rice_current)")"
+
+	if [ "$session" = 1 ]; then
+		# 문법만 먼저. 하이프랜드가 들고 있는 lua 로 보는 것이라 따로 깔 것이 없다.
+		if ! out="$(hyprctl eval "assert(loadfile('$new'))" 2>&1)"; then
+			printf "${RED}%s 가 lua 로 안 읽힌다:${NC}\n  %s\n" "$new" "$out" >&2
+			exit 1
+		fi
+	fi
+
+	mkdir -p "$(dirname "$rice_current_file")"
+	printf '%s\n' "$name" >"$rice_current_file"
+
+	if [ "$session" = 0 ]; then
+		printf "${GREEN}배치: %s${NC} ${DIM}(하이프랜드 세션이 아니다 — 다음 로그인부터)${NC}\n" "$name"
+		return 0
+	fi
+
+	if ! out="$(hyprctl eval "$(switch_lua "$old" "$new")" 2>&1)"; then
+		printf "${RED}배치를 못 걸었다: %s${NC}\n  %s\n" "$name" "$out" >&2
+		exit 1
+	fi
+	printf "${GREEN}배치: %s${NC}\n" "$name"
+}
+
+# ── 값 쓰기 ───────────────────────────────────────────────────────────────
+# "<키>\t<값>" 줄들을 받아 파일의 그 줄만 고친다. 뒤에 붙은 쉼표와 주석(범위
+# 표시)은 그대로 둔다. raw 가 있으면 값을 그 글자 그대로 쓴다(되돌리기 —
+# 레포의 0.10 을 0.1 로 정규화하면 값은 같은데 diff 만 남는다).
+write_values() { # write_values <파일> [raw]   < "<키>\t<값>"
+	live="$1"; raw="${2:-}"
+	tmp="$(mktemp)"
+	cp "$live" "$tmp"
+	while IFS='	' read -r k v; do
+		[ -n "$k" ] || continue
+		awk -v k="$k" -v v="$v" -v raw="$raw" '
+			BEGIN { done = 0 }
+			!done && $0 ~ ("^[[:space:]]*" k "[[:space:]]*=[[:space:]]*(-?[0-9]+(\\.[0-9]+)?|true|false)([[:space:]]*,|[[:space:]]|$)") {
+				pre = $0; sub(/=.*$/, "", pre); sub(/[[:space:]]*$/, "", pre)
+				cur = $0; sub(/^[^=]*=[[:space:]]*/, "", cur)
+				rest = cur
+				match(cur, /^(-?[0-9]+(\.[0-9]+)?|true|false)/)
+				lit = substr(cur, 1, RLENGTH)
+				rest = substr(cur, RLENGTH + 1)
+
+				if (raw != "")
+					s = v
+				else if (lit == "true" || lit == "false")
+					s = (v + 0 ? "true" : "false")
+				else if (lit ~ /\./) {
+					s = sprintf("%.4f", v + 0)
+					sub(/0+$/, "", s)
+					if (s ~ /\.$/) s = s "0"
+				} else
+					s = sprintf("%d", v + 0)
+
+				# 값이 이미 그것이면 줄을 그대로 둔다 — 헛 diff 를 안 남긴다.
+				if (s == lit) { print; done = 1; next }
+				print pre " = " s rest
+				done = 1; next
+			}
+			{ print }
+		' "$tmp" >"$tmp.new" && mv "$tmp.new" "$tmp"
+	done
+	cp "$tmp" "$live"
+	rm -f "$tmp"
+}
+
+# 고친 배치가 지금 걸린 것이면 다시 돌린다. 아니면 다음에 고를 때 읽힌다.
+reapply_if_current() { # reapply_if_current <이름>
+	[ "$session" = 1 ] || return 0
+	[ "$1" = "$(rice_current)" ] || return 0
+	f="$(file_of "$1")"
+	if ! out="$(hyprctl eval "$(switch_lua "$f" "$f")" 2>&1)"; then
+		printf "${RED}%s 를 다시 못 돌렸다:${NC}\n  %s\n" "$f" "$out" >&2
+		exit 1
+	fi
+}
+
+# ── 명령 ──────────────────────────────────────────────────────────────────
+case "${1:-}" in
+--reload)
+	cur="$(rice_current)"
+	need_name "$cur"
+	apply "$cur"
+	exit 0
+	;;
+
+--file)
+	name="${2:-$(rice_current)}"
+	file_of "$name"
+	exit 0
+	;;
+
+--json)
+	# 스튜디오가 한 번에 받는 것: 지금 것, 목록(제목·설명·레포에 있는지), 지금
+	# 것의 손잡이. 프로세스 하나다 — Shaders 쪽 --json 과 같은 이유.
+	cur="$(rice_current)"
+	list="$(rice_list | while read -r n; do
+		f="$(file_of "$n")"
+		printf '%s\t%s\t%s\n' "$n" "$(head_of "$f")" "$([ -f "$(repo_of "$n")" ] && echo 1 || echo 0)"
+	done)"
+	knobs="$(mktemp)"
+	if [ -f "$(file_of "$cur")" ]; then
+		knobs_json "$cur" >"$knobs"
+	else
+		printf '{"groups":[]}\n' >"$knobs"
+	fi
+	jq -n --arg cur "$cur" --arg list "$list" --arg file "$(file_of "$cur")" \
+		--argjson session "$session" --slurpfile k "$knobs" '
+		{ current: $cur,
+		  file: $file,
+		  session: ($session == 1),
+		  values: ( $list | split("\n") | map(select(length > 0) | split("\t")
+		      | { name: .[0], title: .[1], doc: .[2], inRepo: (.[3] == "1"), current: (.[0] == $cur) } ) ),
+		  groups: $k[0].groups }'
+	rm -f "$knobs"
+	exit 0
+	;;
+
+get)
+	name="${2:-$(rice_current)}"
+	need_name "$name"
+	knobs_json "$name"
+	exit 0
+	;;
+
+set)
+	name="${2:?배치 이름이 필요하다}"
+	key="${3:?값 이름이 필요하다}"
+	val="${4:?값이 필요하다}"
+	need_name "$name"
+	row="$(parse "$(file_of "$name")" | awk -F'\t' -v k="$key" '$2 == k { print; exit }')"
+	[ -n "$row" ] || { printf '%s 에 그런 손잡이는 없다: %s\n' "$name" "$key" >&2; exit 1; }
+	# 범위를 벗어나면 자른다. 슬라이더는 넘길 일이 없지만 손으로 부를 때는 있다.
+	val="$(printf '%s\n' "$row" | awk -F'\t' -v v="$val" '{
+		x = v + 0; if (x < $4 + 0) x = $4 + 0; if (x > $5 + 0) x = $5 + 0; print x }')"
+	printf '%s\t%s\n' "$key" "$val" | write_values "$(file_of "$name")"
+	reapply_if_current "$name"
+	exit 0
+	;;
+
+reset)
+	name="${2:?배치 이름이 필요하다}"
+	key="${3:-}"
+	need_name "$name"
+	pairs="$(parse "$(repo_of "$name")" all |
+		awk -F'\t' -v k="$key" '(k == "" || $2 == k) { printf "%s\t%s\n", $2, $9 }')"
+	[ -n "$pairs" ] || { printf '레포에서 되돌릴 값을 못 찾았다: %s\n' "$name" >&2; exit 1; }
+	printf '%s\n' "$pairs" | write_values "$(file_of "$name")" raw
+	reapply_if_current "$name"
+	exit 0
+	;;
+esac
+
+# 나머지(목록 · --next · 이름)는 다른 스위처와 같은 모양이다.
+rice_dispatch "$@"
+need_name "$RICE_NAME"
+apply "$RICE_NAME"

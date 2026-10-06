@@ -98,6 +98,13 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 rift-cli execute config get | jq -r '.key_specs[] | "\(.[0])\t\(.[1])"'
 ```
 
+하이프랜드는 레이아웃을 갈아끼울 수 있고(`apps/rice/layout`, 스튜디오의 「배치」탭),
+컬럼이라는 개념이 있어야 뜻이 서는 키들 — `Mod+J/L`, `Mod+C`, `Mod+=/-`, `Mod+R`,
+`Mod+Shift+J/L`, `Mod+Ctrl+E` — 는 레이아웃 파일이 건다
+(`modules/nixos/hyprland/rice/layouts/`). 위 표는 기본인 scrolling 기준이고, dwindle
+에서는 같은 자리에 트리 조작(togglesplit · movetoroot · 그룹)이 걸린다. 그 파일의
+주석이 어느 키가 어떻게 바뀌는지 적고 있다.
+
 `Mod+Ctrl+E` 는 지금 컬럼 상태를 보고 뒤집힌다 — 혼자면 옆 창을 데려와 한 컬럼에
 쌓고, 이미 쌓여 있으면 활성 창만 빼내 제 컬럼으로 돌려놓는다. 합치는 방향은 셋 다
 오른쪽이다. rift 와 니리는 이걸 액션 하나로 갖고 있고, 하이프랜드에만 없어서

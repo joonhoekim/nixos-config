@@ -38,7 +38,12 @@ thing niri cannot do: an output-wide shader (`decoration:screen_shader`) —
 `apps/rice/crt` does the same from a shell (`--reload` re-reads the `.frag`,
 which is how you tune its values). Picking, stacking and tuning has a GUI —
 the ricing studio (`apps/rice/studio`), with `apps/rice/knobs` and
-`apps/rice/decor` as its shell backends.
+`apps/rice/decor` as its shell backends. The same window switches the Hyprland
+**layout**: scrolling (niri's model, the default) and dwindle (BSP) each live
+in one file under `modules/nixos/hyprland/rice/layouts/` together with the
+keybinds that only make sense in that layout, and `apps/rice/layout` swaps
+them live without a config reload. The choice is a one-line file per machine
+(`~/.config/rice/layout`); the repo default stays scrolling.
 
 niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
 files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
@@ -267,6 +272,6 @@ nix run .#mac-signing-cert    # macOS only — pin the code-signing identity (do
 ```
 
 The ricing family (rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
-rice-knobs · rice-decor · rice-chain · rice-save · rice-restore) is covered in
+rice-knobs · rice-decor · rice-layout · rice-chain · rice-save · rice-restore) is covered in
 the ricing section above and in each script's header. The full list lives in
 `flake.nix` (`mkApps`).

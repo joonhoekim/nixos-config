@@ -1,9 +1,10 @@
 //@ pragma UseQApplication
 //@ pragma AppId rice-studio
 
-// 라이싱 스튜디오 — 화면을 덮는 것들을 고르고 값을 맞추는 창. 탭이 둘이다:
+// 라이싱 스튜디오 — 화면을 덮는 것들을 고르고 값을 맞추는 창. 탭이 셋이다:
 //
 //   셰이더   화면 셰이더를 고르고, 겹치고, 칸마다 손잡이를 맞춘다 (ShaderTab.qml)
+//   배치     하이프랜드 레이아웃을 고르고 그 값을 맞춘다          (LayoutTab.qml)
 //   장식     하이프랜드의 투명도·흐리게·어둡게·그림자          (DecorTab.qml)
 //
 // 여는 법:  apps/rice/studio   또는 DankBar 의 팔레트 조각
@@ -25,6 +26,11 @@
 // 셰이더와 **같은 픽셀을 두고 다투기** 때문이다 — 블러 passes 와 셰이더 탭 수가
 // 같은 GPU 를 나눠 쓰고, blur:xray 는 셰이더가 그린 결과와 겹친다. 두 값을 다른
 // 창에서 만지면 그 다툼이 안 보인다. 자세한 것은 DecorTab.qml 머리말.
+//
+// 배치 탭도 "값 하나 고르기"라 같은 예외인데, 이유가 다르다 — 고르는 데서 끝나지
+// 않고 배치마다 끌어 맞출 값이 있고, 환경을 바꿀 때(작은 화면에 앉기) 레이아웃·
+// 투명도·셰이더를 한 창에서 같이 바꾸게 된다. 자세한 것은 LayoutTab.qml 머리말.
+// 런처에도 같은 목록이 있다(apps/rice/menu) — 거기는 고르기만.
 //
 // DMS 설정에도 하이프랜드 탭이 있지만 거기서 다루는 것은 간격·둥글기·보더뿐이고
 // (Modules/Settings/CompositorLayoutTab.qml), 그 값들은 여기서 안 다룬다.
@@ -78,7 +84,7 @@ ShellRoot {
         minimumSize: Qt.size(880, 560)
         color: Theme.surface
 
-        // 0 = 셰이더, 1 = 장식
+        // 0 = 셰이더, 1 = 배치, 2 = 장식
         property int tab: 0
 
         // ── 토스트 ────────────────────────────────────────────────────────
@@ -116,6 +122,13 @@ ShellRoot {
             }
         }
 
+        Connections {
+            target: Layouts
+            function onFailed(label, message) {
+                win.say(label + " — " + message, true);
+            }
+        }
+
         // 장식 값이 거절당하는 것은 다른 탭을 보고 있을 때도 일어난다(되돌리기가
         // 도는 중에 창을 옮기는 식). 토스트가 창 것이라 탭과 무관하게 뜬다.
         Connections {
@@ -146,6 +159,11 @@ ShellRoot {
         }
 
         Shortcut {
+            sequences: ["Ctrl+3"]
+            onActivated: win.tab = 2
+        }
+
+        Shortcut {
             sequences: ["Ctrl+W"]
             onActivated: Qt.quit()
         }
@@ -159,7 +177,7 @@ ShellRoot {
                 spacing: Theme.spacingM
 
                 // ── 탭 ────────────────────────────────────────────────────
-                // 둘뿐이라 세그먼트 하나로 충분하다. 칩 모양은 KnobPanel 의 대상
+                // 셋뿐이라 세그먼트 하나로 충분하다. 칩 모양은 KnobPanel 의 대상
                 // 고르기와 같은 것을 쓴다 — 같은 창에서 "고르는 것"이 두 가지
                 // 모양이면 어느 쪽이 지금 상태인지 매번 다시 배워야 한다.
                 Panel {
@@ -174,15 +192,21 @@ ShellRoot {
                         spacing: Theme.spacingXS
 
                         Repeater {
-                            model: 2
+                            model: 3
 
                             Chip {
                                 required property int index
 
-                                // 장식은 기본값에서 벗어난 개수를 달고 다닌다.
-                                // 셰이더 탭을 보고 있어도 저쪽을 건드려 뒀다는
-                                // 사실이 보여야 한다.
-                                text: index === 0 ? "셰이더" : ("장식" + (Decor.dirtyCount > 0 ? " · " + Decor.dirtyCount : ""))
+                                // 장식은 기본값에서 벗어난 개수를, 배치는 지금 걸린
+                                // 이름을 달고 다닌다. 다른 탭을 보고 있어도 저쪽
+                                // 상태가 보여야 한다.
+                                text: {
+                                    if (index === 0)
+                                        return "셰이더";
+                                    if (index === 1)
+                                        return "배치" + (Layouts.current !== "" ? " · " + Layouts.current : "");
+                                    return "장식" + (Decor.dirtyCount > 0 ? " · " + Decor.dirtyCount : "");
+                                }
                                 picked: win.tab === index
                                 onClicked: win.tab = index
                             }
@@ -204,9 +228,15 @@ ShellRoot {
                         onNote: msg => win.say(msg)
                     }
 
-                    DecorTab {
+                    LayoutTab {
                         anchors.fill: parent
                         visible: win.tab === 1
+                        onNote: msg => win.say(msg)
+                    }
+
+                    DecorTab {
+                        anchors.fill: parent
+                        visible: win.tab === 2
                     }
                 }
             }

@@ -73,6 +73,18 @@ apps/rice/crt off             # 탈출구
 값(투명도·흐리게·그림자)은 `apps/rice/decor`가 뒤판이고, 체인 합성은
 `apps/rice/chain`이 한다 — 각 스크립트 머리말이 곧 문서다.
 
+하이프랜드 **배치**(레이아웃)도 같은 창의 탭이다. scrolling(니리 모델, 기본)과
+dwindle(BSP)이 `modules/nixos/hyprland/rice/layouts/` 에 파일 하나씩 있고, 레이아웃
+전용 키바인드까지 그 파일이 들고 있어서 갈아끼우면 키도 함께 간다 — 리로드 없이,
+걸어 둔 셰이더도 그대로. 어느 것을 쓰는지는 `~/.config/rice/layout` 한 줄이라
+머신마다 다르게 두고 레포 기본값은 scrolling 으로 남긴다.
+
+```sh
+apps/rice/layout              # 현재 것과 목록
+apps/rice/layout dwindle      # 갈아끼운다 (런처의 「배치」축과 같다)
+apps/rice/layout --reload     # layouts/*.lua 의 키를 손으로 고친 뒤
+```
+
 셰이더를 거는 길은 `hyprctl eval` 뿐이다 — 이 세션은 `hyprland.lua`로 설정하는데
 lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드와 이 스크립트는
 둘 다 "지금 걸려 있는 것"을 컴포지터에게 물어서 다음을 고르므로, 어느 쪽으로 바꿔도
@@ -274,5 +286,5 @@ nix run .#mac-signing-cert    # macOS 전용 — 코드 서명 신원 고정 (do
 ```
 
 라이싱 계열(rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
-rice-knobs · rice-decor · rice-chain · rice-save · rice-restore)은 위 라이싱 절과
+rice-knobs · rice-decor · rice-layout · rice-chain · rice-save · rice-restore)은 위 라이싱 절과
 각 스크립트 머리말 참고. 전체 목록은 `flake.nix`의 `mkApps`다.

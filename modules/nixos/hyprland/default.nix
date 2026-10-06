@@ -55,6 +55,13 @@
 # 배터리 값은 vfr 쪽에 붙어 있고, 판정은 `!motion` 표시가 붙은 손잡이가 0 인지로
 # 갈린다 — 자세한 건 apps/rice/crt 머리말.
 #
+# ── 배치는 파일 하나씩이다 ────────────────────────────────────────────────
+# general.layout 과 그 레이아웃에서만 뜻이 있는 키바인드는 ./rice/layouts/<이름>.lua
+# 가 한 벌씩 들고 있다(scrolling 이 기본, dwindle 이 둘째). hyprland.lua 는
+# ~/.config/rice/layout 에 적힌 이름을 dofile 하고, apps/rice/layout 이 리로드
+# 없이 갈아끼운다 — 옛 파일이 걸었던 키를 풀고 새 파일을 돌린다. 스튜디오의
+# 「배치」탭과 런처의 배치 축이 그 스크립트를 부른다.
+#
 # ── Installation is declarative, ricing is not ─────────────────────────────
 # Same split as ../niri: this module installs and wires the session, and the
 # *settings* live as ordinary writable files under $HOME, seeded from ./rice
@@ -217,6 +224,18 @@ in
             echo "note: ~/.config/hypr/shaders/$old 은 퇴역했다. 값을 손봤다면 옮겨 담고 지울 것"
           fi
         done
+
+        # 배치(레이아웃). general.layout 과 그 레이아웃 전용 키바인드가 파일
+        # 하나씩이고, hyprland.lua 가 ~/.config/rice/layout 에 적힌 이름을 읽어
+        # dofile 한다(그 파일의 「배치」절). 갈아끼우는 것은 apps/rice/layout.
+        #
+        # 셰이더와 같은 이유로 파일 하나씩 심는다 — dwindle 의 값을 손봐 뒀다고
+        # scrolling 의 레포 변경까지 멈추면 안 된다. 목록은 폴더에서 읽으므로
+        # 배치를 추가해도 여기는 안 고친다. ~/.config/rice/layout 은 심지 않는다:
+        # 없으면 scrolling 이고, 그게 기본값이라는 뜻이다.
+        ${lib.concatMapStringsSep "\n        " (n: ''
+          rice_sync ${./rice/layouts}/${n} "$HOME/.config/hypr/layouts/${n}"'')
+          (builtins.attrNames (builtins.readDir ./rice/layouts))}
 
         # 이름 붙인 체인. 한 줄에 한 칸이고, 위에서 아래 순서로 겹친다.
         # `apps/rice/crt --save <이름>` 이 여기에 새로 쓰고, 레포로 되받는 것은

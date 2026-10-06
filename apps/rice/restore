@@ -25,7 +25,7 @@
 #
 #   niri        config.kdl, animations.kdl                          니리 세션
 #   profiles    rice/profiles (프로필당 niri.kdl + dms.json)         니리 세션
-#   hypr        hyprland.lua, shaders/, chains/                     하이프랜드 세션
+#   hypr        hyprland.lua, layouts/, shaders/, chains/           하이프랜드 세션
 #   studio      ~/.config/rice-studio (라이싱 스튜디오 QML)          하이프랜드 세션
 #   dms         DankMaterialShell 플러그인 (레포에 있는 것 전부)      두 리눅스 세션
 #   ghostty     config, rices/, shaders/                            양쪽
@@ -223,6 +223,7 @@ plan() {
     # (설정은 rm+cp 때문에 감시가 끊겨서, 셰이더는 이미 컴파일돼 있어서다.
     # 이유는 그쪽에 적어 뒀다.)
     item "$hy/hyprland.lua" "$cfg/hypr/hyprland.lua"
+    item "$hy/layouts" "$cfg/hypr/layouts"
     item "$hy/shaders" "$cfg/hypr/shaders"
     # 이름 붙인 체인도 같은 처지다. rm+cp 라서 rice-crt --save 로 만들고 아직
     # rice-save 로 안 되받은 체인은 여기서 지워진다 — 백업에는 남는다.

@@ -236,6 +236,10 @@ copy "$cfg/rice/profiles"                     "$rice/profiles"
 # ~/.config/niri/dms/*.kdl 를 뺀 것과 같은 이유다.
 copy "$cfg/hypr/hyprland.lua"                 "$hy/hyprland.lua"
 copy "$cfg/hypr/shaders"                      "$hy/shaders"
+# 배치 파일. 스튜디오의 「배치」탭이 값을 고치고(apps/rice/layout) 손으로 키를
+# 고치는 자리라 셰이더와 같은 처지다. ~/.config/rice/layout(지금 고른 이름)은
+# 안 되받는다 — 그건 머신의 상태고, 레포의 기본은 늘 scrolling 이다.
+copy "$cfg/hypr/layouts"                      "$hy/layouts"
 
 # 이름 붙인 체인. `apps/rice/crt --save <이름>` 이 여기에 쓰고, 그 스크립트가
 # "레포에 남기려면 apps/rice/save" 라고 말한다 — 이 줄이 그 말을 참으로 만든다.

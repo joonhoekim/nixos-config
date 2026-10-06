@@ -48,6 +48,7 @@ if [ $# -gt 0 ]; then
 	case "$axis" in
 	profile) exec "$here/switch" "$value" ;;
 	term) exec "$here/term" "$value" ;;
+	layout) exec "$here/layout" "$value" ;;
 	shader)
 		has_hypr || {
 			printf '하이프랜드 세션이 아니다 — 화면 셰이더는 여기서만 걸린다.\n' >&2
@@ -130,6 +131,11 @@ shader_axis() {
 	try_axis profile "프로필" palette switch
 
 	has_hypr && shader_axis
+
+	# 배치는 "값 하나 고르기"라 이 계약에 그대로 맞는다. 스튜디오에도 같은 목록이
+	# 있지만(「배치」탭 — 값 손잡이는 거기만), 런처에서 한 줄로 갈아끼우는 길도
+	# 둔다. 하이프랜드 세션에서만 — 니리에는 배치 파일이 걸릴 자리가 없다.
+	has_hypr && try_axis layout "배치" view_quilt layout
 
 	try_axis term "터미널" terminal term
 

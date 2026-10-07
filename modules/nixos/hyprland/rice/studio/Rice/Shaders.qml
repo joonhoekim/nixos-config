@@ -108,6 +108,33 @@ Singleton {
         }
     }
 
+    // ── 밖에서 바뀐 것을 따라간다 ─────────────────────────────────────────
+    // 이 창이 떠 있는 동안에도 셰이더는 다른 길로 바뀐다 — Mod+Shift+C, 런처의
+    // off. 그걸 모르면 목록의 ✓ 와 체인이 화면과 다른 것을 가리키고, 그 상태에서
+    // 누른 ＋ 는 옛 체인 위에 얹는다. rice-crt 는 걸 때마다 마지막 칸들을 이
+    // 파일에 적으므로(리로드 뒤 --boot 이 되돌릴 자리) 그 파일을 보면 된다.
+    //
+    // 내용이 같으면 안 읽는다. 손잡이를 끌면 rice-knobs 가 --reload 를 부르고
+    // 그것도 같은 파일을 다시 쓰는데, 그때마다 목록을 갈아 끼우면 changed 가
+    // Knobs 를 다시 불러서 끌던 슬라이더가 새로 만들어진다 — 손을 놓친다.
+    FileView {
+        property string seen: ""
+        property bool primed: false
+
+        path: Quickshell.env("RICE_STATE")
+            || ((Quickshell.env("XDG_CONFIG_HOME") || ((Quickshell.env("HOME") || "") + "/.config")) + "/rice/shader")
+        watchChanges: true
+        blockLoading: false
+        onLoaded: {
+            const t = text();
+            if (primed && t !== seen)
+                root.refresh();
+            seen = t;
+            primed = true;
+        }
+        onFileChanged: reload()
+    }
+
     // ── 거는 것들 ─────────────────────────────────────────────────────────
     // 전부 rice-crt 한 곳으로 간다. "지금 것에 한 장 더" 같은 것도 여기서 칸
     // 목록을 만들어 넘기는 것이라 rice-crt 는 여전히 "이 칸들을 걸어라"만 안다.

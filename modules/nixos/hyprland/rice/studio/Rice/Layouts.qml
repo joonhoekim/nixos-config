@@ -95,6 +95,30 @@ Singleton {
         }
     }
 
+    // ── 밖에서 바뀐 것을 따라간다 ─────────────────────────────────────────
+    // 런처의 배치 축(apps/rice/menu)과 `apps/rice/layout --next` 도 같은 파일을
+    // 쓴다. 그걸 모르면 탭 이름과 목록의 띠가 옛 배치를 가리키고, 오른쪽 손잡이는
+    // 안 걸린 배치의 값을 끌게 된다 — 화면이 안 바뀌어서 고장으로 보인다.
+    //
+    // 값 쓰기(set)는 이 파일을 안 건드리므로 Shaders 와 달리 끌던 손을 놓칠 길은
+    // 없지만, 내용 비교는 같이 둔다 — 같은 이름을 다시 적는 경우가 있다.
+    FileView {
+        property string seen: ""
+        property bool primed: false
+
+        path: (Quickshell.env("XDG_CONFIG_HOME") || ((Quickshell.env("HOME") || "") + "/.config")) + "/rice/layout"
+        watchChanges: true
+        blockLoading: false
+        onLoaded: {
+            const t = text();
+            if (primed && t !== seen)
+                root.refresh();
+            seen = t;
+            primed = true;
+        }
+        onFileChanged: reload()
+    }
+
     // ── 거는 것 ───────────────────────────────────────────────────────────
     function apply(name) {
         run([name], name);

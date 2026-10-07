@@ -35,6 +35,9 @@ Singleton {
     property string current: "off"
     property var chain: []
     property int maxTaps: 64
+    // 하이프랜드 세션인가. 읽기는 어디서나 되지만 거는 것은 여기서만 된다
+    // (apps/rice/crt 의 need_session). 창이 그 사정을 머리에 적는다.
+    property bool session: true
 
     property bool busy: false
     property string error: ""
@@ -95,13 +98,14 @@ Singleton {
                     root.current = d.current || "off";
                     root.chain = d.chain || [];
                     root.maxTaps = d.maxTaps || 64;
+                    root.session = d.session !== false;
                     root.error = "";
                 } catch (e) {
-                    // 하이프랜드 세션이 아니면 rice-crt 가 거절하고 stdout 이 비어
-                    // 온다. 목록을 비우고 이유를 창에 띄운다 — 빈 목록만 보여 주면
-                    // "셰이더가 하나도 없다"로 읽힌다.
+                    // 셰이더 폴더가 아직 시드되지 않았거나 jq 가 없으면 stdout 이
+                    // 비어 온다. 목록을 비우고 이유를 창에 띄운다 — 빈 목록만
+                    // 보여 주면 "셰이더가 하나도 없다"로 읽힌다.
                     root.values = [];
-                    root.error = "rice-crt --json 을 읽지 못했다. 하이프랜드 세션인지 확인할 것.";
+                    root.error = "rice-crt --json 을 읽지 못했다. ~/.config/hypr/shaders 가 있는지 확인할 것.";
                 }
                 root.changed();
             }

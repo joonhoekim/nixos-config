@@ -33,6 +33,8 @@ Singleton {
     property var groups: []
     property string file: ""
     property string error: ""
+    // 하이프랜드 세션인가. 아니면 rice-decor 는 파일에만 적고 화면에는 안 건다.
+    property bool session: true
 
     // 기본값에서 벗어난 값의 수. 탭 이름 옆에 붙는다 — 다른 탭을 보고 있어도
     // 이 축을 건드려 뒀다는 사실이 보여야 한다.
@@ -59,6 +61,7 @@ Singleton {
                     const d = JSON.parse(text);
                     root.groups = d.groups || [];
                     root.file = d.file || "";
+                    root.session = d.session !== false;
 
                     let n = 0;
                     for (const g of root.groups)

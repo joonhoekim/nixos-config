@@ -99,7 +99,15 @@ Item {
                     visible: Shaders.error !== "" || Shaders.chain.length === 0
                     font.pixelSize: Theme.fontS
                     color: Shaders.error !== "" ? Theme.error : Theme.surfaceVariantText
-                    text: Shaders.error !== "" ? Shaders.error : "셰이더 없음 — 아래에서 하나 고르면 걸린다"
+                    text: {
+                        if (Shaders.error !== "")
+                            return Shaders.error;
+                        // 세션이 없으면 체인은 늘 비어 있다 — 컴포지터에 물을 데가
+                        // 없어서다. "하나 고르면 걸린다"는 그때 거짓말이 된다.
+                        if (!Shaders.session)
+                            return "하이프랜드 세션이 아니다 — 값은 고칠 수 있지만 화면에 거는 것은 안 된다";
+                        return "셰이더 없음 — 아래에서 하나 고르면 걸린다";
+                    }
                 }
             }
 

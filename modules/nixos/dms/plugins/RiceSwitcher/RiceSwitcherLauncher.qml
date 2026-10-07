@@ -93,6 +93,16 @@ Item {
     // **동작은 안 접는다.** 스튜디오를 열거나 월페이퍼를 무작위로 바꾸는 것처럼
     // "고르는" 게 아니라 "누르는" 것들은 한 번에 닿아야 값을 한다. 접느냐 마느냐의
     // 기준이 개수가 아니라 성격인 이유다.
+    // ── 영어로도 걸린다 ───────────────────────────────────────────────────
+    // 이름과 부제는 한글이라 `studio` 나 `wallpaper` 로 치면 한 글자도 안 겹친다.
+    // 그래서 축의 id 에 더해 rice-menu 가 준 영어 별칭(axis.keywords ·
+    // actions[].keywords)을 항목의 keywords 에 싣는다. 런처 점수기가 그걸 보고
+    // (Scorer.js — 이름·부제가 0점일 때), 아래 getItems 의 자체 필터도 같은
+    // 목록을 본다. 어느 말이 어느 축인지는 여기서 모른다 — 셸이 준 대로다.
+    function axisKeys(axis) {
+        return [axis.id].concat(axis.keywords || []);
+    }
+
     function topItems() {
         const out = [];
 
@@ -108,7 +118,7 @@ Item {
                     comment: actions[j].comment || "",
                     action: axis.id + ":" + actions[j].value,
                     detach: actions[j].detach === true,
-                    keywords: [axis.id],
+                    keywords: axisKeys(axis).concat(actions[j].keywords || []),
                     categories: ["Rice"]
                 });
             }
@@ -120,7 +130,7 @@ Item {
                     icon: icon,
                     comment: (axis.current ? "지금 " + axis.current + " · " : "") + values.join(" / "),
                     action: "drill:" + axis.id,
-                    keywords: [axis.id],
+                    keywords: axisKeys(axis),
                     categories: ["Rice"]
                 });
         }
@@ -149,7 +159,7 @@ Item {
                 icon: icon,
                 comment: isCurrent ? "지금 이것" : (axis.current ? "현재 " + axis.current + " → " + v : v + " 로"),
                 action: axis.id + ":" + v,
-                keywords: [axis.id],
+                keywords: axisKeys(axis).concat([v]),
                 categories: ["Rice"]
             });
         }
@@ -164,11 +174,17 @@ Item {
 
         const q = (query || "").trim();
 
-        // 축 이름으로 시작하면 그 축만 펼친다. "고르기"를 누르면 런처가 이 질의를
-        // 미리 쳐 준 채로 다시 열린다(executeItem 의 drill:).
-        for (var i = 0; i < axes.length; i++)
-            if (q === axes[i].id || q.indexOf(axes[i].id + " ") === 0)
-                return leafItems(axes[i]);
+        // 축 이름(또는 그 영어 별칭)으로 시작하면 그 축만 펼친다. "고르기"를
+        // 누르면 런처가 이 질의를 미리 쳐 준 채로 다시 열린다(executeItem 의 drill:).
+        const lq = q.toLowerCase();
+        for (var i = 0; i < axes.length; i++) {
+            const keys = axisKeys(axes[i]);
+            for (var k = 0; k < keys.length; k++) {
+                const key = keys[k].toLowerCase();
+                if (lq === key || lq.indexOf(key + " ") === 0)
+                    return leafItems(axes[i]);
+            }
+        }
 
         if (q === "")
             return topItems();
@@ -179,9 +195,14 @@ Item {
         for (var j = 0; j < axes.length; j++)
             all = all.concat(leafItems(axes[j]));
 
-        const lq = q.toLowerCase();
         return all.filter(function (it) {
-            return it.name.toLowerCase().indexOf(lq) !== -1 || (it.comment || "").toLowerCase().indexOf(lq) !== -1;
+            if (it.name.toLowerCase().indexOf(lq) !== -1 || (it.comment || "").toLowerCase().indexOf(lq) !== -1)
+                return true;
+            const kw = it.keywords || [];
+            for (var m = 0; m < kw.length; m++)
+                if (kw[m].toLowerCase().indexOf(lq) !== -1)
+                    return true;
+            return false;
         });
     }
 

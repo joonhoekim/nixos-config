@@ -150,11 +150,17 @@ Item {
 
             property bool open: false
 
+            // 같은 이름이 이미 있으면 rice-crt 는 묻지 않고 덮어쓴다. 이름을 치는
+            // 동안 단추가 먼저 말해 줘야 한다 — 저장한 뒤에 알면 옛 체인은 이미
+            // 없다. 목록은 Shaders.values 가 들고 있으므로 여기서 따로 안 센다.
+            readonly property bool exists: saveName.text.length > 0 && Shaders.valueOf("chain/" + saveName.text) !== null
+
             function commit() {
                 if (saveName.text.length === 0)
                     return;
+                const was = exists;
                 Shaders.save(saveName.text);
-                root.note("chain/" + saveName.text + " 으로 저장했다 — 레포에 넣으려면 apps/rice/save");
+                root.note("chain/" + saveName.text + (was ? " 를 덮어썼다" : " 으로 저장했다") + " — 레포에 넣으려면 apps/rice/save");
                 saveName.text = "";
                 open = false;
             }
@@ -222,8 +228,9 @@ Item {
                 Btn {
                     width: 100
                     height: parent.height
-                    text: "저장"
+                    text: saveRow.exists ? "덮어쓰기" : "저장"
                     kind: "filled"
+                    danger: saveRow.exists
                     enabled: saveName.text.length > 0 && !Shaders.busy
                     onClicked: saveRow.commit()
                 }

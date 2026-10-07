@@ -9,6 +9,13 @@
 // 체인 비용은 곱이라(apps/rice/chain) 지금 걸린 것에 따라 얹을 수 있는 게 달라진다.
 // 목록에서 아예 빼면 "왜 아까는 있었는데 지금은 없나"가 되고, 그 이유가 곱셈이라
 // 화면만 봐서는 짐작할 길이 없다. 그래서 자리는 두고 이유를 옆에 적는다.
+//
+// ── 설명은 아래 띠에 ──────────────────────────────────────────────────────
+// 줄에는 이름과 비용만 있다. `water/still` 과 `water/river` 가 어떻게 다른지는
+// 파일 머리말 첫 줄에 적혀 있고(rice-crt --json 의 blurb), 그걸 목록 아래 띠에
+// 띄운다 — 마우스를 올린 것, 아무 데도 안 올렸으면 지금 걸린 것. 걸어 보면
+// 바로 보이는 창이지만, 체인에 얹을 것을 고르는 자리에서는 걸기 전에 읽는다.
+// 배치 탭의 띠와 같은 모양이다.
 
 import QtQuick
 import qs.Rice
@@ -18,6 +25,10 @@ Panel {
     id: root
 
     signal note(string message)
+
+    // 마우스가 올라가 있는 줄. 비어 있으면 띠가 지금 걸린 것을 설명한다.
+    property string hoverName: ""
+    readonly property var described: Shaders.valueOf(hoverName !== "" ? hoverName : Shaders.current)
 
     function headerFor(v) {
         if (v.kind === "off")
@@ -55,7 +66,10 @@ Panel {
 
     Scroller {
         id: scroll
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: about.top
         // 포커스 링이 단추 바깥으로 3px 나간다. 여백이 없으면 첫 줄과 마지막 줄의
         // 링이 잘려서 지금 어디에 있는지가 그 두 줄에서만 안 보인다.
         anchors.margins: Theme.spacingS
@@ -108,6 +122,18 @@ Panel {
                             height: 46
                             radius: Theme.radiusS
                             color: isCurrent ? Theme.fade(Theme.primary, 0.16) : (hover.containsMouse ? Theme.hoverWash : "transparent")
+
+                            // 아래 MouseArea 는 ＋ 자리를 비켜 두므로(그 단추가
+                            // 자기 클릭을 받아야 해서) 거기로 넘어가면 빠진 것이
+                            // 된다. 설명은 줄 전체에서 떠 있어야 하니 따로 잡는다.
+                            HoverHandler {
+                                onHoveredChanged: {
+                                    if (hovered)
+                                        root.hoverName = row.v.name;
+                                    else if (root.hoverName === row.v.name)
+                                        root.hoverName = "";
+                                }
+                            }
 
                             // 걸린 것은 왼쪽에 띠를 세운다. 셰이더를 통과하면
                             // 16% 짜리 배경 색조만으로는 어느 줄이 지금 것인지가
@@ -188,6 +214,68 @@ Panel {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // ── 설명 띠 ───────────────────────────────────────────────────────────
+    // 높이가 고정이다. 내용 따라 늘면 위 목록이 밀려서 마우스 밑에서 줄이
+    // 도망간다(Ui/DocStrip.qml 과 같은 이유). 머리말 첫 줄은 한두 문장이라
+    // 이름 한 줄 + 글 두 줄이면 들어간다.
+    Item {
+        id: about
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.margins: Theme.spacingS
+        height: Theme.fontS * 3 * 1.4 + Theme.spacingS * 2 + 4
+
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: Theme.divider
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.topMargin: Theme.spacingS + 1
+            anchors.leftMargin: Theme.spacingS
+            anchors.rightMargin: Theme.spacingS
+            spacing: 3
+
+            Txt {
+                width: parent.width
+                // off 는 설명할 것이 없다. 그때는 아래 안내만 띄운다.
+                visible: root.described !== null && root.described.kind !== "off"
+                text: {
+                    const d = root.described;
+                    if (!d)
+                        return "";
+                    let s = d.name;
+                    if (d.kind === "stage")
+                        s += "  · " + d.taps + "탭" + (d.motion ? " · 흐름" : "");
+                    return s + (d.current ? "  · 지금" : "");
+                }
+                font.pixelSize: Theme.fontS
+                font.weight: Font.DemiBold
+                color: Theme.surfaceText
+            }
+
+            Txt {
+                width: parent.width
+                text: {
+                    const d = root.described;
+                    if (d && d.kind !== "off")
+                        return d.blurb || "";
+                    return Shaders.values.length > 0 ? "줄에 마우스를 올리면 여기 설명이 뜬다." : "";
+                }
+                font.pixelSize: Theme.fontS
+                color: root.described && root.described.kind !== "off" ? Theme.fade(Theme.surfaceVariantText, 0.9) : Theme.fade(Theme.surfaceVariantText, 0.5)
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
             }
         }
     }

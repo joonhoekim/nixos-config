@@ -164,6 +164,26 @@ in
     # ../niri: `[ -e ]` guards every copy, so an existing config is never
     # touched and a rebuild mid-ricing cannot clobber unsaved work.
     home-manager.users.${user} = { lib, ... }: {
+      # 런처(Mod+space)의 맨 검색창에서 `studio` · `스튜디오` 로 스튜디오가 뜨게
+      # 하는 .desktop. DMS 앱 검색은 .desktop 의 Name·GenericName·Keywords 를
+      # 보고(Services/AppSearchService.qml), 라이싱 플러그인은 `:` 트리거 안에서만
+      # 답하므로 이 항목이 없으면 트리거를 모르는 손은 스튜디오를 못 찾는다.
+      #
+      # Exec 가 sh 를 거치는 것은 체크아웃 위치 때문이다 — .desktop 의 Exec 는
+      # 환경 변수를 안 풀어서 $RICE_REPO 폴백을 셸에 맡긴다. 키바인드가 같은 꼴로
+      # 부른다(rice/hyprland.lua). 안의 따옴표·$ 는 desktop 규격대로 \ 로 가린다
+      # (makeDesktopItem 이 desktop-file-validate 를 돌린다).
+      xdg.desktopEntries.rice-studio = {
+        name = "라이싱 스튜디오";
+        genericName = "Rice Studio";
+        comment = "화면 셰이더 · 배치 · 장식을 고르고 값을 맞춘다";
+        exec = ''sh -c "\"\''${RICE_REPO:-\$HOME/nixos-config}/apps/rice/studio\""'';
+        icon = "preferences-desktop-theme";
+        terminal = false;
+        categories = [ "Settings" "DesktopSettings" ];
+        settings.Keywords = "studio;rice;ricing;shader;crt;layout;decor;스튜디오;라이싱;셰이더;배치;장식;";
+      };
+
       home.activation.seedHyprlandRice = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
         ${import ../../shared/rice-seed-helpers.nix}
 

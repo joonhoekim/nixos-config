@@ -16,7 +16,15 @@
 # 스위처를 고칠 때마다 QML 도 같이 고쳐야 한다.
 #
 # 그래서 차이를 여기서 흡수하고 플러그인에는 한 가지 모양만 준다. 축 하나 =
-# { id, label, icon, current, values[], actions[] }. 새 축이 생겨도 QML 은 그대로다.
+# { id, label, icon, keywords[], current, values[], actions[] }. 새 축이 생겨도
+# QML 은 그대로다.
+#
+# ── keywords 는 영어 검색어다 ─────────────────────────────────────────────
+# 라벨은 한글이라("프로필", "스튜디오 열기…") 영어로 치면 한 글자도 안 겹친다.
+# 런처 점수기는 이름·부제가 0점일 때 keywords 를 보므로(DMS Scorer.js), 축과
+# 동작마다 영어 별칭을 여기 적어 둔다 — `:studio`, `:wallpaper`, `:layout`.
+# 플러그인은 이 목록을 그대로 항목에 싣고 자기 필터에도 쓴다. 한글은 이름에
+# 이미 있으니 여기 안 적는다.
 #
 # ── 값의 출처는 여전히 각 스위처다 ────────────────────────────────────────
 # 목록도 현재값도 여기서 따로 계산하지 않고 스위처에게 묻는다. 특히 셰이더의
@@ -83,23 +91,23 @@ fi
 # ── 목록 ──────────────────────────────────────────────────────────────────
 # 축 하나를 JSON 객체 하나로. 값 목록은 stdin 으로 받는다(한 줄에 하나).
 # jq -R 은 줄을 문자열로 읽고, inputs 가 나머지 줄 전부를 가져온다.
-axis() { # axis <id> <label> <icon> <current> <actions-json>   < 값목록
+axis() { # axis <id> <label> <icon> <current> <actions-json> <keywords-json>   < 값목록
 	jq -Rn \
 		--arg id "$1" --arg label "$2" --arg icon "$3" --arg cur "$4" \
-		--argjson actions "${5:-[]}" \
-		'{ id: $id, label: $label, icon: $icon, current: $cur,
+		--argjson actions "${5:-[]}" --argjson keywords "${6:-[]}" \
+		'{ id: $id, label: $label, icon: $icon, keywords: $keywords, current: $cur,
 		   values: [inputs], actions: $actions }'
 }
 
 # 스위처가 아직 시드되지 않은 머신에서는 --list 가 죽는다. 축 하나가 없다고 창이
 # 안 뜨면 곤란하므로, 조용히 빼고 나머지를 준다.
-try_axis() { # try_axis <id> <label> <icon> <스위처> <actions-json>
+try_axis() { # try_axis <id> <label> <icon> <스위처> <actions-json> <keywords-json>
 	sw="$here/$4"
 	[ -x "$sw" ] || return 0
 	list="$("$sw" --list 2>/dev/null)" || return 0
 	[ -n "$list" ] || return 0
 	cur="$("$sw" --current 2>/dev/null || echo '')"
-	printf '%s\n' "$list" | axis "$1" "$2" "$3" "$cur" "$5"
+	printf '%s\n' "$list" | axis "$1" "$2" "$3" "$cur" "$5" "$6"
 }
 
 # ── 셰이더 축에는 값이 없다 ───────────────────────────────────────────────
@@ -119,36 +127,37 @@ shader_axis() {
 	cur="$("$here/crt" --current 2>/dev/null || echo '')"
 	printf '' | axis shader "화면 셰이더" blur_on "$cur" '[
 		{ "value": "studio", "label": "스튜디오 열기…", "detach": true,
+		  "keywords": ["studio", "rice studio", "open"],
 		  "comment": "고르기 · 겹치기 · 값 맞추기 (apps/rice/studio)" },
-		{ "value": "--next", "label": "다음 것",
+		{ "value": "--next", "label": "다음 것", "keywords": ["next", "cycle"],
 		  "comment": "목록을 한 바퀴 (Mod+Shift+C 와 같다)" },
-		{ "value": "off", "label": "off",
+		{ "value": "off", "label": "off", "keywords": ["off", "disable"],
 		  "comment": "탈출구 — 화면이 이상해졌을 때" }
-	]'
+	]' '["shader", "crt", "screen", "effect"]'
 }
 
 {
-	try_axis profile "프로필" palette switch
+	try_axis profile "프로필" palette switch '[]' '["profile", "theme", "look", "palette"]'
 
 	has_hypr && shader_axis
 
 	# 배치는 "값 하나 고르기"라 이 계약에 그대로 맞는다. 스튜디오에도 같은 목록이
 	# 있지만(「배치」탭 — 값 손잡이는 거기만), 런처에서 한 줄로 갈아끼우는 길도
 	# 둔다. 하이프랜드 세션에서만 — 니리에는 배치 파일이 걸릴 자리가 없다.
-	has_hypr && try_axis layout "배치" view_quilt layout
+	has_hypr && try_axis layout "배치" view_quilt layout '[]' '["layout", "tiling", "arrange"]'
 
-	try_axis term "터미널" terminal term
+	try_axis term "터미널" terminal term '[]' '["term", "terminal", "ghostty"]'
 
 	# 월페이퍼는 목록이 아니다 — 후보가 수백 장이고 고르는 UI 를 이미 갖고 있다
 	# (fuzzel / yazi). 그래서 값 없이 동작만 셋.
 	if [ -d "${RICE_WALLPAPERS:-$HOME/Pictures/Wallpapers}" ]; then
 		printf '' | axis wall "월페이퍼" wallpaper "" '[
-			{ "value": "random", "label": "무작위",
+			{ "value": "random", "label": "무작위", "keywords": ["random", "shuffle"],
 			  "comment": "전체에서 하나 (apps/rice/wall)" },
-			{ "value": "pick",   "label": "고르기…",
+			{ "value": "pick",   "label": "고르기…", "keywords": ["pick", "choose", "fuzzel"],
 			  "comment": "fuzzel 로 경로 목록에서" },
-			{ "value": "yazi",   "label": "미리보기로 고르기…",
+			{ "value": "yazi",   "label": "미리보기로 고르기…", "keywords": ["yazi", "preview"],
 			  "comment": "yazi 로 그림을 보면서" }
-		]'
+		]' '["wall", "wallpaper", "background"]'
 	fi
 } | jq -s '{ axes: . }'

@@ -1,7 +1,7 @@
 {
     "id": "riceSwitcher",
     "name": "Rice",
-    "description": "라이싱 축(프로필 · 터미널 · 월페이퍼)을 런처에서 고르고, 화면 셰이더는 스튜디오를 연다",
+    "description": "라이싱 축(프로필 · 배치 · 터미널 · 월페이퍼)을 런처에서 고르고, 화면 셰이더는 스튜디오를 연다. 영어로도 찾는다 (:studio, :wallpaper)",
     "version": "2.0.0",
     "author": "nixos-config",
     "icon": "palette",

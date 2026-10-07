@@ -212,6 +212,18 @@ ShellRoot {
                             }
                         }
                     }
+
+                    // 단축키는 위 Shortcut 선언에만 있어서 화면에서 알 길이 없다.
+                    // 탭 줄의 남는 자리에 적어 둔다 — 메뉴가 없는 창이라 여기가
+                    // 유일한 자리다.
+                    Txt {
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.spacingM
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Ctrl+1·2·3 탭  ·  Ctrl+W 닫기"
+                        font.pixelSize: Theme.fontS
+                        color: Theme.fade(Theme.surfaceVariantText, 0.7)
+                    }
                 }
 
                 // ── 본문 ──────────────────────────────────────────────────

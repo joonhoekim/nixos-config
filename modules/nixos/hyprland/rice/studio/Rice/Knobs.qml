@@ -68,8 +68,16 @@ Singleton {
                     // 것은 거의 언제나 화면에 보이는 것이라, 그 줄에서 눈이 제일
                     // 오래 걸리는 곳이 여기다. pass 는 체인에서 몇째 칸인지고
                     // (apps/rice/knobs), 안 걸린 것은 없으므로 뒤로 간다.
-                    root.targets = (d.targets || []).slice().sort(function (a, b) {
-                        return (a.pass || 99) - (b.pass || 99);
+                    //
+                    // 같은 순위끼리는 스크립트가 준 순서를 지킨다. 이 엔진의
+                    // sort 는 안정 정렬이 아니라서 비교가 0 이면 칩이 열 때마다
+                    // 다른 자리에 선다 — 손이 외운 자리가 매번 어긋난다.
+                    root.targets = (d.targets || []).map(function (t, i) {
+                        return { t: t, i: i };
+                    }).sort(function (a, b) {
+                        return ((a.t.pass || 99) - (b.t.pass || 99)) || (a.i - b.i);
+                    }).map(function (e) {
+                        return e.t;
                     });
                     root.error = "";
 

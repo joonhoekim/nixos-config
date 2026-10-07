@@ -60,6 +60,15 @@
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 file="$cfg/hypr/decor.lua"
 
+# 세션이 없으면 파일에만 적힌다. 쓰기를 막지는 않는다 — 다음 로그인에 읽히는
+# 것이 맞다 — 다만 그 사실을 JSON 에 실어서 창이 머리에 적게 한다. 안 그러면
+# 슬라이더를 끌어도 화면이 안 바뀌는 것이 고장으로 보인다(apps/rice/layout 과
+# 같은 갈래).
+session=1
+if ! command -v hyprctl >/dev/null 2>&1 || [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+	session=0
+fi
+
 # ── 표 ────────────────────────────────────────────────────────────────────
 # <키>  <구역>  <타입>  <최소>  <최대>  <눈금>  <기본값>  <설명>   (탭으로 나뉜다)
 #
@@ -182,8 +191,7 @@ EOF
 
 # ── 거는 것 ───────────────────────────────────────────────────────────────
 apply() { # apply <키> <lua 값>
-	[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || return 0
-	command -v hyprctl >/dev/null 2>&1 || return 0
+	[ "$session" = 1 ] || return 0
 
 	# "decoration:blur:size" 6  →  {decoration = {blur = {size = 6}}}
 	lua="$(printf '%s\n' "$1" | awk -F: -v v="$2" '{
@@ -245,7 +253,7 @@ case "${1:-}" in
 			}
 		}
 		{ print $0, (($1 in v) ? v[$1] : $7), (($1 in v) ? 1 : 0) }
-	' | jq -Rs --arg file "$file" '
+	' | jq -Rs --arg file "$file" --argjson session "$session" '
 		[ split("\n")[] | select(length > 0) | split("\t")
 		  | { key:     .[0],
 		      # 구역 이름이 이미 "흐리게"라고 말하고 있으므로 마지막 마디만 쓴다.
@@ -263,6 +271,7 @@ case "${1:-}" in
 		# 배열한 데에 이유가 있어서(앞엣것을 만져야 뒤엣것이 보인다), 이름순으로
 		# 섞으면 읽기 나빠진다.
 		| { file: $file,
+		    session: ($session == 1),
 		    groups: (reduce .[] as $k ([];
 		               if (length > 0 and (.[-1].label == $k.group))
 		               then .[0:-1] + [ .[-1] + { knobs: (.[-1].knobs + [$k]) } ]

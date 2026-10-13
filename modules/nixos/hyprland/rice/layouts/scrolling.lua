@@ -44,10 +44,32 @@ hl.config({
 ------------------------------------------------------------------------
 -- 컬럼 사이(J/L)는 layout 메시지로 간다 — 끝에서 감싸 돌고, 옆 모니터로 새지
 -- 않는다. 컬럼 *안*의 위아래(I/K)는 평범한 방향 포커스라 hyprland.lua 에 있다.
-hl.bind(mod .. " + J", hl.dsp.layout("focus l"))
-hl.bind(mod .. " + L", hl.dsp.layout("focus r"))
-hl.bind(mod .. " + left", hl.dsp.layout("focus l"))
-hl.bind(mod .. " + right", hl.dsp.layout("focus r"))
+--
+-- ── 포커스를 옮긴 뒤 포인터 포커스를 다시 계산한다 ─────────────────────
+-- layout("focus …") 는 키보드 포커스만 옮기고 포인터 쪽은 안 건드린다
+-- (ScrollingAlgorithm::focusTargetUpdate 는 fullWindowFocus 하나다). hl.dsp.focus
+-- 가 거치는 switchToWindow 와 달리 simulateMouseMovement 가 없다. 그 공백을
+-- 메워야 할 sendMotionEventsToFocused 는 커서 밑 표면이 서브서피스면 "바나
+-- 팝업" 으로 보고 그냥 돌아가는데, VS Code·Chrome 계열은 창 전체를 서브서피스로
+-- 그린다. 그래서 이 줄이 없으면 Mod+J/L 뒤 마우스를 안 움직이고 클릭했을 때
+-- 버튼이 **옛 창**으로 배달되고, 그 창이 xdg-activation 으로 포커스를 도로
+-- 가져간다(misc.focus_on_activate). 증상은 "키보드로 옮긴 포커스가 클릭 한 번에
+-- 되돌아감" — docs/postmortems/2026-10-13-hyprland-click-after-keyboard-focus.md.
+--
+-- 커서를 제자리에 다시 놓는 것으로 충분하다. cursor.move 는 워프 뒤
+-- simulateMouseMovement 를 돌리고, 그게 커서 밑 표면으로 포인터 포커스를 다시
+-- 잡는다. 커서는 눈에 띄게 움직이지 않는다.
+local function focus_column(dir)
+    return function()
+        hl.dispatch(hl.dsp.layout("focus " .. dir))
+        local p = hl.get_cursor_pos()
+        hl.dispatch(hl.dsp.cursor.move({ x = p.x, y = p.y }))
+    end
+end
+hl.bind(mod .. " + J", focus_column("l"))
+hl.bind(mod .. " + L", focus_column("r"))
+hl.bind(mod .. " + left", focus_column("l"))
+hl.bind(mod .. " + right", focus_column("r"))
 
 -- 니리의 focus-column-first/last 를 Mod+Home/End 로 옮겨 뒀었지만 둘 다 죽은
 -- 바인드였다. focus 의 `window` 는 위치 키워드가 아니라 창 셀렉터(class:, title:,

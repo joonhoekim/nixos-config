@@ -116,7 +116,10 @@ run_on_start = [
 # The [settings.layout.scrolling] block below is still read — it governs any
 # workspace put on that mode with Alt+Ctrl+4, and $HOME/.config/rice/bin/
 # monocle.sh (Alt+R) reads its width bounds whatever the mode is.
-mode = "traditional"
+#
+# bsp because each workspace is a cell of the grid below, and subline splits a
+# cell the same way: a new window halves the focused tile along its longer side.
+mode = "bsp"
 
 # A new window opens next to the focused one, not at the far end of the
 # workspace. It is not scrolling-only: measured under traditional, where a
@@ -207,6 +210,9 @@ enabled = true
 # overview slot on all three window managers; macOS's nearest equivalent is
 # Mission Control, and rift can only reach it with this enabled.
 enabled = true
+# Recapture the visible previews twice a second while the overview is open, so
+# the cells show what the windows are doing now (rift-grid only).
+live_preview_interval_ms = 500
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops
@@ -225,6 +231,13 @@ enabled = true
 # digit you press and the label you see match; only the internal index is off
 # by one.
 default_workspace_count = 9
+# rift-grid only: the nine form a 3x3 grid, read row by row from the top left
+# (1 2 3 / 4 5 6 / 7 8 9), as in subline. grid_focus and grid_move below cross
+# into the neighbouring cell at a cell's edge, the menu bar draws one small map
+# instead of a label per workspace, and the overview lays the cells out as the
+# grid. Login starts on 5, the centre cell.
+grid_columns = 3
+default_workspace = 4
 workspace_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 auto_assign_windows = true
 preserve_focus_per_workspace = true
@@ -272,14 +285,26 @@ move2 = "Alt + Ctrl"
 # spatial. The arrows are bound to the same actions throughout, permanently:
 # they are what IJKL is imitating, and they are the safety net while the hand
 # is still learning that K went from "up" to "down".
-"Alt + I" = { move_focus = "up" }
-"Alt + K" = { move_focus = "down" }
-"Alt + J" = { move_focus = "left" }
-"Alt + L" = { move_focus = "right" }
-"Alt + Up" = { move_focus = "up" }
-"Alt + Down" = { move_focus = "down" }
-"Alt + Left" = { move_focus = "left" }
-"Alt + Right" = { move_focus = "right" }
+#
+# grid_focus moves between tiles inside the cell and, at the cell's edge, into
+# the neighbouring cell of the workspace grid — subline's Mod+direction.
+"Alt + I" = { grid_focus = "up" }
+"Alt + K" = { grid_focus = "down" }
+"Alt + J" = { grid_focus = "left" }
+"Alt + L" = { grid_focus = "right" }
+"Alt + Up" = { grid_focus = "up" }
+"Alt + Down" = { grid_focus = "down" }
+"Alt + Left" = { grid_focus = "left" }
+"Alt + Right" = { grid_focus = "right" }
+
+# Whole cells at a time, whatever the tiles inside — subline's three-finger
+# swipe. H is the centre cell (subline's Mod+H); plain Alt+H stays the
+# cheatsheet, the key all three window managers share.
+"Alt + Cmd + I" = { grid_cell = "up" }
+"Alt + Cmd + K" = { grid_cell = "down" }
+"Alt + Cmd + J" = { grid_cell = "left" }
+"Alt + Cmd + L" = { grid_cell = "right" }
+"Alt + Cmd + H" = { switch_to_workspace = 4 }
 
 # Workspaces flank the up key on the row above — U back, O forward. They were
 # U and I until IJKL took I. On hyprland and niri these are the same two keys,
@@ -355,14 +380,14 @@ move2 = "Alt + Ctrl"
 # ── Tier 2 — Alt+Shift: take the window with you ─────────────────────────
 # One rule, four groups: directions, workspace back/forward, workspace by
 # number, and the two window-state keys that have a bigger sibling.
-"move + I" = { move_node = "up" }
-"move + K" = { move_node = "down" }
-"move + J" = { move_node = "left" }
-"move + L" = { move_node = "right" }
-"move + Up" = { move_node = "up" }
-"move + Down" = { move_node = "down" }
-"move + Left" = { move_node = "left" }
-"move + Right" = { move_node = "right" }
+"move + I" = { grid_move = "up" }
+"move + K" = { grid_move = "down" }
+"move + J" = { grid_move = "left" }
+"move + L" = { grid_move = "right" }
+"move + Up" = { grid_move = "up" }
+"move + Down" = { grid_move = "down" }
+"move + Left" = { grid_move = "left" }
+"move + Right" = { grid_move = "right" }
 
 # `follow = true` so the window and the focus travel together — the point of
 # the tier is that you are going along with it.

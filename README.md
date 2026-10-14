@@ -283,6 +283,7 @@ nix run .#rice-menu           # DMS 런처 플러그인의 뒤판 (축 목록을
 nix run .#rice-fuzzel         # fuzzel 색을 DMS 팔레트에 맞춘다
 nix run .#rice-colors         # macOS 전용 — 벽지에서 팔레트를 뽑아 밀어 넣는다
 nix run .#mac-signing-cert    # macOS 전용 — 코드 서명 신원 고정 (docs/03)
+nix run .#rift-grid           # macOS 전용 — rift 포크를 빌드해 ~/.local/bin 에 깔고 서명
 ```
 
 라이싱 계열(rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·

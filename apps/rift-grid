@@ -1,0 +1,105 @@
+#!/bin/sh -e
+#
+# rift-grid(rift 포크, 워크스페이스 3×3 격자)를 소스에서 빌드해 깐다. macOS 전용.
+#
+#   apps/rift-grid              빌드 → ~/.local/bin 에 깔기 → 서명 → rift 다시 띄우기
+#   apps/rift-grid --status     깔린 것과 소스의 커밋, 서명 요구사항
+#
+# 소스는 $RIFT_GRID_SRC(기본 ~/git/compositor/rift-grid)다. 없으면 클론한다.
+# 레포: https://github.com/joonhoekim/rift-grid (private, 기본 브랜치 grid)
+#
+# ── 왜 nix 가 빌드하지 않는가 ─────────────────────────────────────────────
+# rift 는 손쉬운 사용과 화면 기록(오버뷰 미리보기) 허가가 있어야 돈다. TCC 는 그
+# 허가를 서명의 지정 요구사항에 묶는데, nix 가 빌드한 바이너리는 임의 서명이라
+# 요구사항이 cdhash 다. 그러면 포크를 고칠 때마다 두 허가를 다시 줘야 하고,
+# macOS 는 다시 묻지도 않는다(apps/mac-signing-cert 머리말).
+#
+# 그래서 빌드는 여기서 하고, apps/mac-signing-cert 가 만든 이 기계의 신원으로
+# 서명한다. 요구사항이 인증서에 묶이므로 몇 번을 다시 빌드해도 허가는 그대로다.
+# 산출물이 기계마다 따로라는 점도 mac-signing-cert 와 같다: build-switch 는 이걸
+# 깔지 않으므로, 새 기계에서는 이 스크립트를 한 번 돌려야 rift 가 뜬다.
+#
+# ── 어디에 까는가 ─────────────────────────────────────────────────────────
+# ~/.local/bin/rift, ~/.local/bin/rift-cli. launchd 에이전트(hosts/darwin/
+# common.nix 의 rift)가 이 경로를 띄우고, 셸과 rift 키바인딩은 PATH 로 rift-cli
+# 에 닿는다. brew 의 rift 는 더 쓰지 않는다 — 설정(rice/rift/config.toml)이
+# grid_focus 같은 포크 전용 명령을 쓰므로 원본 rift 는 그 설정을 읽지 못한다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  printf "${RED}macOS 전용이다.${NC}\n"
+  exit 1
+fi
+
+SRC="${RIFT_GRID_SRC:-$HOME/git/compositor/rift-grid}"
+REPO="https://github.com/joonhoekim/rift-grid.git"
+BIN="$HOME/.local/bin"
+# apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
+CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
+AGENT="gui/$(id -u)/org.nixos.rift"
+
+installed_commit() {
+  "$BIN/rift" --version 2>/dev/null | head -1
+}
+
+if [ "${1:-}" = "--status" ]; then
+  if [ -x "$BIN/rift" ]; then
+    printf "깔린 것: ${GREEN}%s${NC}\n" "$(installed_commit)"
+    codesign -d -r- "$BIN/rift" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+  else
+    printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$BIN/rift"
+  fi
+  if [ -d "$SRC/.git" ]; then
+    printf "소스:     %s ${DIM}(%s)${NC}\n" \
+      "$(git -C "$SRC" log -1 --format='%h %s')" "$SRC"
+  else
+    printf "소스:     ${YELLOW}없다${NC} (%s)\n" "$SRC"
+  fi
+  exit 0
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+  printf "${RED}cargo 가 없다.${NC} rust 툴체인을 먼저 깔아라.\n"
+  exit 1
+fi
+if ! security find-certificate -c "$CN" >/dev/null 2>&1; then
+  printf "${RED}서명 신원이 없다 (%s).${NC} 먼저 apps/mac-signing-cert 를 돌려라.\n" "$CN"
+  exit 1
+fi
+
+if [ ! -d "$SRC/.git" ]; then
+  printf "소스가 없어서 클론한다: %s\n" "$SRC"
+  git clone --branch grid "$REPO" "$SRC"
+elif [ -z "$(git -C "$SRC" status --porcelain)" ] \
+  && [ "$(git -C "$SRC" branch --show-current)" = "grid" ]; then
+  # 맥이 여러 대라 다른 기계에서 올린 커밋을 받아 온다. 고치는 중인 트리
+  # (변경이 있거나 다른 브랜치)는 건드리지 않고 그대로 빌드한다.
+  git -C "$SRC" pull --ff-only --quiet \
+    || printf "${YELLOW}grid 를 받아 오지 못했다. 지금 있는 것으로 빌드한다.${NC}\n"
+fi
+
+printf "빌드: %s\n" "$(git -C "$SRC" log -1 --format='%h %s')"
+cargo build --release --manifest-path "$SRC/Cargo.toml" --bin rift --bin rift-cli
+
+mkdir -p "$BIN"
+for name in rift rift-cli; do
+  # 덮어쓰지 않고 옮겨 넣는다. 돌고 있는 rift 의 실행 파일을 그 자리에서 고쳐
+  # 쓰면 macOS 가 그 프로세스를 죽인다(코드 서명 페이지 검증).
+  install -m 755 "$SRC/target/release/$name" "$BIN/.$name.new"
+  codesign --force --sign "$CN" --identifier "io.github.joonhoekim.rift-grid.$name" \
+    --timestamp=none "$BIN/.$name.new"
+  mv -f "$BIN/.$name.new" "$BIN/$name"
+done
+printf "${GREEN}깔았다${NC} %s\n" "$(installed_commit)"
+codesign -d -r- "$BIN/rift" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+
+# 에이전트가 이미 올라와 있으면 새 바이너리로 다시 띄운다. 아직 없으면(첫
+# build-switch 전) 그냥 둔다 — build-switch 가 올린다.
+if launchctl print "$AGENT" >/dev/null 2>&1; then
+  launchctl kickstart -k "$AGENT"
+  printf "rift 를 다시 띄웠다.\n"
+fi
+
+printf "\n${DIM}처음 까는 기계라면 시스템 설정 > 개인정보 보호 및 보안에서 %s 에\n" "$BIN/rift"
+printf "손쉬운 사용과 화면 및 시스템 오디오 녹음을 한 번 준다. 그 뒤로는 다시 빌드해도 그대로다.${NC}\n"

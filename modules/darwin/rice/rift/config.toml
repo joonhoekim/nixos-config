@@ -83,8 +83,8 @@ hot_reload = true
 run_on_start = []
 
 [settings.layout]
-# Every workspace's mode. Alt+Ctrl+1..4 puts the active workspace on any of
-# the four live, but that choice is per-session: reload_config (Alt+Ctrl+R)
+# Every workspace's mode. Alt+Ctrl+Shift+1..4 puts the active workspace on any
+# of the four live, but that choice is per-session: reload_config (Alt+Ctrl+R)
 # puts all nine back on the value below — measured, not assumed.
 #   traditional   i3/sway containers — nested splits resized as a tree
 #   bsp           binary space partitioning
@@ -93,7 +93,7 @@ run_on_start = []
 #                 modules/nixos/niri runs on the NixOS side
 #
 # The [settings.layout.scrolling] block below is still read — it governs any
-# workspace put on that mode with Alt+Ctrl+4, and $HOME/.config/rice/bin/
+# workspace put on that mode with Alt+Ctrl+Shift+4, and $HOME/.config/rice/bin/
 # monocle.sh (Alt+R) reads its width bounds whatever the mode is.
 #
 # bsp because each workspace is a cell of the grid below, and subline splits a
@@ -185,16 +185,15 @@ display_style = "label"
 enabled = true
 
 [settings.ui.mission_control]
-# On because Alt+E drives it (`show_mission_control_all`). That key is the
-# overview slot on all three window managers; macOS's nearest equivalent is
-# Mission Control, and rift can only reach it with this enabled.
+# On because Alt+O drives it (`show_mission_control_all`), the overview key of
+# subline's ijkl preset. rift can only reach the overview with this enabled.
 enabled = true
 # Recapture the visible previews twice a second while the overview is open, so
 # the cells show what the windows are doing now (rift-grid only).
 live_preview_interval_ms = 500
-# The grid overview, as in subline (rift-grid only). Alt+E first shows the
+# The grid overview, as in subline (rift-grid only). Alt+O first shows the
 # active cell at grid_zoom of the display with its neighbours around it and
-# follows the focus; Alt+E again steps back to the whole grid, a third time
+# follows the focus; Alt+O again steps back to the whole grid, a third time
 # closes. grid_fit = true skips straight to the whole grid. grid_gap is the
 # space between cells as a fraction of the display's shorter side, and
 # grid_labels puts each window's app and title in that gap above its tile.
@@ -269,8 +268,8 @@ app_rules = [
 # The full cross-platform table is docs/keymap.md.
 #
 #   Alt          go there, open it
-#   Alt + Shift  take the window with you        (= move)
-#   Alt + Ctrl   cross a monitor, or reach the WM (= move2)
+#   Alt + Shift  take the window with you                   (= move)
+#   Alt + Ctrl   cross a monitor or a grid, or reach the WM (= move2)
 #
 # `move` used to have a twin: alt-ctrl repeated every move_node binding on the
 # theory that a second spelling costs nothing. It cost the whole Ctrl tier —
@@ -280,6 +279,11 @@ move = "Alt + Shift"
 move2 = "Alt + Ctrl"
 
 [keys]
+# The reference is subline's "ijkl" preset, with Alt as subline's Mod. Where
+# this file and the hyprland/niri columns of docs/keymap.md disagree, the
+# preset wins here: the workspaces are subline's grid, and the keys that walk
+# it should be the ones subline uses.
+#
 # ── Tier 1 — Alt: go there, open it ──────────────────────────────────────
 #
 # Directions are IJKL, the inverted-T that matches the arrow keys:
@@ -294,7 +298,9 @@ move2 = "Alt + Ctrl"
 # is still learning that K went from "up" to "down".
 #
 # grid_focus moves between tiles inside the cell and, at the cell's edge, into
-# the neighbouring cell of the workspace grid — subline's Mod+direction.
+# the neighbouring cell of the workspace grid — subline's Mod+direction. This
+# is also how workspaces are walked: there is no back/forward pair, and Alt+U
+# is left empty, as in the preset.
 "Alt + I" = { grid_focus = "up" }
 "Alt + K" = { grid_focus = "down" }
 "Alt + J" = { grid_focus = "left" }
@@ -305,25 +311,21 @@ move2 = "Alt + Ctrl"
 "Alt + Right" = { grid_focus = "right" }
 
 # Whole cells at a time, whatever the tiles inside — subline's three-finger
-# swipe. H is the centre cell (subline's Mod+H); plain Alt+H stays the
-# cheatsheet, the key all three window managers share.
+# swipe.
 "Alt + Cmd + I" = { grid_cell = "up" }
 "Alt + Cmd + K" = { grid_cell = "down" }
 "Alt + Cmd + J" = { grid_cell = "left" }
 "Alt + Cmd + L" = { grid_cell = "right" }
-"Alt + Cmd + H" = "grid_center"
 
-# Workspaces flank the up key on the row above — U back, O forward. They were
-# U and I until IJKL took I. On hyprland and niri these are the same two keys,
-# even though workspaces stack vertically there and are a numbered strip here.
-"Alt + U" = "prev_workspace"
-"Alt + O" = "next_workspace"
+# The grid's centre cell, where login starts — subline's Mod+H
+# (focus-default-workspace).
+"Alt + H" = "grid_center"
+
 "Alt + Tab" = "switch_to_last_workspace"
 
 # Grids 1..9 (rift-grid). A grid is a context, 3x3 cells of it, and the digit
 # brings it back at the cell it was left on; within a grid, cells are reached
-# with the directions above. Alt+Shift+digit sends the focused window to that
-# grid's current cell and stays put, as subline's Mod+Ctrl+digit does.
+# with the directions above. Alt+Ctrl+digit, below, sends a window to a grid.
 "Alt + 1" = { switch_to_grid = 1 }
 "Alt + 2" = { switch_to_grid = 2 }
 "Alt + 3" = { switch_to_grid = 3 }
@@ -340,32 +342,40 @@ move2 = "Alt + Ctrl"
 # existing Ghostty instead of getting a new window.
 "Alt + Enter" = { exec = ["/bin/sh", "-c", "open -na Ghostty"] }
 
-# Overview. hyprland has the DMS overview on this key and niri has its own;
-# on macOS the nearest thing is Mission Control, which rift can drive.
+# Overview — subline's Mod+O. hyprland has the DMS overview and niri its own;
+# here it is rift-grid's grid overview, which rift drives as Mission Control.
 # Requires [settings.ui.mission_control] enabled = true, above.
-"Alt + E" = "show_mission_control_all"
+"Alt + O" = "show_mission_control_all"
+
+# File manager — subline's Mod+E, which runs `xdg-open ~`. `open ~` is the
+# same thing on macOS: a Finder window on the home folder.
+"Alt + E" = { exec = ["/bin/sh", "-c", "open ~"] }
+
+# rift's settings window — subline's Mod+Comma opens its own settings.
+"Alt + Comma" = { exec = ["/bin/sh", "-c", "rift-cli settings"] }
 
 # Close the focused window (hyprland/niri Mod+Q). Distinct from Cmd-Q, which
 # quits the whole application.
 "Alt + Q" = "close_window"
 
-# Cheatsheet — opens docs/keymap.md, the cross-platform keymap this file is one
-# of three implementations of.
+# Cheatsheet on Mod+? (Alt+Shift+Slash), as in subline — opens docs/keymap.md,
+# the cross-platform keymap this file is one of three implementations of.
 #
-# On Linux this key is `dms ipc call keybinds toggle hyprland`: DMS asks the
-# running compositor what is bound and draws an overlay. There is no equivalent
-# here, and building one was tried and thrown away — reading the live config out
-# of `rift-cli execute config get` is easy, but the overlay around it is not.
-# Ghostty exposes no AXTitle, so no app_rule can single the window out, and
-# `rift-cli query windows` reports ids that vanish moments later, so tracking it
-# from outside needs polling and retries. All of that to avoid opening a file.
+# On Linux the cheatsheet is `dms ipc call keybinds toggle hyprland`: DMS asks
+# the running compositor what is bound and draws an overlay. There is no
+# equivalent here, and building one was tried and thrown away — reading the live
+# config out of `rift-cli execute config get` is easy, but the overlay around it
+# is not. Ghostty exposes no AXTitle, so no app_rule can single the window out,
+# and `rift-cli query windows` reports ids that vanish moments later, so
+# tracking it from outside needs polling and retries. All of that to avoid
+# opening a file.
 #
 # So: open the file. `open` and not `open -a`, so this follows whatever
 # modules/darwin/default-apps.nix has made the markdown handler (VS Code today).
 #
 # The cost is that this points at the checkout. Nothing else under ~/.config
 # does, so if the repo moves, this key quietly stops working.
-"Alt + H" = { exec = ["/bin/sh", "-c", "open ${RICE_REPO:-$HOME/nixos-config}/docs/keymap.md"] }
+"Alt + Shift + Slash" = { exec = ["/bin/sh", "-c", "open ${RICE_REPO:-$HOME/nixos-config}/docs/keymap.md"] }
 
 # Fullscreen, gentle version: fills the tiling area and leaves the outer gaps,
 # so the menu bar stays reachable. This is the one that used to be on
@@ -386,8 +396,9 @@ move2 = "Alt + Ctrl"
 "Alt + R" = { exec = ["/bin/sh", "-c", "$HOME/.config/rice/bin/monocle.sh"] }
 
 # ── Tier 2 — Alt+Shift: take the window with you ─────────────────────────
-# One rule, four groups: directions, workspace back/forward, workspace by
-# number, and the two window-state keys that have a bigger sibling.
+# Directions, and the two window-state keys that have a bigger sibling. The
+# window crosses into the next cell at the cell's edge, so this is also how a
+# window moves between workspaces.
 "move + I" = { grid_move = "up" }
 "move + K" = { grid_move = "down" }
 "move + J" = { grid_move = "left" }
@@ -397,27 +408,19 @@ move2 = "Alt + Ctrl"
 "move + Left" = { grid_move = "left" }
 "move + Right" = { grid_move = "right" }
 
-# `follow = true` so the window and the focus travel together — the point of
-# the tier is that you are going along with it.
-"move + U" = { move_window_to_workspace = { workspace = "prev", follow = true } }
-"move + O" = { move_window_to_workspace = { workspace = "next", follow = true } }
-
-"move + 1" = { move_window_to_grid = 1 }
-"move + 2" = { move_window_to_grid = 2 }
-"move + 3" = { move_window_to_grid = 3 }
-"move + 4" = { move_window_to_grid = 4 }
-"move + 5" = { move_window_to_grid = 5 }
-"move + 6" = { move_window_to_grid = 6 }
-"move + 7" = { move_window_to_grid = 7 }
-"move + 8" = { move_window_to_grid = 8 }
-"move + 9" = { move_window_to_grid = 9 }
-
 # Fullscreen, drastic version: covers the whole display, gaps and menu bar
 # included.
 "move + F" = "toggle_fullscreen"
 "move + Space" = "toggle_window_floating"
 
-# ── Tier 3 — Alt+Ctrl: cross a monitor, or reach the WM ──────────────────
+# Screenshot of a selected area to the clipboard — subline's Mod+Shift+S.
+# Space during the selection switches to picking a window.
+"move + S" = { exec = ["/bin/sh", "-c", "screencapture -i -c"] }
+
+# Stack toggle. Its old key, Alt+Comma, is the settings window now.
+"Alt + Shift + Comma" = "toggle_stack"
+
+# ── Tier 3 — Alt+Ctrl: cross a monitor or a grid, or reach the WM ────────
 # This tier is why the duplicate move_node bindings had to go. Two displays
 # here, so these earn their place.
 "move2 + I" = { move_window_to_display = { selector = "up" } }
@@ -429,14 +432,27 @@ move2 = "Alt + Ctrl"
 "move2 + Left" = { move_window_to_display = { selector = "left" } }
 "move2 + Right" = { move_window_to_display = { selector = "right" } }
 
+# Send the focused window to grid N's current cell and stay put — subline's
+# Mod+Ctrl+digit (send-to-grid).
+"move2 + 1" = { move_window_to_grid = 1 }
+"move2 + 2" = { move_window_to_grid = 2 }
+"move2 + 3" = { move_window_to_grid = 3 }
+"move2 + 4" = { move_window_to_grid = 4 }
+"move2 + 5" = { move_window_to_grid = 5 }
+"move2 + 6" = { move_window_to_grid = 6 }
+"move2 + 7" = { move_window_to_grid = 7 }
+"move2 + 8" = { move_window_to_grid = 8 }
+"move2 + 9" = { move_window_to_grid = 9 }
+
 "move2 + R" = "reload_config"
 
 # Layout modes. No counterpart on the other two — hyprland and niri each have
-# one layout and that is the whole point of them.
-"move2 + 1" = { set_workspace_layout = { mode = "traditional" } }
-"move2 + 2" = { set_workspace_layout = { mode = "bsp" } }
-"move2 + 3" = { set_workspace_layout = { mode = "master_stack" } }
-"move2 + 4" = { set_workspace_layout = { mode = "scrolling" } }
+# one layout and that is the whole point of them. Shift on top of Ctrl, since
+# Alt+Ctrl+digit is send-to-grid.
+"Alt + Ctrl + Shift + 1" = { set_workspace_layout = { mode = "traditional" } }
+"Alt + Ctrl + Shift + 2" = { set_workspace_layout = { mode = "bsp" } }
+"Alt + Ctrl + Shift + 3" = { set_workspace_layout = { mode = "master_stack" } }
+"Alt + Ctrl + Shift + 4" = { set_workspace_layout = { mode = "scrolling" } }
 
 # ── Tier 4 — rift only ───────────────────────────────────────────────────
 # Deliberately not mirrored anywhere. These are tree operations that the
@@ -448,7 +464,6 @@ move2 = "Alt + Ctrl"
 # minute (screen sharing, a video call's floating tile).
 "Alt + Z" = "toggle_space_activated"
 "Alt + Slash" = "toggle_orientation"
-"Alt + Comma" = "toggle_stack"
 
 # Join with a neighbour, or unjoin if already joined — one key for what used to
 # be five (four `join_window` directions plus `unjoin_windows`). Those four
@@ -470,3 +485,4 @@ move2 = "Alt + Ctrl"
 #   Alt + D        launcher. macOS has Spotlight on Cmd-Space; hyprland and
 #                  niri need the key because fuzzel is the fallback when the
 #                  shell is not up.
+#   Alt + U        empty in subline's ijkl preset too.

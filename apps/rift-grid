@@ -17,7 +17,8 @@
 # 그래서 빌드는 여기서 하고, apps/mac-signing-cert 가 만든 이 기계의 신원으로
 # 서명한다. 요구사항이 인증서에 묶이므로 몇 번을 다시 빌드해도 허가는 그대로다.
 # 산출물이 기계마다 따로라는 점도 mac-signing-cert 와 같다: build-switch 는 이걸
-# 깔지 않으므로, 새 기계에서는 이 스크립트를 한 번 돌려야 rift 가 뜬다.
+# 깔지 않으므로, 새 기계에서는 이 스크립트를 한 번 돌려야 rift 가 뜬다. 새 기계
+# 순서와 TCC 허가 함정은 docs/03-operating-on-macos.md §3 의 6번.
 #
 # ── 어디에 까는가 ─────────────────────────────────────────────────────────
 # ~/.local/bin/rift, ~/.local/bin/rift-cli. launchd 에이전트(hosts/darwin/

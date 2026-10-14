@@ -213,6 +213,16 @@ enabled = true
 # Recapture the visible previews twice a second while the overview is open, so
 # the cells show what the windows are doing now (rift-grid only).
 live_preview_interval_ms = 500
+# The grid overview, as in subline (rift-grid only). Alt+E first shows the
+# active cell at grid_zoom of the display with its neighbours around it and
+# follows the focus; Alt+E again steps back to the whole grid, a third time
+# closes. grid_fit = true skips straight to the whole grid. grid_gap is the
+# space between cells as a fraction of the display's shorter side, and
+# grid_labels puts each window's app and title in that gap above its tile.
+grid_fit = false
+grid_zoom = 0.5
+grid_gap = 0.04
+grid_labels = true
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops

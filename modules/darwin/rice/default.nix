@@ -86,8 +86,9 @@ in
 
 # macOS ricing: the window borders and the colour generator that feeds them.
 #
-# The window manager itself is not here — rift is a brew formula plus a login
-# agent (modules/darwin/brews.nix, hosts/darwin/default.nix). Its keymap IS
+# The window manager itself is not here — rift is the rift-grid fork, built by
+# apps/rift-grid, plus a login agent (hosts/darwin/common.nix). It draws the
+# window borders itself ([settings.ui.borders] in ./rift/config.toml). Its keymap IS
 # here as of 2026-08-06 (./rift/config.toml, seeded like everything else in
 # this module); before that it was a read-only store symlink, which broke the
 # moment rift's own "settings" item started opening it in an editor.
@@ -126,7 +127,8 @@ in
 # cache and falls back to a built-in palette when it is absent (a fresh machine
 # has never run `wal`):
 #
-#   jankyborders  apps/rice/colors pushes new args into the running instance
+#   rift borders  apps/rice/colors rewrites the two colour lines in rift's
+#                 config, which rift reloads on its own
 #   wezterm       ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
 #
 # `apps/rice/colors <image>` runs wal and then pokes them. Ghostty is
@@ -137,23 +139,10 @@ in
 
 {
   # ── Window borders ───────────────────────────────────────────────────────
-  # NOT `services.jankyborders`, deliberately. That module gives borders its own
-  # LaunchAgent, and a LaunchAgent is its own responsible process as far as
-  # macOS TCC is concerned — so `ax_focus=on` (the accurate focus mode that
-  # glow() needs) would require a separate Accessibility grant and still could
-  # not see the focus rift drives through SkyLight.
-  #
-  # Instead rift spawns borders itself, from ~/.config/borders/bordersrc, and
-  # the child inherits rift's trust. See the run_on_start block in
-  # modules/darwin/rice/rift/config.toml for the whole reasoning, and ./borders for
-  # the seeded script.
-  #
-  # The package still has to be installed for that script to find `borders`.
-  # It goes in environment.systemPackages rather than the user's home.packages
-  # because rift's LaunchAgent PATH reaches /run/current-system/sw/bin but NOT
-  # ~/.nix-profile/bin — nix-darwin writes that entry as a literal `$HOME/...`
-  # which launchd never expands.
-  environment.systemPackages = with pkgs; [ jankyborders ];
+  # Nothing to install: rift-grid draws them ([settings.ui.borders] in
+  # ./rift/config.toml). They used to be JankyBorders, started by rift as its
+  # child so its ax_focus mode inherited rift's Accessibility trust;
+  # `git log -- modules/darwin/rice/borders` has that wiring.
 
   # ── Wallpaper → palette, automatically ───────────────────────────────────
   # Without this, `apps/rice/colors` has to be run by hand every time the
@@ -179,7 +168,6 @@ in
     path = [
       pkgs.fswatch
       pkgs.pywal16
-      pkgs.jankyborders
       pkgs.coreutils
       config.environment.systemPath
     ];
@@ -237,10 +225,6 @@ in
       # because it can read pywal's JSON directly and reload itself.
       rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
-      # 창 테두리. rift 가 run_on_start 에서 이 파일을 실행하고, 팔레트가 바뀔
-      # 때마다 apps/rice/colors 가 다시 쓴다.
-      rice_sync ${./borders} "$HOME/.config/borders"
-
       # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
       # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
       unstore "$HOME/.config/rift/config.toml"
@@ -294,8 +278,8 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 같이 옮겨야 하고, 그건 이 변경과 별개다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 여섯 다 그럴 필요가 없기
-      # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고, bordersrc 와
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 다섯 다 그럴 필요가 없기
+      # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고,
       # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
       # rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
       # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포

@@ -38,12 +38,6 @@
 #   aerospace   aerospace.toml (rift 폴백 WM)                       macOS
 #   helpers     rift 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
 #
-# 여기 없는 것 하나, 그리고 그 이유:
-#
-#   borders/bordersrc     apps/rice/colors 가 벽지 색으로 다시 쓰는 파생물이다.
-#                         레포의 것은 wal 을 안 돌린 머신용 폴백이라 덮으면
-#                         지금 걸린 색이 사라진다. rice-save 도 저장하지 않는다.
-#
 # rift/config.toml, karabiner.json, aerospace.toml 셋은 2026-08-06 까지 여기
 # 없었다 — modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 되받을
 # 라이브가 없었다. 이제 셋 다 시드라 나머지와 똑같이 왕복한다.
@@ -263,9 +257,8 @@ plan() {
   esac
 
   # ── macOS ───────────────────────────────────────────────────────────────
-  # borders/bordersrc 는 여기에도 없다. rice-colors 가 다시 쓰는 파생물이라
-  # 덮으면 지금 걸린 벽지의 색을 레포의 폴백 색으로 되돌려 놓게 된다.
-  # 모양을 바꿨다면 `apps/rice/colors --reload` 가 새 색으로 다시 써 준다.
+  # rift/config.toml 을 덮으면 테두리 색도 레포의 것이 된다. 벽지 색으로 되돌리려면
+  # `apps/rice/colors --reload`.
   case " $want " in *" wezterm "*)
     item "$dr/wezterm" "$cfg/wezterm"
     ;;

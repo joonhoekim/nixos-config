@@ -67,10 +67,9 @@
     # signature, and only the local identity from apps/mac-signing-cert keeps
     # them across rebuilds (the reasoning is at the top of apps/rift-grid).
     #
-    # `path` matters: rift's run_on_start hook shells out to `borders` (nix
-    # store, reached via systemPath) and its keybindings reach `rift-cli`
-    # (sibling in ~/.local/bin) — and a LaunchAgent inherits none of a login
-    # shell's PATH.
+    # `path` matters: rift's keybindings shell out to `rift-cli` (sibling in
+    # ~/.local/bin) and to tools in systemPath — and a LaunchAgent inherits
+    # none of a login shell's PATH.
     rift = {
       command = "/Users/${user}/.local/bin/rift";
       path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];

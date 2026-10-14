@@ -76,32 +76,11 @@ hot_reload = true
 # workspace indicator; the bar is gone and rift draws that indicator itself
 # now (see [settings.ui.menu_bar] below). `git log -- modules/darwin/rice` has
 # the wiring if another consumer ever wants it.
-run_on_start = [
-  # Window borders, started as a CHILD of rift rather than as their own
-  # LaunchAgent. This is not tidiness — it is what makes `ax_focus=on` work.
-  #
-  # JankyBorders' accurate focus mode asks the Accessibility API which window
-  # is focused, and macOS attributes that request to the *responsible* process,
-  # which for a launchd agent is the agent itself. Borders launched
-  # independently therefore needs its own Accessibility grant and still cannot
-  # resolve the focus rift is driving through SkyLight. Spawned here it
-  # inherits rift's trust, and glow() lands on the right window.
-  #
-  # The trade: no rift, no borders. Acceptable — borders only mean anything
-  # while something is tiling. bordersrc is seeded by modules/darwin/rice and
-  # rewritten by apps/rice/colors on every palette change.
-  #
-  # `sh -c` is load-bearing. rift splits these strings into words and execs the
-  # result directly — it does NOT run them through a shell, so `$HOME` written
-  # bare stays a literal four characters:
-  #
-  #   /bin/sh: $HOME/.config/borders/bordersrc: No such file or directory
-  #
-  # Wrapping the path in a quoted -c argument hands one token to sh, and sh is
-  # what expands it. (This is a TOML literal string — single quotes — so the
-  # inner double quotes need no escaping.)
-  '/bin/sh -c "exec $HOME/.config/borders/bordersrc"',
-]
+# Window borders are rift-grid's own now ([settings.ui.borders] below), so
+# nothing is started here. They used to be JankyBorders, spawned from here as
+# rift's child so its ax_focus mode inherited rift's Accessibility trust;
+# `git log -- modules/darwin/rice/borders` has that wiring.
+run_on_start = []
 
 [settings.layout]
 # Every workspace's mode. Alt+Ctrl+1..4 puts the active workspace on any of
@@ -223,6 +202,20 @@ grid_fit = false
 grid_zoom = 0.5
 grid_gap = 0.04
 grid_labels = true
+
+
+[settings.ui.borders]
+# A ring just outside every visible window, the focused one in active_color
+# with a glow (rift-grid only, in place of JankyBorders). Colours take
+# JankyBorders' 0xAARRGGBB or #RRGGBB[AA]; apps/rice/colors rewrites the two
+# colour lines when the palette changes. An empty inactive_color leaves the
+# other windows bare.
+enabled = true
+width = 5.0
+radius = 10.0
+active_color = "0xffb4befe"
+inactive_color = "0xff45475a"
+glow = true
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops

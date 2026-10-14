@@ -81,7 +81,11 @@ elif [ -z "$(git -C "$SRC" status --porcelain)" ] \
 fi
 
 printf "빌드: %s\n" "$(git -C "$SRC" log -1 --format='%h %s')"
-cargo build --release --manifest-path "$SRC/Cargo.toml" --bin rift --bin rift-cli
+# 포크가 private 레포인 subline 의 크레이트를 git 의존성으로 쓴다. cargo 내장 git 은
+# gh 인증을 못 쓰므로 git CLI 로 받게 한다. 레포의 .cargo/config.toml 에도 같은 값이
+# 있지만 cargo 는 그 파일을 작업 디렉터리 기준으로 찾아서 --manifest-path 로는 안 읽힌다.
+CARGO_NET_GIT_FETCH_WITH_CLI=true \
+  cargo build --release --manifest-path "$SRC/Cargo.toml" --bin rift --bin rift-cli
 
 mkdir -p "$BIN"
 for name in rift rift-cli; do

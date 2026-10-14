@@ -212,10 +212,11 @@ grid_labels = true
 # other windows bare.
 enabled = true
 width = 5.0
-radius = 10.0
+radius = 16.0
 active_color = "0xffb4befe"
 inactive_color = "0xff45475a"
 glow = true
+glow_radius = 12.0
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops

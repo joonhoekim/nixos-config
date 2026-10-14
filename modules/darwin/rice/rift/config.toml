@@ -205,18 +205,20 @@ grid_labels = true
 
 
 [settings.ui.borders]
-# A ring just outside every visible window, the focused one in active_color
-# with a glow (rift-grid only, in place of JankyBorders). Colours take
-# JankyBorders' 0xAARRGGBB or #RRGGBB[AA]; apps/rice/colors rewrites the two
-# colour lines when the palette changes. An empty inactive_color leaves the
-# other windows bare.
+# A ring just outside every visible window (rift-grid only, in place of
+# JankyBorders). The focused one is in active_color with a glow, and slides to
+# the next focused window over animation_ms. Colours take JankyBorders'
+# 0xAARRGGBB or #RRGGBB[AA]; apps/rice/colors rewrites the two colour lines
+# when the palette changes, unless they were picked by hand. An empty
+# inactive_color leaves the other windows bare.
 enabled = true
-width = 5.0
+width = 2.0
 radius = 16.0
 active_color = "0xffb4befe"
 inactive_color = "0xff45475a"
 glow = true
 glow_radius = 12.0
+animation_ms = 180.0
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops

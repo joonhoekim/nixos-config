@@ -247,6 +247,39 @@ home-manager.backupFileExtension = "backup";   # 기존 파일을 <name>.backup 
 재실행하면 `~/.zshrc` 등이 `~/.zshrc.backup`으로 옮겨지고 hm 버전이 자리잡는다. 내용이 같은 파일은
 "skipped since they are the same"으로 건너뛴다(충돌 아님). 주의: `.backup`이 이미 있으면 또 에러 — 지우고 재시도.
 
+**6. rift 가 안 뜬다 — rift-grid 는 build-switch 가 깔지 않는다.** 창 관리자는 rift 포크
+rift-grid(private 레포 `joonhoekim/rift-grid`)이고, TCC 허가를 재빌드에 견디게 하려고 기계마다
+빌드·서명한다(`apps/rift-grid` 머리말). build-switch 는 launchd 에이전트를 `~/.local/bin/rift` 로
+돌려 놓기만 하므로, 바이너리가 생기기 전까지 rift 는 없다(KeepAlive 가 PathState 라 재시작 반복도
+없다). build-switch 뒤 한 번:
+
+```bash
+gh auth status                  # private 레포 클론은 gh 의 git 인증으로 간다 (programs/git.nix)
+nix run .#mac-signing-cert      # 서명 신원. 이미 있으면 그대로 둔다
+nix run .#rift-grid             # ~/git/compositor/rift-grid 에 클론 → 빌드 → 서명 → ~/.local/bin
+```
+
+바이너리가 생기면 launchd 가 rift 를 띄운다. 그다음 시스템 설정 > 개인정보 보호 및 보안에서
+`~/.local/bin/rift` 에 **손쉬운 사용**과 **화면 및 시스템 오디오 녹음**(오버뷰 미리보기)을 주고 rift 를
+다시 띄운다 — 허가는 다시 띄워야 먹는다:
+
+```bash
+launchctl kickstart -k gui/$UID/org.nixos.rift
+```
+
+함정: 예전 brew rift 를 쓰던 기계면 목록에 `rift` 가 이미 켜져 있을 수 있는데, 그건
+`/opt/homebrew/Cellar/rift/…` 항목이다. 켜져 있어 보여도 새 바이너리에는 안 맞는다. 미리보기만
+비면 화면 녹화가 이 경우다. 확인은 tccd 로그에서 — `authValue=2` 면 허가, `1` 이면 맞는 항목 없음:
+
+```bash
+log show --last 10m --style compact --predicate 'process == "tccd"' \
+  | grep -A1 'service=kTCCServiceScreenCapture' | grep AUTHREQ_RESULT
+```
+
+한 번 주면 그 뒤로는 `nix run .#rift-grid` 로 다시 빌드해도 그대로다. 이 명령은 소스가 깨끗한
+`grid` 브랜치면 빌드 전에 받아 오므로, 다른 맥에서 올린 커밋을 따라가는 것도 같은 명령이다.
+`nix run .#rift-grid -- --status` 가 깔린 커밋과 서명 요구사항을 보인다.
+
 **적용 후 확인:** 새 zsh 설정(p10k·atuin·zoxide)은 새 터미널 창을 열어야 완전히 뜬다. 일부 macOS 설정은 로그아웃/재시작 후 반영.
 
 **큰 그림:** `/etc` 백업·`nix-command disabled`·Taps·dotfile clobber는 전부 최초 1회 통과의례.

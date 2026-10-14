@@ -232,18 +232,19 @@ haptic_pattern = "level_change"
 
 [virtual_workspaces]
 enabled = true
-# Nine, as AeroSpace had. Indices are 0-based, so Alt+1 targets index 0 —
-# hence the names below, which are what the menu-bar indicator displays. The
-# digit you press and the label you see match; only the internal index is off
-# by one.
+# rift-grid only: workspaces come in grids, as in subline. A grid is a context
+# (a project, a kind of work) and its 3x3 cells are what the display shows, read
+# row by row from the top left (1 2 3 / 4 5 6 / 7 8 9). There are nine grids per
+# display, Alt+1..9; within a grid, grid_focus and grid_move below cross into the
+# next cell at a cell's edge, and never into another grid. With grid_columns set,
+# each display gets 9 x 9 = 81 workspaces and default_workspace_count is unused.
+# The menu bar draws a map per grid in use, and the overview shows the grid on
+# screen. Login starts on grid 1's centre cell (index 4).
+# docs/grids.md in the rift-grid repo has the model.
 default_workspace_count = 9
-# rift-grid only: the nine form a 3x3 grid, read row by row from the top left
-# (1 2 3 / 4 5 6 / 7 8 9), as in subline. grid_focus and grid_move below cross
-# into the neighbouring cell at a cell's edge, the menu bar draws one small map
-# instead of a label per workspace, and the overview lays the cells out as the
-# grid. Login starts on 5, the centre cell.
 grid_columns = 3
 default_workspace = 4
+# Cell names, repeated in every grid after its number ("2·5").
 workspace_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 auto_assign_windows = true
 preserve_focus_per_workspace = true
@@ -310,7 +311,7 @@ move2 = "Alt + Ctrl"
 "Alt + Cmd + K" = { grid_cell = "down" }
 "Alt + Cmd + J" = { grid_cell = "left" }
 "Alt + Cmd + L" = { grid_cell = "right" }
-"Alt + Cmd + H" = { switch_to_workspace = 4 }
+"Alt + Cmd + H" = "grid_center"
 
 # Workspaces flank the up key on the row above — U back, O forward. They were
 # U and I until IJKL took I. On hyprland and niri these are the same two keys,
@@ -319,18 +320,19 @@ move2 = "Alt + Ctrl"
 "Alt + O" = "next_workspace"
 "Alt + Tab" = "switch_to_last_workspace"
 
-# Workspaces 1..9 (indices 0..8 — see default_workspace_count above). The digit
-# you press is the label rift draws in the menu bar; only the index is off by
-# one, and nothing but this file ever sees the index.
-"Alt + 1" = { switch_to_workspace = 0 }
-"Alt + 2" = { switch_to_workspace = 1 }
-"Alt + 3" = { switch_to_workspace = 2 }
-"Alt + 4" = { switch_to_workspace = 3 }
-"Alt + 5" = { switch_to_workspace = 4 }
-"Alt + 6" = { switch_to_workspace = 5 }
-"Alt + 7" = { switch_to_workspace = 6 }
-"Alt + 8" = { switch_to_workspace = 7 }
-"Alt + 9" = { switch_to_workspace = 8 }
+# Grids 1..9 (rift-grid). A grid is a context, 3x3 cells of it, and the digit
+# brings it back at the cell it was left on; within a grid, cells are reached
+# with the directions above. Alt+Shift+digit sends the focused window to that
+# grid's current cell and stays put, as subline's Mod+Ctrl+digit does.
+"Alt + 1" = { switch_to_grid = 1 }
+"Alt + 2" = { switch_to_grid = 2 }
+"Alt + 3" = { switch_to_grid = 3 }
+"Alt + 4" = { switch_to_grid = 4 }
+"Alt + 5" = { switch_to_grid = 5 }
+"Alt + 6" = { switch_to_grid = 6 }
+"Alt + 7" = { switch_to_grid = 7 }
+"Alt + 8" = { switch_to_grid = 8 }
+"Alt + 9" = { switch_to_grid = 9 }
 
 # `open -na` starts a *second* Ghostty process rather than adding a window to
 # the running one — Ghostty's own `+new-window` action is unimplemented on
@@ -400,15 +402,15 @@ move2 = "Alt + Ctrl"
 "move + U" = { move_window_to_workspace = { workspace = "prev", follow = true } }
 "move + O" = { move_window_to_workspace = { workspace = "next", follow = true } }
 
-"move + 1" = { move_window_to_workspace = 0 }
-"move + 2" = { move_window_to_workspace = 1 }
-"move + 3" = { move_window_to_workspace = 2 }
-"move + 4" = { move_window_to_workspace = 3 }
-"move + 5" = { move_window_to_workspace = 4 }
-"move + 6" = { move_window_to_workspace = 5 }
-"move + 7" = { move_window_to_workspace = 6 }
-"move + 8" = { move_window_to_workspace = 7 }
-"move + 9" = { move_window_to_workspace = 8 }
+"move + 1" = { move_window_to_grid = 1 }
+"move + 2" = { move_window_to_grid = 2 }
+"move + 3" = { move_window_to_grid = 3 }
+"move + 4" = { move_window_to_grid = 4 }
+"move + 5" = { move_window_to_grid = 5 }
+"move + 6" = { move_window_to_grid = 6 }
+"move + 7" = { move_window_to_grid = 7 }
+"move + 8" = { move_window_to_grid = 8 }
+"move + 9" = { move_window_to_grid = 9 }
 
 # Fullscreen, drastic version: covers the whole display, gaps and menu bar
 # included.

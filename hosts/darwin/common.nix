@@ -60,17 +60,27 @@
     # rift first (`launchctl bootout gui/$UID/org.nixos.rift`) — two tiling
     # WMs fighting over the same windows is worse than either alone.
     #
-    # The binary comes from a brew formula (modules/darwin/brews.nix), so this
-    # is /opt/homebrew, not /nix/store. `path` matters: rift's run_on_start
-    # hook shells out to `borders` (nix store, reached via systemPath) and its
-    # keybindings reach `rift-cli` (sibling in /opt/homebrew/bin) — and a
-    # LaunchAgent inherits none of a login shell's PATH.
+    # The binary is rift-grid, a fork of rift that lays the virtual workspaces
+    # out as a 3x3 grid (https://github.com/joonhoekim/rift-grid). It is built
+    # and signed per machine by apps/rift-grid into ~/.local/bin, not by nix or
+    # brew: TCC ties the Accessibility and Screen Recording grants to the
+    # signature, and only the local identity from apps/mac-signing-cert keeps
+    # them across rebuilds (the reasoning is at the top of apps/rift-grid).
+    #
+    # `path` matters: rift's run_on_start hook shells out to `borders` (nix
+    # store, reached via systemPath) and its keybindings reach `rift-cli`
+    # (sibling in ~/.local/bin) — and a LaunchAgent inherits none of a login
+    # shell's PATH.
     rift = {
-      command = "/opt/homebrew/bin/rift";
-      path = [ "/opt/homebrew/bin" config.environment.systemPath ];
+      command = "/Users/${user}/.local/bin/rift";
+      path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];
       serviceConfig = {
         RunAtLoad = true;
-        KeepAlive = true;
+        # Kept alive while the binary exists, rather than unconditionally. On a
+        # machine where apps/rift-grid has not run yet there is nothing to
+        # start, and plain KeepAlive would turn that into a restart loop; with
+        # PathState launchd waits and starts rift once the binary appears.
+        KeepAlive.PathState."/Users/${user}/.local/bin/rift" = true;
         # Not optional in practice. Without these, rift's output goes nowhere:
         # the first time it refused to start (see
         # docs/postmortems/2026-08-04-macos-rift-sketchybar.md) the reason was
@@ -262,7 +272,7 @@
       # And because the LaunchAgent has KeepAlive, that exit becomes a crash
       # loop that looks like "rift just doesn't run" — `launchctl print
       # gui/$UID/org.nixos.rift` showing `last exit code = 1` is the tell.
-      # Running /opt/homebrew/bin/rift in a terminal prints the reason; the
+      # Running ~/.local/bin/rift in a terminal prints the reason; the
       # agent's stdout goes nowhere.
       #
       # So: leave this at `false` for as long as rift is the WM. Flipping it

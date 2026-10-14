@@ -14,7 +14,7 @@
 - `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
 - `apps.<system>.<name>` → `apps/` 아래 스크립트 (`nix run`의 실체) — 빌드 4종(build-switch,
   build, rollback, clean), 라이싱 도구들(rice-* → `apps/rice/`), 점검(check → `apps/check/`),
-  demo, mac-signing-cert.
+  demo, mac-signing-cert, rift-grid.
   전체 목록은 `flake.nix`의 `mkApps` 한 곳이다
 - `devShells`
 
@@ -139,6 +139,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 | `rice-*` | 라이싱 도구 일습 | 프로필·터미널·월페이퍼·화면 셰이더 전환과 저장/복원. 각 스크립트 머리말과 [README](../README.md)의 라이싱 절 참고 |
 | `demo` | 창 관리자 실사용 재연 | 빈 워크스페이스에서 키맵대로 창을 움직여 보여준다. 시나리오 목록은 `apps/demo` |
 | `mac-signing-cert` | 코드 서명 신원 고정 | macOS 전용 (docs/03 참고) |
+| `rift-grid` | rift 포크 빌드·설치·서명 | macOS 전용. build-switch 가 깔지 않으므로 새 기계에서 한 번. `--status` |
 
 인자 규칙 세 가지:
 

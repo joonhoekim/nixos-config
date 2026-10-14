@@ -110,6 +110,11 @@ rift-cli execute config get | jq -r '.key_specs[] | "\(.[0])\t\(.[1])"'
 오른쪽이다. rift 와 니리는 이걸 액션 하나로 갖고 있고, 하이프랜드에만 없어서
 `consume`/`promote` 를 상태로 갈라 부르는 함수를 뒀다.
 
+**rift 의 워크스페이스는 3×3 격자다**(rift-grid 포크, subline 과 같은 모델). 1..9 가
+왼쪽 위부터 줄마다 칸이고, `Mod+방향`·`Mod+Shift+방향`은 칸 안의 타일을 다루다가 칸
+끝에서 옆 칸으로 넘어간다(창을 데리고 가는 것도 같다). 칸 단위로만 옮기려면 아래
+`Mod+Cmd+IJKL`. 로그인하면 가운데 칸(5)에서 시작한다.
+
 ### 티어 밖 — 한쪽에만 있는 것
 
 각 플랫폼 고유 기능이라 맞추려 하지 않았다. **다른 쪽에서 비어 있는 키만 골라
@@ -121,6 +126,8 @@ rift-cli execute config get | jq -r '.key_specs[] | "\(.[0])\t\(.[1])"'
 | `Mod+/` | 방향 토글 | rift |
 | `Mod+,` | 스택 토글 | rift |
 | `Mod+Ctrl+Space` | 플로팅 창으로 포커스 | rift |
+| `Mod+Cmd+IJKL` | 격자의 옆 칸으로 (칸 단위) | rift |
+| `Mod+Cmd+H` | 격자의 가운데 칸 | rift |
 | `Print` `Ctrl+Print` `Alt+Print` | 영역 / 화면 / 창 스크린샷 | 리눅스 |
 | `Mod+Shift+P` `Mod+Shift+W` `Mod+Ctrl+W` `Mod+Alt+W` | 리싱 스크립트 | 리눅스 |
 | `Mod+Shift+R` | 리싱 메뉴 | 리눅스 |

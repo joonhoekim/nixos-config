@@ -35,8 +35,9 @@
       flake = false;
     };
     # rift (tiling WM). Not in nixpkgs — upstream ships a universal binary via
-    # this tap's *formula*, not a cask, so it lands in homebrew.brews rather
-    # than homebrew.casks (modules/darwin/brews.nix).
+    # this tap's *formula*, not a cask. No formula from it is installed now:
+    # the WM is the rift-grid fork (apps/rift-grid). The tap stays so going
+    # back to upstream rift is one line in modules/darwin/brews.nix.
     acsandmann-tap = {
       url = "github:acsandmann/homebrew-tap";
       flake = false;
@@ -207,7 +208,7 @@
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe"
-        "demo" "mac-signing-cert"
+        "demo" "mac-signing-cert" "rift-grid"
       ] (name: mkApp name name system)
       // nixpkgs.lib.listToAttrs (map (n: {
         name = "rice-${n}";

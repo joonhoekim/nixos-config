@@ -60,7 +60,7 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 | `Mod+J` `Mod+L` `←` `→` | 포커스 왼 / 오른 | • | • | • |
 | `Mod+U` `Mod+O` | 워크스페이스 뒤로 / 앞으로 | • | • | ≠ |
 | `Mod+1`..`9` | 워크스페이스 N | • | • | ≠ |
-| `Mod+Tab` | 직전 워크스페이스 | • | • | • |
+| `Mod+Tab` | 직전 워크스페이스 | • | • | ≠ |
 | `Mod+Return` | 터미널 (ghostty) | • | • | • |
 | `Mod+D` | 런처 (fuzzel) | • | • | — |
 | `Mod+E` | 오버뷰 | • | • | ≠ |
@@ -136,6 +136,7 @@ rift-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "def
 | `Mod+E` | 파일 관리자 (`open ~`, Finder) | 오버뷰 |
 | `Mod+H` | 격자의 가운데 칸 | 치트시트 |
 | `Mod+U` | 비어 있음 | 워크스페이스 뒤로 |
+| `Mod+Tab` | 직전에 포커스가 있던 창 (어느 칸·격자에 있든, 다시 누르면 돌아온다. subline 의 Alt+Tab, 창 줄은 없다) | 직전 워크스페이스 |
 | `Mod+1`..`9` | 격자 N | 워크스페이스 N |
 | `Mod+Shift+/` | 치트시트 (이 문서를 연다) | — |
 | `Mod+,` | rift 설정 창 (`rift-cli settings`) | — |

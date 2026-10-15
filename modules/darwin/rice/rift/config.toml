@@ -325,7 +325,9 @@ move2 = "Alt + Ctrl"
 # (focus-default-workspace).
 "Alt + H" = "grid_center"
 
-"Alt + Tab" = "switch_to_last_workspace"
+# The window focused before this one, in whatever cell or grid it is; again
+# goes back — subline's Alt+Tab (cycle-windows), without its switcher row.
+"Alt + Tab" = "focus_recent_window"
 
 # Grids 1..9 (rift-grid). A grid is a context, 3x3 cells of it, and the digit
 # brings it back at the cell it was left on; within a grid, cells are reached

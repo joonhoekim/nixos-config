@@ -1,0 +1,199 @@
+#!/bin/sh -e
+#
+# 화면 녹화본을 다듬는다: 앞뒤를 자르고, 자막을 얹고, 앞뒤에 안내 카드를 붙여
+# mp4 로 (원하면 gif 도) 내보낸다.
+#
+#   apps/screencast demo.cast           demo.cast 대로 만든다 → demo.mp4
+#   apps/screencast demo.cast --gif     demo.gif 도 만든다
+#   apps/screencast --example           spec 예시를 찍는다 (> demo.cast 로 받아 고친다)
+#
+# 녹화 자체는 하지 않는다. 녹화는 macOS 면 `screencapture -v`, 어떻게 찍고
+# 어떤 함정이 있는지와 이 스크립트로 모자랄 때 무엇을 꺼내는지는
+# docs/packages/screencast.md 에 있다.
+#
+# apps/demo 와 짝이다. demo 는 창을 실제로 움직이며 그 자리에서 자막을 띄우고,
+# 이건 이미 찍어 둔 영상을 남에게 보일 모양으로 만든다.
+#
+# ── spec ──────────────────────────────────────────────────────────────────
+# 한 줄에 하나, `#` 뒤는 주석. 경로는 spec 파일이 있는 디렉토리 기준이다.
+#
+#   input    raw.mov              녹화본 (필수)
+#   trim     2.2 21.0             쓸 구간, 초. 없으면 전부
+#   width    1512                 내보낼 너비. 높이는 비율대로 (기본 1512)
+#   fps      60                   (기본 60)
+#   hold     1.0                  본편 앞에 첫 장면을 이만큼 멈춰 둔다 — 첫 자막이
+#                                 카드의 크로스페이드에 묻히지 않게
+#   font     /path/to/font.ttf    (기본: macOS 는 SF, 그 밖은 fc-match sans)
+#   backdrop wallpaper.png        카드 배경. 없으면 본편의 첫/끝 장면을 흐려 쓴다
+#   intro    2.8 | 제목 | 한 줄 | 한 줄    앞 카드: 길이 | 제목 | 줄들 (줄은 0~2개)
+#   outro    2.4 | 제목 | 한 줄            뒤 카드
+#   caption  1.2 3.5 ⌥L  focus right      자막: 시작 끝 문장. 시각은 trim 한
+#                                 구간의 시각이다(hold 는 스크립트가 더한다)
+#
+# 자막 시각은 녹화를 몬 스크립트의 명령 시각에서 가져오는 게 가장 정확하다.
+# 그게 없으면 장면 전환을 뽑아 맞춘다:
+#   ffmpeg -i out.mp4 -vf "select='gt(scene,0.04)',showinfo" -f null - 2>&1 | grep -o 'pts_time:[0-9.]*'
+
+GREEN='\033[1;32m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+die() { printf "${RED}%s${NC}\n" "$*" >&2; exit 1; }
+
+if [ "$1" = "--example" ]; then
+	cat <<'EOF'
+# apps/screencast 의 spec. `apps/screencast 이파일 --gif`
+input    raw.mov
+trim     2.2 21.0
+width    1512
+hold     1.0
+# backdrop wallpaper.png
+intro    2.8 | rift-grid | Workspaces as a 3×3 grid of cells, on macOS | Moves slide the screen.
+outro    2.4 | rift-grid | A fork of acsandmann/rift  ·  details in FORK.md
+caption  0.0  1.1  Each window names its cell. The display shows one cell at a time.
+caption  1.2  3.5  ⌥L  focus right: the tile beside, then past the edge into the next cell
+caption  3.6  4.7  ⌥⌘K  the cell below
+EOF
+	exit 0
+fi
+
+SPEC="$1"
+[ -n "$SPEC" ] && [ -f "$SPEC" ] || die "spec 파일을 달라: apps/screencast demo.cast (예시는 --example)"
+GIF=false
+[ "$2" = "--gif" ] && GIF=true
+for tool in ffmpeg ffprobe; do
+	command -v "$tool" >/dev/null || die "$tool 이 없다 (modules/shared/packages.nix)"
+done
+if $GIF; then command -v gifski >/dev/null || die "gifski 가 없다 (modules/shared/packages.nix)"; fi
+
+DIR="$(cd "$(dirname "$SPEC")" && pwd)"
+NAME="$(basename "$SPEC")"; NAME="${NAME%.*}"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+# ── spec 읽기 ─────────────────────────────────────────────────────────────
+INPUT=""; START=""; END=""; WIDTH=1512; FPS=60; HOLD=0; FONT=""; BACKDROP=""
+INTRO=""; OUTRO=""
+: > "$TMP/captions"
+while IFS= read -r line || [ -n "$line" ]; do
+	line="${line%%#*}"
+	set -- $line
+	[ $# -eq 0 ] && continue
+	key="$1"; shift
+	rest="${line#*"$key"}"; rest="$(printf '%s' "$rest" | sed 's/^[[:space:]]*//')"
+	case "$key" in
+		input) INPUT="$DIR/$1" ;;
+		trim) START="$1"; END="$2" ;;
+		width) WIDTH="$1" ;;
+		fps) FPS="$1" ;;
+		hold) HOLD="$1" ;;
+		font) FONT="$rest" ;;
+		backdrop) BACKDROP="$DIR/$rest" ;;
+		intro) INTRO="$rest" ;;
+		outro) OUTRO="$rest" ;;
+		caption) printf '%s\n' "$rest" >> "$TMP/captions" ;;
+		*) die "모르는 줄: $key" ;;
+	esac
+done < "$SPEC"
+[ -f "$INPUT" ] || die "input 이 없다: $INPUT"
+if [ -z "$FONT" ]; then
+	if [ -f /System/Library/Fonts/SFNS.ttf ]; then
+		FONT=/System/Library/Fonts/SFNS.ttf
+	else
+		FONT="$(fc-match -f '%{file}' sans 2>/dev/null)"
+	fi
+fi
+[ -f "$FONT" ] || die "글꼴이 없다: $FONT (spec 의 font 로 준다)"
+
+calc() { awk "BEGIN { printf \"%.3f\", $1 }"; }
+
+# ffmpeg 의 drawtext 는 글을 파일로 받는다 — 콜론·따옴표를 필터 문법에 맞게
+# 이스케이프하는 것보다 확실하다.
+# 서브셸에서 불려도 이름이 겹치지 않게 mktemp 로 짓는다.
+textfile() { _f="$(mktemp "$TMP/t.XXXXXX")"; printf '%s' "$1" > "$_f"; echo "$_f"; }
+
+# ── 본편: 자르기, 크기, 첫 장면 멈추기, 자막 ───────────────────────────────
+filter="scale=$WIDTH:-2:flags=lanczos,fps=$FPS"
+[ "$HOLD" != 0 ] && filter="$filter,tpad=start_mode=clone:start_duration=$HOLD"
+while read -r a b text; do
+	[ -n "$text" ] || continue
+	# 맨 처음 자막은 멈춘 장면 동안 이미 떠 있게 한다.
+	if [ "$(awk "BEGIN { print ($a <= 0) }")" = 1 ]; then a="$(calc "$HOLD / 2")"; else a="$(calc "$a + $HOLD")"; fi
+	b="$(calc "$b + $HOLD")"
+	f="$(textfile "$text")"
+	filter="$filter,drawtext=fontfile=$FONT:textfile=$f:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.62:boxborderw=14:x=(w-text_w)/2:y=h-text_h-56:enable='between(t,$a,$b)':alpha='min(1,min(t-$a,$b-t)/0.15)'"
+done < "$TMP/captions"
+echo "$filter" > "$TMP/body.filter"
+set --
+[ -n "$START" ] && set -- -ss "$START"
+[ -n "$END" ] && set -- "$@" -to "$END"
+printf "본편 ${DIM}%s${NC}\n" "$(basename "$INPUT")"
+ffmpeg -loglevel error -y "$@" -i "$INPUT" -/filter_complex "$TMP/body.filter" -an \
+	-c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p "$TMP/body.mp4"
+BODY="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$TMP/body.mp4")"
+
+# ── 카드 ──────────────────────────────────────────────────────────────────
+# card 이름 "길이 | 제목 | 줄 | 줄" 배경을뽑을시각
+card() {
+	spec="$2"
+	seconds="$(printf '%s' "${spec%%|*}" | tr -d ' ')"
+	spec="${spec#*|}"
+	title="$(printf '%s' "${spec%%|*}" | sed 's/^ *//; s/ *$//')"
+	lines=""
+	case "$spec" in *"|"*) lines="${spec#*|}" ;; esac
+	if [ -n "$BACKDROP" ]; then
+		back="$BACKDROP"
+	else
+		ffmpeg -loglevel error -y -ss "$3" -i "$TMP/body.mp4" -frames:v 1 -update 1 "$TMP/$1.png"
+		back="$TMP/$1.png"
+	fi
+	vf="scale=$WIDTH:-2,boxblur=30:2,eq=brightness=-0.22:saturation=0.9"
+	vf="$vf,drawtext=fontfile=$FONT:textfile=$(textfile "$title"):fontsize=76:fontcolor=white:shadowcolor=black@0.35:shadowy=2:x=(w-text_w)/2:y=h/2-90"
+	y=12; size=32; alpha=0.92
+	while [ -n "$lines" ]; do
+		one="$(printf '%s' "${lines%%|*}" | sed 's/^ *//; s/ *$//')"
+		case "$lines" in *"|"*) lines="${lines#*|}" ;; *) lines="" ;; esac
+		[ -n "$one" ] || continue
+		vf="$vf,drawtext=fontfile=$FONT:textfile=$(textfile "$one"):fontsize=$size:fontcolor=white@$alpha:x=(w-text_w)/2:y=h/2+$y"
+		y=$((y + 50)); size=24; alpha=0.78
+	done
+	ffmpeg -loglevel error -y -loop 1 -t "$seconds" -framerate "$FPS" -i "$back" \
+		-vf "$vf,format=yuv420p" -c:v libx264 -crf 20 -preset slow "$TMP/$1.mp4"
+	echo "$seconds"
+}
+
+FADE=0.5
+OUT="$DIR/$NAME.mp4"
+inputs="-i $TMP/body.mp4"; graph=""; last="0"; offset=0
+if [ -n "$INTRO" ]; then
+	printf "앞 카드\n"
+	len="$(card intro "$INTRO" 0)"
+	inputs="-i $TMP/intro.mp4 -i $TMP/body.mp4"
+	offset="$(calc "$len - $FADE")"
+	graph="[0][1]xfade=transition=fade:duration=$FADE:offset=$offset[a]"
+	last="a"; offset="$(calc "$offset + $BODY - $FADE")"; next=2
+else
+	offset="$(calc "$BODY - $FADE")"; next=1
+fi
+if [ -n "$OUTRO" ]; then
+	printf "뒤 카드\n"
+	card outro "$OUTRO" "$(calc "$BODY - 0.1")" > /dev/null
+	inputs="$inputs -i $TMP/outro.mp4"
+	[ -n "$graph" ] && graph="$graph;"
+	graph="$graph[$last][$next]xfade=transition=fade:duration=$FADE:offset=$offset[v]"
+	last="v"
+fi
+if [ -n "$graph" ]; then
+	# shellcheck disable=SC2086
+	ffmpeg -loglevel error -y $inputs -filter_complex "$graph" -map "[$last]" \
+		-c:v libx264 -crf 21 -preset slow -pix_fmt yuv420p -movflags +faststart "$OUT"
+else
+	ffmpeg -loglevel error -y -i "$TMP/body.mp4" -c copy -movflags +faststart "$OUT"
+fi
+printf "${GREEN}만들었다${NC} %s ${DIM}(%s초)${NC}\n" "$OUT" \
+	"$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT")"
+
+if $GIF; then
+	mkdir "$TMP/gif"
+	ffmpeg -loglevel error -i "$OUT" -vf "fps=20,scale=960:-1:flags=lanczos" "$TMP/gif/%04d.png"
+	gifski -q --fps 20 --width 960 --quality 80 -o "$DIR/$NAME.gif" "$TMP"/gif/*.png
+	printf "${GREEN}만들었다${NC} %s\n" "$DIR/$NAME.gif"
+fi

@@ -24,10 +24,12 @@ macOS는 두 층이다. `hosts/darwin/`은 **공용** 설정이고 **아키텍�
 `hosts/<플랫폼>/<이름>/identity.nix`에서 고른다. 포크해서 쓸 때 고치는 파일이 이 둘뿐이라
 `git pull`이 충돌하지 않는다.
 
-데스크톱 환경은 두 호스트 모두 greetd/tuigreet에서 세 세션을 고를 수 있다 —
-**niri**(스크롤 타일링, 기본), **Hyprland**(uwsm 세션), **GNOME / Wayland**(폴백).
-앞의 둘은 같은 Quickshell 셸(DankMaterialShell)을 쓴다 —
-[modules/nixos/niri](modules/nixos/niri),
+데스크톱 환경은 greetd 위에 네 세션이다 — **subline**(기본. 터치 우선 컴포지터,
+[modules/nixos/subline](modules/nixos/subline), 로그인 화면도 subline 이 그린다),
+**niri**(스크롤 타일링), **Hyprland**(uwsm 세션), **GNOME / Wayland**(폴백).
+subline 은 개발 중이라 나머지가 돌아갈 길이고, 로그인 화면이 세션 목록을 보여 주며
+마지막 선택을 기억한다. niri 와 Hyprland 는 같은 Quickshell 셸(DankMaterialShell)을
+쓴다 — [modules/nixos/niri](modules/nixos/niri),
 [modules/nixos/hyprland](modules/nixos/hyprland) 참고. Hyprland가 따로 있는 건
 니리에 화면 전체 셰이더 훅이 없기 때문이다(`decoration:screen_shader`).
 

@@ -17,7 +17,8 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 ├── nginx.nix          # 로컬 리버스 프록시 (import 하는 호스트에서만)
 ├── niri/              # niri 세션 + DankMaterialShell, 라이싱 시드
 ├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
-└── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
+├── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
+└── subline/           # subline 세션 (기본) + subline 로그인 화면; 패키지·배선은 그 레포의 모듈
 ```
 
 시스템 레벨 설정(부팅, 데스크톱, 서비스, 유저 계정)은 이 디렉토리가 아니라
@@ -25,9 +26,11 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 
 ## 데스크톱 환경
 
-로그인은 greetd/tuigreet이고, 세션은 셋이다 — [`niri/`](niri)(기본),
-[`hyprland/`](hyprland)(uwsm), 그리고 폴백인 **GNOME / Wayland**. 앞의 둘은 같은 셸
-(DankMaterialShell)을 공유하고, 셸을 어느 세션에 붙이는지는 각 모듈이 systemd
+로그인은 greetd 이고 화면은 subline 이 그린다(`subline --greeter`; 끄면 tuigreet 로
+돌아간다 — [`subline/`](subline)). 세션은 넷이다 — [`subline/`](subline)(기본),
+[`niri/`](niri), [`hyprland/`](hyprland)(uwsm), 그리고 폴백인 **GNOME / Wayland**.
+subline 은 자기 셸(스트립·독·OSK·알림·잠금)을 들고 있고, niri 와 Hyprland 는 같은 셸
+(DankMaterialShell)을 공유한다. 셸을 어느 세션에 붙이는지는 각 모듈이 systemd
 `wantedBy`로 정한다. `services.xserver.enable`이 켜져 있지만 이건 Xwayland와 xkb 설정을
 위한 것이지 X11 세션을 쓰기 위한 게 아니다.
 

@@ -182,7 +182,28 @@
         "homebrew-core": "homebrew-core",
         "nikitabobko-tap": "nikitabobko-tap",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "subline": "subline"
+      }
+    },
+    "subline": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792037245,
+        "narHash": "sha256-titd4/SW5zUCA6Sirzz9UJWTvUWnziVXJv+drT1pGes=",
+        "ref": "refs/heads/main",
+        "rev": "76e48e851c5ed22be76e3d67f80b746dffe19ccc",
+        "revCount": 641,
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline"
       }
     }
   },

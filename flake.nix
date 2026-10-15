@@ -34,6 +34,21 @@
       url = "github:nikitabobko/homebrew-tap";
       flake = false;
     };
+    # subline — 터치 우선 Wayland 컴포지터(~/git/subline). NixOS 호스트의 기본
+    # 세션이고 greetd 의 로그인 화면이기도 하다(modules/nixos/subline). 레포가
+    # 비공개라 `git+https` 로 받는다: 받을 때 git 이 `gh auth git-credential`
+    # 을 쓰므로 그 호스트에서 `gh auth login` 이 되어 있어야 하고, 이 머신들의
+    # SSH 키는 GitHub 에 등록되어 있지 않다. nixpkgs 를 follows 하는 것은 러스트·
+    # GTK 스택을 두 벌 짓지 않기 위해서다(subline 은 러스트 1.95 이상을 요구하고
+    # 이 nixpkgs 는 1.98).
+    #
+    # subline 을 올리는 것은 `nix flake update subline`. 푸시하지 않은 작업
+    # 트리로 지어 보려면 lock 은 두고 입력만 덮는다:
+    #   nix run .#build-switch -- --override-input subline path:$HOME/git/subline
+    subline = {
+      url = "git+https://github.com/joonhoekim/subline";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # rift (tiling WM). Not in nixpkgs — upstream ships a universal binary via
     # this tap's *formula*, not a cask. No formula from it is installed now:
     # the WM is the rift-grid fork (apps/rift-grid). The tap stays so going

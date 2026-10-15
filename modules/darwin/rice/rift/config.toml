@@ -194,11 +194,15 @@ live_preview_interval_ms = 500
 # The grid overview, as in subline (rift-grid only). Alt+O first shows the
 # active cell at grid_zoom of the display with its neighbours around it and
 # follows the focus; Alt+O again steps back to the whole grid, a third time
-# closes. grid_fit = true skips straight to the whole grid. grid_gap is the
-# space between cells as a fraction of the display's shorter side, and
-# grid_labels puts each window's app and title in that gap above its tile.
+# closes, and Esc steps back out a stage at a time. grid_fit = true skips
+# straight to the whole grid. grid_follow is how the first stage follows the
+# active cell: "reveal" moves only as far as it takes to show it whole (subline's
+# default), "center" centres it every time. grid_gap is the space between cells
+# as a fraction of the display's shorter side, and grid_labels puts each
+# window's app and title in that gap above its tile.
 grid_fit = false
 grid_zoom = 0.5
+grid_follow = "reveal"
 grid_gap = 0.04
 grid_labels = true
 

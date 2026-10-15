@@ -4,9 +4,10 @@
 #
 #   apps/rift-grid              빌드 → ~/.local/bin 에 깔기 → 서명 → rift 다시 띄우기
 #   apps/rift-grid --status     깔린 것과 소스의 커밋, 서명 요구사항
+#   apps/rift-grid --auto       build-switch 가 매번 부르는 꼴. 아래 참고
 #
 # 소스는 $RIFT_GRID_SRC(기본 ~/git/compositor/rift-grid)다. 없으면 클론한다.
-# 레포: https://github.com/joonhoekim/rift-grid (private, 기본 브랜치 grid)
+# 레포: https://github.com/joonhoekim/rift-grid (공개, 기본 브랜치 grid)
 #
 # ── 왜 nix 가 빌드하지 않는가 ─────────────────────────────────────────────
 # rift 는 손쉬운 사용과 화면 기록(오버뷰 미리보기) 허가가 있어야 돈다. TCC 는 그
@@ -16,9 +17,18 @@
 #
 # 그래서 빌드는 여기서 하고, apps/mac-signing-cert 가 만든 이 기계의 신원으로
 # 서명한다. 요구사항이 인증서에 묶이므로 몇 번을 다시 빌드해도 허가는 그대로다.
-# 산출물이 기계마다 따로라는 점도 mac-signing-cert 와 같다: build-switch 는 이걸
-# 깔지 않으므로, 새 기계에서는 이 스크립트를 한 번 돌려야 rift 가 뜬다. 새 기계
-# 순서와 TCC 허가 함정은 docs/03-operating-on-macos.md §3 의 6번.
+# 산출물이 기계마다 따로라는 점도 mac-signing-cert 와 같다. TCC 허가 함정은
+# docs/03-operating-on-macos.md §3 의 6번.
+#
+# ── build-switch 와의 관계 (--auto) ───────────────────────────────────────
+# build-switch 가 활성화 뒤에 `--auto` 로 부른다. 그래서 새 기계도 build-switch
+# 한 번이면 rift 가 뜬다. 손으로 부를 때와 다른 점:
+#   - 서명 신원이 없으면 멈추지 않고 apps/mac-signing-cert 로 만든다. 키체인
+#     인증 창이 뜰 수 있는데, 기계당 처음 한 번뿐이다.
+#   - cargo 가 아직 없으면(mise 가 rust 를 깔기 전) 경고만 하고 넘어간다.
+#   - 받아 온 소스가 지난번에 깐 커밋 그대로면 빌드도, rift 재시작도 안 한다.
+#     매 build-switch 마다 창 관리자가 깜빡이지 않게 하려는 것이다. 고치는 중인
+#     트리(변경이 있음)는 커밋으로 비교할 수 없으니 매번 빌드한다.
 #
 # ── 어디에 까는가 ─────────────────────────────────────────────────────────
 # ~/.local/bin/rift, ~/.local/bin/rift-cli. launchd 에이전트(hosts/darwin/
@@ -39,6 +49,13 @@ BIN="$HOME/.local/bin"
 # apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
 CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
 AGENT="gui/$(id -u)/org.nixos.rift"
+# 마지막으로 깐 소스 커밋. --auto 가 "할 일 없음"을 가르는 기준이다.
+STAMP="$BIN/.rift-grid.commit"
+# mise 가 rustup 으로 까는 자리. build-switch 의 셸 PATH 에는 아직 없을 수 있다.
+PATH="$PATH:$HOME/.cargo/bin"
+
+auto=""
+if [ "${1:-}" = "--auto" ]; then auto=1; fi
 
 installed_commit() {
   "$BIN/rift" --version 2>/dev/null | head -1
@@ -61,12 +78,20 @@ if [ "${1:-}" = "--status" ]; then
 fi
 
 if ! command -v cargo >/dev/null 2>&1; then
+  if [ -n "$auto" ]; then
+    printf "${YELLOW}rift-grid: cargo 가 없어 건너뛴다.${NC} rust 가 깔린 뒤 build-switch 를 한 번 더.\n"
+    exit 0
+  fi
   printf "${RED}cargo 가 없다.${NC} rust 툴체인을 먼저 깔아라.\n"
   exit 1
 fi
 if ! security find-certificate -c "$CN" >/dev/null 2>&1; then
-  printf "${RED}서명 신원이 없다 (%s).${NC} 먼저 apps/mac-signing-cert 를 돌려라.\n" "$CN"
-  exit 1
+  if [ -z "$auto" ]; then
+    printf "${RED}서명 신원이 없다 (%s).${NC} 먼저 apps/mac-signing-cert 를 돌려라.\n" "$CN"
+    exit 1
+  fi
+  printf "서명 신원이 없어서 만든다: %s\n" "$CN"
+  MAC_SIGN_ID="$CN" "$(dirname "$0")/mac-signing-cert"
 fi
 
 if [ ! -d "$SRC/.git" ]; then
@@ -78,6 +103,14 @@ elif [ -z "$(git -C "$SRC" status --porcelain)" ] \
   # (변경이 있거나 다른 브랜치)는 건드리지 않고 그대로 빌드한다.
   git -C "$SRC" pull --ff-only --quiet \
     || printf "${YELLOW}grid 를 받아 오지 못했다. 지금 있는 것으로 빌드한다.${NC}\n"
+fi
+
+dirty="$(git -C "$SRC" status --porcelain)"
+head="$(git -C "$SRC" rev-parse HEAD)"
+if [ -n "$auto" ] && [ -z "$dirty" ] && [ -x "$BIN/rift" ] \
+  && [ "$(cat "$STAMP" 2>/dev/null)" = "$head" ]; then
+  printf "rift-grid: ${GREEN}최신${NC} ${DIM}(%s)${NC}\n" "$(git -C "$SRC" log -1 --format='%h %s')"
+  exit 0
 fi
 
 printf "빌드: %s\n" "$(git -C "$SRC" log -1 --format='%h %s')"
@@ -92,15 +125,16 @@ for name in rift rift-cli; do
     --timestamp=none "$BIN/.$name.new"
   mv -f "$BIN/.$name.new" "$BIN/$name"
 done
+if [ -z "$dirty" ]; then echo "$head" > "$STAMP"; else rm -f "$STAMP"; fi
 printf "${GREEN}깔았다${NC} %s\n" "$(installed_commit)"
 codesign -d -r- "$BIN/rift" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
 
 # 에이전트가 이미 올라와 있으면 새 바이너리로 다시 띄운다. 아직 없으면(첫
-# build-switch 전) 그냥 둔다 — build-switch 가 올린다.
+# build-switch 전에 손으로 부른 경우) 그냥 둔다 — build-switch 가 올린다.
 if launchctl print "$AGENT" >/dev/null 2>&1; then
   launchctl kickstart -k "$AGENT"
   printf "rift 를 다시 띄웠다.\n"
 fi
 
-printf "\n${DIM}처음 까는 기계라면 시스템 설정 > 개인정보 보호 및 보안에서 %s 에\n" "$BIN/rift"
-printf "손쉬운 사용과 화면 및 시스템 오디오 녹음을 한 번 준다. 그 뒤로는 다시 빌드해도 그대로다.${NC}\n"
+printf "\n${DIM}처음 까는 기계라면 rift 가 손쉬운 사용과 화면 및 시스템 오디오 녹음을 묻는다.\n"
+printf "허용하고 rift 를 다시 띄운다. 그 뒤로는 다시 빌드해도 그대로다.${NC}\n"

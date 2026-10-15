@@ -140,7 +140,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 | `demo` | 창 관리자 실사용 재연 | 빈 워크스페이스에서 키맵대로 창을 움직여 보여준다. 시나리오 목록은 `apps/demo` |
 | `screencast` | 녹화본을 데모 영상으로 | spec 파일대로 자르고 자막과 앞뒤 카드를 얹어 mp4·gif로 낸다. 흐름과 함정은 `docs/packages/screencast.md` |
 | `mac-signing-cert` | 코드 서명 신원 고정 | macOS 전용 (docs/03 참고) |
-| `rift-grid` | rift 포크 빌드·설치·서명 | macOS 전용. build-switch 가 깔지 않으므로 새 기계에서 한 번. `--status` |
+| `rift-grid` | rift 포크 빌드·설치·서명 | macOS 전용. build-switch 가 `--auto` 로 부른다(소스가 그대로면 건너뜀). `--status` |
 
 인자 규칙 세 가지:
 

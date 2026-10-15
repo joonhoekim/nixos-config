@@ -223,7 +223,7 @@
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe"
-        "demo" "mac-signing-cert" "rift-grid"
+        "demo" "screencast" "mac-signing-cert" "rift-grid"
       ] (name: mkApp name name system)
       // nixpkgs.lib.listToAttrs (map (n: {
         name = "rice-${n}";

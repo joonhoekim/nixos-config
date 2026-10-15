@@ -21,8 +21,11 @@
     # The pointer half of that layer — keyd cannot move a pointer, so the
     # left hand goes out as sentinel keys and this daemon drives the cursor.
     ../../modules/nixos/pointer
-    # niri session + DankMaterialShell, offered alongside GNOME at the
-    # tuigreet greeter and set as the default session below.
+    # subline: the default session, and the login screen in front of all of
+    # them. Under development, so the sessions below stay as the way back —
+    # the greeter lists them and remembers the last pick.
+    ../../modules/nixos/subline
+    # niri session + DankMaterialShell, offered alongside GNOME at the greeter.
     ../../modules/nixos/niri
     # ...and a Hyprland session next to it, running the same shell. It exists
     # for what niri cannot do — an output-wide shader — so it is a peer of the
@@ -166,7 +169,7 @@
   };
 
   services = {
-    # ── Desktop: Wayland sessions via greetd/tuigreet ──────────────────
+    # ── Desktop: Wayland sessions via greetd ───────────────────────────
     # xserver provides Xwayland + xkb config even on a Wayland session.
     xserver = {
       enable = true;
@@ -176,18 +179,24 @@
       xkb.layout = "us";
     };
 
-    # greetd + tuigreet replaces GDM: a TUI greeter on VT1, with none of the
-    # GNOME stack (gnome-shell, gnome-session) running behind the login screen.
+    # greetd replaces GDM, with none of the GNOME stack (gnome-shell,
+    # gnome-session) running behind the login screen. The greeter in front of it
+    # is subline's own (modules/nixos/subline, `subline --greeter`); what is
+    # written here is the *fallback*, tuigreet, hence the mkDefaults: the
+    # subline module overrides both the command and useTextGreeter while
+    # local.subline.greeter is on, and turning that off brings these back
+    # without any other change.
     #
-    # `--sessions` points at the very same sessionData.desktops derivation GDM
-    # consumed, so every session entry still appears — gnome.desktop comes from
-    # `desktopManager.gnome.enable`, niri.desktop from programs.niri.enable, and
+    # Either greeter reads the same sessionData.desktops derivation GDM
+    # consumed, so every session entry appears — gnome.desktop comes from
+    # `desktopManager.gnome.enable`, niri.desktop from programs.niri.enable,
     # hyprland{,-uwsm}.desktop from programs.hyprland.enable (the package
-    # provides both; take the uwsm one, see modules/nixos/hyprland).
-    # Nothing about session *discovery* changes, only the greeter in front of it.
+    # provides both; take the uwsm one, see modules/nixos/hyprland), and
+    # subline.desktop from programs.subline.enable.
     #
     # useTextGreeter rewires the unit's stdio onto /dev/tty1 (TTYReset, VHangup,
-    # VTDisallocate) so kernel/boot messages don't scribble over the TUI.
+    # VTDisallocate) so kernel/boot messages don't scribble over the TUI. Only
+    # for a text greeter; a DRM compositor as greeter must have it off.
     #
     # Keyring note: the greetd PAM service is `auth substack login` +
     # `session include login`, i.e. it inherits /etc/pam.d/login wholesale —
@@ -198,8 +207,8 @@
     # block those generated keyring rules live in.
     greetd = {
       enable = true;
-      useTextGreeter = true;
-      settings.default_session.command = lib.concatStringsSep " " [
+      useTextGreeter = lib.mkDefault true;
+      settings.default_session.command = lib.mkDefault (lib.concatStringsSep " " [
         # Top-level `pkgs.tuigreet`, not `pkgs.greetd.tuigreet` — most guides
         # still show the latter, but `pkgs.greetd` is the greetd derivation
         # itself in this nixpkgs, not a package set, so that path errors out.
@@ -208,15 +217,17 @@
         "--remember" # prefill the last username
         "--remember-session" # ...and the session it last launched
         "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions"
-      ];
+      ]);
     };
 
     # Consumed by the assertion in services/display-managers/default.nix, which
     # requires this to be one of sessionData.sessionNames
-    # ("gnome" | "niri" | "hyprland" | "hyprland-uwsm").
-    # tuigreet itself does not read it — `--remember-session` is what actually
-    # makes a login land back in niri, from the second login onward.
-    displayManager.defaultSession = "niri";
+    # ("gnome" | "niri" | "hyprland" | "hyprland-uwsm" | "subline").
+    # mkDefault: modules/nixos/subline sets "subline" while it is installed,
+    # and niri is what a host without subline falls back to. Neither greeter
+    # reads it — tuigreet's `--remember-session` and subline's own memory of
+    # the last pick are what decide where a login lands from the second time on.
+    displayManager.defaultSession = lib.mkDefault "niri";
 
     # GNOME stays installed but is no longer the default session. It is the
     # fallback when a niri/Quickshell bump breaks the desktop, and it is the

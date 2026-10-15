@@ -197,7 +197,7 @@ live_preview_interval_ms = 500
 # closes, and Esc steps back out a stage at a time. grid_fit = true skips
 # straight to the whole grid. grid_follow is how the first stage follows the
 # active cell: "reveal" moves only as far as it takes to show it whole (subline's
-# default), "center" centres it every time. grid_gap is the space between cells
+# default), "center" centers it every time. grid_gap is the space between cells
 # as a fraction of the display's shorter side, and grid_labels puts each
 # window's app and title in that gap above its tile.
 grid_fit = false
@@ -242,7 +242,7 @@ enabled = true
 # next cell at a cell's edge, and never into another grid. With grid_columns set,
 # each display gets 9 x 9 = 81 workspaces and default_workspace_count is unused.
 # The menu bar draws a map per grid in use, and the overview shows the grid on
-# screen. Login starts on grid 1's centre cell (index 4).
+# screen. Login starts on grid 1's center cell (index 4).
 # docs/grids.md in the rift-grid repo has the model.
 default_workspace_count = 9
 grid_columns = 3
@@ -321,7 +321,7 @@ move2 = "Alt + Ctrl"
 "Alt + Cmd + J" = { grid_cell = "left" }
 "Alt + Cmd + L" = { grid_cell = "right" }
 
-# The grid's centre cell, where login starts — subline's Mod+H
+# The grid's center cell, where login starts — subline's Mod+H
 # (focus-default-workspace).
 "Alt + H" = "grid_center"
 

@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, identity, home-manager, ... }:
+{ config, pkgs, lib, user, identity, home-manager, subline, ... }:
 
 # Hardware-agnostic system config shared by every NixOS host. Per-machine
 # bits (hardware-configuration.nix, hostname, GPU/CPU tweaks) live in the
@@ -53,8 +53,9 @@
     # A backup copy is a better outcome than a machine that cannot rebuild.
     backupFileExtension = "hm-bak";
     # Thread `user` into home-manager modules (separate arg scope from the
-    # system modules' specialArgs).
-    extraSpecialArgs = { inherit user identity; };
+    # system modules' specialArgs). `subline` is the flake input, for
+    # subline-tts in modules/nixos/nautice.nix.
+    extraSpecialArgs = { inherit user identity subline; };
     users.${user} = import ../../modules/nixos/home-manager.nix;
   };
 

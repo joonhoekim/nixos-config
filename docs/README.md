@@ -61,6 +61,13 @@ Nix의 동작 원리, 이 저장소의 구조, flake, macOS 설정 관리의 범
 저장소라 기계마다 `/etc/wireguard/wg0.conf`에 손으로 둡니다. 그 경계와, 유닛 밖에서
 `wg-quick`을 치면 왜 다음 switch가 깨지는지를 적었습니다.
 
+[`disk-space.md`](disk-space.md)는 **운영 노트**입니다 — 디스크가 차는 자리와 지우는 법입니다.
+공통 부분 아래에 macOS·NixOS 절을 나눴습니다. macOS의 앱 캐시처럼 경로가 고정된 것은
+`apps/reclaim`이 맡고, 이 문서는 그 바깥을 다룹니다:
+turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는** 개발 산출물, 그리고
+`docker system prune --volumes`가 정지된 개발 스택의 DB 볼륨까지 지우는 것처럼 지울 때
+판단이 필요한 VM·컨테이너 데이터입니다.
+
 [`os-support.md`](os-support.md)는 **기록**입니다 — 이 설정이 어느 날짜에 어느 OS·기종·커밋에서
 점검(`apps/check/mac`)을 통과했는지를 한 행씩 쌓습니다. 손으로 쓰지 않고 `check --record`가
 붙입니다. 세부 상태는 계정명·경로가 들어 있어서 gitignore된 `local/`에만 남습니다.

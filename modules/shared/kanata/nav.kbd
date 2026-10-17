@@ -10,6 +10,7 @@
 ;; Alt 의 한/영)은 거기에 있어서 기기 쪽 파일이 들고 있다:
 ;;
 ;;   modules/debian/kanata/kanata.kbd    (include 로 읽는다)
+;;   modules/nixos/kanata.nix            (Nix 가 문자열로 이어 붙인다)
 ;;
 ;; 기기 쪽 기본 레이어는 여기의 @caps @sl @sr 을 쓴다. 기본 레이어가 먼저
 ;; 정의돼야 시작 레이어가 되므로 기기 쪽 파일은 기본 레이어 뒤에서 include 한다.

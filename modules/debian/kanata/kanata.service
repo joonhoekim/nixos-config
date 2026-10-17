@@ -1,0 +1,16 @@
+# 시스템 유닛이라 로그인 전(잠금 화면, TTY)에도 레이어가 걸린다.
+# baldur 로 도는 것은 input 그룹이라 /dev/input/event* 와 /dev/uinput 을 열 수
+# 있어서다. 설정은 레포의 것을 직접 읽으므로 고친 뒤 `systemctl restart kanata`.
+[Unit]
+Description=kanata keyboard remapper
+Documentation=file:///home/baldur/nixos-config/modules/debian/kanata/README.md
+
+[Service]
+User=baldur
+Group=input
+ExecStart=/usr/local/bin/kanata --cfg /home/baldur/nixos-config/modules/debian/kanata/kanata.kbd
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

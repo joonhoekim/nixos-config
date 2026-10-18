@@ -1,7 +1,8 @@
-# subline-terminal (macOS)
+# subline-terminal
 
-창을 닫아도, 앱을 끝내도 셸이 살아 있는 터미널. 이 문서는 그게 무엇인지와,
-이 저장소의 `build-switch` 가 그것을 어떻게 까는지를 적는다. 터미널 자체의 설계는
+창을 닫아도, 앱을 끝내도 셸이 살아 있는 터미널. 세 창 관리자의 `Mod+Return` 이 여는
+기본 터미널이다. 이 문서는 그게 무엇인지와, 이 저장소가 그것을 macOS(nix-darwin)와
+NixOS 에 어떻게 까는지를 적는다. 터미널 자체의 설계는
 그 레포(`~/git/subline-terminal`)의 `docs/design.md` 가 정본이다.
 
 ## 무엇인가
@@ -31,8 +32,14 @@ Claude Code 같은 오래 도는 프로그램을, 창을 닫거나 앱을 다시
 
 ### 쓰는 법
 
+`Mod+Return`(rift 는 `Alt+Enter`)이 인자 없이 띄운다. 그러면 **세션 목록부터** 열고(세션이
+하나도 없으면 바로 새 세션), 거기서 붙을 세션을 고르거나 새로 만든다. 이건 터미널의
+`start` 설정이 정한다(기본 `pick`, `start = "new"` 면 바로 새 세션) — 창 관리자 쪽 키
+설정은 인자를 주지 않으므로 이 설정 하나가 네 창 관리자(subline·Hyprland·niri·rift)
+모두를 정한다.
+
 ```sh
-subline-terminal                # 새 세션의 창 (설정 start = "pick" 이면 세션 목록부터)
+subline-terminal                # 세션 목록부터 (start = "new" 면 새 세션)
 subline-terminal new [이름]      # 새 세션
 subline-terminal attach 이름     # 있는 세션에 붙기
 subline-terminal run -- 프로그램  # 셸 대신 그 프로그램을 도는 세션
@@ -49,7 +56,7 @@ subline-terminal kill 이름       # 세션 끝내기
 macOS 입력기로 조합하고, 띄운 직후 첫 음절이 낱자모로 쪼개지는 macOS 의 버그를
 앱이 피해 간다. 설정 파일은 `~/.config/subline-terminal/config.toml`(Cmd+, 로 그 자리에서 고친다).
 
-## 어떻게 깔리나
+## 어떻게 깔리나 — macOS (nix-darwin)
 
 nix 가 빌드하지 않는다. `build-switch` 가 시스템 전환을 마친 뒤 `apps/subline-terminal --auto`
 를 부르고, 그 스크립트가 **이 기계에서** 소스를 빌드해 **이 기계의 서명 신원으로** 서명해 깐다.
@@ -116,6 +123,21 @@ rm -f ~/.local/bin/subline-terminal ~/.local/bin/subline-terminald ~/.local/bin/
 ```
 
 `build-switch` 가 다시 깔지 않게 하려면 `apps/build-switch` 에서 그 줄을 뺀다.
+
+## 어떻게 깔리나 — NixOS
+
+여기서는 nix 가 빌드한다. TCC 같은 서명 문제가 없어서 다른 패키지와 다를 게 없다.
+
+- `flake.nix` 의 입력 `subline-terminal`(그 레포의 flake, `nix/package.nix`)이 패키지를 짓고,
+  `modules/nixos/subline-terminal.nix` 가 모든 호스트의 `environment.systemPackages` 에
+  넣는다(`hosts/nixos/common.nix` 가 가져온다). 데스크톱 항목과 아이콘이 함께 들어간다.
+- 올리기는 `nix flake update subline-terminal` 뒤 `build-switch`. 돌고 있던 데몬은 그대로
+  남아 있다가, 새 패키지의 창이 처음 붙을 때 세션을 살린 채 새 판으로 갈아탄다.
+- 데몬은 systemd 유닛으로 두지 않는다(macOS 와 같은 까닭).
+- `Mod+Return` 은 rice 의 키 설정(`modules/nixos/hyprland/rice/hyprland.lua`,
+  `modules/nixos/niri/rice/config.kdl`)이 `subline-terminal` 로 띄운다. 이 파일들은
+  라이브 쪽이 원본이라 손댄 기계에서는 리빌드가 덮어쓰지 않는다(`apps/rice/save` 머리말) —
+  그 기계에서는 그 한 줄을 손으로 맞춘다. subline 세션은 원래 subline-terminal 을 띄운다.
 
 ## 다른 맥으로 옮기기 (nix 없이)
 

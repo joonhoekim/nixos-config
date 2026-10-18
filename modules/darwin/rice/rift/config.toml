@@ -342,11 +342,10 @@ move2 = "Alt + Ctrl"
 "Alt + 8" = { switch_to_grid = 8 }
 "Alt + 9" = { switch_to_grid = 9 }
 
-# `open -na` starts a *second* Ghostty process rather than adding a window to
-# the running one — Ghostty's own `+new-window` action is unimplemented on
-# macOS ("not supported on this platform"). Drop the -n to merely focus an
-# existing Ghostty instead of getting a new window.
-"Alt + Enter" = { exec = ["/bin/sh", "-c", "open -na Ghostty"] }
+# subline-terminal (docs/subline-terminal.md). Run bare it opens on the sessions
+# to choose from (its `start` setting); with the app already up it adds a
+# window to that one app rather than starting another.
+"Alt + Enter" = { exec = ["/bin/sh", "-c", "exec \"$HOME/.local/bin/subline-terminal\""] }
 
 # Overview — subline's Mod+O. hyprland has the DMS overview and niri its own;
 # here it is rift-grid's grid overview, which rift drives as Mission Control.

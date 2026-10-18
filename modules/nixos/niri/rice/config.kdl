@@ -85,7 +85,7 @@ binds {
 	Mod+8 { focus-workspace 8; }
 	Mod+9 { focus-workspace 9; }
 
-	Mod+Return hotkey-overlay-title="Open a Terminal" { spawn "ghostty"; }
+	Mod+Return hotkey-overlay-title="Open a Terminal" { spawn "subline-terminal"; }
 	// 셸이 안 뜬 상태에서도 뭔가를 열 수 있는 폴백 런처.
 	Mod+D { spawn "fuzzel"; }
 	// 오버뷰. 하이프랜드는 같은 키에서 DMS 오버뷰를, rift 는 macOS 미션

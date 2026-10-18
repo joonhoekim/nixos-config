@@ -209,7 +209,7 @@ local mod = "SUPER"
 -- 비우기 위해서다 — 모니터 이동을 넣을 자리가 없었다.
 
 -- 프로그램
-hl.bind(mod .. " + Return", hl.dsp.exec_cmd("ghostty"))
+hl.bind(mod .. " + Return", hl.dsp.exec_cmd("subline-terminal"))
 -- 셸이 안 뜬 상태(베타 업데이트, 잘못된 설정)에서도 터미널을 열 수 있는 길.
 -- 니리 쪽과 같은 이유로 남겨 둔 폴백 런처다.
 hl.bind(mod .. " + D", hl.dsp.exec_cmd("fuzzel"))

@@ -25,6 +25,8 @@
     # them. Under development, so the sessions below stay as the way back —
     # the greeter lists them and remembers the last pick.
     ../../modules/nixos/subline
+    # subline-terminal: the terminal every session's Mod+Return opens.
+    ../../modules/nixos/subline-terminal.nix
     # niri session + DankMaterialShell, offered alongside GNOME at the greeter.
     ../../modules/nixos/niri
     # ...and a Hyprland session next to it, running the same shell. It exists

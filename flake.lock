@@ -183,7 +183,8 @@
         "nikitabobko-tap": "nikitabobko-tap",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
-        "subline": "subline"
+        "subline": "subline",
+        "subline-terminal": "subline-terminal"
       }
     },
     "subline": {
@@ -204,6 +205,26 @@
       "original": {
         "type": "git",
         "url": "https://github.com/joonhoekim/subline"
+      }
+    },
+    "subline-terminal": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792324891,
+        "narHash": "sha256-t0XsFwVwQaVno2Zhd5BM7RIJLQeNF/emYVcF3JT/oIs=",
+        "ref": "refs/heads/main",
+        "rev": "9ad146df3645de05fa2a603000c48241364899c8",
+        "revCount": 93,
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline-terminal"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline-terminal"
       }
     }
   },

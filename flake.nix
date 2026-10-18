@@ -49,6 +49,14 @@
       url = "git+https://github.com/joonhoekim/subline";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # subline-terminal — 창·앱을 닫아도 세션이 사는 터미널(~/git/subline-terminal).
+    # NixOS 호스트는 이 패키지로 깐다(modules/nixos/subline-terminal.nix). macOS 는
+    # nix 가 아니라 apps/subline-terminal 이 기계마다 빌드·서명한다(docs/subline-terminal.md).
+    # 비공개라 받는 사정은 subline 과 같고, 올리는 것은 `nix flake update subline-terminal`.
+    subline-terminal = {
+      url = "git+https://github.com/joonhoekim/subline-terminal";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # rift (tiling WM). Not in nixpkgs — upstream ships a universal binary via
     # this tap's *formula*, not a cask. No formula from it is installed now:
     # the WM is the rift-grid fork (apps/rift-grid). The tap stays so going

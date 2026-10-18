@@ -1,0 +1,107 @@
+#!/bin/sh -e
+#
+# subline-terminal(세션이 창·앱보다 오래 사는 터미널)을 소스에서 빌드해 깐다. macOS 전용.
+#
+#   apps/subline-terminal              빌드 → ~/Applications 에 깔기 → 서명 → 데몬 갈아타기
+#   apps/subline-terminal --status     깔린 것과 소스의 커밋, 서명 요구사항
+#   apps/subline-terminal --auto       build-switch 가 매번 부르는 꼴. apps/rift-grid 와 같다
+#
+# 소스는 $SUBLINE_TERMINAL_SRC(기본 ~/git/subline-terminal)다. 없으면 클론한다.
+# 레포: https://github.com/joonhoekim/subline-terminal (비공개, 기본 브랜치 main) — 받을
+# 때 git 이 `gh auth git-credential` 을 쓴다(flake.nix 의 subline 입력과 같은 사정).
+#
+# ── 왜 nix 가 빌드하지 않는가 ─────────────────────────────────────────────
+# apps/rift-grid 와 같다. 세션 안의 프로그램이 쓰는 로컬 네트워크·폴더 허가는 TCC 가
+# 앱의 서명 요구사항에 묶는데, nix 가 빌드한 앱은 임의 서명이라 요구사항이 cdhash 다.
+# 다시 빌드할 때마다 허가가 조용히 끊긴다(apps/mac-signing-cert 머리말). 그래서
+# apps/mac-signing-cert 의 이 기계 신원으로 서명한다.
+#
+# 빌드와 설치는 그 레포의 tools/install.sh 가 한다: ~/Applications/subline-terminal.app
+# (같은 자리에 옮겨 넣어 돌고 있는 앱을 덮어쓰지 않는다), ~/.local/bin 의
+# subline-terminal·subline-terminald 링크, 돌고 있는 데몬을 세션을 살린 채 새 판으로
+# 갈아태우기. 떠 있던 창들도 새 판으로 다시 뜬다.
+#
+# 데몬은 launchd 에이전트로 띄우지 않는다. 처음 필요한 창이나 셸이 띄우고, 세션은
+# 창·앱을 닫아도 살고 로그아웃·재부팅에서 끝난다(그 레포의 docs/design.md, macOS 절).
+# ~/Applications 가 아닌 임시 폴더의 앱은 알림이 거절된다(usernoted 가 그 앱을 찾지
+# 못한다).
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  printf "${RED}macOS 전용이다.${NC}\n"
+  exit 1
+fi
+
+SRC="${SUBLINE_TERMINAL_SRC:-$HOME/git/subline-terminal}"
+REPO="https://github.com/joonhoekim/subline-terminal.git"
+APP="$HOME/Applications/subline-terminal.app"
+BIN="$HOME/.local/bin"
+# apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
+CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
+# 마지막으로 깐 소스 커밋. --auto 가 "할 일 없음"을 가르는 기준이다.
+STAMP="$BIN/.subline-terminal.commit"
+# mise 가 rustup 으로 까는 자리. build-switch 의 셸 PATH 에는 아직 없을 수 있다.
+PATH="$PATH:$HOME/.cargo/bin"
+
+auto=""
+if [ "${1:-}" = "--auto" ]; then auto=1; fi
+
+if [ "${1:-}" = "--status" ]; then
+  if [ -d "$APP" ]; then
+    printf "깔린 것: ${GREEN}%s${NC} ${DIM}(%s)${NC}\n" "$(cat "$STAMP" 2>/dev/null || echo '커밋 모름')" "$APP"
+    codesign -d -r- "$APP" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+  else
+    printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$APP"
+  fi
+  if [ -d "$SRC/.git" ]; then
+    printf "소스:     %s ${DIM}(%s)${NC}\n" "$(git -C "$SRC" log -1 --format='%H %s')" "$SRC"
+  else
+    printf "소스:     ${YELLOW}없다${NC} (%s)\n" "$SRC"
+  fi
+  exit 0
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+  if [ -n "$auto" ]; then
+    printf "${YELLOW}subline-terminal: cargo 가 없어 건너뛴다.${NC} rust 가 깔린 뒤 build-switch 를 한 번 더.\n"
+    exit 0
+  fi
+  printf "${RED}cargo 가 없다.${NC} rust 툴체인을 먼저 깔아라.\n"
+  exit 1
+fi
+if ! security find-certificate -c "$CN" >/dev/null 2>&1; then
+  if [ -z "$auto" ]; then
+    printf "${RED}서명 신원이 없다 (%s).${NC} 먼저 apps/mac-signing-cert 를 돌려라.\n" "$CN"
+    exit 1
+  fi
+  printf "서명 신원이 없어서 만든다: %s\n" "$CN"
+  MAC_SIGN_ID="$CN" "$(dirname "$0")/mac-signing-cert"
+fi
+
+if [ ! -d "$SRC/.git" ]; then
+  printf "소스가 없어서 클론한다: %s\n" "$SRC"
+  git clone "$REPO" "$SRC"
+elif [ -z "$(git -C "$SRC" status --porcelain)" ] \
+  && [ "$(git -C "$SRC" branch --show-current)" = "main" ]; then
+  # 맥이 여러 대라 다른 기계에서 올린 커밋을 받아 온다. 고치는 중인 트리
+  # (변경이 있거나 다른 브랜치)는 건드리지 않고 그대로 빌드한다.
+  git -C "$SRC" pull --ff-only --quiet \
+    || printf "${YELLOW}main 을 받아 오지 못했다. 지금 있는 것으로 빌드한다.${NC}\n"
+fi
+
+dirty="$(git -C "$SRC" status --porcelain)"
+head="$(git -C "$SRC" rev-parse HEAD)"
+if [ -n "$auto" ] && [ -z "$dirty" ] && [ -d "$APP" ] \
+  && [ "$(cat "$STAMP" 2>/dev/null)" = "$head" ]; then
+  printf "subline-terminal: ${GREEN}최신${NC} ${DIM}(%s)${NC}\n" "$(git -C "$SRC" log -1 --format='%h %s')"
+  exit 0
+fi
+
+printf "빌드: %s\n" "$(git -C "$SRC" log -1 --format='%h %s')"
+APPS="$HOME/Applications" PREFIX="$HOME/.local" SUBLINE_TERMINAL_SIGN="$CN" "$SRC/tools/install.sh"
+if [ -z "$dirty" ]; then echo "$head" > "$STAMP"; else rm -f "$STAMP"; fi
+codesign -d -r- "$APP" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+
+printf "\n${DIM}처음 까는 기계라면 세션 안의 프로그램이 로컬 네트워크·폴더에 닿을 때와 첫 알림 때\n"
+printf "macOS 가 묻는다. 허용하면 그 뒤로는 다시 빌드해도 그대로다.${NC}\n"

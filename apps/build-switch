@@ -2,7 +2,8 @@
 #
 # Build and activate this machine's configuration.
 #   macOS  -> darwin-rebuild switch --flake .#<hostname 또는 arch>, 이어서
-#             apps/rift-grid --auto (창 관리자. nix 밖에서 빌드·서명한다)
+#             apps/rift-grid --auto (창 관리자. nix 밖에서 빌드·서명한다),
+#             apps/subline-terminal --auto (터미널. 같은 까닭으로 nix 밖에서)
 #   NixOS  -> nixos-rebuild  switch --flake .#<hostname>
 # 타겟은 build-lib.sh 가 고르고, 없는 이름이면 거기서 목록과 함께 멈춘다.
 # --host NAME 으로 덮어쓴다 — 첫 switch 전(hostname 이 아직 'nixos')에 필요하다.
@@ -25,6 +26,8 @@ if [ "$(uname)" = "Darwin" ]; then
   # 경고만 하고 넘어간다.
   "$(dirname "$0")/rift-grid" --auto \
     || printf "${YELLOW}rift-grid 를 깔지 못했다.${NC} nix run .#rift-grid 로 다시.\n"
+  "$(dirname "$0")/subline-terminal" --auto \
+    || printf "${YELLOW}subline-terminal 을 깔지 못했다.${NC} nix run .#subline-terminal 로 다시.\n"
 else
   printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
   # Forward the agent socket so root can fetch any private flake inputs.

@@ -68,6 +68,11 @@ turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는
 `docker system prune --volumes`가 정지된 개발 스택의 DB 볼륨까지 지우는 것처럼 지울 때
 판단이 필요한 VM·컨테이너 데이터입니다.
 
+[`subline-terminal.md`](subline-terminal.md)는 **앱 안내서**입니다 — 창과 앱을 닫아도 셸이
+사는 터미널이 무엇인지, 그리고 nix가 아니라 `build-switch` 끝의 `apps/subline-terminal --auto`가
+이 기계에서 빌드하고 이 기계의 신원으로 서명해 `~/Applications`에 까는 흐름을 적었습니다.
+`apps/rift-grid`와 같은 꼴이고, 그렇게 하는 까닭(TCC 허가가 재빌드를 견디게)도 함께 적었습니다.
+
 [`os-support.md`](os-support.md)는 **기록**입니다 — 이 설정이 어느 날짜에 어느 OS·기종·커밋에서
 점검(`apps/check/mac`)을 통과했는지를 한 행씩 쌓습니다. 손으로 쓰지 않고 `check --record`가
 붙입니다. 세부 상태는 계정명·경로가 들어 있어서 gitignore된 `local/`에만 남습니다.

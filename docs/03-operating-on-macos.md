@@ -161,8 +161,8 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 
 - `./apps/check/mac` (`nix run .#check`) — 활성화된 세대가 실제로 먹고 있는지 단언한다.
   `/etc` 링크, nix-daemon, launchd job(crash-loop 포함), `defaults` 값과 타입,
-  LaunchServices 핸들러의 실제 해석 결과, rift 의 창 목록(손쉬운 사용 권한), Karabiner
-  DriverKit 확장, Brewfile. 무엇을 어떻게 보는지는 스크립트 머리말.
+  LaunchServices 핸들러의 실제 해석 결과, rift 의 창 목록(손쉬운 사용 권한), kanata 의
+  DriverKit 확장과 서명, Brewfile. 무엇을 어떻게 보는지는 스크립트 머리말.
 - `./apps/check/snapshot` (`nix run .#check-snapshot`) — 선언 밖의 변화까지 보도록 상태를
   텍스트로 떠 두고 `diff` 로 비교한다. 체크아웃의 `local/snapshot/` 에 쌓이고, `local/` 은
   gitignore 되어 있다(계정명·경로·앱 목록이 그대로 들어 있어서).
@@ -172,7 +172,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 1. 업그레이드 전에 `check` 가 초록이 되게 맞춘다. 기준선이 초록이 아니면 나중의 빨강이
    회귀인지 원래 있던 문제인지 구분되지 않는다. 그리고 `check --record` — 통과한 조합을
    [os-support.md](os-support.md) 에 남기고 스냅숏도 함께 뜬다.
-2. rift · Karabiner · nix-darwin · LinearMouse 의 이슈 트래커에서 새 버전 대응을 본다.
+2. rift · kanata · nix-darwin · LinearMouse 의 이슈 트래커에서 새 버전 대응을 본다.
    macOS 는 메이저 다운그레이드가 사실상 재설치라, 점검이 회귀를 잡아도 되돌리는 비용이 크다.
    private API 를 쓰는 rift 가 가장 위험하다.
 3. 업그레이드 직후, **`build-switch` 전에** `check` 와 `snapshot` → `snapshot diff`.
@@ -184,7 +184,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 
 스크립트로 확인할 수 없어서 손으로 보는 것:
 
-- 한/영 전환(F18 → 입력 소스), Karabiner 매핑 몇 개
+- 한/영 전환(오른쪽 ⌘ → F18 → 입력 소스), Caps Lock 레이어 키 몇 개
 - rift 키바인드로 창 이동·워크스페이스 전환
 - 외장 마우스 휠 방향(LinearMouse — 입력 모니터링 권한은 끊겨도 증상이 이것뿐이다)
 - Stats 메뉴바, 스크린샷 단축키, Touch ID sudo
@@ -197,7 +197,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 이미 손으로 세팅된 Mac 위에 선언적 관리를 처음 덮을 때 겪는 **1회성** 충돌들. "Nix가 어렵다"기보다
 "기존 수동 환경과 선언적 환경의 첫 만남"에서 온다. 한 번 자리 잡으면 이후엔 파일 수정 → `build-switch`뿐.
 
-**0. flake는 git 추적 파일만 본다.** `error: Path '...karabiner.json' ... is not tracked by Git` →
+**0. flake는 git 추적 파일만 본다.** `error: Path '...kanata.kbd' ... is not tracked by Git` →
 새 파일을 만들고 모듈에서 참조했으면 `git add <파일>`. "그런 파일 없다"류 에러가 나면 가장 먼저 의심.
 
 **1. nixpkgs-unstable 패키지 표류.** `nixos-unstable` 채널이라 개명/제거/별칭통합/소스빌드 실패를 만난다

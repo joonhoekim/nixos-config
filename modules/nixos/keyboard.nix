@@ -19,8 +19,8 @@
 #
 # It is here rather than a vim layer (which this file used to hold; the parked
 # version is ./keyboard.nix.vim) because it is the layout the hands already
-# know, and the same layer runs on macOS (../darwin/rice/karabiner) and Windows
-# (../windows/kanata) — one vocabulary across every machine is worth more than
+# know, and the same layer runs on macOS and Windows (../shared/kanata, one
+# kanata config for both) — one vocabulary across every machine is worth more than
 # notational purity.
 #
 # The trigger is Caps Lock on every machine, the one departure from stock

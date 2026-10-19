@@ -52,8 +52,8 @@ TICK = 1 / 125  # seconds between motion steps, while a key is held
 # --- tuning ---------------------------------------------------------------
 #
 # Flat speeds, no acceleration curve. There was one here (200 -> 1800 px/s
-# over 400ms) and it was dropped for two reasons: Karabiner's `mouse_key` on
-# the macOS side cannot ramp at all, so keeping it meant the same layer
+# over 400ms) and it was dropped for two reasons: the macOS and Windows side
+# (movemouse in modules/shared/kanata/kanata.kbd) runs flat, so keeping it meant the same layer
 # behaving differently depending on which machine you sat at — and once it was
 # actually used, the ramp did not earn that cost. Two flat speeds a Shift
 # apart cover both jobs, and they are predictable, which turns out to be worth

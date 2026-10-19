@@ -122,7 +122,7 @@ flake는 샌드박스에서 순수 평가되어 임의 환경변수·디렉토�
 마지막 항목이 셋업 중 흔히 만나는 에러다.
 
 ```text
-error: Path '.../karabiner.json' ... is not tracked by Git
+error: Path '.../kanata.kbd' ... is not tracked by Git
 ```
 
 새 파일을 만들고 모듈에서 참조했는데 `git add`를 안 했을 때 난다. 버그가 아니라 재현성을

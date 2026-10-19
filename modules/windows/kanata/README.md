@@ -2,8 +2,8 @@
 
 [kanata](https://github.com/jtroo/kanata) 로 NixOS(`modules/nixos/keyboard.nix` +
 `modules/nixos/pointer/`)·macOS(`modules/darwin/rice/karabiner/`)와 같은 레이어를
-Windows 에 건다. 키 배치와 수치는 그쪽이 정본이고 [`kanata.kbd`](kanata.kbd) 는
-그것을 옮긴 것이다.
+Windows 에 건다. 키 배치와 수치는 그쪽이 정본이고
+[`modules/shared/kanata/kanata.kbd`](../../shared/kanata/kanata.kbd) 는 그것을 옮긴 것이다.
 
 | 입력 | 결과 |
 |---|---|
@@ -39,7 +39,7 @@ zip 안의 실행 파일 중 쓰는 것은 둘이다.
 레포 루트에서:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\kanata\kanata_windows_tty_winIOv2_x64.exe" --cfg modules\windows\kanata\kanata.kbd
+& "$env:LOCALAPPDATA\Programs\kanata\kanata_windows_tty_winIOv2_x64.exe" --cfg modules\shared\kanata\kanata.kbd
 --check   # 위 명령 끝에 붙이면 설정 검증만 하고 끝난다
 ```
 
@@ -52,7 +52,7 @@ kanata 내장 탈출구라 설정과 무관하게 종료된다.
 
 ```powershell
 $exe = "$env:LOCALAPPDATA\Programs\kanata\kanata_windows_gui_winIOv2_x64.exe"
-$cfg = (Resolve-Path modules\windows\kanata\kanata.kbd).Path
+$cfg = (Resolve-Path modules\shared\kanata\kanata.kbd).Path
 $action   = New-ScheduledTaskAction -Execute $exe -Argument "--cfg `"$cfg`""
 $trigger  = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest

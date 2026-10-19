@@ -7,7 +7,7 @@
 ;;
 ;; 시험 실행 (콘솔에 로그가 보이는 tty 빌드, Ctrl+C 로 끝):
 ;;   & "$env:LOCALAPPDATA\Programs\kanata\kanata_windows_tty_winIOv2_x64.exe" `
-;;       --cfg modules\windows\kanata\kanata.kbd
+;;       --cfg modules\shared\kanata\kanata.kbd
 ;;
 ;; 비상 탈출: 왼쪽 Ctrl + Space + Esc 를 함께 누르면 kanata 가 종료된다
 ;; (kanata 내장, 설정과 무관).

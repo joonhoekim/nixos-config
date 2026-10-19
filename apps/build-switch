@@ -1,10 +1,10 @@
 #!/bin/sh -e
 #
 # Build and activate this machine's configuration.
-#   macOS  -> darwin-rebuild switch --flake .#<hostname 또는 arch>, 이어서
+#   macOS  -> nix build, then sudo darwin-rebuild activate, 이어서
 #             apps/rift-grid --auto (창 관리자. nix 밖에서 빌드·서명한다),
 #             apps/subline-terminal --auto (터미널. 같은 까닭으로 nix 밖에서)
-#   NixOS  -> nixos-rebuild  switch --flake .#<hostname>
+#   NixOS  -> nix build, then sudo switch-to-configuration switch
 # 타겟은 build-lib.sh 가 고르고, 없는 이름이면 거기서 목록과 함께 멈춘다.
 # --host NAME 으로 덮어쓴다 — 첫 switch 전(hostname 이 아직 'nixos')에 필요하다.
 #
@@ -16,11 +16,14 @@
 
 if [ "$(uname)" = "Darwin" ]; then
   printf "${YELLOW}Building darwinConfigurations.%s...${NC}\n" "$target"
+  # Build as the user so private inputs are fetched with their gh credentials;
+  # only activation runs as root (nix-darwin#1457).
   nix --extra-experimental-features 'nix-command flakes' build ".#darwinConfigurations.${target}.system" $passthru
-  printf "${YELLOW}Activating (sudo)...${NC}\n"
-  # sudo required for activation — see nix-darwin#1457
-  sudo ./result/sw/bin/darwin-rebuild switch --flake ".#${target}" $passthru
+  system="$(readlink -f ./result)"
   unlink ./result 2>/dev/null || true
+  printf "${YELLOW}Activating (sudo)...${NC}\n"
+  sudo nix-env -p /nix/var/nix/profiles/system --set "$system"
+  sudo "$system/sw/bin/darwin-rebuild" activate
   # 창 관리자 rift-grid 는 nix 가 아니라 여기서 빌드·서명해 깐다(apps/rift-grid
   # 머리말). 소스가 그대로면 바로 끝난다. 실패해도 시스템 전환은 이미 끝났으니
   # 경고만 하고 넘어간다.
@@ -30,8 +33,14 @@ if [ "$(uname)" = "Darwin" ]; then
     || printf "${YELLOW}subline-terminal 을 깔지 못했다.${NC} nix run .#subline-terminal 로 다시.\n"
 else
   printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
-  # Forward the agent socket so root can fetch any private flake inputs.
-  sudo SSH_AUTH_SOCK="$SSH_AUTH_SOCK" nixos-rebuild switch --flake ".#${target}" $passthru
+  # Build as the user so private inputs are fetched with their gh credentials;
+  # only activation runs as root.
+  nix --extra-experimental-features 'nix-command flakes' build ".#nixosConfigurations.${target}.config.system.build.toplevel" $passthru
+  system="$(readlink -f ./result)"
+  unlink ./result 2>/dev/null || true
+  printf "${YELLOW}Activating (sudo)...${NC}\n"
+  sudo nix-env -p /nix/var/nix/profiles/system --set "$system"
+  sudo "$system/bin/switch-to-configuration" switch
 fi
 
 printf "${GREEN}Switch to new generation complete!${NC}\n"

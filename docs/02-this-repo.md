@@ -132,7 +132,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 
 | app | 용도 | 비고 |
 |-----|------|------|
-| `build-switch` | 빌드 + 활성화 | **일상 명령.** macOS=`darwin-rebuild switch`, NixOS=`nixos-rebuild switch` |
+| `build-switch` | 빌드 + 활성화 | **일상 명령.** 둘 다 사용자로 `nix build` 한 뒤 sudo 로 활성화만 한다(macOS=`darwin-rebuild activate`, NixOS=`switch-to-configuration switch`). root 로 평가하면 비공개 입력을 받을 gh 자격이 없어 GitHub ID/PW 를 묻기 때문 |
 | `build` | 빌드만 (활성화 X) | 평가·빌드 검증용 |
 | `rollback` | 이전 세대로 복구 | 세대 번호 입력(공백=직전). 양 OS |
 | `clean` | 구 세대 GC | `nix-collect-garbage --delete-older-than 7d` (인자로 기간 변경) |

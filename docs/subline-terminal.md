@@ -38,6 +38,11 @@ Claude Code 같은 오래 도는 프로그램을, 창을 닫거나 앱을 다시
 설정은 인자를 주지 않으므로 이 설정 하나가 네 창 관리자(subline·Hyprland·niri·rift)
 모두를 정한다.
 
+rift 는 `open -n -a ~/Applications/subline-terminal.app` 으로 띄운다. LaunchServices 를
+거쳐야 앱이 처음부터 Regular 로 떠서 rift 가 바로 받고, rift 의 자식 프로세스가 아니라
+rift 를 다시 띄워도 창이 남는다. `-n` 이라 매번 새 프로세스가 뜨고, 그것이 떠 있는 앱에
+창을 넘기고 끝난다. 환경 변수는 `open` 이 rift 의 것을 그대로 넘긴다.
+
 ```sh
 subline-terminal                # 세션 목록부터 (start = "new" 면 새 세션)
 subline-terminal new [이름]      # 새 세션

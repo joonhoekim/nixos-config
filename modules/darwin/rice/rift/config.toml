@@ -360,7 +360,11 @@ move2 = "Alt + Ctrl"
 # subline-terminal (docs/subline-terminal.md). Run bare it opens on the sessions
 # to choose from (its `start` setting); with the app already up it adds a
 # window to that one app rather than starting another.
-"Alt + Enter" = { exec = ["/bin/sh", "-c", "exec \"$HOME/.local/bin/subline-terminal\""] }
+# Through `open -n` so LaunchServices starts it: it is Regular from the start
+# (rift admits it at once) and not rift's child, so restarting rift no longer
+# ends the terminals. `-n` starts a new process each time, which hands its
+# window to the app already up; `open` passes rift's environment along.
+"Alt + Enter" = { exec = ["/bin/sh", "-c", "exec /usr/bin/open -n -a \"$HOME/Applications/subline-terminal.app\""] }
 
 # Overview — subline's Mod+O. hyprland has the DMS overview and niri its own;
 # here it is rift-grid's grid overview, which rift drives as Mission Control.

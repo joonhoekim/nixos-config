@@ -92,6 +92,7 @@
         # mise 도구 설치. NixOS 와 같은 것을 쓴다 — 예전에는 여기만 `|| true` 로
         # 실패를 삼키는 옛 판이었고, 그 반쪽 수정이 이 조각으로 접은 이유다.
         activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
+        activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
       };
       programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
 

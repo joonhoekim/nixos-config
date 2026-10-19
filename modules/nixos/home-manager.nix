@@ -29,6 +29,7 @@ in
     # mise 도구 설치. 왜 실패를 경고로만 다루는지까지 조각 머리말에 있다 —
     # darwin 과 같은 것을 쓴다.
     activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
+    activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
   };
 
   # Dark mode. GNOME reads the dconf keys below; the `gtk` block writes

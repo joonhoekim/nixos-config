@@ -13,6 +13,7 @@ macOS와 NixOS 양쪽에서 그대로 쓰는 설정. 대부분의 실제 설정�
 ├── ghostty/              # 터미널 라이싱 시드 (config·rices·shaders·themes) + 심는 모듈
 ├── home-manager.nix      # ./programs 조각들을 하나의 programs 어트리뷰트셋으로 합침
 ├── mise-install.nix      # mise 도구를 switch 때 까는 home.activation 조각 (양 플랫폼 공용)
+├── claude-attribution.nix # ~/.claude/settings.json 의 커밋·PR attribution 을 switch 때마다 끈다 (양 플랫폼 공용)
 ├── packages.nix          # 양 플랫폼 공용 패키지 (CLI / TUI 위주)
 ├── programs/             # 프로그램별 home-manager 조각
 ├── rice-seed-helpers.nix # 라이싱 파일을 $HOME에 심는 seed/ensure 셸 함수

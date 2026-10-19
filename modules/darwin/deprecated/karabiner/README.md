@@ -1,5 +1,13 @@
 # Karabiner — Caps Lock 레이어 (네비게이션 + 마우스)
 
+> **더 쓰지 않는다.** 이 레이어는 kanata 로 옮겼다 — 설정은
+> [`modules/shared/kanata/`](../../../shared/kanata/), 배선은
+> [`modules/darwin/kanata.nix`](../../kanata.nix). 이 디렉터리는 어디에서도 로드되지
+> 않고, 아래 "수정 방법"의 `apps/rice/save`·`restore` 도 더는 이 파일을 다루지 않는다.
+> Karabiner-Elements 로 돌아가려면 cask 를 다시 넣고 `karabiner.json` 을
+> `~/.config/karabiner/` 에 둔다. kanata 데몬과는 같이 돌릴 수 없다
+> ([`modules/darwin/casks.nix`](../../casks.nix) 주석).
+
 `karabiner.json`의 설정 설명. **Caps Lock을 홀드**하는 동안 손이 홈로우를 떠나지 않는
 레이어가 열린다. 오른손은 커서 이동([TouchCursor](https://github.com/martin-stone/touchcursor)
 배치 그대로), 왼손은 마우스다. 트리거만 TouchCursor 기본값(스페이스) 대신 Caps Lock이라
@@ -105,7 +113,7 @@ Karabiner 에는 장치별로 휠을 뒤집는 `devices[].mouse_flip_vertical_wh
 
 그래서 이 축은 LinearMouse 가 가져갔다. 장치를 범주(`category: mouse`)로 매칭할 수 있어서
 마우스를 몇 개를 꽂든 선언이 한 줄이고, Karabiner 가 포인팅 장치를 잡을 일도 없어진다.
-→ [`../linearmouse/README.md`](../linearmouse/README.md)
+→ [`../../rice/linearmouse/README.md`](../../rice/linearmouse/README.md)
 
 ## 기타 규칙 (레이어와 무관)
 

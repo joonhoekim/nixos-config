@@ -206,7 +206,7 @@ in
       ${import ../../shared/rice-seed-helpers.nix}
 
       # ── 심링크에서 시드로 넘어오는 한 번을 위한 것 ──────────────────────
-      # 아래 셋(karabiner.json, aerospace.toml, rift 의 config.toml)은
+      # 아래 둘(aerospace.toml, rift 의 config.toml)은
       # 2026-08-06 까지 modules/darwin/files.nix 가 거는 읽기 전용 스토어
       # 심링크였다. rice_sync 는 링크도 "있음"으로 보고, 그 내용은 기준선과도
       # 레포와도 안 맞아 conflict 로 손을 떼므로, 걷어내지 않으면 그 머신들에는
@@ -229,17 +229,6 @@ in
       # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
       unstore "$HOME/.config/rift/config.toml"
       rice_sync ${./rift/config.toml} "$HOME/.config/rift/config.toml"
-
-      # Karabiner 의 키맵. 여기 셋 중 심링크가 제일 안 맞던 자리다 — 설정 GUI 가
-      # 저장할 때마다 조용히 실패했고, ./karabiner/README.md 에는 그걸 우회하는
-      # 절차("심링크 지우고 → 복사본 두고 → 다 되면 되돌리고 build-switch")가
-      # 아예 문서로 적혀 있었다. 그 우회가 지금은 그냥 기본 동작이다.
-      #
-      # 디렉터리가 아니라 파일 하나만 심는 이유: ~/.config/karabiner 에는 앱이
-      # 만드는 assets/ 와 automatic_backups/ 가 같이 산다. 통째로 다루면 그것까지
-      # 레포가 관리하게 된다.
-      unstore "$HOME/.config/karabiner/karabiner.json"
-      rice_sync ${./karabiner/karabiner.json} "$HOME/.config/karabiner/karabiner.json"
 
       # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
       #
@@ -278,16 +267,15 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 같이 옮겨야 하고, 그건 이 변경과 별개다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 다섯 다 그럴 필요가 없기
-      # 때문이다. wezterm 과 Karabiner 는 자기 설정 파일을 지켜보고,
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 넷 다 그럴 필요가 없기
+      # 때문이다. wezterm 은 자기 설정 파일을 지켜보고,
       # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
       # rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
       # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
       # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
       #
       # 심링크에서 넘어오는 그 한 번만 예외인데, 그때도 감시자가 새로 생긴 파일을
-      # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R, Karabiner 는 설정 앱에서
-      # 프로파일을 다시 고르면 된다.
+      # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R.
       #
       # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice/restore 는
       # rm+cp 로 덮어서 감시가 걸려 있던 아이노드를 날리므로, 그쪽은 복원 뒤에

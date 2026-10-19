@@ -33,14 +33,13 @@
 #   gtk         gtk-3.0 과 gtk-4.0 의 settings.ini (레포엔 파일 하나) 니리 세션
 #   wezterm     wezterm.lua                                        macOS
 #   rift        config.toml (키맵)                                  macOS
-#   karabiner   karabiner.json (키맵)                               macOS
 #   linearmouse linearmouse.json (마우스 휠 방향)                    macOS
 #   aerospace   aerospace.toml (rift 폴백 WM)                       macOS
 #   helpers     rift 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
 #
-# rift/config.toml, karabiner.json, aerospace.toml 셋은 2026-08-06 까지 여기
-# 없었다 — modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 되받을
-# 라이브가 없었다. 이제 셋 다 시드라 나머지와 똑같이 왕복한다.
+# rift/config.toml, aerospace.toml 둘은 2026-08-06 까지 여기 없었다 —
+# modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 되받을 라이브가
+# 없었다. 이제 둘 다 시드라 나머지와 똑같이 왕복한다.
 #
 # 플랫폼을 가리는 건 여기서만 필요하다. rice-save 는 라이브가 없으면 "skip
 # (absent)" 로 알아서 비켜 가는데, 그건 macOS 에 니리 파일이 없기 때문이다.
@@ -78,7 +77,7 @@ if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
 fi
 
 linux_only="niri profiles hypr studio dms fuzzel gtk"
-mac_only="wezterm rift karabiner linearmouse aerospace helpers"
+mac_only="wezterm rift linearmouse aerospace helpers"
 # 터미널 라이싱만 두 플랫폼이 공유한다.
 all="$linux_only ghostty $mac_only"
 # 이 플랫폼에서 실제로 다룰 수 있는 것.
@@ -269,12 +268,6 @@ plan() {
     ;;
   esac
 
-  case " $want " in *" karabiner "*)
-    # 파일 하나만 다룬다. 옆의 assets/ 와 automatic_backups/ 는 앱의 것이다.
-    item "$dr/karabiner/karabiner.json" "$cfg/karabiner/karabiner.json"
-    ;;
-  esac
-
   case " $want " in *" linearmouse "*)
     item "$dr/linearmouse/linearmouse.json" "$cfg/linearmouse/linearmouse.json"
     ;;
@@ -447,28 +440,8 @@ case " $want " in *" rift "*)
   ;;
 esac
 
-# Karabiner 도 rift 와 같은 처지다. karabiner_console_user_server 가 파일을
-# 지켜보지만 위 item() 의 rm+cp 가 그 감시를 끊고, 게다가 이쪽은 잘못된 JSON 을
-# 조용히 무시하고 이전 설정으로 계속 돈다 — 키맵이 안 바뀐 것 말고는 증상이 없다.
-#
-# 그래서 순서가 둘이다: 먼저 JSON 을 검사하고(레포에 깨진 걸 커밋했을 수 있다),
-# 그다음 유저 서버를 다시 띄운다. kickstart 인 이유는 rift 와 같다 — 이건 앱이
-# 띄우는 에이전트라 손으로 죽였다 켜면 launchd 가 모르는 인스턴스가 생긴다.
-case " $want " in *" karabiner "*)
-  if ! python3 -m json.tool "$cfg/karabiner/karabiner.json" >/dev/null 2>&1; then
-    printf "${RED}복원한 karabiner.json 이 유효한 JSON 이 아니다. Karabiner 는 이걸 무시하고 옛 설정으로 돈다.${NC}\n"
-    printf "${DIM}백업: ~/%s${NC}\n" "${backup#"$HOME"/}"
-  elif launchctl kickstart -k "gui/$(id -u)/org.pqrs.service.agent.karabiner_console_user_server" >/dev/null 2>&1; then
-    printf "${DIM}Karabiner 설정 다시 읽혔다.${NC}\n"
-  else
-    # Karabiner-Elements 를 아직 안 깐 Mac. 파일은 제자리이므로 실패가 아니다.
-    printf "${DIM}Karabiner 에이전트가 없다 — 설정은 심었고, 앱을 깔면 걸린다.${NC}\n"
-  fi
-  ;;
-esac
-
 # LinearMouse 도 자기 설정 파일을 지켜보지만, 위 item() 의 rm+cp 가 그 감시를 끊는다.
-# Karabiner 와 같은 순서로 간다 — 먼저 JSON 을 검사하고(레포에 깨진 걸 커밋했을 수 있고,
+# 그래서 순서가 둘이다 — 먼저 JSON 을 검사하고(레포에 깨진 걸 커밋했을 수 있고,
 # 이쪽은 파싱 에러가 나면 그냥 설정이 없는 것처럼 군다), 그다음 에이전트를 다시 띄운다.
 case " $want " in *" linearmouse "*)
   if ! python3 -m json.tool "$cfg/linearmouse/linearmouse.json" >/dev/null 2>&1; then

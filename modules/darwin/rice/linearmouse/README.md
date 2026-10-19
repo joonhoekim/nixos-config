@@ -17,15 +17,13 @@ macOS 의 "자연스러운 스크롤"은 전역 스위치 **하나**다. 트랙�
 시스템 설정의 자연스러운 스크롤은 **켠 채로 둔다.** 이 파일은 그 위에서 마우스만 되돌리는
 차분이라, 끄면 마우스가 두 번 뒤집혀 도로 어색해진다.
 
-## 왜 Karabiner 가 아닌가
+## 왜 kanata 가 아닌가
 
-Karabiner 에도 같은 기능이 있고(`devices[].mouse_flip_vertical_wheel`) 실제로 동작한다.
-`category` 하나가 이유의 전부다 — Karabiner 쪽은 마우스를 **하나씩 vendor/product 로
-열거**해야 하고, 여기는 "마우스면 전부"가 한 줄이다. 새 마우스를 꽂아도 할 일이 없다.
-
-덤으로 Karabiner 가 포인팅 장치를 잡지 않아도 되므로(잡으면 포인터 이동까지 가상 HID 를
-거치고 CPU 도 그만큼 쓴다) 마우스 경로가 그대로다. 막힌 지점의 자세한 근거는
-[`../karabiner/README.md`](../karabiner/README.md) 의 "마우스 휠 방향은 여기서 안 한다".
+키 리매핑을 하는 kanata(`modules/darwin/kanata.nix`)도 휠 이벤트를 읽지만, macOS 에서는
+CGEventTap 하나로 받아서 이벤트가 **어느 장치에서 왔는지 보지 않는다**
+(kanata `src/oskbd/macos.rs` 의 `scroll_event_to_key_event` — 축과 부호만 본다). 거기서
+휠을 뒤집으면 트랙패드도 같이 뒤집힌다. LinearMouse 는 장치를 범주(`category`)로 가르므로
+"마우스면 전부"가 한 줄이고, 새 마우스를 꽂아도 할 일이 없다.
 
 ## 설정 파일
 

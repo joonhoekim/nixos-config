@@ -8,7 +8,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 .
 ├── config/            # set-default-handlers.py (default-apps.nix가 쓴다)
 ├── rice/              # 시드하는 설정 — 심은 뒤엔 ~/.config 쪽이 원본이다.
-│                      #   karabiner/, rift/, aerospace/, wezterm/,
+│                      #   rift/, aerospace/, wezterm/,
 │                      #   linearmouse/ (마우스 휠 방향),
 │                      #   bin/ (rift 키바인딩이 부르는 스크립트)
 │                      #   왕복은 apps/rice/save ↔ apps/rice/restore
@@ -16,6 +16,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── scripts/           # 셸이 소싱하는 macOS 전용 헬퍼 (colima-up)
 ├── brews.nix          # Homebrew formula 목록 (rift 등 cask가 아닌 것)
 ├── casks.nix          # Homebrew cask 목록 (macOS GUI 앱)
+├── deprecated/        # 더 로드하지 않는 옛 설정 (karabiner/ → kanata 로 옮김)
 ├── default-apps.nix   # 파일 종류별 기본 앱 (터미널 → Ghostty, 코드 → VS Code)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + macOS 고유분)
 ├── ios.nix            # iOS / Apple 플랫폼 개발 툴체인

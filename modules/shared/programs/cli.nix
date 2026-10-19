@@ -13,6 +13,10 @@
   mise = {                    # runtime version manager (node, etc.)
     enable = true;
     globalConfig = {
+      # On NixOS mise defaults to all_compile=true, so node builds from source
+      # (minutes and counting on this laptop) instead of using the prebuilt
+      # tarball (~3 s). nix-ld (hosts/nixos/common.nix) makes prebuilts run.
+      settings.all_compile = false;
       tools = {
         node = "lts";
         # pnpm as its own tool, not via corepack: Node 25+ no longer bundles

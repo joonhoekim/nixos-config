@@ -37,7 +37,7 @@ default_disable = false
 # Animations off. AeroSpace had none, and rift's own docs note the scrolling
 # layout behaves better without them; this keeps window motion instant while
 # the look is being dialled in. Flip `animate` to true to try them.
-animate = false
+animate = true
 animation_duration = 0.2
 animation_fps = 120.0
 
@@ -191,20 +191,12 @@ enabled = true
 # Recapture the visible previews twice a second while the overview is open, so
 # the cells show what the windows are doing now (rift-grid only).
 live_preview_interval_ms = 500
-# The grid overview, as in subline (rift-grid only). Alt+O first shows the
-# active cell at grid_zoom of the display with its neighbours around it and
-# follows the focus; Alt+O again steps back to the whole grid, a third time
-# closes, and Esc steps back out a stage at a time. grid_fit = true skips
-# straight to the whole grid. grid_follow is how the first stage follows the
-# active cell: "reveal" moves only as far as it takes to show it whole (subline's
-# default), "center" centers it every time. grid_gap is the space between cells
-# as a fraction of the display's shorter side, and grid_labels puts each
-# window's app and title in that gap above its tile.
+fade_enabled = true
+grid_style = "zoom"
 grid_fit = false
-grid_zoom = 0.5
-grid_follow = "reveal"
-grid_gap = 0.04
-grid_labels = true
+grid_follow = "center"
+grid_gap = 0.01
+grid_zoom = 0.75
 
 
 [settings.ui.borders]
@@ -217,11 +209,16 @@ grid_labels = true
 enabled = true
 width = 2.0
 radius = 16.0
-active_color = "0xffb4befe"
-inactive_color = "0xff45475a"
+active_color = "0xff990006"
+inactive_color = ""
 glow = true
 glow_radius = 12.0
 animation_ms = 180.0
+
+[settings.ui.grid_motion]
+zoom = 0.2
+easing = "glide"
+duration_ms = 600.0
 
 [settings.gestures]
 # Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops
@@ -237,12 +234,15 @@ haptic_pattern = "level_change"
 enabled = true
 # rift-grid only: workspaces come in grids, as in subline. A grid is a context
 # (a project, a kind of work) and its 3x3 cells are what the display shows, read
-# row by row from the top left (1 2 3 / 4 5 6 / 7 8 9). There are nine grids per
-# display, Alt+1..9; within a grid, grid_focus and grid_move below cross into the
-# next cell at a cell's edge, and never into another grid. With grid_columns set,
-# each display gets 9 x 9 = 81 workspaces and default_workspace_count is unused.
-# The menu bar draws a map per grid in use, and the overview shows the grid on
-# screen. Login starts on grid 1's center cell (index 4).
+# row by row from the top left (1 2 3 / 4 5 6 / 7 8 9). There are nine grids,
+# Alt+1..9, and each is on one display at a time: Alt+N goes to the display
+# grid N is on, and is how the focus crosses displays; a grid on no display yet
+# comes up on the focused one. Within a grid, grid_focus and grid_move below
+# cross into the next cell at a cell's edge, and never into another grid. With
+# grid_columns set, each display gets 9 x 9 = 81 workspaces and
+# default_workspace_count is unused. The menu bar draws a map per grid in use,
+# and the overview shows the grid on screen. Login starts on grid 1's center
+# cell (index 4), and each further display on the next free grid.
 # docs/grids.md in the rift-grid repo has the model.
 default_workspace_count = 9
 grid_columns = 3
@@ -437,8 +437,9 @@ move2 = "Alt + Ctrl"
 "move2 + Left" = { move_window_to_display = { selector = "left" } }
 "move2 + Right" = { move_window_to_display = { selector = "right" } }
 
-# Send the focused window to grid N's current cell and stay put — subline's
-# Mod+Ctrl+digit (send-to-grid).
+# Send the focused window to grid N's current cell — subline's Mod+Ctrl+digit
+# (send-to-grid). The focus stays, unless grid N is on screen on another
+# display: then it goes along with the window.
 "move2 + 1" = { move_window_to_grid = 1 }
 "move2 + 2" = { move_window_to_grid = 2 }
 "move2 + 3" = { move_window_to_grid = 3 }

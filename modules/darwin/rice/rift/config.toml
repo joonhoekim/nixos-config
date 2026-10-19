@@ -221,14 +221,29 @@ easing = "glide"
 duration_ms = 600.0
 
 [settings.gestures]
-# Three-finger horizontal swipe to change workspace. `consume_dock_swipe` stops
-# macOS from *also* switching its own Spaces on the same gesture.
+# Upstream's three-finger horizontal swipe between workspaces. With the grid on
+# (grid_columns below), [settings.grid_gestures] takes three and four fingers
+# first, so these settings only lend the grid's swipes their distance,
+# tolerance and haptics. `consume_dock_swipe` stops macOS from *also*
+# switching its own Spaces on the same gesture.
 enabled = true
 consume_dock_swipe = true
 skip_empty = true
 fingers = 3
 haptics_enabled = true
 haptic_pattern = "level_change"
+
+[settings.grid_gestures]
+# rift-grid only, and the defaults. The content follows the fingers, as in
+# macOS: three fingers any way go to the neighboring cell (left shows the cell
+# to the right); four fingers left/right go through the grids on the focused
+# display; four fingers up open the Overview (Alt+O) and step out to the whole
+# grid, and down steps back in (Esc). macOS keeps four fingers down while the
+# Overview is closed (App Exposé). `enabled = false` gives all of them back.
+enabled = true
+cell_fingers = 3
+grid_fingers = 4
+overview = true
 
 [virtual_workspaces]
 enabled = true

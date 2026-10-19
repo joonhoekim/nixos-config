@@ -27,10 +27,12 @@ _:
   # it no longer starts at login (hosts/darwin/default.nix), so it costs
   # nothing until `open -a AeroSpace`. Drop this line once rift has proven out.
   "aerospace"          # tiling window manager (from nikitabobko/tap), stand-by
-  "karabiner-elements"
-  # 트랙패드는 자연스러운 스크롤 그대로 두고 마우스 휠만 뒤집는다. Karabiner 로도
-  # 되지만 마우스를 vendor/product 로 하나씩 열거해야 해서, "마우스면 전부"가 한 줄인
-  # 이쪽으로 왔다. 설정과 근거는 modules/darwin/rice/linearmouse/.
+  # 키 리매핑은 cask 가 아니다 — kanata 와 그 드라이버를 nix 가 깐다
+  # (modules/darwin/kanata.nix). Karabiner-Elements 는 같이 두면 안 된다: 드라이버
+  # 데몬의 판이 kanata 와 안 맞고, 둘 다 키보드를 독점으로 잡으려 한다.
+  #
+  # 트랙패드는 자연스러운 스크롤 그대로 두고 마우스 휠만 뒤집는다. 설정과 근거는
+  # modules/darwin/rice/linearmouse/.
   "linearmouse"
 
   # Browsers

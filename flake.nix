@@ -232,6 +232,7 @@
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe"
         "demo" "screencast" "mac-signing-cert" "rift-grid" "subline-terminal"
+        "kanata"
       ] (name: mkApp name name system)
       // nixpkgs.lib.listToAttrs (map (n: {
         name = "rice-${n}";

@@ -1,0 +1,98 @@
+#!/bin/sh -e
+#
+# kanata 바이너리를 이 기계 신원으로 서명해 /usr/local/libexec/kanata 에 둔다. macOS 전용.
+#
+#   apps/kanata              서명 → 설치 → 데몬 다시 띄우기
+#   apps/kanata --status     깔린 것과 원본, 서명 요구사항
+#   apps/kanata --auto       build-switch 가 매번 부르는 꼴. 원본이 그대로면 바로 끝난다
+#
+# 원본은 nix 가 빌드한 것이다(/etc/kanata/kanata-unsigned → 스토어). 이 스크립트는
+# 빌드하지 않고 서명만 갈아 끼운다.
+#
+# ── 왜 스토어의 바이너리를 그대로 쓰지 않는가 ───────────────────────────────
+# kanata 는 입력 모니터링과 손쉬운 사용 허가가 있어야 돈다. TCC 는 그 허가를
+# 바이너리의 서명 요구사항에 묶는데, 스토어의 것은 임의 서명이라 요구사항이
+# cdhash 다. nixpkgs 의 kanata 가 바뀔 때마다 허가가 조용히 끊기고, 시스템 설정의
+# 체크박스는 켜진 채로 레이어만 안 먹는다(apps/mac-signing-cert 머리말). 인증서로
+# 서명하면 요구사항에 cdhash 가 안 들어가서 허가는 기계당 한 번이다.
+#
+# 설치 자리가 root 소유인 것은 데몬이 root 로 돌기 때문이다. 사용자가 쓸 수 있는
+# 파일을 root 데몬이 실행하면 그 파일을 바꾸는 것이 곧 root 권한이 된다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  printf "${RED}macOS 전용이다.${NC}\n"
+  exit 1
+fi
+
+SRC_LINK=/etc/kanata/kanata-unsigned
+DEST=/usr/local/libexec/kanata
+# 마지막으로 서명한 원본의 스토어 경로. --auto 가 "할 일 없음"을 가르는 기준이다.
+STAMP=/usr/local/libexec/.kanata.source
+DAEMON=system/org.nixos.kanata
+# apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
+CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
+
+auto=""
+if [ "${1:-}" = "--auto" ]; then auto=1; fi
+
+src="$(readlink -f "$SRC_LINK" 2>/dev/null || true)"
+
+if [ "${1:-}" = "--status" ]; then
+  if [ -x "$DEST" ]; then
+    printf "깔린 것: ${GREEN}%s${NC} ${DIM}(%s)${NC}\n" "$("$DEST" --version 2>/dev/null)" "$(cat "$STAMP" 2>/dev/null || echo '원본 모름')"
+    codesign -d -r- "$DEST" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+  else
+    printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$DEST"
+  fi
+  printf "원본:     %s\n" "${src:-없다 ($SRC_LINK — build-switch 전이다)}"
+  exit 0
+fi
+
+if [ -z "$src" ] || [ ! -x "$src" ]; then
+  printf "${RED}원본이 없다 (%s).${NC} build-switch 로 modules/darwin/kanata.nix 를 먼저 활성화한다.\n" "$SRC_LINK"
+  exit 1
+fi
+
+if [ -n "$auto" ] && [ -x "$DEST" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$src" ]; then
+  printf "kanata: ${GREEN}최신${NC} ${DIM}(%s)${NC}\n" "$("$DEST" --version 2>/dev/null)"
+  exit 0
+fi
+
+if ! security find-certificate -c "$CN" >/dev/null 2>&1; then
+  if [ -z "$auto" ]; then
+    printf "${RED}서명 신원이 없다 (%s).${NC} 먼저 apps/mac-signing-cert 를 돌려라.\n" "$CN"
+    exit 1
+  fi
+  printf "서명 신원이 없어서 만든다: %s\n" "$CN"
+  MAC_SIGN_ID="$CN" "$(dirname "$0")/mac-signing-cert"
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+# 서명은 사용자로 한다. 열쇠가 사용자의 로그인 키체인에 있다.
+cp "$src" "$tmp/kanata"
+chmod u+w "$tmp/kanata"
+codesign --force --sign "$CN" --identifier io.github.joonhoekim.kanata \
+  --timestamp=none "$tmp/kanata"
+
+# 덮어쓰지 않고 옮겨 넣는다. 돌고 있는 kanata 의 실행 파일을 그 자리에서 고쳐 쓰면
+# macOS 가 그 프로세스를 죽인다(코드 서명 페이지 검증).
+sudo mkdir -p "$(dirname "$DEST")"
+sudo install -o root -g wheel -m 755 "$tmp/kanata" "$DEST.new"
+sudo mv -f "$DEST.new" "$DEST"
+echo "$src" | sudo tee "$STAMP" >/dev/null
+printf "${GREEN}깔았다${NC} %s\n" "$("$DEST" --version)"
+codesign -d -r- "$DEST" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+
+# 데몬이 이미 올라와 있으면 새 바이너리로 다시 띄운다. 처음 깔린 것이면
+# KeepAlive.PathState 가 바이너리가 생긴 것을 보고 알아서 띄운다.
+if sudo launchctl print "$DAEMON" >/dev/null 2>&1; then
+  sudo launchctl kickstart -k "$DAEMON"
+  printf "kanata 를 다시 띄웠다.\n"
+fi
+
+printf "\n${DIM}처음 까는 기계라면 시스템 설정 > 개인정보 보호 및 보안 에서 입력 모니터링과\n"
+printf "손쉬운 사용(macOS 27: Device Control and Data Access)에 %s 를 넣고 켠다(목록에 없으면 + 로 추가). 그 뒤로는 kanata 판이 바뀌어도 그대로다.${NC}\n" "$DEST"

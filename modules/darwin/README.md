@@ -19,6 +19,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── default-apps.nix   # 파일 종류별 기본 앱 (터미널 → Ghostty, 코드 → VS Code)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + macOS 고유분)
 ├── ios.nix            # iOS / Apple 플랫폼 개발 툴체인
+├── kanata.nix         # Caps Lock 레이어·한/영 (kanata + 드라이버, 설정은 ../shared/kanata)
 └── packages.nix       # macOS 전용 패키지 (shared/packages.nix + dockutil)
 ```
 

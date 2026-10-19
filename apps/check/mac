@@ -310,17 +310,34 @@ if [ -n "$brewfile" ]; then
     if [ -d "/Applications/$app.app" ]; then ok "App Store: $app"; else bad "App Store: $app 가 없다"; fi
   done < "$tmp/mas"
 
-  # Karabiner 는 가상 키보드를 DriverKit 확장으로 띄운다. 확장이 꺼지면 앱은
-  # 멀쩡히 떠 있는데 매핑만 전부 사라진다.
-  if grep -q '^cask "karabiner-elements"' "$brewfile"; then
-    if systemextensionsctl list 2>/dev/null \
-         | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'; then
-      ok "Karabiner DriverKit 확장 activated enabled"
-    else
-      bad "Karabiner DriverKit 확장이 켜져 있지 않다"
-      hint "System Settings > General > Login Items & Extensions > Driver Extensions"
-    fi
+fi
+
+# ── kanata ───────────────────────────────────────────────────────────────
+# Caps Lock 레이어(modules/darwin/kanata.nix). 데몬이 떠 있는지는 위 launchd 절이
+# 본다. 여기는 데몬이 떠 있어도 레이어가 조용히 안 먹는 경우들이다.
+if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
+  section "kanata"
+  # 확장이 꺼지면 kanata 는 떠 있는데 키가 kanata 를 거치지 않고 그대로 나간다.
+  if systemextensionsctl list 2>/dev/null \
+       | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'; then
+    ok "VirtualHIDDevice 확장 activated enabled"
+  else
+    bad "VirtualHIDDevice 확장이 켜져 있지 않다"
+    hint "System Settings > General > Login Items & Extensions > Driver Extensions"
   fi
+  # Karabiner-Elements 가 남아 있으면 자기 판의 드라이버 데몬을 띄우고 키보드를
+  # 먼저 잡는다. cask 목록에서 뺀 것만으로는 지워지지 않는다(cleanup 이 꺼져 있다).
+  if [ -d /Applications/Karabiner-Elements.app ]; then
+    bad "Karabiner-Elements 가 아직 깔려 있다 — kanata 와 키보드를 두고 다툰다"
+    hint "brew uninstall --cask karabiner-elements 후 ./apps/build-switch"
+  fi
+  # 임의 서명이면 kanata 판이 바뀔 때마다 TCC 허가가 끊긴다(apps/kanata 머리말).
+  req="$(codesign -d -r- /usr/local/libexec/kanata 2>&1 | sed -n 's/^#* *designated => //p')"
+  case "$req" in
+    "") bad "/usr/local/libexec/kanata 가 없다"; hint "./apps/kanata" ;;
+    *cdhash*) bad "kanata 가 임의 서명이다 — 판이 바뀌면 입력 모니터링 허가가 끊긴다"; hint "./apps/kanata" ;;
+    *) ok "kanata 가 인증서로 서명돼 있다" ;;
+  esac
 fi
 
 # ── 체크아웃 ─────────────────────────────────────────────────────────────

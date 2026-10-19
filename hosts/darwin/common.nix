@@ -5,6 +5,8 @@
     ../../modules/darwin/home-manager.nix
     ../../modules/darwin/default-apps.nix
     ../../modules/darwin/ios.nix
+    # Caps Lock 레이어와 한/영(오른쪽 ⌘ → F18). 레이어는 Windows 와 같은 파일이다.
+    ../../modules/darwin/kanata.nix
     ../../modules/darwin/rice
     ../../modules/shared
   ];
@@ -315,8 +317,9 @@
 
     };
 
-    # "Select next source in Input menu" → F18 (so Karabiner can drive
-    # input-source switching). We merge just key 61 with `defaults -dict-add`
+    # "Select next source in Input menu" → F18. kanata sends Right Command as
+    # F18 (modules/shared/kanata/kanata.kbd), which makes that key 한/영.
+    # We merge just key 61 with `defaults -dict-add`
     # rather than system.defaults.CustomUserPreferences, which would overwrite
     # the entire AppleSymbolicHotKeys dict and wipe other shortcuts (Spotlight, etc).
     # params = [ char keycode modifiers ]; 65535 = no char, 79 = F18, 8388608 = fn flag.

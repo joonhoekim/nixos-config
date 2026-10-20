@@ -121,6 +121,6 @@ with pkgs; [
 # hollywood splits the screen and fills every pane with technobabble. nixpkgs
 # wraps it with atop on PATH, and atop depends on systemd, so the darwin
 # build fails at libudev-zero (sys/sysmacros.h). It brings its own tmux.
-++ lib.optionals stdenv.isLinux [
+++ lib.optionals stdenv.hostPlatform.isLinux [
   hollywood
 ]

@@ -402,7 +402,9 @@
         "networkmanager"
         "docker"
       ];
-      shell = pkgs.zsh;
+      # 로그인 셸은 macOS 와 같은 bash 다. 에이전트의 셸 스크립트가 bash 를
+      # 가정하고, subline-terminal 의 프롬프트 테마도 bash 에서만 돈다.
+      shell = pkgs.bashInteractive;
       openssh.authorizedKeys.keys = identity.authorizedKeys;
     };
   };

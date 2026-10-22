@@ -1,8 +1,8 @@
 # Shared bash configuration. Returns a `programs`-shaped fragment merged by
 # modules/shared/home-manager.nix.
 #
-# macOS 에서는 로그인 셸이 bash 다(modules/darwin/home-manager.nix). NixOS 는
-# 아직 zsh 이고, 거기서 이 설정은 bash 를 직접 띄웠을 때만 쓰인다.
+# 로그인 셸은 macOS(modules/darwin/home-manager.nix)와 NixOS(hosts/nixos/common.nix)
+# 모두 bash 다. zsh 설정은 zsh 를 직접 띄웠을 때만 쓰인다.
 { pkgs, lib, ... }:
 {
   bash = {

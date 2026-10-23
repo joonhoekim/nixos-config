@@ -1,7 +1,8 @@
-# 지운 것들
+# 지운 것, 지울 것
 
-레포에서 걷어낸 설정과, 되살릴 때 필요한 커밋을 적는다. 한 대상은 한 커밋으로
-지웠으므로 그 커밋 하나만 되돌리면 된다.
+레포에서 걷어낸 설정과 되살릴 때 필요한 커밋, 그리고 지우기로 정했지만 아직 지우지
+않은 것을 적는다. 뺀 코드는 `removed/` 같은 폴더로 옮기지 않고 지운다(git 이 보관한다).
+한 대상은 한 커밋으로 지웠으므로 그 커밋 하나만 되돌리면 된다.
 
 되살리는 방법은 두 가지다.
 
@@ -16,7 +17,29 @@ git checkout <sha>~1 -- <경로>...          # 특정 파일만 지우기 직전
 SHA 는 `cleanup` 브랜치를 main 에 fast-forward 로 합친다는 전제의 값이다. rebase·
 squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 
-## Karabiner-Elements 설정
+## 지울 예정
+
+정해졌지만 아직 지우지 않은 것. 고칠 일이 생기면 최소한으로만 고친다(새 기능을 얹지 않는다).
+
+### NixOS의 대체 데스크톱: hyprland · niri · dms · rice
+
+- 경로: `modules/nixos/hyprland`, `modules/nixos/niri`, `modules/nixos/dms`, `apps/rice`
+  (macOS 의 `modules/darwin/rice` 는 아니다).
+- 왜: subline 이 기본 세션이고, 이 넷이 레포 줄 수의 큰 덩어리다.
+- 언제: 셰이더처럼 옆에 두고 참고할 것을 다 본 뒤.
+- 같이 손볼 곳:
+  - `hosts/nixos/common.nix`: 세 import, `defaultSession` 의 기본값 `"niri"`,
+    greeter 세션 목록 주석. GNOME 은 남긴다(gnome-keyring·seahorse 를 끌어오는 유일한 것).
+  - `flake.nix`: `rice-*` 앱 목록.
+  - `hosts/nixos/galaxy-chromebook-1/touch.nix`(hyprland 를 부른다), `hardware.nix` 의 DMS 주석,
+    `hosts/nixos/evo-t1/default.nix` 의 hyprland.lua 주석.
+  - `apps/demo`(하이프랜드 시연), `apps/doctor`·`apps/build-lib.sh` 의 rice 언급.
+  - 문서: `docs/keymap.md`, `docs/hyprland-binds.md`, `docs/packages/rice-toys.md`, README 들.
+    포스트모템은 사건 기록이라 그대로 둔다.
+
+## 지운 것
+
+### Karabiner-Elements 설정
 
 | | |
 |---|---|
@@ -30,7 +53,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 아는 판과 다르다(`modules/darwin/kanata.nix` 머리말). 돌아가려면 kanata 데몬을 끄고
 `karabiner-elements` cask 를 넣은 뒤 `karabiner.json` 을 `~/.config/karabiner/` 에 둔다.
 
-## AeroSpace
+### AeroSpace
 
 | | |
 |---|---|
@@ -46,7 +69,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 - rift 를 먼저 끈다 — `launchctl bootout gui/$UID/org.nixos.rift-grid`. 두 타일링 WM 이
   같은 창을 잡으면 둘 다 제대로 안 돈다.
 
-## upstream rift 탭
+### upstream rift 탭
 
 | | |
 |---|---|
@@ -59,7 +82,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 설정도 포크 이전으로
 꺼내야 한다.
 
-## iTerm2
+### iTerm2
 
 | | |
 |---|---|
@@ -67,7 +90,7 @@ upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 
 | 대상 | `iterm2` cask |
 | 대체 | subline-terminal (주), ghostty·wezterm (참고용) |
 
-## Postman
+### Postman
 
 | | |
 |---|---|
@@ -75,7 +98,7 @@ upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 
 | 대상 | macOS `postman` cask, NixOS `postman` 패키지, Windows winget 의 주석 처리된 항목 |
 | 대체 | bruno |
 
-## rice 시드의 `unstore`
+### rice 시드의 `unstore`
 
 | | |
 |---|---|
@@ -86,7 +109,7 @@ home-manager 가 걸던 읽기 전용 스토어 심링크를 지워 `rice_sync` 
 하던 일회성 이행 코드다. 스토어 심링크가 남은 기계(2026-08-06 이전 세대에서 바로 올라오는
 경우)에서만 의미가 있다.
 
-## home-manager 템플릿 잔재
+### home-manager 템플릿 잔재
 
 | | |
 |---|---|
@@ -95,7 +118,7 @@ home-manager 가 걸던 읽기 전용 스토어 심링크를 지워 `rice_sync` 
 
 manpages 를 끈 것은 home-manager#3344(2022) 우회였다. 다시 빌드가 깨지면 그 한 줄만 되살린다.
 
-## brews.nix
+### brews.nix
 
 | | |
 |---|---|
@@ -106,7 +129,7 @@ manpages 를 끈 것은 home-manager#3344(2022) 우회였다. 다시 빌드가 �
 비었고, upstream rift 탭을 지우면서 남겨 둘 이유가 없어졌다. formula 가 필요해지면 파일을
 되살릴 필요 없이 `homebrew.brews = [ ... ];` 를 쓴다.
 
-## 레포 밖에 남는 것
+### 레포 밖에 남는 것
 
 `homebrew.onActivation.cleanup` 이 꺼져 있어서 목록에서 빼도 이미 깔린 것은 지워지지
 않는다. 기계마다 한 번:

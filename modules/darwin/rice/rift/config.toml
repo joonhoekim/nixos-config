@@ -1,7 +1,7 @@
 # rift tiling window manager config.
 #
 # This copy is a *seed*. modules/darwin/rice plants it at
-# ~/.config/rift/config.toml on a machine that has none, and after that the
+# ~/.config/rift-grid/config.toml on a machine that has none, and after that the
 # live file is the original — edit that one, watch rift hot-reload it, and run
 # `apps/rice/save rift` to bring the result back here. `apps/rice/restore rift`
 # pushes the other way. If a change does not seem to take, press Alt+Ctrl+R
@@ -72,7 +72,7 @@ auto_focus_blacklist = [
 hot_reload = true
 
 # Nothing subscribes to rift's events any more. There used to be two
-# `rift-cli subscribe` listeners here, poking sketchybar to repaint its
+# `rift-grid-cli subscribe` listeners here, poking sketchybar to repaint its
 # workspace indicator; the bar is gone and rift draws that indicator itself
 # now (see [settings.ui.menu_bar] below). `git log -- modules/darwin/rice` has
 # the wiring if another consumer ever wants it.
@@ -376,7 +376,7 @@ move2 = "Alt + Ctrl"
 "Alt + E" = { exec = ["/bin/sh", "-c", "open ~"] }
 
 # rift's settings window — subline's Mod+Comma opens its own settings.
-"Alt + Comma" = { exec = ["/bin/sh", "-c", "rift-cli settings"] }
+"Alt + Comma" = { exec = ["/bin/sh", "-c", "rift-grid-cli settings"] }
 
 # Close the focused window (hyprland/niri Mod+Q). Distinct from Cmd-Q, which
 # quits the whole application.
@@ -388,9 +388,9 @@ move2 = "Alt + Ctrl"
 # On Linux the cheatsheet is `dms ipc call keybinds toggle hyprland`: DMS asks
 # the running compositor what is bound and draws an overlay. There is no
 # equivalent here, and building one was tried and thrown away — reading the live
-# config out of `rift-cli execute config get` is easy, but the overlay around it
+# config out of `rift-grid-cli execute config get` is easy, but the overlay around it
 # is not. Ghostty exposes no AXTitle, so no app_rule can single the window out,
-# and `rift-cli query windows` reports ids that vanish moments later, so
+# and `rift-grid-cli query windows` reports ids that vanish moments later, so
 # tracking it from outside needs polling and retries. All of that to avoid
 # opening a file.
 #
@@ -500,7 +500,7 @@ move2 = "Alt + Ctrl"
 #
 # It must have one: a bare `"consume_or_expel_window"` is a parse error, and
 # rift rejects the *whole file* on one bad line and silently keeps running the
-# previous config. `rift-cli execute config reload` is what prints the reason.
+# previous config. `rift-grid-cli execute config reload` is what prints the reason.
 "Alt + Ctrl + E" = { consume_or_expel_window = "right" }
 
 "Alt + Ctrl + Space" = "toggle_focus_floating"

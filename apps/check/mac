@@ -265,8 +265,8 @@ fi
 # TCC 는 직접 읽을 수 없으므로 이게 권한을 확인하는 유일한 방법이다.
 if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift.plist" ]; then
   section "rift"
-  if ! out="$(/opt/homebrew/bin/rift-cli query windows 2>&1)"; then
-    bad "rift-cli 가 응답하지 않는다: $(printf '%s' "$out" | head -1)"
+  if ! out="$($HOME/.local/bin/rift-grid-cli query windows 2>&1)"; then
+    bad "rift-grid-cli 가 응답하지 않는다: $(printf '%s' "$out" | head -1)"
   else
     cnt="$(printf '%s' "$out" | grep -o '"bundle_id"' | wc -l | tr -d ' ')"
     if [ "$cnt" -gt 0 ]; then

@@ -261,7 +261,7 @@ nix run .#rift-grid             # 커밋이 같아도 다시 빌드하고 rift �
 
 바이너리가 생기면 launchd 가 rift 를 띄우고, rift 가 처음 뜰 때 **손쉬운 사용**과 **화면 및 시스템
 오디오 녹음**(오버뷰 미리보기)을 차례로 묻는다. 둘 다 허용한 뒤 rift 를 다시 띄운다 — 허가는 다시
-띄워야 먹는다. 창을 놓쳤으면 시스템 설정 > 개인정보 보호 및 보안에서 `~/.local/bin/rift` 에 직접 준다:
+띄워야 먹는다. 창을 놓쳤으면 시스템 설정 > 개인정보 보호 및 보안에서 `~/.local/bin/rift-grid` 에 직접 준다:
 
 ```bash
 launchctl kickstart -k gui/$UID/org.nixos.rift

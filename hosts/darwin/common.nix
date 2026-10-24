@@ -69,11 +69,11 @@
     # signature, and only the local identity from apps/mac-signing-cert keeps
     # them across rebuilds (the reasoning is at the top of apps/rift-grid).
     #
-    # `path` matters: rift's keybindings shell out to `rift-cli` (sibling in
+    # `path` matters: rift's keybindings shell out to `rift-grid-cli` (sibling in
     # ~/.local/bin) and to tools in systemPath — and a LaunchAgent inherits
     # none of a login shell's PATH.
     rift = {
-      command = "/Users/${user}/.local/bin/rift";
+      command = "/Users/${user}/.local/bin/rift-grid";
       path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];
       serviceConfig = {
         RunAtLoad = true;
@@ -81,7 +81,7 @@
         # machine where apps/rift-grid has not run yet there is nothing to
         # start, and plain KeepAlive would turn that into a restart loop; with
         # PathState launchd waits and starts rift once the binary appears.
-        KeepAlive.PathState."/Users/${user}/.local/bin/rift" = true;
+        KeepAlive.PathState."/Users/${user}/.local/bin/rift-grid" = true;
         # Not optional in practice. Without these, rift's output goes nowhere:
         # the first time it refused to start (see
         # docs/postmortems/2026-08-04-macos-rift-sketchybar.md) the reason was
@@ -273,7 +273,7 @@
       # And because the LaunchAgent has KeepAlive, that exit becomes a crash
       # loop that looks like "rift just doesn't run" — `launchctl print
       # gui/$UID/org.nixos.rift` showing `last exit code = 1` is the tell.
-      # Running ~/.local/bin/rift in a terminal prints the reason; the
+      # Running ~/.local/bin/rift-grid in a terminal prints the reason; the
       # agent's stdout goes nowhere.
       #
       # So: leave this at `false` for as long as rift is the WM. Flipping it

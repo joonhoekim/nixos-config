@@ -264,7 +264,7 @@ plan() {
   esac
 
   case " $want " in *" rift "*)
-    item "$dr/rift/config.toml" "$cfg/rift/config.toml"
+    item "$dr/rift/config.toml" "$cfg/rift-grid/config.toml"
     ;;
   esac
 
@@ -426,8 +426,8 @@ esac
 # 키맵은 옛것이고, 다음 로그인에야 알게 된다. reload 의 출력이 그 이유를 찍는
 # 유일한 자리라 삼키지 않고 그대로 흘린다.
 case " $want " in *" rift "*)
-  if command -v rift-cli >/dev/null 2>&1; then
-    if rift-cli execute config reload; then
+  if command -v rift-grid-cli >/dev/null 2>&1; then
+    if rift-grid-cli execute config reload; then
       printf "${DIM}rift 설정 다시 읽혔다.${NC}\n"
     else
       printf "${RED}rift 가 복원된 설정을 거부했다 — 위 이유를 볼 것. 옛 설정으로 돌고 있다.${NC}\n"
@@ -435,7 +435,7 @@ case " $want " in *" rift "*)
     fi
   else
     # rift 를 아직 안 깐 Mac. 파일은 이미 제자리이므로 실패로 다루지 않는다.
-    printf "${DIM}rift-cli 가 없다 — 설정은 심었고, 다음 실행부터 걸린다.${NC}\n"
+    printf "${DIM}rift-grid-cli 가 없다 — 설정은 심었고, 다음 실행부터 걸린다.${NC}\n"
   fi
   ;;
 esac

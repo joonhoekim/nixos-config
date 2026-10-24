@@ -12,7 +12,7 @@
 # 돌아오면 여전히 커져 있고, 다른 창에서 Alt+R 을 누르면 그 창이 새로 커진다 —
 # 전역 불린 하나로는 이 둘을 구분할 수 없다.
 
-RIFT="$HOME/.local/bin/rift-cli"
+RIFT="$HOME/.local/bin/rift-grid-cli"
 STATE="${TMPDIR:-/tmp}/rift-monocle-window"
 
 command -v jq >/dev/null 2>&1 || exit 0

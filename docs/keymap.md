@@ -104,7 +104,7 @@ macOS에는 그 셸이 없어서 **이 문서를 연다.** 그러니까 rift에�
 더하면 아래 표도 같이 고쳐야 한다. 같은 것을 rift에게 직접 물어보려면:
 
 ```sh
-rift-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "default") | .[1][] | "\(.[0])\t\(.[1])"'
+rift-grid-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "default") | .[1][] | "\(.[0])\t\(.[1])"'
 ```
 
 하이프랜드는 레이아웃을 갈아끼울 수 있고(`apps/rice/layout`, 스튜디오의 「배치」탭),
@@ -139,7 +139,7 @@ rift-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "def
 | `Mod+Tab` | 직전에 포커스가 있던 창 (어느 칸·격자에 있든, 다시 누르면 돌아온다. subline 의 Alt+Tab, 창 줄은 없다) | 직전 워크스페이스 |
 | `Mod+1`..`9` | 격자 N | 워크스페이스 N |
 | `Mod+Shift+/` | 치트시트 (이 문서를 연다) | — |
-| `Mod+,` | rift 설정 창 (`rift-cli settings`) | — |
+| `Mod+,` | rift 설정 창 (`rift-grid-cli settings`) | — |
 | `Mod+Shift+S` | 영역 스크린샷을 클립보드로 (`screencapture -i -c`) | — |
 | `Mod+Ctrl+1`..`9` | 창을 격자 N 으로 보내고 나는 남는다 | — |
 
@@ -203,7 +203,7 @@ rift-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "def
 ## 검증 기록
 
 이 키맵은 **macOS에서 작성됐고**, rift는 거기서 전부 눌러 확인했다 — 설정을 다시
-읽힌 뒤 `rift-cli execute config get` 으로 키가 전부 등록된 것까지 봤다(당시 67개).
+읽힌 뒤 `rift-grid-cli execute config get` 으로 키가 전부 등록된 것까지 봤다(당시 67개).
 2026-10-15 subline 의 ijkl 프리셋에 맞춘 뒤에도 다시 읽혀 72개가 등록된 것을 봤다. 리눅스 쪽 셋은 그럴 수가 없어 `⚠` 로 남겨 뒀었고,
 **2026-08-06 갤럭시 크롬북에서 하이프랜드 0.56.1 실기로 확인했다.** 셋 다 쓰인
 대로 동작한다.

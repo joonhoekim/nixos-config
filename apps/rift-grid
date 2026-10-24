@@ -31,8 +31,8 @@
 #     트리(변경이 있음)는 커밋으로 비교할 수 없으니 매번 빌드한다.
 #
 # ── 어디에 까는가 ─────────────────────────────────────────────────────────
-# ~/.local/bin/rift, ~/.local/bin/rift-cli. launchd 에이전트(hosts/darwin/
-# common.nix 의 rift)가 이 경로를 띄우고, 셸과 rift 키바인딩은 PATH 로 rift-cli
+# ~/.local/bin/rift-grid, ~/.local/bin/rift-grid-cli. launchd 에이전트(hosts/darwin/
+# common.nix 의 rift)가 이 경로를 띄우고, 셸과 rift 키바인딩은 PATH 로 rift-grid-cli
 # 에 닿는다. brew 의 rift 는 더 쓰지 않는다 — 설정(rice/rift/config.toml)이
 # grid_focus 같은 포크 전용 명령을 쓰므로 원본 rift 는 그 설정을 읽지 못한다.
 
@@ -58,15 +58,15 @@ auto=""
 if [ "${1:-}" = "--auto" ]; then auto=1; fi
 
 installed_commit() {
-  "$BIN/rift" --version 2>/dev/null | head -1
+  "$BIN/rift-grid" --version 2>/dev/null | head -1
 }
 
 if [ "${1:-}" = "--status" ]; then
-  if [ -x "$BIN/rift" ]; then
+  if [ -x "$BIN/rift-grid" ]; then
     printf "깔린 것: ${GREEN}%s${NC}\n" "$(installed_commit)"
-    codesign -d -r- "$BIN/rift" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+    codesign -d -r- "$BIN/rift-grid" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
   else
-    printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$BIN/rift"
+    printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$BIN/rift-grid"
   fi
   if [ -d "$SRC/.git" ]; then
     printf "소스:     %s ${DIM}(%s)${NC}\n" \
@@ -107,27 +107,27 @@ fi
 
 dirty="$(git -C "$SRC" status --porcelain)"
 head="$(git -C "$SRC" rev-parse HEAD)"
-if [ -n "$auto" ] && [ -z "$dirty" ] && [ -x "$BIN/rift" ] \
+if [ -n "$auto" ] && [ -z "$dirty" ] && [ -x "$BIN/rift-grid" ] \
   && [ "$(cat "$STAMP" 2>/dev/null)" = "$head" ]; then
   printf "rift-grid: ${GREEN}최신${NC} ${DIM}(%s)${NC}\n" "$(git -C "$SRC" log -1 --format='%h %s')"
   exit 0
 fi
 
 printf "빌드: %s\n" "$(git -C "$SRC" log -1 --format='%h %s')"
-cargo build --release --manifest-path "$SRC/Cargo.toml" --bin rift --bin rift-cli
+cargo build --release --manifest-path "$SRC/Cargo.toml" --bin rift-grid --bin rift-grid-cli
 
 mkdir -p "$BIN"
-for name in rift rift-cli; do
+for name in rift-grid rift-grid-cli; do
   # 덮어쓰지 않고 옮겨 넣는다. 돌고 있는 rift 의 실행 파일을 그 자리에서 고쳐
   # 쓰면 macOS 가 그 프로세스를 죽인다(코드 서명 페이지 검증).
   install -m 755 "$SRC/target/release/$name" "$BIN/.$name.new"
-  codesign --force --sign "$CN" --identifier "io.github.joonhoekim.rift-grid.$name" \
+  codesign --force --sign "$CN" --identifier "io.github.joonhoekim.$name" \
     --timestamp=none "$BIN/.$name.new"
   mv -f "$BIN/.$name.new" "$BIN/$name"
 done
 if [ -z "$dirty" ]; then echo "$head" > "$STAMP"; else rm -f "$STAMP"; fi
 printf "${GREEN}깔았다${NC} %s\n" "$(installed_commit)"
-codesign -d -r- "$BIN/rift" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
+codesign -d -r- "$BIN/rift-grid" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
 
 # 에이전트가 이미 올라와 있으면 새 바이너리로 다시 띄운다. 아직 없으면(첫
 # build-switch 전에 손으로 부른 경우) 그냥 둔다 — build-switch 가 올린다.

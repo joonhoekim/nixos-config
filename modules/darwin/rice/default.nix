@@ -227,8 +227,8 @@ in
 
       # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
       # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
-      unstore "$HOME/.config/rift/config.toml"
-      rice_sync ${./rift/config.toml} "$HOME/.config/rift/config.toml"
+      unstore "$HOME/.config/rift-grid/config.toml"
+      rice_sync ${./rift/config.toml} "$HOME/.config/rift-grid/config.toml"
 
       # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
       #

@@ -81,7 +81,7 @@ let
     "public.source-code" = vscode;
 
     # Config formats. public.toml is the one that sent rift's "settings" menu
-    # item to Zed — rift opens ~/.config/rift/config.toml via LaunchServices.
+    # item to Zed — rift opens ~/.config/rift-grid/config.toml via LaunchServices.
     "public.toml" = vscode;
     "public.json" = vscode;
     "public.yaml" = vscode;

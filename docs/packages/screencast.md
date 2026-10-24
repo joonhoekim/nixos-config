@@ -44,7 +44,7 @@ NixOS(Hyprland)에서는 `wf-recorder`(nixpkgs, Linux 전용)나 OBS를 쓴다. 
 
 ## 2. 연출은 스크립트로 몬다
 
-키를 합성하지 말고 **같은 액션을 CLI로 부른다**(`rift-cli execute layout grid-cell right`
+키를 합성하지 말고 **같은 액션을 CLI로 부른다**(`rift-grid-cli execute layout grid-cell right`
 같은 식). [`apps/demo`](../../apps/demo) 머리말과 같은 이유다. 합성 키 이벤트는 접근성
 권한이 필요하고, Alt 같은 수정 키가 HID 상태에 눌린 채 남는 사고가 난다.
 
@@ -52,8 +52,8 @@ NixOS(Hyprland)에서는 `wf-recorder`(nixpkgs, Linux 전용)나 OBS를 쓴다. 
 screencapture -x -v -V 22 -D 2 raw.mov &
 sleep 2                                   # 녹화가 자리 잡을 시간
 at() { sleep "$1"; shift; "$@"; }
-at 1.2 rift-cli execute layout grid-focus right
-at 1.2 rift-cli execute layout grid-cell down
+at 1.2 rift-grid-cli execute layout grid-focus right
+at 1.2 rift-grid-cli execute layout grid-cell down
 ...
 wait
 ```

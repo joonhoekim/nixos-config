@@ -26,7 +26,7 @@
 # 고르지 않고, 나란히 빈 자리 둘이 없으면 그냥 거절한다. 여기서 여는 창은 전부
 # 이 스크립트가 띄운 것이고, 정리는 창을 "닫는" 게 아니라 **각 창 안에서
 # 도는 루프에게 나가라고 말하는** 방식이다($SENTINEL 삭제). 그래서 정리 코드가
-# 남의 창을 닫을 경로 자체가 없다 — rift-cli 로 close 를 부르는 곳이 없다.
+# 남의 창을 닫을 경로 자체가 없다 — rift-grid-cli 로 close 를 부르는 곳이 없다.
 #
 # 끝나거나, Ctrl+C 를 맞거나, 중간에 죽어도 trap 이 같은 정리를 부르고 원래
 # 있던 워크스페이스로 돌려놓는다.
@@ -73,7 +73,7 @@ nap() {
 
 # 창 제목을 붙인다. 터미널의 --title 류 옵션은 -e 로 준 명령이 덮어쓰기 때문에
 # 안에서 이스케이프 시퀀스로 직접 세우는 쪽이 확실하다. rift 가 이 제목을
-# 읽어서 자기 창 목록에 쓰므로(`rift-cli query windows`) 시연이 헤맬 때
+# 읽어서 자기 창 목록에 쓰므로(`rift-grid-cli query windows`) 시연이 헤맬 때
 # 어느 창이 무엇인지 밖에서 볼 수 있다.
 set_title() { printf '\033]0;%s\007' "$1"; }
 
@@ -241,11 +241,11 @@ command -v jq >/dev/null 2>&1 || {
 }
 
 if [ "$WM" = rift ]; then
-	command -v rift-cli >/dev/null 2>&1 || {
-		printf "${RED}rift-cli 가 없다.${NC} 이 시연은 macOS 의 rift 세션용이다.\n"
+	command -v rift-grid-cli >/dev/null 2>&1 || {
+		printf "${RED}rift-grid-cli 가 없다.${NC} 이 시연은 macOS 의 rift 세션용이다.\n"
 		exit 1
 	}
-	rift-cli query workspaces >/dev/null 2>&1 || {
+	rift-grid-cli query workspaces >/dev/null 2>&1 || {
 		printf "${RED}rift 가 응답하지 않는다.${NC} 창 관리자가 떠 있어야 시연할 수 있다.\n"
 		exit 1
 	}
@@ -304,7 +304,7 @@ fi
 # 방법이 다르다: 앞은 목록에서 빈 칸을 찾고, 뒤는 "쓰이고 있는 번호"의 여집합을
 # 1..9 에서 찾는다. 아래 WS_LABEL 이 사람에게 보여 줄 번호(둘 다 1 부터)다.
 if [ "$WM" = rift ]; then
-	STATE="$(rift-cli query workspaces)"
+	STATE="$(rift-grid-cli query workspaces)"
 	HOME_WS="$(printf '%s' "$STATE" | jq -r '.[] | select(.is_active) | .index')"
 	DEMO_WS="$(printf '%s' "$STATE" | jq -r '
 		[.[] | select(.window_count == 0) | .index] as $free
@@ -346,7 +346,7 @@ cleanup() {
 	# 넉넉하다. 여기서 창 관리자에게 창을 닫으라고 하지 않는 것이 핵심이다.
 	sleep 0.6
 	if [ "$WM" = rift ]; then
-		rift-cli execute workspace switch "$HOME_WS" >/dev/null 2>&1 || true
+		rift-grid-cli execute workspace switch "$HOME_WS" >/dev/null 2>&1 || true
 	else
 		hyprctl dispatch "hl.dsp.focus({ workspace = $HOME_WS })" >/dev/null 2>&1 || true
 	fi
@@ -399,7 +399,7 @@ say() {
 
 if [ "$WM" = rift ]; then
 
-	act() { rift-cli execute "$@" >/dev/null 2>&1 || true; }
+	act() { rift-grid-cli execute "$@" >/dev/null 2>&1 || true; }
 
 	# spawn <역할> <가로> <세로> <폰트> [기준창] — 시연 창 하나.
 	#
@@ -423,7 +423,7 @@ if [ "$WM" = rift ]; then
 	# 리눅스에는 이 제약이 없다. 그쪽 spawn 은 그냥 ghostty 를 부른다.
 	spawn() {
 		[ -n "${5:-}" ] && wfocus "$5"
-		_before="$(rift-cli query windows | jq -c '[.[].id]')"
+		_before="$(rift-grid-cli query windows | jq -c '[.[].id]')"
 		"$WEZTERM" \
 			--config "font_size=$4" \
 			--config "initial_cols=$2" \
@@ -434,7 +434,7 @@ if [ "$WM" = rift ]; then
 		SPAWNED=""
 		_n=0
 		while [ "$_n" -lt 80 ]; do
-			SPAWNED="$(rift-cli query windows |
+			SPAWNED="$(rift-grid-cli query windows |
 				jq -c --argjson old "$_before" 'map(.id) - $old | first // empty')"
 			[ -n "$SPAWNED" ] && break
 			sleep 0.15

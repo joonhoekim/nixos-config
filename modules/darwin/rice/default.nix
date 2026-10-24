@@ -158,35 +158,14 @@ in
     # read-only. `rice_sync` only overwrites when the live copy still matches
     # the baseline — i.e. when nobody has touched it — so a rebuild mid-ricing
     # never clobbers unsaved work. See the helper's header for the full table.
-    # linkGeneration 뒤에 두는 건 아래 unstore 때문이다. 이전 세대의 심링크를
-    # 걷어내는 건 home-manager 도 하는데, 그게 rice_sync 보다 나중에 돌면 방금 심은
-    # 진짜 파일을 보고 판단하게 된다. 순서를 못 박아 두면 그 경우가 아예 없다.
-    home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" "linkGeneration" ] ''
+    home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${import ../../shared/rice-seed-helpers.nix}
-
-      # ── 심링크에서 시드로 넘어오는 한 번을 위한 것 ──────────────────────
-      # 아래 rift 의 config.toml 은
-      # 2026-08-06 까지 modules/darwin/files.nix 가 거는 읽기 전용 스토어
-      # 심링크였다. rice_sync 는 링크도 "있음"으로 보고, 그 내용은 기준선과도
-      # 레포와도 안 맞아 conflict 로 손을 떼므로, 걷어내지 않으면 그 머신들에는
-      # 영영 안 심긴다.
-      #
-      # 스토어를 가리키는 링크일 때만 지운다. 평범한 파일이면 이미 손댄
-      # 설정이고, 스토어 밖을 가리키는 링크라면 일부러 그렇게 둔 것이다 —
-      # 둘 다 건드리면 안 된다.
-      unstore() { # unstore <path>
-        case "$(readlink "$1" 2>/dev/null)" in
-          /nix/store/*) $DRY_RUN_CMD rm -f "$1"; echo "unlinked store symlink $1" ;;
-        esac
-      }
 
       # wezterm. Secondary terminal (ghostty is the daily one), here mostly
       # because it can read pywal's JSON directly and reload itself.
       rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
-      # rift 의 키맵. rift 의 "settings" 메뉴가 이 파일을 에디터로 여는데 스토어
-      # 심링크는 읽기 전용이라 저장이 안 되는 자리였다.
-      unstore "$HOME/.config/rift-grid/config.toml"
+      # rift 의 키맵.
       rice_sync ${./rift/config.toml} "$HOME/.config/rift-grid/config.toml"
 
       # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
@@ -226,9 +205,6 @@ sys.exit(0 if not d.get("schemes") else 1)
       # rift 는 손댄 파일을 rice_sync 가 안 건드리므로
       # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
       # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
-      #
-      # 심링크에서 넘어오는 그 한 번만 예외인데, 그때도 감시자가 새로 생긴 파일을
-      # 집어 간다. rift 가 안 먹은 것 같으면 Alt+Ctrl+R.
       #
       # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice/restore 는
       # rm+cp 로 덮어서 감시가 걸려 있던 아이노드를 날리므로, 그쪽은 복원 뒤에

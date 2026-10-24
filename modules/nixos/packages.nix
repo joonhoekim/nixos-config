@@ -114,9 +114,9 @@ shared-packages ++ [
 
   # ── Counterparts to the homebrew casks in modules/darwin/casks.nix ──
   # Everything here is a cask on macOS that also ships for Linux in nixpkgs.
-  # Casks with no Linux counterpart stay macOS-only on purpose: iterm2
-  # (macOS-only terminal), eul / stats (macOS menu-bar
-  # monitors — btop/bottom above), and iina (mpv above is the same engine).
+  # Casks with no Linux counterpart stay macOS-only on purpose: stats (macOS
+  # menu-bar monitor — btop/bottom above) and iina (mpv above is the same
+  # engine).
   ghostty                    # terminal (cask "ghostty")
   zed-editor                 # editor (cask "zed")
   dbeaver-bin                # universal database tool / SQL client

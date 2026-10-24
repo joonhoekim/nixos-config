@@ -2,20 +2,19 @@ _:
 
 [
   # Development Tools
-  # NOTE: Docker Desktop removed — container runtime is now colima + lima
-  # (declared in modules/shared/packages.nix); docker CLI comes from nixpkgs.
+  # 컨테이너 런타임은 cask 가 아니다 — colima + lima 와 docker CLI 를 nix 가 깐다
+  # (modules/shared/packages.nix).
   "visual-studio-code"
   "zed"                # fast, collaborative code editor
   "bruno"              # git-friendly API client (collections as repo files)
   "dbeaver-community"  # universal database tool / SQL client
   "redis-insight"       # official Redis GUI
 
-  # Terminals
-  "ghostty"            # daily driver
-  # Secondary terminal. `wezterm@nightly` rather than `wezterm`: upstream's
-  # last tagged stable is the 2024-02 build, which predates several macOS
-  # releases; the nightly cask is what the project actually keeps current.
-  # Config (and the pywal palette wiring) is in modules/darwin/rice/wezterm.
+  # Terminals. 주 터미널은 subline-terminal 이고 apps/subline-terminal 이 깐다.
+  # 아래 둘은 참고용이다.
+  "ghostty"
+  # `wezterm@nightly`: 안정판은 2024-02 빌드에서 멈춰 있다. 설정은
+  # modules/darwin/rice/wezterm, apps/demo 가 녹화에 쓴다.
   "wezterm@nightly"
 
   # Window manager / Keyboard / System utilities
@@ -44,8 +43,7 @@ _:
   # "zoom"
 
   # Utility Tools
-  "stats"              # 메뉴바 시스템 모니터 (eul 을 대체했다 — git 역사에
-                       # eul.nix 와 LaunchAgent 가 있다). 로그인 실행은
+  "stats"              # 메뉴바 시스템 모니터. 로그인 실행은
                        # hosts/darwin/common.nix의 LaunchAgent가 담당한다.
   # "syncthing"
   # "1password"

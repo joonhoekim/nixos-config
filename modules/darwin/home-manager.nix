@@ -45,7 +45,6 @@
     # masApps 는 ./ios.nix 에 있다(Xcode).
   };
 
-  # Enable home-manager
   home-manager = {
     useGlobalPkgs = true;
     # NixOS 쪽(hosts/nixos/common.nix)과 같은 값. 켜지 않으면 home.packages 가
@@ -70,8 +69,7 @@
         packages = pkgs.callPackage ./packages.nix {};
         stateVersion = "23.11";
 
-        # mise 도구 설치. NixOS 와 같은 것을 쓴다 — 예전에는 여기만 `|| true` 로
-        # 실패를 삼키는 옛 판이었고, 그 반쪽 수정이 이 조각으로 접은 이유다.
+        # mise 도구 설치. NixOS 와 같은 조각을 쓴다.
         activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
         activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
       };
@@ -79,7 +77,6 @@
     };
   };
 
-  # Fully declarative dock using the latest from Nix Store
   local.dock = {
     enable = true;
     username = user;
@@ -88,7 +85,8 @@
       # not listed here — adding it would create a duplicate icon.
       { path = "/Applications/Visual Studio Code.app/"; }
       { path = "/Applications/Google Chrome.app/"; }
-      { path = "/Applications/Claude.app/"; } # NOTE: Claude is installed manually (not declaratively managed), so it may be missing. dockutil just warns and skips it if the path doesn't exist.
+      # 손으로 까는 앱이라 없을 수 있다. 경로가 없으면 dockutil 이 경고만 하고 넘어간다.
+      { path = "/Applications/Claude.app/"; }
       { path = "/Applications/Zed.app/"; }
       { path = "/Applications/Brave Browser.app/"; }
       { path = "/Applications/Ghostty.app/"; }

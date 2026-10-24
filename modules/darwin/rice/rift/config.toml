@@ -34,9 +34,6 @@
 [settings]
 default_disable = false
 
-# Animations off. AeroSpace had none, and rift's own docs note the scrolling
-# layout behaves better without them; this keeps window motion instant while
-# the look is being dialled in. Flip `animate` to true to try them.
 animate = true
 animation_duration = 0.2
 animation_fps = 120.0

@@ -6,7 +6,6 @@
    ./dock
   ];
 
-  # It me
   users.users.${user} = {
     name = "${user}";
     home = "/Users/${user}";
@@ -43,21 +42,7 @@
     brews = pkgs.callPackage ./brews.nix {};
     # onActivation.cleanup = "uninstall";
 
-    # These app IDs are from using the mas CLI app
-    # mas = mac app store
-    # https://github.com/mas-cli/mas
-    #
-    # $ nix shell nixpkgs#mas
-    # $ mas search <app name>
-    #
-    # If you have previously added these apps to your Mac App Store profile (but not installed them on this system),
-    # you may receive an error message "Redownload Unavailable with This Apple ID".
-    # This message is safe to ignore. (https://github.com/dustinlyons/nixos-config/issues/83)
-    #
-    # Xcode is declared in ./ios.nix (masApps merges across modules).
-    masApps = {
-      # "wireguard" = 1451685025;
-    };
+    # masApps 는 ./ios.nix 에 있다(Xcode).
   };
 
   # Enable home-manager
@@ -91,10 +76,6 @@
         activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
       };
       programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
-
-      # Marked broken Oct 20, 2022 check later to remove this
-      # https://github.com/nix-community/home-manager/issues/3344
-      manual.manpages.enable = false;
     };
   };
 

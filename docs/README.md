@@ -77,6 +77,10 @@ turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는
 점검(`apps/check/mac`)을 통과했는지를 한 행씩 쌓습니다. 손으로 쓰지 않고 `check --record`가
 붙입니다. 세부 상태는 계정명·경로가 들어 있어서 gitignore된 `local/`에만 남습니다.
 
+[`macos-rice.md`](macos-rice.md)는 **구조 설명**입니다 — macOS 라이싱(rift-grid, 벽지 → 팔레트,
+시드 설정)의 조각과, 상태 바를 두지 않는 이유·키맵이 지금 모양이 된 경위를 적었습니다. 코드
+주석에는 동작만 남기고 고른 이유는 여기 둡니다.
+
 [`removed.md`](removed.md)는 **기록**입니다 — 레포에서 걷어낸 설정(Karabiner, AeroSpace 등)마다
 지운 커밋과 되살리는 법을 적었습니다. 한 대상을 한 커밋으로 지웠으므로 그 커밋만 되돌리면 됩니다.
 

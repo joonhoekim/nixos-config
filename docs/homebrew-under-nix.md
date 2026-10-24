@@ -98,8 +98,7 @@ export HOMEBREW_NO_INSTALL_FROM_API=1
 
 ```bash
 # 1. 정의를 올린다 (flake.lock 재작성)
-nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle \
-                 acsandmann-tap
+nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle
 
 # 2. 검증 — 시스템을 안 건드린다
 nix build .#darwinConfigurations.aarch64-darwin.system
@@ -157,7 +156,7 @@ someone-tap = {
 
 **이름이 두 벌인 게 함정이다.** flake 키는 저장소 이름 그대로 `someone/homebrew-tap`이지만,
 brew는 `homebrew-` 접두어를 생략해서 `someone/tap`으로 부른다. `brews.nix`/`casks.nix`에는
-brew 쪽 철자를 적어야 한다 — 지금 들어 있는 `acsandmann/tap/rift`가 그 예다.
+brew 쪽 철자를 적어야 한다 — `someone/tap/foo` 처럼.
 
 이렇게 선언해 두면 새 기계에서 명령형 `brew tap`이 필요 없다. 아직 계속 쓸지 모르겠으면
 그냥 `brew tap`으로 시작하고, 계속 쓰겠다 싶을 때 위로 옮기면 된다.

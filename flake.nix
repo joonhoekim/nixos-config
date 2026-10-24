@@ -53,14 +53,6 @@
       url = "git+https://github.com/joonhoekim/subline-terminal";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # rift (tiling WM). Not in nixpkgs — upstream ships a universal binary via
-    # this tap's *formula*, not a cask. No formula from it is installed now:
-    # the WM is the rift-grid fork (apps/rift-grid). The tap stays so going
-    # back to upstream rift is one line in modules/darwin/brews.nix.
-    acsandmann-tap = {
-      url = "github:acsandmann/homebrew-tap";
-      flake = false;
-    };
   };
 
   # 나머지 input(홈브루 탭들)은 이름으로 안 꺼낸다 — darwinConfigurations 안에서
@@ -194,12 +186,6 @@
                   "homebrew/homebrew-core" = inputs.homebrew-core;
                   "homebrew/homebrew-cask" = inputs.homebrew-cask;
                   "homebrew/homebrew-bundle" = inputs.homebrew-bundle;
-                  # Declared here so a fresh machine never needs an imperative
-                  # `brew tap` (which fails on a not-yet-writable
-                  # /opt/homebrew/Library/Taps). Brew refers to this tap as
-                  # `acsandmann/tap` (the `homebrew-` prefix is implicit), which
-                  # is the spelling modules/darwin/brews.nix uses.
-                  "acsandmann/homebrew-tap" = inputs.acsandmann-tap;
                 };
                 # Allow imperative `brew tap`/`brew install` to coexist with Nix.
                 mutableTaps = true;

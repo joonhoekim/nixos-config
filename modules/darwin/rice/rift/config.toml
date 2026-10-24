@@ -154,8 +154,7 @@ right = 6
 [settings.layout.gaps.inner]
 # outer 와 같은 값. rift 0.5.8 미만에서는 이게 0 이 아니면 스크롤링 레이아웃의
 # 컬럼 폭 계산이 어긋나, 포커스가 바뀔 때마다 스트립 전체가 이 폭만큼 좌우로
-# 밀린다 — acsandmann/rift#449 에서 고쳐졌다. 탭 핀은 flake.lock 의
-# acsandmann-tap 이므로, 그걸 되돌리면 이 값도 같이 0 으로 내려야 한다.
+# 밀린다 — acsandmann/rift#449 에서 고쳐졌다.
 horizontal = 6
 vertical = 6
 

@@ -304,8 +304,7 @@ darwin-rebuild --switch-generation 42       # 특정 번호
 
 # ── flake / 의존성 갱신 ──
 nix flake update [nixpkgs]    # 전체(또는 특정 input) 갱신, flake.lock 재작성 → 커밋 필요
-nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle \
-                 acsandmann-tap   # brew 본체 + 탭 (→ homebrew-under-nix.md)
+nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle   # brew 본체 + 탭 (→ homebrew-under-nix.md)
 nix flake show               # 출력 트리
 nix flake metadata           # input·lock 상태
 

@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "acsandmann-tap": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1790075478,
-        "narHash": "sha256-nd/rfM1dBNdsrrojO8I9drPTdBmYfOaLz07ggMigz1A=",
-        "owner": "acsandmann",
-        "repo": "homebrew-tap",
-        "rev": "3fd6a2a8c9174bc43f0d3cf18009cc99e8e348e5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "acsandmann",
-        "repo": "homebrew-tap",
-        "type": "github"
-      }
-    },
     "brew-src": {
       "flake": false,
       "locked": {
@@ -158,7 +142,6 @@
     },
     "root": {
       "inputs": {
-        "acsandmann-tap": "acsandmann-tap",
         "darwin": "darwin",
         "home-manager": "home-manager",
         "homebrew-bundle": "homebrew-bundle",

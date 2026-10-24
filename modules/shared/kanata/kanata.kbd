@@ -17,6 +17,9 @@
 ;;       --cfg modules\shared\kanata\kanata.kbd
 ;; macOS 에서는 launchd 데몬이 띄운다 (modules/darwin/kanata.nix).
 ;;
+;;   F열      macOS: 기본은 Media Keys, fn 을 누르는 동안 Standard Function Keys.
+;;             Windows 는 그대로.
+;;
 ;; 비상 탈출: 왼쪽 Ctrl + Space + Esc 를 함께 누르면 kanata 가 종료된다
 ;; (kanata 내장, 설정과 무관).
 
@@ -71,6 +74,9 @@
     find C-f
     ;; 오른쪽 Win 은 손대지 않는다. base 레이어에서 이름만 같이 쓰려고 둔다.
     rmet rmet
+    ;; F열은 키보드 펌웨어가 Fn 을 처리하므로 손대지 않는다.
+    f1 f1  f2 f2  f3 f3  f4 f4  f5 f5  f6 f6
+    f7 f7  f8 f8  f9 f9  f10 f10  f11 f11  f12 f12
   )
 )
 
@@ -89,6 +95,17 @@
     find M-f
     ;; 한/영. 다른 수식 없이 F18 하나만 나가야 단축키가 걸린다.
     rmet f18
+
+    ;; F열의 기본값을 Media Keys 로 매핑한다. Apple 키보드는 F1–F12 를 그대로
+    ;; 보내고, 이를 Media Keys 로 바꾸는 것은 macOS 의 Apple 키보드 드라이버다.
+    ;; kanata 를 거친 키는 Karabiner 가상 키보드에서 나오는데, 이건 Apple 키보드가
+    ;; 아니라서 그 변환을 받지 못한다 — fn 을 누르든 말든 F열이 F1–F12 가 된다.
+    ;; 배치는 M4 MacBook Pro(Mac16,8)의 키캡. F6(방해 금지 모드)은 대응하는 HID
+    ;; usage 가 없어서 F6 그대로 둔다. "F1, F2 등의 키를 표준 기능 키로 사용"
+    ;; 설정은 더 이상 반영되지 않는다 — 기본은 Media Keys, fn 을 누르는 동안
+    ;; Standard Function Keys 로 고정이다.
+    f1 brdn  f2 brup  f3 mctl  f4 sls  f5 dtn  f6 f6
+    f7 prev  f8 pp  f9 next  f10 mute  f11 vold  f12 volu
   )
 )
 
@@ -113,6 +130,11 @@
   ;; 굴려도 i 가 글자로 새지 않는다. 다른 키 없이 200ms 를 넘겨 떼면 아무 일도
   ;; 하지 않는다 (keyd 의 overload 는 이때도 Caps Lock 을 토글한다).
   caps (tap-hold-press 200 200 caps (layer-while-held nav))
+
+  ;; fn 을 누르는 동안 F열을 Standard Function Keys 로 쓴다. fn 입력도 그대로
+  ;; 전달하므로 fn+←(Home) 같은 macOS 쪽 fn 조합과 🌐 단축키는 유지된다.
+  ;; Windows 에서는 fn 이 kanata 까지 오지 않으므로 아무 일도 없다.
+  fn (multi fn (layer-while-held fkeys))
 )
 
 (deflayermap (base)
@@ -120,6 +142,14 @@
   lsft @sl
   rsft @sr
   rmet @rmet
+  fn @fn
+  f1 @f1  f2 @f2  f3 @f3  f4 @f4  f5 @f5  f6 @f6
+  f7 @f7  f8 @f8  f9 @f9  f10 @f10  f11 @f11  f12 @f12
+)
+
+(deflayermap (fkeys)
+  f1 f1  f2 f2  f3 f3  f4 f4  f5 f5  f6 f6
+  f7 f7  f8 f8  f9 f9  f10 f10  f11 f11  f12 f12
 )
 
 ;; 매핑하지 않은 키는 투명이라 Caps 를 누른 채로도 제 글자가 나온다.

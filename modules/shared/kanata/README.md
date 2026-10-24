@@ -21,6 +21,7 @@
 | 레이어 + `q` / `e` (Shift: 가로) | 휠 위 / 아래 |
 | 레이어 + `f`·`8` / `r`·`0` / `9` | 왼쪽 / 오른쪽 / 가운데 버튼 (누르는 동안) |
 | 한/영 | Windows 오른쪽 Alt (자판 배열이 처리), macOS 오른쪽 ⌘ → F18 |
+| F열 (macOS) | 기본은 Media Keys(밝기·Mission Control·Spotlight·받아쓰기·재생·볼륨), fn 을 누르는 동안 Standard Function Keys. Windows 는 그대로 |
 
 - 오른손 바인딩은 전부 unshifted 라서 Shift 는 통째로 **선택 확장**이다 — `Caps+⇧j` 는
   왼쪽으로 선택, `Caps+⇧o` 는 줄 끝까지 선택.

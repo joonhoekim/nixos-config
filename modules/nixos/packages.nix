@@ -121,7 +121,6 @@ shared-packages ++ [
   zed-editor                 # editor (cask "zed")
   dbeaver-bin                # universal database tool / SQL client
   redisinsight               # official Redis GUI
-  postman                    # API client
   bruno                      # git-friendly API client
   onlyoffice-desktopeditors  # office suite
 ]

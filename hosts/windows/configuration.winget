@@ -37,10 +37,6 @@ properties:
     #   directives: { description: Zed }
     #   settings: { id: ZedIndustries.Zed, source: winget }
     # - resource: Microsoft.WinGet.DSC/WinGetPackage
-    #   id: postman
-    #   directives: { description: Postman }
-    #   settings: { id: Postman.Postman, source: winget }
-    # - resource: Microsoft.WinGet.DSC/WinGetPackage
     #   id: bruno
     #   directives: { description: Bruno }
     #   settings: { id: Bruno.Bruno, source: winget }

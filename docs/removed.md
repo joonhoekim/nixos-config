@@ -23,6 +23,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 | 커밋 | `65cc5bb` chore(darwin): 쓰지 않는 Karabiner-Elements 설정을 지운다 |
 | 대상 | `modules/darwin/deprecated/karabiner/` (`karabiner.json`, `.touchcursor`·`.vim` 보관본, README) |
 | 대체 | `modules/shared/kanata/` — 같은 Caps Lock 레이어 |
+| 뒤따른 커밋 | `cd6e8ee` — rift 설정의 Karabiner-Elements 플로팅 규칙 |
 
 어디에서도 로드되지 않던 보관본이다. 되살려도 kanata 와 같이 돌릴 수 없다 — 둘 다
 키보드를 독점으로 잡고, Karabiner-Elements 가 까는 드라이버 데몬의 판이 kanata 가
@@ -58,6 +59,42 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 설정도 포크 이전으로
 꺼내야 한다.
 
+## iTerm2
+
+| | |
+|---|---|
+| 커밋 | `8f488f1` chore(darwin): 쓰지 않는 iTerm2 cask 를 지운다 |
+| 대상 | `iterm2` cask |
+| 대체 | subline-terminal (주), ghostty·wezterm (참고용) |
+
+## Postman
+
+| | |
+|---|---|
+| 커밋 | `8cc2438` chore(packages): API 클라이언트를 bruno 하나로 두고 postman 을 지운다 |
+| 대상 | macOS `postman` cask, NixOS `postman` 패키지, Windows winget 의 주석 처리된 항목 |
+| 대체 | bruno |
+
+## rice 시드의 `unstore`
+
+| | |
+|---|---|
+| 커밋 | `b3507a6` chore(rice): 스토어 심링크를 시드로 바꿀 때 쓰던 unstore 를 지운다 |
+| 대상 | `modules/darwin/rice/default.nix` 의 `unstore()` 와 그 호출, `seedMacRice` 의 `linkGeneration` 순서 의존 |
+
+home-manager 가 걸던 읽기 전용 스토어 심링크를 지워 `rice_sync` 가 시드를 심을 수 있게
+하던 일회성 이행 코드다. 스토어 심링크가 남은 기계(2026-08-06 이전 세대에서 바로 올라오는
+경우)에서만 의미가 있다.
+
+## home-manager 템플릿 잔재
+
+| | |
+|---|---|
+| 커밋 | `c3cf4f2` chore(darwin): home-manager.nix 에 남은 템플릿 잔재를 지운다 |
+| 대상 | 빈 `homebrew.masApps` 와 mas 안내 주석, `manual.manpages.enable = false` |
+
+manpages 를 끈 것은 home-manager#3344(2022) 우회였다. 다시 빌드가 깨지면 그 한 줄만 되살린다.
+
 ## 레포 밖에 남는 것
 
 `homebrew.onActivation.cleanup` 이 꺼져 있어서 목록에서 빼도 이미 깔린 것은 지워지지
@@ -65,6 +102,7 @@ upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 
 
 ```sh
 brew uninstall --cask aerospace     # 깔려 있으면
+brew uninstall --cask iterm2 postman
 brew uninstall rift                 # upstream rift formula 가 남아 있으면
 rm -rf ~/.config/aerospace
 ```

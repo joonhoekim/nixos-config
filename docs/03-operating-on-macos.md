@@ -232,8 +232,7 @@ nix --extra-experimental-features 'nix-command flakes' run .#build-switch
 활성화가 끝나면 `/etc/nix/nix.conf`가 재생성돼 다음부터는 그냥 `nix run .#build-switch`.
 
 **4. Homebrew Taps가 가로막음.** `Error: An existing /opt/homebrew/Library/Taps is in the way`.
-원인: `mutableTaps = false`(tap은 선언한 것만 허용, 폴더 잠금)인데 이미 수동 커스텀 tap(예: aerospace의
-`nikitabobko/tap`)이 있어 충돌. 수동 brew·커스텀 tap을 쓰는 사람이면 `flake.nix`의 nix-homebrew에서
+원인: `mutableTaps = false`(tap은 선언한 것만 허용, 폴더 잠금)인데 이미 수동으로 추가한 커스텀 tap이 있어 충돌. 수동 brew·커스텀 tap을 쓰는 사람이면 `flake.nix`의 nix-homebrew에서
 `mutableTaps = true`로. 선언한 casks는 계속 관리하되 수동 `brew`도 허용된다.
 (이 레포는 이미 그렇게 돼 있다 — 새로 겪는다면 값이 되돌아갔는지부터 볼 것.)
 
@@ -306,7 +305,7 @@ darwin-rebuild --switch-generation 42       # 특정 번호
 # ── flake / 의존성 갱신 ──
 nix flake update [nixpkgs]    # 전체(또는 특정 input) 갱신, flake.lock 재작성 → 커밋 필요
 nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle \
-                 nikitabobko-tap acsandmann-tap   # brew 본체 + 탭 (→ homebrew-under-nix.md)
+                 acsandmann-tap   # brew 본체 + 탭 (→ homebrew-under-nix.md)
 nix flake show               # 출력 트리
 nix flake metadata           # input·lock 상태
 

@@ -30,10 +30,6 @@
       url = "github:homebrew/homebrew-cask";
       flake = false;
     };
-    nikitabobko-tap = {
-      url = "github:nikitabobko/homebrew-tap";
-      flake = false;
-    };
     # subline — 터치 우선 Wayland 컴포지터(~/git/subline). NixOS 호스트의 기본
     # 세션이고 greetd 의 로그인 화면이기도 하다(modules/nixos/subline). 레포가
     # 비공개라 `git+https` 로 받는다: 받을 때 git 이 `gh auth git-credential`
@@ -198,11 +194,9 @@
                   "homebrew/homebrew-core" = inputs.homebrew-core;
                   "homebrew/homebrew-cask" = inputs.homebrew-cask;
                   "homebrew/homebrew-bundle" = inputs.homebrew-bundle;
-                  # aerospace lives here; managed declaratively so a fresh
-                  # machine never needs an imperative `brew tap` (which fails
-                  # on a not-yet-writable /opt/homebrew/Library/Taps).
-                  "nikitabobko/homebrew-tap" = inputs.nikitabobko-tap;
-                  # rift, same reasoning. Brew refers to this tap as
+                  # Declared here so a fresh machine never needs an imperative
+                  # `brew tap` (which fails on a not-yet-writable
+                  # /opt/homebrew/Library/Taps). Brew refers to this tap as
                   # `acsandmann/tap` (the `homebrew-` prefix is implicit), which
                   # is the spelling modules/darwin/brews.nix uses.
                   "acsandmann/homebrew-tap" = inputs.acsandmann-tap;

@@ -55,13 +55,6 @@
   launchd.user.agents = {
     # Tiling WM — keep it alive so a crash/quit relaunches it.
     #
-    # rift replaced AeroSpace here. AeroSpace itself is still installed (see
-    # modules/darwin/casks.nix) and its config still lives in this repo; only
-    # the login agent moved. That is the escape hatch: if rift misbehaves,
-    # `open -a AeroSpace` puts the old WM back this second, no rebuild. Kill
-    # rift first (`launchctl bootout gui/$UID/org.nixos.rift`) — two tiling
-    # WMs fighting over the same windows is worse than either alone.
-    #
     # The binary is rift-grid, a fork of rift that lays the virtual workspaces
     # out as a 3x3 grid (https://github.com/joonhoekim/rift-grid). It is built
     # and signed per machine by apps/rift-grid into ~/.local/bin, not by nix or
@@ -206,7 +199,7 @@
         # horizontally, so a right-edge Dock sits exactly where columns enter
         # and leave the screen — every reveal collides with the strip. At the
         # bottom it only ever eats vertical space, which the layout has to
-        # spare. (This was "right" while AeroSpace tiled in both directions.)
+        # spare.
         orientation = "bottom";
         tilesize = 48;
         mru-spaces = false;           # don't reorder Spaces by recent use
@@ -262,10 +255,8 @@
       #   false = each display gets its own Spaces (macOS default)
       #   true  = one Space spans every display
       #
-      # This is a hard requirement of the window manager, and the two WMs this
-      # repo has used want OPPOSITE values. AeroSpace wanted `true`, which is
-      # what this line said until rift replaced it. rift refuses to start
-      # otherwise — not a degraded mode, an immediate exit:
+      # This is a hard requirement of the window manager. rift refuses to
+      # start otherwise — not a degraded mode, an immediate exit:
       #
       #   Rift detected that the macOS setting "Displays have separate Spaces"
       #   is disabled. Rift currently requires this setting to be enabled.
@@ -276,8 +267,7 @@
       # Running ~/.local/bin/rift-grid in a terminal prints the reason; the
       # agent's stdout goes nowhere.
       #
-      # So: leave this at `false` for as long as rift is the WM. Flipping it
-      # back is part of reverting to AeroSpace, not an independent knob.
+      # So: leave this at `false` for as long as rift is the WM.
       #
       # A logout is required either way — the value lands in
       # com.apple.spaces immediately, but WindowServer only reads it at login.

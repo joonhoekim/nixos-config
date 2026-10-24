@@ -1,9 +1,6 @@
 { config, pkgs, lib, user, identity, ... }:
 
-# home.file 항목은 여기 없다. macOS 쪽에 심링크로 걸던 셋(karabiner.json,
-# aerospace.toml, rift 의 config.toml)이 2026-08-06 에 전부 시드로 옮겨
-# 갔고(./rice), 그러고 나니 파일에 남는 항목이 하나도 없어서 files.nix 자체를
-# 지웠다 — 빈 껍데기만 남아 있던 shared 쪽도 같이 지웠다.
+# home.file 항목은 여기 없다. macOS 쪽 설정 파일은 전부 ./rice 가 시드한다.
 {
   imports = [
    ./dock
@@ -40,8 +37,8 @@
 
   homebrew = {
     enable = true;
-    # nikitabobko/tap (aerospace) and acsandmann/tap (upstream rift, unused
-    # while the rift-grid fork is the WM) are managed declaratively via
+    # acsandmann/tap (upstream rift, unused while the rift-grid fork is the
+    # WM) is managed declaratively via
     # nix-homebrew in flake.nix, so no `homebrew.taps` entry is needed here.
     casks = pkgs.callPackage ./casks.nix {};
     brews = pkgs.callPackage ./brews.nix {};

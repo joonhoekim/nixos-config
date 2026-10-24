@@ -99,7 +99,7 @@ export HOMEBREW_NO_INSTALL_FROM_API=1
 ```bash
 # 1. 정의를 올린다 (flake.lock 재작성)
 nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle \
-                 nikitabobko-tap acsandmann-tap
+                 acsandmann-tap
 
 # 2. 검증 — 시스템을 안 건드린다
 nix build .#darwinConfigurations.aarch64-darwin.system

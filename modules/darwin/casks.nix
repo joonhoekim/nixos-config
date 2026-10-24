@@ -22,11 +22,7 @@ _:
 
   # Window manager / Keyboard / System utilities
   #
-  # NOTE: the tiling WM is now rift, which is a brew *formula* and therefore
-  # lives in ./brews.nix, not here. AeroSpace stays installed as the fallback —
-  # it no longer starts at login (hosts/darwin/default.nix), so it costs
-  # nothing until `open -a AeroSpace`. Drop this line once rift has proven out.
-  "aerospace"          # tiling window manager (from nikitabobko/tap), stand-by
+  # 타일링 WM 은 cask 가 아니다 — rift-grid 를 apps/rift-grid 가 빌드·서명해 깐다.
   # 키 리매핑은 cask 가 아니다 — kanata 와 그 드라이버를 nix 가 깐다
   # (modules/darwin/kanata.nix). Karabiner-Elements 는 같이 두면 안 된다: 드라이버
   # 데몬의 판이 kanata 와 안 맞고, 둘 다 키보드를 독점으로 잡으려 한다.

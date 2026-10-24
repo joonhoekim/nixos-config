@@ -206,7 +206,7 @@ in
       ${import ../../shared/rice-seed-helpers.nix}
 
       # ── 심링크에서 시드로 넘어오는 한 번을 위한 것 ──────────────────────
-      # 아래 둘(aerospace.toml, rift 의 config.toml)은
+      # 아래 rift 의 config.toml 은
       # 2026-08-06 까지 modules/darwin/files.nix 가 거는 읽기 전용 스토어
       # 심링크였다. rice_sync 는 링크도 "있음"으로 보고, 그 내용은 기준선과도
       # 레포와도 안 맞아 conflict 로 손을 떼므로, 걷어내지 않으면 그 머신들에는
@@ -255,22 +255,16 @@ sys.exit(0 if not d.get("schemes") else 1)
       fi
       rice_sync ${./linearmouse/linearmouse.json} "$lmcfg"
 
-      # AeroSpace 의 설정. rift 로 옮겨 간 뒤로 로그인에 뜨지 않지만 `open -a
-      # AeroSpace` 폴백은 그대로라 설정도 유효하다. rift 가 완전히 자리 잡으면
-      # 이 줄과 ./aerospace 를 casks.nix 의 항목과 함께 지우면 된다.
-      unstore "$HOME/.config/aerospace/aerospace.toml"
-      rice_sync ${./aerospace/aerospace.toml} "$HOME/.config/aerospace/aerospace.toml"
-
       # rift 키바인딩이 부르는 헬퍼들. ~/.config/rift 가 아니라 여기 두는 이유는
       # 원래 위 심링크와 부딪혀서였는데 그 제약은 사라졌다. 그래도 그대로 두는
       # 건 rift/config.toml 이 이 경로를 박아서 부르기 때문이다 — 옮기려면 키맵과
       # 같이 옮겨야 하고, 그건 이 변경과 별개다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 넷 다 그럴 필요가 없기
+      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 셋 다 그럴 필요가 없기
       # 때문이다. wezterm 은 자기 설정 파일을 지켜보고,
       # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
-      # rift·AeroSpace 는 손댄 파일을 rice_sync 가 안 건드리므로
+      # rift 는 손댄 파일을 rice_sync 가 안 건드리므로
       # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
       # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
       #

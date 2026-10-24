@@ -272,7 +272,6 @@ app_rules = [
   { app_id = "com.apple.systempreferences", floating = true },
   { app_id = "com.apple.ActivityMonitor", floating = true },
   { app_id = "com.apple.finder", ax_subrole = "AXDialog", floating = true },
-  { app_id = "org.pqrs.Karabiner-Elements.Settings", floating = true },
   { title_substring = "Preferences", floating = true },
   { title_substring = "Settings", floating = true },
 ]

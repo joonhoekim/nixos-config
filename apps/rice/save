@@ -282,7 +282,7 @@ copy "$cfg/wezterm"                           "$dr/wezterm"
 # rift 의 키맵. 2026-08-06 까지는 여기 없었다 — modules/darwin/files.nix 가 거는
 # 읽기 전용 스토어 심링크라 레포가 원본이었고 되받을 것이 없었다. 이제 시드라
 # 라이브가 원본이고, 커밋 전에 이걸 안 돌리면 손본 바인딩이 그대로 날아간다.
-copy "$cfg/rift/config.toml"                  "$dr/rift/config.toml"
+copy "$cfg/rift-grid/config.toml"             "$dr/rift/config.toml"
 copy "$cfg/linearmouse/linearmouse.json"      "$dr/linearmouse/linearmouse.json"
 # rift 키바인딩이 부르는 헬퍼(monocle.sh 등).
 copy "$cfg/rice/bin"                          "$dr/bin"

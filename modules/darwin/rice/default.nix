@@ -1,44 +1,9 @@
 { config, pkgs, user, ... }:
 
 let
-  # 벽지가 바뀌면 팔레트를 다시 뽑는 감시자. launchd.user.agents.wal-watch 가
-  # 이걸 돌린다 — 왜 필요한지는 그 블록의 주석에.
-  #
-  # 실제 작업은 apps/rice/colors 가 한다. 여기서 wal 을 직접 부르지 않는 이유는,
-  # "팔레트를 뽑고 소비자들에게 밀어 넣는" 절차가 두 벌이 되면 반드시 한쪽만
-  # 고치는 날이 오기 때문이다. 손으로 부르든 감시자가 부르든 같은 파일이다.
-  # 벽지 경로를 Index.plist 에서 직접 꺼낸다.
-  #
-  # ── 왜 osascript 가 아닌가 ─────────────────────────────────────────────
-  # 처음엔 `osascript -e 'tell application "System Events" ... get picture'` 로
-  # 짰다. 터미널에서는 잘 되는데 LaunchAgent 안에서는 빈 문자열만 돌아왔다 —
-  # System Events 에 말을 거는 건 Automation 권한이 필요하고, 백그라운드 에이전트
-  # 에게는 그 프롬프트가 뜨지 않기 때문이다. 거부도 아니고 응답 없음이라 로그조차
-  # 안 남았다.
-  #
-  # plist 를 직접 읽으면 그냥 자기 홈의 파일이라 아무 권한도 필요 없다.
-  #
-  # 경로는 중첩된 바이너리 plist 안에 들어 있어서 plutil 로 한 겹 벗겨도 base64
-  # 덩어리만 나온다. 그래서 파일을 바이트로 읽고 file:// URL 을 그대로 찾는다 —
-  # 중첩이든 아니든 그 바이트열은 파일 어딘가에 반드시 평문으로 있다.
-  #
-  # 퍼센트 디코딩이 python 을 쓰는 이유다. 파일명에 공백이나 한글이 있으면 URL 은
-  # %20 / %ED%95%9C 로 인코딩돼 있고, 그걸 안 풀면 "그런 파일 없다"로 끝난다.
-  wallpaperPath = pkgs.writeShellScript "wallpaper-path" ''
-    exec ${pkgs.python3}/bin/python3 -c '
-import re, sys, urllib.parse
-try:
-    raw = open(sys.argv[1], "rb").read()
-except OSError:
-    sys.exit(1)
-# [!-~] = 공백을 뺀 출력 가능 ASCII. URL 안의 공백은 %20 이므로 이걸로 끝을 잡는다.
-m = re.search(rb"file:///[!-~]+", raw)
-if not m:
-    sys.exit(1)
-url = urllib.parse.unquote(m.group().decode("utf-8", "replace"))
-print(url[len("file://"):])
-' "$1"
-  '';
+  # 벽지가 바뀌면 팔레트를 다시 뽑는 감시자. 실제 작업은 apps/rice/colors 가
+  # 한다 — 손으로 부르든 감시자가 부르든 같은 절차가 돌게.
+  wallpaperPath = "${pkgs.python3}/bin/python3 ${../../../apps/rice/wallpaper-path.py}";
 
   walWatch = pkgs.writeShellScript "wal-watch" ''
     set -u
@@ -155,14 +120,8 @@ in
   # at once, which is why this is a watcher and not a wrapper around some
   # particular "set wallpaper" command.
   #
-  # The plist is only the trigger; the path is read back with osascript, the
-  # same way rice-colors does when called with no argument. Parsing the plist
-  # ourselves would mean percent-decoding a file:// URL out of XML for a value
-  # the OS will hand over on request.
-  #
-  # NOTE: the first run will raise a macOS Automation prompt (System Events),
-  # because a LaunchAgent asking osascript about the desktop is a scripting
-  # request. Denying it leaves the watcher running and silently doing nothing.
+  # The path is read out of the same plist by apps/rice/wallpaper-path.py,
+  # which rice-colors also uses when called with no argument.
   launchd.user.agents.wal-watch = {
     command = "${walWatch}";
     path = [

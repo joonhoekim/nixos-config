@@ -63,10 +63,11 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
-# 인자가 없으면 지금 깔려 있는 배경화면을 쓴다. macOS 는 이걸 API 로만
-# 내놓아서 osascript 를 거쳐야 한다.
+# 인자가 없으면 지금 깔려 있는 배경화면을 쓴다. wal-watch 와 같은 헬퍼로 읽는다.
+# macOS 기본 벽지(동적 벽지 등)는 파일이 아니라서 경로가 없다.
 if [ "$reload_only" = false ] && [ -z "$image" ]; then
-	image="$(osascript -e 'tell application "System Events" to tell current desktop to get picture as text' 2>/dev/null || true)"
+	image="$(python3 "$(dirname "$0")/wallpaper-path.py" \
+		"$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist" 2>/dev/null || true)"
 	if [ -z "$image" ] || [ ! -f "$image" ]; then
 		printf "${RED}현재 배경화면을 알아내지 못했다. 이미지 경로를 직접 줘라.${NC}\n"
 		printf "${DIM}  apps/rice/colors ~/Pictures/Wallpapers/foo.jpg${NC}\n"

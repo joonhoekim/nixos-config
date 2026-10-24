@@ -116,6 +116,6 @@ in
   system.activationScripts.postActivation.text = ''
     echo "setting default application handlers..." >&2
     /usr/bin/sudo -u ${user} ${pkgs.python3}/bin/python3 \
-      ${./config/set-default-handlers.py} ${plist} ${args} || true
+      ${./set-default-handlers.py} ${plist} ${args} || true
   '';
 }

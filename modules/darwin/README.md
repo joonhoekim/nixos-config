@@ -6,7 +6,6 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 
 ```
 .
-├── config/            # set-default-handlers.py (default-apps.nix가 쓴다)
 ├── rice/              # 시드하는 설정 — 심은 뒤엔 ~/.config 쪽이 원본이다.
 │                      #   rift/, wezterm/,
 │                      #   linearmouse/ (마우스 휠 방향),
@@ -17,6 +16,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── brews.nix          # Homebrew formula 목록 (cask가 아닌 것, 지금은 비어 있다)
 ├── casks.nix          # Homebrew cask 목록 (macOS GUI 앱)
 ├── default-apps.nix   # 파일 종류별 기본 앱 (터미널 → Ghostty, 코드 → VS Code)
+│                      #   plist 쓰기는 set-default-handlers.py
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + macOS 고유분)
 ├── ios.nix            # iOS / Apple 플랫폼 개발 툴체인
 ├── kanata.nix         # Caps Lock 레이어·한/영 (kanata + 드라이버, 설정은 ../shared/kanata)

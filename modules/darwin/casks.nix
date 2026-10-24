@@ -48,7 +48,7 @@ _:
   # Utility Tools
   "stats"              # 메뉴바 시스템 모니터 (eul 을 대체했다 — git 역사에
                        # eul.nix 와 LaunchAgent 가 있다). 로그인 실행은
-                       # hosts/darwin/default.nix의 LaunchAgent가 담당한다.
+                       # hosts/darwin/common.nix의 LaunchAgent가 담당한다.
   # "syncthing"
   # "1password"
   # "rectangle"

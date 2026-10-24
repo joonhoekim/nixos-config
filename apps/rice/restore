@@ -36,10 +36,6 @@
 #   linearmouse linearmouse.json (마우스 휠 방향)                    macOS
 #   helpers     rift 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
 #
-# rift/config.toml 은 2026-08-06 까지 여기 없었다 —
-# modules/darwin/files.nix 가 거는 읽기 전용 스토어 심링크라 되받을 라이브가
-# 없었다. 이제 시드라 나머지와 똑같이 왕복한다.
-#
 # 플랫폼을 가리는 건 여기서만 필요하다. rice-save 는 라이브가 없으면 "skip
 # (absent)" 로 알아서 비켜 가는데, 그건 macOS 에 니리 파일이 없기 때문이다.
 # 방향이 반대인 여기서는 원본이 레포에 늘 있으므로 그 검사가 반대로 작동한다 —

@@ -17,9 +17,9 @@
 #
 # ── Why this writes the plist by hand instead of using `duti` ────────────────
 # The handlers live in ~/Library/Preferences/com.apple.LaunchServices/
-# com.apple.launchservices.secure.plist. This module used to drive it with
-# duti, on the theory that a plain `defaults write` is ignored — that is only
-# half true, and the half that matters is different.
+# com.apple.launchservices.secure.plist. The usual advice is duti, because a
+# plain `defaults write` is said to be ignored — that is only half true, and
+# the half that matters is different.
 #
 # On macOS 26 duti is unreliable: LSSetDefaultRoleHandlerForContentType (what
 # duti calls) returns noErr and then does nothing for a type that has no

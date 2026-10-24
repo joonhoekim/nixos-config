@@ -49,79 +49,19 @@ let
   '';
 in
 
-# macOS ricing: the window borders and the colour generator that feeds them.
+# macOS ricing: the wallpaper → palette watcher and the seeded config files
+# (rift-grid, wezterm, LinearMouse, rift's helper scripts). What each piece
+# does and why there is no status bar: docs/macos-rice.md.
 #
-# The window manager itself is not here — rift is the rift-grid fork, built by
-# apps/rift-grid, plus a login agent (hosts/darwin/common.nix). It draws the
-# window borders itself ([settings.ui.borders] in ./rift/config.toml). Its keymap IS
-# here as of 2026-08-06 (./rift/config.toml, seeded like everything else in
-# this module); before that it was a read-only store symlink, which broke the
-# moment rift's own "settings" item started opening it in an editor.
-#
-# ── There is no status bar here, and that was a decision ──────────────────
-# sketchybar lived in this module until 2026-08-05. It drew six things and five
-# of them were already in the macOS menu bar — clock, battery, CPU (stats), input
-# source, focused app. The one that was not, the rift workspace indicator, now
-# comes from rift itself (`[settings.ui.menu_bar]` in
-# modules/darwin/rice/rift/config.toml): no extra process, no Screen Recording
-# grant, nothing to re-approve when a nixpkgs bump changes a hash.
-#
-# Replacing the whole menu bar was the alternative, and it does not work.
-# Aliasing the real menu extras into sketchybar renders them — verified — but
-# it only mirrors their *picture*; clicking one needs an accessibility helper,
-# and the app menus on the left cannot be aliased at all. Two TCC grants on
-# ad-hoc-signed store binaries, to reproduce what macOS gives for free.
-#
-# So: macOS keeps its menu bar. `git log -- modules/darwin/rice/sketchybar`
-# has the config if it ever earns its place back.
-#
-# ── Installation is declarative, ricing is not ────────────────────────────
-# Same split the niri module makes on the NixOS side (modules/nixos/niri):
-# nix installs the services and starts them, but the files they read live as
-# ordinary writable files in $HOME, seeded from the directories below only when
-# missing. A border width or a gap is settled by nudging it and looking; behind
-# a store symlink every nudge costs a rebuild.
-#
-# So the trees here are starting points, not the live config. Once seeded,
-# ~/.config is the original — `apps/rice/save` carries changes back to the repo
-# and `apps/rice/restore` pushes the repo the other way.
-#
-# ── Where the colours come from ───────────────────────────────────────────
-# pywal (`wal`) reads a wallpaper and writes a 16-colour palette to
-# ~/.cache/wal/. Nothing here hardcodes a scheme; each consumer reads that
-# cache and falls back to a built-in palette when it is absent (a fresh machine
-# has never run `wal`):
-#
-#   rift borders  apps/rice/colors rewrites the two colour lines in rift's
-#                 config, which rift reloads on its own
-#   wezterm       ~/.config/wezterm/wezterm.lua parses ~/.cache/wal/colors.json
-#
-# `apps/rice/colors <image>` runs wal and then pokes them. Ghostty is
-# deliberately not in that list: its palette is owned by the other ricing axis
-# (modules/shared/ghostty + apps/rice/term), and having two generators
-# write the same theme file is how you get a look that flips back on the next
-# switch.
+# The files below are seeds, not the live config. Once planted, ~/.config is
+# the original — `apps/rice/save` carries changes back to the repo and
+# `apps/rice/restore` pushes the repo the other way.
 
 {
-  # ── Window borders ───────────────────────────────────────────────────────
-  # Nothing to install: rift-grid draws them ([settings.ui.borders] in
-  # ./rift/config.toml). They used to be JankyBorders, started by rift as its
-  # child so its ax_focus mode inherited rift's Accessibility trust;
-  # `git log -- modules/darwin/rice/borders` has that wiring.
-
-  # ── Wallpaper → palette, automatically ───────────────────────────────────
-  # Without this, `apps/rice/colors` has to be run by hand every time the
-  # wallpaper changes. macOS records the current desktop picture in
-  #
-  #   ~/Library/Application Support/com.apple.wallpaper/Store/Index.plist
-  #
-  # and rewrites it no matter *how* the wallpaper was changed — System Settings,
-  # a picker app, a script. Watching that one file therefore catches every route
-  # at once, which is why this is a watcher and not a wrapper around some
-  # particular "set wallpaper" command.
-  #
-  # The path is read out of the same plist by apps/rice/wallpaper-path.py,
-  # which rice-colors also uses when called with no argument.
+  # ── Wallpaper → palette ──────────────────────────────────────────────────
+  # macOS rewrites Index.plist however the wallpaper was changed (System
+  # Settings, a picker app, a script), so watching that one file catches every
+  # route. apps/rice/wallpaper-path.py reads the picture's path out of it.
   launchd.user.agents.wal-watch = {
     command = "${walWatch}";
     path = [
@@ -133,9 +73,8 @@ in
     serviceConfig = {
       RunAtLoad = true;
       KeepAlive = true;
-      # Unlike the other agents here, this one is worth being able to read:
-      # it is the only piece that runs unattended, so a failure has no visible
-      # symptom other than colours quietly not following the wallpaper.
+      # The only piece that runs unattended: without a log, a failure shows
+      # only as colours quietly not following the wallpaper.
       StandardOutPath = "/tmp/wal-watch.log";
       StandardErrorPath = "/tmp/wal-watch.log";
     };
@@ -143,42 +82,26 @@ in
 
   home-manager.users.${user} = { lib, ... }: {
     home.packages = with pkgs; [
-      # pywal16 rather than pywal: same `wal` command and the same
-      # ~/.cache/wal/ layout, but the maintained fork — it emits all 16 colours
-      # (upstream pywal only really varies 8) which is what wezterm's brights
-      # and the border luminance ranking in apps/rice/colors consume.
-      #
-      # The nixpkgs wrapper already puts imagemagick on its PATH, so the
-      # default backend works with nothing else installed.
+      # pywal16, not pywal: upstream only really varies 8 of the 16 colours,
+      # and wezterm's brights and the border ranking in apps/rice/colors use
+      # all 16. The nixpkgs wrapper puts imagemagick on its PATH.
       pywal16
     ];
 
-    # Seed the ricing files on a machine that has none yet. Deliberately not
-    # home.file / xdg.configFile: those symlink the store and make the target
-    # read-only. `rice_sync` only overwrites when the live copy still matches
-    # the baseline — i.e. when nobody has touched it — so a rebuild mid-ricing
-    # never clobbers unsaved work. See the helper's header for the full table.
+    # Not home.file / xdg.configFile: those symlink the store and make the
+    # target read-only. `rice_sync` only overwrites a file nobody has touched
+    # (modules/shared/rice-seed-helpers.nix).
     home.activation.seedMacRice = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       ${import ../../shared/rice-seed-helpers.nix}
 
-      # wezterm. Secondary terminal (ghostty is the daily one), here mostly
-      # because it can read pywal's JSON directly and reload itself.
       rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
-      # rift 의 키맵.
       rice_sync ${./rift/config.toml} "$HOME/.config/rift-grid/config.toml"
 
-      # 마우스 휠 방향(트랙패드는 건드리지 않는다). ./linearmouse/README.md.
-      #
-      # rice_sync 가 여기서만 한 번 새는 자리가 있다: LinearMouse 는 처음 뜰 때
-      # 설정이 없으면 **빈 설정을 스스로 만든다.** 그리고 이 활성화보다 앱이 먼저 뜨는
-      # 경우가 실제로 있다 — launchd 에이전트를 거는 것도 같은 build-switch 안이라 첫
-      # 설치에서 순서가 어느 쪽으로든 갈 수 있다. 그러면 앱이 만든 빈 파일이 "이미
-      # 있음"으로 통과하고, 기준선도 그 빈 파일로 잡혀서(부트스트랩) 리빌드는
-      # 성공했는데 휠 방향만 안 바뀌는 상태로 끝난다.
-      #
-      # 그래서 규칙이 하나도 없는 파일은 "없는 것"으로 친다. 손으로 쓴 설정은 schemes 가
-      # 비어 있지 않으니 안 걸리고, JSON 이 깨져 있으면(= 고치던 중이다) 손대지 않는다.
+      # LinearMouse 는 처음 뜰 때 설정이 없으면 빈 설정을 스스로 만들고, 첫
+      # 설치에서는 앱이 이 활성화보다 먼저 뜰 수 있다. 그러면 빈 파일이 "있음"으로
+      # 통과해 리빌드는 성공했는데 휠 방향만 안 바뀐다. 그래서 schemes 가 빈
+      # 파일은 없는 것으로 친다. JSON 이 깨져 있으면(고치던 중) 손대지 않는다.
       lmcfg="$HOME/.config/linearmouse/linearmouse.json"
       if [ -f "$lmcfg" ] && ${pkgs.python3}/bin/python3 -c '
 import json, sys
@@ -193,22 +116,13 @@ sys.exit(0 if not d.get("schemes") else 1)
       fi
       rice_sync ${./linearmouse/linearmouse.json} "$lmcfg"
 
-      # rift 키바인딩이 부르는 헬퍼들. ~/.config/rift 가 아니라 여기 두는 이유는
-      # 원래 위 심링크와 부딪혀서였는데 그 제약은 사라졌다. 그래도 그대로 두는
-      # 건 rift/config.toml 이 이 경로를 박아서 부르기 때문이다 — 옮기려면 키맵과
-      # 같이 옮겨야 하고, 그건 이 변경과 별개다.
+      # rift 키바인딩이 부르는 헬퍼. rift/config.toml 이 이 경로를 직접 쓰므로
+      # 옮기려면 키맵도 같이 고친다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 것을 다시 읽히는 단계는 여기 없다 — 셋 다 그럴 필요가 없기
-      # 때문이다. wezterm 은 자기 설정 파일을 지켜보고,
-      # rice/bin 은 다음 호출부터 새 내용으로 실행되는 셸 스크립트이며,
-      # rift 는 손댄 파일을 rice_sync 가 안 건드리므로
-      # 대개 첫 설치에서만 쓰인다(= 아직 아무도 안 읽었다). 손 안 댄 파일에 레포
-      # 변경이 들어가는 경우는 남지만, 그건 다음 실행에 읽힌다.
-      #
-      # 레포에서 라이브로 밀어 넣는 방향은 얘기가 다르다 — apps/rice/restore 는
-      # rm+cp 로 덮어서 감시가 걸려 있던 아이노드를 날리므로, 그쪽은 복원 뒤에
-      # 명시적으로 reload 를 부른다.
+      # 시드한 뒤 다시 읽히는 단계는 없다. wezterm·rift·LinearMouse 는 자기
+      # 설정 파일을 감시하고, rice/bin 은 호출할 때마다 새로 읽힌다.
+      # apps/rice/restore 는 rm+cp 로 덮어 감시를 끊으므로 그쪽이 reload 를 부른다.
     '';
   };
 }

@@ -3,7 +3,7 @@
 # Default-application handlers: which app opens which kind of file.
 #
 # Two groups, one mechanism:
-#   • terminal-shaped files  → Ghostty (double-clicking a .sh should RUN it)
+#   • shell scripts          → subline-terminal (double-clicking a .sh should RUN it)
 #   • code and config files  → VS Code (rift's "settings" item, .toml, .json, …)
 #
 # macOS has no "default terminal" or "default editor" setting: LaunchServices
@@ -48,27 +48,29 @@
 # Types deliberately NOT claimed for VS Code:
 #   public.html          → browser (Chrome); you want to *view* a web page
 #   public.log           → Console.app
-#   public.perl-script,  → Ghostty, by inheritance from the shell-script tree.
-#   public.shell-script     Claiming these for an editor would stop .sh files
-#   public.zsh-script       from running on double-click, which is the whole
-#   public.csh-script       point of the Ghostty group.
+#   public.perl-script   → subline-terminal, by inheritance from the
+#                          shell-script tree. The shell scripts themselves stay
+#                          out of the editor so a double-click runs them.
 #   public.comma-separated-values-text → OnlyOffice; a .csv is a spreadsheet
 
 let
-  ghostty = "com.mitchellh.ghostty";
+  terminal = "io.github.joonhoekim.SublineTerminal";
   vscode = "com.microsoft.VSCode";
 
   handlers = {
-    # ── Terminal-shaped files → Ghostty ──────────────────────────────────
-    # Only types Ghostty declares in its Info.plist are claimed. Deliberately
-    # left alone: public.directory (Finder owns folders — Ghostty is only
-    # registered as an Alternate) and com.apple.terminal.session (.term is
-    # Terminal's own format and Ghostty cannot read it).
-    "com.apple.terminal.shell-script" = ghostty;  # .command
-    "public.unix-executable" = ghostty;           # .tool and bare binaries
-    "public.shell-script" = ghostty;              # .sh
-    "public.zsh-script" = ghostty;                # .zsh — else defaults to Xcode
-    "public.csh-script" = ghostty;                # .csh
+    # ── Shell scripts → subline-terminal ─────────────────────────────────
+    # Exactly the types subline-terminal declares in its Info.plist
+    # (tools/macos-bundle.sh in that repo); it runs each in a window, in the
+    # script's folder. A type it does not declare would open the app and run
+    # nothing. Without the bash/ksh/tcsh lines those went to VS Code and TextEdit.
+    "com.apple.terminal.shell-script" = terminal;  # .command, .tool
+    "public.unix-executable" = terminal;           # bare executables
+    "public.shell-script" = terminal;              # .sh
+    "public.bash-script" = terminal;               # .bash
+    "public.zsh-script" = terminal;                # .zsh — else defaults to Xcode
+    "public.ksh-script" = terminal;                # .ksh
+    "public.csh-script" = terminal;                # .csh
+    "public.tcsh-script" = terminal;               # .tcsh
 
     # ── Code and config → VS Code ────────────────────────────────────────
     # The umbrella types. public.text is what Zed was riding to claim

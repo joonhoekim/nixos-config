@@ -114,7 +114,12 @@ section "launchd"
 # 있음" 사이를 오가므로 runs 로 본다.
 check_job() {  # <launchd 도메인> <plist>
   label="$(plutil -extract Label raw -o - "$2" 2>/dev/null)"
-  keep="$(plutil -extract KeepAlive raw -o - "$2" 2>/dev/null)"
+  # KeepAlive 가 PathState 같은 딕셔너리여도 조건이 서 있는 동안은 상시 job 이다
+  # (org.nixos.kanata·rift). raw 로 읽으면 딕셔너리는 첫 키 이름이 나와 true 가 아니다.
+  case "$(plutil -type KeepAlive "$2" 2>/dev/null)" in
+    dictionary) keep=true ;;
+    *) keep="$(plutil -extract KeepAlive raw -o - "$2" 2>/dev/null)" ;;
+  esac
   if ! info="$(launchctl print "$1/$label" 2>/dev/null)"; then
     bad "$label 이 launchd 에 올라와 있지 않다"
     hint "launchctl bootstrap $1 $2"

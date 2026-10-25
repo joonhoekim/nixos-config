@@ -155,9 +155,11 @@ glow_radius = 12.0
 animation_ms = 180.0
 
 [settings.ui.grid_motion]
-zoom = 0.2
-easing = "glide"
-duration_ms = 600.0
+zoom = 0.15
+easing = "snappy"
+duration_ms = 250.0
+zoom_out_time = 0.3
+zoom_in_time = 0.3
 
 [settings.gestures]
 # Upstream's three-finger horizontal swipe between workspaces. With the grid on

@@ -55,7 +55,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 | 대체 | rift-grid 포크 |
 
 `modules/darwin/brews.nix` 에 `"acsandmann/tap/rift"` 를 다시 넣을 수 있게 남겨 둔
-탭이다. `modules/darwin/rice/rift/config.toml` 은 포크에만 있는 명령을 쓰므로
+탭이다(그 파일도 뒤에 지웠다, 아래 brews.nix). `modules/darwin/rice/rift/config.toml` 은 포크에만 있는 명령을 쓰므로
 upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 설정도 포크 이전으로
 꺼내야 한다.
 
@@ -94,6 +94,17 @@ home-manager 가 걸던 읽기 전용 스토어 심링크를 지워 `rice_sync` 
 | 대상 | 빈 `homebrew.masApps` 와 mas 안내 주석, `manual.manpages.enable = false` |
 
 manpages 를 끈 것은 home-manager#3344(2022) 우회였다. 다시 빌드가 깨지면 그 한 줄만 되살린다.
+
+## brews.nix
+
+| | |
+|---|---|
+| 커밋 | `82fc9c2` chore(darwin): 비어 있던 brews.nix 를 지운다 |
+| 대상 | `modules/darwin/brews.nix`(빈 목록)와 `home-manager.nix` 의 `brews = ...` 줄 |
+
+`"acsandmann/tap/rift"` 한 줄을 두려고 2026-08-05 에 만든 파일이다. rift-grid 로 옮기며
+비었고, upstream rift 탭을 지우면서 남겨 둘 이유가 없어졌다. formula 가 필요해지면 파일을
+되살릴 필요 없이 `homebrew.brews = [ ... ];` 를 쓴다.
 
 ## 레포 밖에 남는 것
 

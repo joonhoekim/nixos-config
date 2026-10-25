@@ -33,7 +33,8 @@ drwxr-xr-x  root  /opt/homebrew/Library/Taps/homebrew/homebrew-core   ← 읽기
 drwxrwxr-x  jh    /opt/homebrew/Cellar                                ← 내 것
 ```
 
-선언은 두 파일에 있다 — `modules/darwin/brews.nix`(formula), `modules/darwin/casks.nix`(cask 앱).
+선언은 `modules/darwin/casks.nix`(cask 앱)에 있다. formula 는 지금 선언한 것이 없고, 필요하면
+`modules/darwin/home-manager.nix` 의 `homebrew.brews` 에 적는다.
 탭 자체와 brew 본체는 `flake.nix`의 `nix-homebrew` 블록이다.
 
 ---
@@ -155,7 +156,7 @@ someone-tap = {
 ```
 
 **이름이 두 벌인 게 함정이다.** flake 키는 저장소 이름 그대로 `someone/homebrew-tap`이지만,
-brew는 `homebrew-` 접두어를 생략해서 `someone/tap`으로 부른다. `brews.nix`/`casks.nix`에는
+brew는 `homebrew-` 접두어를 생략해서 `someone/tap`으로 부른다. `homebrew.brews`/`casks.nix`에는
 brew 쪽 철자를 적어야 한다 — `someone/tap/foo` 처럼.
 
 이렇게 선언해 두면 새 기계에서 명령형 `brew tap`이 필요 없다. 아직 계속 쓸지 모르겠으면

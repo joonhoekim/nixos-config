@@ -39,7 +39,8 @@
     # Taps are managed declaratively via nix-homebrew in flake.nix, so no
     # `homebrew.taps` entry is needed here.
     casks = pkgs.callPackage ./casks.nix {};
-    brews = pkgs.callPackage ./brews.nix {};
+    # formula 는 선언하지 않는다. nixpkgs 에 있는 것은 modules/shared/packages.nix 로
+    # 가고(flake.lock 이 판을 고정한다), 꼭 brew 여야 하면 여기 `brews = [ ... ];` 를 쓴다.
     # onActivation.cleanup = "uninstall";
 
     # masApps 는 ./ios.nix 에 있다(Xcode).

@@ -64,7 +64,6 @@ hosts/darwin/common.nix           ← macOS 진입점 (시스템 레벨 설정)
 ├──→ modules/darwin/home-manager.nix   ← macOS 유저/홈 레벨
 │    │   imports ./dock              (Dock 관리 모듈)
 │    │   casks   = ./casks.nix       (GUI 앱)
-│    │   brews   = ./brews.nix       (formula — 지금은 비어 있다)
 │    │   home-manager.users.<user>:
 │    │     packages = ./packages.nix             (shared + macOS 전용 패키지)
 │    │     programs = ../shared/home-manager.nix          ← 공유

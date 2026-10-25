@@ -34,7 +34,7 @@
 #   wezterm     wezterm.lua                                        macOS
 #   rift-grid   config.toml (키맵)                                  macOS
 #   linearmouse linearmouse.json (마우스 휠 방향)                    macOS
-#   helpers     rift 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
+#   helpers     rift-grid 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
 #
 # 플랫폼을 가리는 건 여기서만 필요하다. rice-save 는 라이브가 없으면 "skip
 # (absent)" 로 알아서 비켜 가는데, 그건 macOS 에 니리 파일이 없기 때문이다.
@@ -357,7 +357,7 @@ case " $want " in *" hypr "*)
   ;;
 esac
 
-# DMS 는 플러그인 폴더를 감시하지만 rift 처럼 rm+cp 가 감시를 끊을 수 있고,
+# DMS 는 플러그인 폴더를 감시하지만 rift-grid 처럼 rm+cp 가 감시를 끊을 수 있고,
 # plugin.json 을 바꿨으면 reload 로는 부족하다(../../modules/nixos/dms 머리말 —
 # 매니페스트는 dms restart 라야 읽힌다). 그래서 reload 를 걸어 보고, 실패하면
 # 손으로 할 일을 알려 준다.
@@ -407,24 +407,24 @@ case " $want " in *" profiles "* | *" fuzzel "*)
   ;;
 esac
 
-# rift 는 hot_reload 로 자기 설정을 지켜보지만, 그것만 믿으면 안 된다. 위 item()
+# rift-grid 는 hot_reload 로 자기 설정을 지켜보지만, 그것만 믿으면 안 된다. 위 item()
 # 이 `rm -rf` 뒤에 `cp` 라서 감시가 걸려 있던 아이노드가 통째로 사라진다 —
 # hyprland.lua 에서 한 번 속았던 것과 정확히 같은 자리다(그쪽 주석 참고).
 #
-# 그리고 이건 실패를 반드시 보여 줘야 하는 종류다. rift 는 한 줄만 틀려도 파일
+# 그리고 이건 실패를 반드시 보여 줘야 하는 종류다. rift-grid 는 한 줄만 틀려도 파일
 # 전체를 거부하고 *조용히 이전 설정으로 계속 돈다*. 그러면 "복원 완료" 를 보고도
 # 키맵은 옛것이고, 다음 로그인에야 알게 된다. reload 의 출력이 그 이유를 찍는
 # 유일한 자리라 삼키지 않고 그대로 흘린다.
 case " $want " in *" rift-grid "*)
   if command -v rift-grid-cli >/dev/null 2>&1; then
     if rift-grid-cli execute config reload; then
-      printf "${DIM}rift 설정 다시 읽혔다.${NC}\n"
+      printf "${DIM}rift-grid 설정 다시 읽혔다.${NC}\n"
     else
-      printf "${RED}rift 가 복원된 설정을 거부했다 — 위 이유를 볼 것. 옛 설정으로 돌고 있다.${NC}\n"
+      printf "${RED}rift-grid 가 복원된 설정을 거부했다 — 위 이유를 볼 것. 옛 설정으로 돌고 있다.${NC}\n"
       printf "${DIM}백업: ~/%s${NC}\n" "${backup#"$HOME"/}"
     fi
   else
-    # rift 를 아직 안 깐 Mac. 파일은 이미 제자리이므로 실패로 다루지 않는다.
+    # rift-grid 를 아직 안 깐 Mac. 파일은 이미 제자리이므로 실패로 다루지 않는다.
     printf "${DIM}rift-grid-cli 가 없다 — 설정은 심었고, 다음 실행부터 걸린다.${NC}\n"
   fi
   ;;
@@ -448,9 +448,9 @@ esac
 
 # wezterm 은 아무것도 안 한다. 자기 설정 파일을 스스로 지켜보고 있어서, 저장되는
 # 순간 열려 있는 창들이 알아서 다시 읽는다(modules/darwin/rice/wezterm/wezterm.lua).
-# rift 와 달리 rm+cp 에 안 걸리는 건, 이쪽은 디렉터리를 통째로 감시하기 때문이다.
+# rift-grid 와 달리 rm+cp 에 안 걸리는 건, 이쪽은 디렉터리를 통째로 감시하기 때문이다.
 #
-# rift 의 헬퍼(helpers)도 아무것도 안 한다. 키를 누를 때마다 새로 실행되는 셸
+# rift-grid 의 헬퍼(helpers)도 아무것도 안 한다. 키를 누를 때마다 새로 실행되는 셸
 # 스크립트라 다음 호출부터 바로 새 내용이다.
 
 printf "${GREEN}복원 완료.${NC}\n"

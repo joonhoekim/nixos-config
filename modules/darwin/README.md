@@ -7,9 +7,9 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ```
 .
 ├── rice/              # 시드하는 설정 — 심은 뒤엔 ~/.config 쪽이 원본이다.
-│                      #   rift/, wezterm/,
+│                      #   rift-grid/, wezterm/,
 │                      #   linearmouse/ (마우스 휠 방향),
-│                      #   bin/ (rift 키바인딩이 부르는 스크립트)
+│                      #   bin/ (rift-grid 키바인딩이 부르는 스크립트)
 │                      #   왕복은 apps/rice/save ↔ apps/rice/restore
 ├── dock/              # macOS Dock 항목을 선언적으로 관리하는 모듈
 ├── scripts/           # 셸이 소싱하는 macOS 전용 헬퍼 (colima-up)

@@ -50,7 +50,7 @@ let
 in
 
 # macOS ricing: the wallpaper → palette watcher and the seeded config files
-# (rift-grid, wezterm, LinearMouse, rift's helper scripts). What each piece
+# (rift-grid, wezterm, LinearMouse, rift-grid's helper scripts). What each piece
 # does and why there is no status bar: docs/macos-rice.md.
 #
 # The files below are seeds, not the live config. Once planted, ~/.config is
@@ -116,11 +116,11 @@ sys.exit(0 if not d.get("schemes") else 1)
       fi
       rice_sync ${./linearmouse/linearmouse.json} "$lmcfg"
 
-      # rift 키바인딩이 부르는 헬퍼. rift-grid/config.toml 이 이 경로를 직접 쓰므로
+      # rift-grid 키바인딩이 부르는 헬퍼. rift-grid/config.toml 이 이 경로를 직접 쓰므로
       # 옮기려면 키맵도 같이 고친다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 뒤 다시 읽히는 단계는 없다. wezterm·rift·LinearMouse 는 자기
+      # 시드한 뒤 다시 읽히는 단계는 없다. wezterm·rift-grid·LinearMouse 는 자기
       # 설정 파일을 감시하고, rice/bin 은 호출할 때마다 새로 읽힌다.
       # apps/rice/restore 는 rm+cp 로 덮어 감시를 끊으므로 그쪽이 reload 를 부른다.
     '';

@@ -38,7 +38,7 @@ hl.config({
         kb_layout = "us",
 
         -- 클릭해야 포커스가 간다. 세 WM 모두 같게 뒀다(니리는
-        -- focus-follows-mouse 줄을 뺐고, rift 는 focus_follows_mouse = false).
+        -- focus-follows-mouse 줄을 뺐고, rift-grid 는 focus_follows_mouse = false).
         --
         -- 호버 포커스와 키보드 타일러는 누가 주도권을 갖는지에 대해 서로 다른
         -- 답을 갖고 있다. 포인터는 마지막으로 놓아둔 자리에 그대로 있으면서도
@@ -46,7 +46,7 @@ hl.config({
         -- 시작하면 첫 타가 커서가 얹혀 있던 엉뚱한 창으로 들어갈 수 있고,
         -- 배경 창 위에서 스크롤하면 포커스를 통째로 빼앗긴다.
         --
-        -- 반대 방향(키보드로 포커스를 옮기면 커서가 따라오는 것)은 rift 쪽에서
+        -- 반대 방향(키보드로 포커스를 옮기면 커서가 따라오는 것)은 rift-grid 쪽에서
         -- 켜 두었다. 하이프랜드에 같은 설정은 없다.
         follow_mouse = 0,
 
@@ -198,7 +198,7 @@ hl.env("QT_QPA_PLATFORM", "wayland")
 -- 그대로 나온다.
 local mod = "SUPER"
 
--- 세 티어가 전부다. rift 와 니리도 같은 세 티어이고, macOS 만 mod 가 Alt 다
+-- 세 티어가 전부다. rift-grid 와 니리도 같은 세 티어이고, macOS 만 mod 가 Alt 다
 -- (Cmd 는 시스템이 가져간다). 전체 표는 docs/keymap.md.
 --
 --   Mod          간다, 연다
@@ -228,17 +228,17 @@ hl.bind(mod .. " + N", hl.dsp.exec_cmd("dms ipc call notifications toggle"))
 hl.bind(mod .. " + S", hl.dsp.exec_cmd("dms ipc call control-center toggle"))
 hl.bind(mod .. " + Escape", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
 -- 치트시트. 셸이 이 파일을 읽어서 만든다. H 는 IJKL 이 왼쪽을 J 로 가져가면서
--- 통째로 빈 자리가 됐고, Help 로 읽힌다. rift 에는 대응물이 없다 —
+-- 통째로 빈 자리가 됐고, Help 로 읽힌다. rift-grid 에는 대응물이 없다 —
 -- 그쪽 치트시트는 docs/keymap.md 다.
 hl.bind(mod .. " + H", hl.dsp.exec_cmd("dms ipc call keybinds toggle hyprland"))
 -- 오버뷰. 예전엔 Mod+O 였는데 그 자리는 이제 워크스페이스 앞으로 가기다.
--- rift 는 같은 키에서 macOS 미션 컨트롤을 연다.
+-- rift-grid 는 같은 키에서 macOS 미션 컨트롤을 연다.
 hl.bind(mod .. " + E", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
 --
 -- 버린 것 둘:
 --   Mod+L      잠금. IJKL 이 오른쪽을 L 로 가져갔다. 잠금은 Mod+Escape 의
 --              파워메뉴에 있고, 거기엔 잘못 눌렀을 때 되돌릴 기회까지 있다.
---   Mod+comma  DMS 설정 GUI. 런처에서 이름으로 부르면 된다. rift 는 이 자리를
+--   Mod+comma  DMS 설정 GUI. 런처에서 이름으로 부르면 된다. rift-grid 는 이 자리를
 --              toggle_stack 으로 쓴다.
 --
 -- Mod+SHIFT+E 는 로그아웃(`uwsm stop`)이었다. Mod+SHIFT+F / Mod+SHIFT+space 와
@@ -275,7 +275,7 @@ hl.bind(mod .. " + up", hl.dsp.focus({ direction = "u" }))
 hl.bind(mod .. " + down", hl.dsp.focus({ direction = "d" }))
 
 -- 워크스페이스. U 가 뒤로, O 가 앞으로 — I 를 위에서 감싸는 두 자리다.
--- 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다. 니리·rift 도 같은 두 키다.
+-- 예전엔 U/I 였는데 IJKL 이 I 를 가져갔다. 니리·rift-grid 도 같은 두 키다.
 hl.bind(mod .. " + U", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mod .. " + O", hl.dsp.focus({ workspace = "e+1" }))
 -- 직전 워크스페이스. 검증함 (2026-08-06, 0.56.1) — 2↔5↔7 왕복까지 봤다.
@@ -308,7 +308,7 @@ hl.bind(mod .. " + SHIFT + down", hl.dsp.window.move({ direction = "d" }))
 
 hl.bind(mod .. " + SHIFT + U", hl.dsp.window.move({ workspace = "e-1" }))
 hl.bind(mod .. " + SHIFT + O", hl.dsp.window.move({ workspace = "e+1" }))
--- 창을 워크스페이스 N 으로. rift 에만 있던 것이고, 여기 자리는 비어 있었다.
+-- 창을 워크스페이스 N 으로. rift-grid 에만 있던 것이고, 여기 자리는 비어 있었다.
 for i = 1, 9 do
     hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
 end

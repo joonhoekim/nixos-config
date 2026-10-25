@@ -2,7 +2,7 @@
 #
 # This copy is a *seed*. modules/darwin/rice plants it at
 # ~/.config/rift-grid/config.toml on a machine that has none, and after that the
-# live file is the original — edit that one, watch rift hot-reload it, and run
+# live file is the original — edit that one, watch rift-grid hot-reload it, and run
 # `apps/rice/save` to bring the result back here. `apps/rice/restore rift-grid`
 # pushes the other way. If a change does not seem to take, press Alt+Ctrl+R
 # (reload_config, bound below); it also prints the reason when the file is bad.
@@ -69,7 +69,7 @@ window_insertion_point = "next_to_selection"
 equalize_nodes = true
 
 [settings.layout.scrolling]
-# Width of a new column, as a fraction of the display. rift has no preset
+# Width of a new column, as a fraction of the display. rift-grid has no preset
 # cycle like niri's 33/50/66; Alt+Minus / Alt+Equal walk it between the bounds.
 column_width_ratio = 0.5
 min_column_width_ratio = 0.33
@@ -126,7 +126,7 @@ enabled = true
 
 [settings.ui.mission_control]
 # On because Alt+O drives it (`show_mission_control_all`), the overview key of
-# subline's ijkl preset. rift can only reach the overview with this enabled.
+# subline's ijkl preset. rift-grid can only reach the overview with this enabled.
 enabled = true
 # Recapture the visible previews twice a second while the overview is open, so
 # the cells show what the windows are doing now (rift-grid only).
@@ -287,14 +287,14 @@ move2 = "Alt + Ctrl"
 "Alt + 9" = { switch_to_grid = 9 }
 
 # subline-terminal (docs/subline-terminal.md). Through `open -n` so
-# LaunchServices starts it: it is Regular from the start (rift admits it at
-# once) and not rift's child, so restarting rift does not end the terminals.
+# LaunchServices starts it: it is Regular from the start (rift-grid admits it at
+# once) and not rift-grid's child, so restarting rift-grid does not end the terminals.
 # `-n` starts a new process each time, which hands its window to the app
 # already up.
 "Alt + Enter" = { exec = ["/bin/sh", "-c", "exec /usr/bin/open -n -a \"$HOME/Applications/subline-terminal.app\""] }
 
 # Overview — subline's Mod+O. hyprland has the DMS overview and niri its own;
-# here it is rift-grid's grid overview, which rift drives as Mission Control.
+# here it is rift-grid's grid overview, which rift-grid drives as Mission Control.
 # Requires [settings.ui.mission_control] enabled = true, above.
 "Alt + O" = "show_mission_control_all"
 
@@ -302,7 +302,7 @@ move2 = "Alt + Ctrl"
 # same thing on macOS: a Finder window on the home folder.
 "Alt + E" = { exec = ["/bin/sh", "-c", "open ~"] }
 
-# rift's settings window — subline's Mod+Comma opens its own settings.
+# rift-grid's settings window — subline's Mod+Comma opens its own settings.
 "Alt + Comma" = { exec = ["/bin/sh", "-c", "rift-grid-cli settings"] }
 
 # Close the focused window (hyprland/niri Mod+Q). Distinct from Cmd-Q, which
@@ -327,7 +327,7 @@ move2 = "Alt + Ctrl"
 "Alt + Minus" = { resize_window_shrink = "smart" }
 "Alt + Equal" = { resize_window_grow = "smart" }
 
-# Width preset cycle on hyprland and niri. rift has no maximise command, so
+# Width preset cycle on hyprland and niri. rift-grid has no maximise command, so
 # monocle.sh toggles the focused column wide and back (its header has how).
 # Seeded to $HOME by modules/darwin/rice — a store path cannot be
 # interpolated into plain TOML.
@@ -390,7 +390,7 @@ move2 = "Alt + Ctrl"
 "Alt + Ctrl + Shift + 3" = { set_workspace_layout = { mode = "master_stack" } }
 "Alt + Ctrl + Shift + 4" = { set_workspace_layout = { mode = "scrolling" } }
 
-# ── Tier 4 — rift only ───────────────────────────────────────────────────
+# ── Tier 4 — rift-grid only ───────────────────────────────────────────────────
 # Deliberately not mirrored anywhere. These are tree operations that the
 # scrolling layouts on Linux do not have a concept of, so giving them keys
 # that mean something else over there would cost more than it buys. They sit
@@ -405,7 +405,7 @@ move2 = "Alt + Ctrl"
 # scrolling strip grows rightwards; expelling ignores the argument.
 #
 # It must have one: a bare `"consume_or_expel_window"` is a parse error, and
-# rift rejects the *whole file* on one bad line and silently keeps running the
+# rift-grid rejects the *whole file* on one bad line and silently keeps running the
 # previous config. `rift-grid-cli execute config reload` prints the reason.
 "Alt + Ctrl + E" = { consume_or_expel_window = "right" }
 

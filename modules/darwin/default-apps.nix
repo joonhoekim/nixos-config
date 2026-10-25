@@ -4,7 +4,7 @@
 #
 # Two groups, one mechanism:
 #   • shell scripts          → subline-terminal (double-clicking a .sh should RUN it)
-#   • code and config files  → VS Code (rift's "settings" item, .toml, .json, …)
+#   • code and config files  → VS Code (rift-grid's "settings" item, .toml, .json, …)
 #
 # macOS has no "default terminal" or "default editor" setting: LaunchServices
 # only knows the pseudo-UTIs com.apple.default-app.{web-browser,mail-client,…},
@@ -82,8 +82,8 @@ let
     "public.utf8-plain-text" = vscode;
     "public.source-code" = vscode;
 
-    # Config formats. public.toml is the one that sent rift's "settings" menu
-    # item to Zed — rift opens ~/.config/rift-grid/config.toml via LaunchServices.
+    # Config formats. public.toml is the one that sent rift-grid's "settings" menu
+    # item to Zed — rift-grid opens ~/.config/rift-grid/config.toml via LaunchServices.
     "public.toml" = vscode;
     "public.json" = vscode;
     "public.yaml" = vscode;

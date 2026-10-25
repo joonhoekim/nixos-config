@@ -161,7 +161,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 
 - `./apps/check/mac` (`nix run .#check`) — 활성화된 세대가 실제로 먹고 있는지 단언한다.
   `/etc` 링크, nix-daemon, launchd job(crash-loop 포함), `defaults` 값과 타입,
-  LaunchServices 핸들러의 실제 해석 결과, rift 의 창 목록(손쉬운 사용 권한), kanata 의
+  LaunchServices 핸들러의 실제 해석 결과, rift-grid 의 창 목록(손쉬운 사용 권한), kanata 의
   DriverKit 확장과 서명, Brewfile. 무엇을 어떻게 보는지는 스크립트 머리말.
 - `./apps/check/snapshot` (`nix run .#check-snapshot`) — 선언 밖의 변화까지 보도록 상태를
   텍스트로 떠 두고 `diff` 로 비교한다. 체크아웃의 `local/snapshot/` 에 쌓이고, `local/` 은
@@ -172,9 +172,9 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 1. 업그레이드 전에 `check` 가 초록이 되게 맞춘다. 기준선이 초록이 아니면 나중의 빨강이
    회귀인지 원래 있던 문제인지 구분되지 않는다. 그리고 `check --record` — 통과한 조합을
    [os-support.md](os-support.md) 에 남기고 스냅숏도 함께 뜬다.
-2. rift · kanata · nix-darwin · LinearMouse 의 이슈 트래커에서 새 버전 대응을 본다.
+2. rift-grid · kanata · nix-darwin · LinearMouse 의 이슈 트래커에서 새 버전 대응을 본다.
    macOS 는 메이저 다운그레이드가 사실상 재설치라, 점검이 회귀를 잡아도 되돌리는 비용이 크다.
-   private API 를 쓰는 rift 가 가장 위험하다.
+   private API 를 쓰는 rift-grid 가 가장 위험하다.
 3. 업그레이드 직후, **`build-switch` 전에** `check` 와 `snapshot` → `snapshot diff`.
    OS 가 무엇을 되돌렸는지가 여기서 보인다.
 4. `build-switch` 뒤 `check`. 여기서도 빨강이면 nix-darwin 으로 복구되지 않는 진짜 회귀다.
@@ -185,7 +185,7 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 스크립트로 확인할 수 없어서 손으로 보는 것:
 
 - 한/영 전환(오른쪽 ⌘ → F18 → 입력 소스), Caps Lock 레이어 키 몇 개
-- rift 키바인드로 창 이동·워크스페이스 전환
+- rift-grid 키바인드로 창 이동·워크스페이스 전환
 - 외장 마우스 휠 방향(LinearMouse — 입력 모니터링 권한은 끊겨도 증상이 이것뿐이다)
 - Stats 메뉴바, 스크린샷 단축키, Touch ID sudo
 - System Settings > General > Login Items 에서 "백그라운드 허용"을 다시 묻는 항목
@@ -246,7 +246,7 @@ home-manager.backupFileExtension = "backup";   # 기존 파일을 <name>.backup 
 재실행하면 `~/.zshrc` 등이 `~/.zshrc.backup`으로 옮겨지고 hm 버전이 자리잡는다. 내용이 같은 파일은
 "skipped since they are the same"으로 건너뛴다(충돌 아님). 주의: `.backup`이 이미 있으면 또 에러 — 지우고 재시도.
 
-**6. rift 가 안 뜬다 — rift-grid 는 build-switch 끝에서 따로 빌드된다.** 창 관리자는 rift 포크
+**6. rift-grid 가 안 뜬다 — rift-grid 는 build-switch 끝에서 따로 빌드된다.** 창 관리자는 rift 포크
 rift-grid(공개 레포 `joonhoekim/rift-grid`)이고, TCC 허가를 재빌드에 견디게 하려고 nix 가 아니라
 기계마다 빌드·서명한다(`apps/rift-grid` 머리말). build-switch 는 활성화 뒤 `apps/rift-grid --auto`
 를 부른다: 서명 신원이 없으면 `apps/mac-signing-cert` 로 만들고(키체인 인증 창이 한 번 뜰 수 있다),
@@ -255,11 +255,11 @@ rift-grid(공개 레포 `joonhoekim/rift-grid`)이고, TCC 허가를 재빌드�
 그때는 build-switch 를 한 번 더 돌린다. 손으로 부르려면:
 
 ```bash
-nix run .#rift-grid             # 커밋이 같아도 다시 빌드하고 rift 를 다시 띄운다
+nix run .#rift-grid             # 커밋이 같아도 다시 빌드하고 rift-grid 를 다시 띄운다
 ```
 
-바이너리가 생기면 launchd 가 rift 를 띄우고, rift 가 처음 뜰 때 **손쉬운 사용**과 **화면 및 시스템
-오디오 녹음**(오버뷰 미리보기)을 차례로 묻는다. 둘 다 허용한 뒤 rift 를 다시 띄운다 — 허가는 다시
+바이너리가 생기면 launchd 가 rift-grid 를 띄우고, rift-grid 가 처음 뜰 때 **손쉬운 사용**과 **화면 및 시스템
+오디오 녹음**(오버뷰 미리보기)을 차례로 묻는다. 둘 다 허용한 뒤 rift-grid 를 다시 띄운다 — 허가는 다시
 띄워야 먹는다. 창을 놓쳤으면 시스템 설정 > 개인정보 보호 및 보안에서 `~/.local/bin/rift-grid` 에 직접 준다:
 
 ```bash

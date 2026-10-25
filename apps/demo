@@ -6,7 +6,7 @@
 #   apps/demo incident         그 시나리오를 지금 화면에서 시연
 #   apps/demo incident --fast  두 배 빠르게 (--slow 는 그 반대)
 #
-# 다른 apps 스크립트와 같이 **한 파일이 양쪽을 다 안다**. macOS 에서는 rift 를,
+# 다른 apps 스크립트와 같이 **한 파일이 양쪽을 다 안다**. macOS 에서는 rift-grid 를,
 # NixOS 에서는 하이프랜드를 몬다. 자막에 뜨는 키는 양쪽 다 docs/keymap.md 의
 # 그것이고 — 그게 이 레포가 세 창 관리자에 같은 키를 깐 이유다 — 그 아래에서
 # 부르는 것만 갈린다.
@@ -72,7 +72,7 @@ nap() {
 }
 
 # 창 제목을 붙인다. 터미널의 --title 류 옵션은 -e 로 준 명령이 덮어쓰기 때문에
-# 안에서 이스케이프 시퀀스로 직접 세우는 쪽이 확실하다. rift 가 이 제목을
+# 안에서 이스케이프 시퀀스로 직접 세우는 쪽이 확실하다. rift-grid 가 이 제목을
 # 읽어서 자기 창 목록에 쓰므로(`rift-grid-cli query windows`) 시연이 헤맬 때
 # 어느 창이 무엇인지 밖에서 볼 수 있다.
 set_title() { printf '\033]0;%s\007' "$1"; }
@@ -184,13 +184,13 @@ REPO="$(cd "$(dirname "$SELF")/.." && pwd)"
 SPEED=1
 
 case "$(uname)" in
-Darwin) WM=rift ;;
+Darwin) WM=rift-grid ;;
 *) WM=hypr ;;
 esac
 
 usage() {
 	printf "${BOLD}시연할 시나리오${NC}\n\n"
-	if [ "$WM" = rift ]; then
+	if [ "$WM" = rift-grid ]; then
 		printf "  ${GREEN}incident${NC}   스테이징에서 500 이 난 30초 — 창을 벌리고, 합치고, 옆 워크스페이스로 던진다\n"
 		printf "  ${GREEN}layouts${NC}    같은 창 넷을 네 가지 레이아웃 모드에 넣어 본다\n"
 	else
@@ -227,7 +227,7 @@ done
 
 _ok=no
 [ "$SCENARIO" = incident ] && _ok=yes
-[ "$WM" = rift ] && [ "$SCENARIO" = layouts ] && _ok=yes
+[ "$WM" = rift-grid ] && [ "$SCENARIO" = layouts ] && _ok=yes
 [ "$WM" = hypr ] && [ "$SCENARIO" = shell ] && _ok=yes
 [ "$_ok" = yes ] || {
 	printf "${RED}여기서는 그런 시나리오가 없다: %s${NC}\n\n" "$SCENARIO"
@@ -240,13 +240,13 @@ command -v jq >/dev/null 2>&1 || {
 	exit 1
 }
 
-if [ "$WM" = rift ]; then
+if [ "$WM" = rift-grid ]; then
 	command -v rift-grid-cli >/dev/null 2>&1 || {
-		printf "${RED}rift-grid-cli 가 없다.${NC} 이 시연은 macOS 의 rift 세션용이다.\n"
+		printf "${RED}rift-grid-cli 가 없다.${NC} 이 시연은 macOS 의 rift-grid 세션용이다.\n"
 		exit 1
 	}
 	rift-grid-cli query workspaces >/dev/null 2>&1 || {
-		printf "${RED}rift 가 응답하지 않는다.${NC} 창 관리자가 떠 있어야 시연할 수 있다.\n"
+		printf "${RED}rift-grid 가 응답하지 않는다.${NC} 창 관리자가 떠 있어야 시연할 수 있다.\n"
 		exit 1
 	}
 	WEZTERM="/Applications/WezTerm.app/Contents/MacOS/wezterm"
@@ -299,11 +299,11 @@ fi
 # 창 하나를 옆 워크스페이스로 던지는 대목이 있어서다(Mod+Shift+O) — 그 옆이
 # 남의 자리면 안 된다.
 #
-# rift 의 워크스페이스는 0 부터 세는 고정 아홉 칸이고(디스플레이마다 한 벌),
+# rift-grid 의 워크스페이스는 0 부터 세는 고정 아홉 칸이고(디스플레이마다 한 벌),
 # 하이프랜드 쪽은 1 부터 세며 창이 없으면 아예 존재하지 않는다. 그래서 고르는
 # 방법이 다르다: 앞은 목록에서 빈 칸을 찾고, 뒤는 "쓰이고 있는 번호"의 여집합을
 # 1..9 에서 찾는다. 아래 WS_LABEL 이 사람에게 보여 줄 번호(둘 다 1 부터)다.
-if [ "$WM" = rift ]; then
+if [ "$WM" = rift-grid ]; then
 	STATE="$(rift-grid-cli query workspaces)"
 	HOME_WS="$(printf '%s' "$STATE" | jq -r '.[] | select(.is_active) | .index')"
 	DEMO_WS="$(printf '%s' "$STATE" | jq -r '
@@ -323,7 +323,7 @@ fi
 	exit 1
 }
 NEXT_WS=$((DEMO_WS + 1))
-if [ "$WM" = rift ]; then
+if [ "$WM" = rift-grid ]; then
 	WS_LABEL=$((DEMO_WS + 1))
 	HOME_LABEL=$((HOME_WS + 1))
 else
@@ -345,7 +345,7 @@ cleanup() {
 	# 창 안의 루프들이 sentinel 을 다시 보기까지의 시간. 0.1 초 단위로 도니
 	# 넉넉하다. 여기서 창 관리자에게 창을 닫으라고 하지 않는 것이 핵심이다.
 	sleep 0.6
-	if [ "$WM" = rift ]; then
+	if [ "$WM" = rift-grid ]; then
 		rift-grid-cli execute workspace switch "$HOME_WS" >/dev/null 2>&1 || true
 	else
 		hyprctl dispatch "hl.dsp.focus({ workspace = $HOME_WS })" >/dev/null 2>&1 || true
@@ -377,7 +377,7 @@ say() {
 	# 띠의 일부뿐이라, 컬럼이 셋을 넘으면 자막이 밀려 나간다 — 포커스를 주는
 	# 것이 그 컬럼을 화면 안으로 도로 끌어오는 유일한 방법이다.
 	#
-	# float 으로 빼 두는 쪽이 처음 생각한 답이었는데 rift 에서는 안 된다: 타일로
+	# float 으로 빼 두는 쪽이 처음 생각한 답이었는데 rift-grid 에서는 안 된다: 타일로
 	# 먼저 들어갔다가 float 이 되므로 크기가 타일 시절 그대로 화면 전체이고,
 	# `window resize-by` 도 XTWINOPS(`ESC[8;rows;cols t`)도 float 창에는 먹지
 	# 않는다. 결국 화면을 통째로 덮은 자막이 배치를 가리거나, 뒤로 밀려 아예
@@ -397,7 +397,7 @@ say() {
 # 셋 다 실패해도 시연을 멈추지 않는다 — 한 스텝 못 도는 것보다 창을 띄워 놓은
 # 채 죽는 쪽이 나쁘다.
 
-if [ "$WM" = rift ]; then
+if [ "$WM" = rift-grid ]; then
 
 	act() { rift-grid-cli execute "$@" >/dev/null 2>&1 || true; }
 
@@ -724,7 +724,7 @@ hypr_incident() {
 	act "hl.dsp.layout(\"colresize -0.1\")"
 	beat 8
 
-	# rift 와 niri 에는 상태를 보고 알아서 뒤집히는 액션 하나가 있는데
+	# rift-grid 와 niri 에는 상태를 보고 알아서 뒤집히는 액션 하나가 있는데
 	# 하이프랜드에는 없다. hyprland.lua 의 Mod+Ctrl+E 는 컬럼에 형제가 몇인지
 	# 세어서 consume 과 promote 중 하나를 고르는 함수다 — 여기서는 시연이
 	# 어느 쪽을 보여 주는지 알고 있으므로 그 둘을 직접 부른다.
@@ -760,7 +760,7 @@ hypr_incident() {
 	act "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })"
 	beat 8
 
-	# follow 하지 않는 이유는 rift 쪽과 같다 — say() 주석 참고.
+	# follow 하지 않는 이유는 rift-grid 쪽과 같다 — say() 주석 참고.
 	say "Super + Shift + O" "이 창을 다음 워크스페이스로" \
 		"Shift 는 어디서나 '창을 데리고 간다' 는 뜻이다." \
 		"테스트 창이 여기서 빠져 옆자리로 넘어간다."
@@ -878,8 +878,8 @@ hypr_shell() {
 printf "\n${BOLD}%s${NC} ${DIM}— 워크스페이스 %s 를 빌려 쓴다${NC}\n\n" "$SCENARIO" "$WS_LABEL"
 
 case "$WM/$SCENARIO" in
-rift/incident) rift_incident ;;
-rift/layouts) rift_layouts ;;
+rift-grid/incident) rift_incident ;;
+rift-grid/layouts) rift_layouts ;;
 hypr/incident) hypr_incident ;;
 hypr/shell) hypr_shell ;;
 esac

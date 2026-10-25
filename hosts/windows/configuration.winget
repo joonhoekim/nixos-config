@@ -68,7 +68,7 @@ properties:
     #   id: xmouse
     #   directives: { description: X-Mouse Button Control }
     #   settings: { id: Highresolution.X-MouseButtonControl, source: winget }
-    # rift 대신
+    # rift-grid 대신
     # - resource: Microsoft.WinGet.DSC/WinGetPackage
     #   id: glazewm
     #   directives: { description: GlazeWM }

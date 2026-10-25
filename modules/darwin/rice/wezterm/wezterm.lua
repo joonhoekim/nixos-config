@@ -75,7 +75,7 @@ config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = false
 config.adjust_window_size_when_changing_font_size = false
 
--- macOS 에서 왼쪽 Option 은 rift 의 수정자다(modules/darwin/rice/rift-grid/config.toml).
+-- macOS 에서 왼쪽 Option 은 rift-grid 의 수정자다(modules/darwin/rice/rift-grid/config.toml).
 -- 여기서 Alt 로 잡아 버리면 alt-h 같은 바인딩이 터미널에 먹혀서 창 전환이 안
 -- 된다. 오른쪽 Option 은 조판 문자용으로 남겨 둔다.
 config.send_composed_key_when_left_alt_is_pressed = false

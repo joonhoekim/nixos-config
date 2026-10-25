@@ -87,7 +87,7 @@ hl.bind(mod .. " + C", hl.dsp.layout("fit_into_view"))
 hl.bind(mod .. " + equal", hl.dsp.layout("colresize +0.1"))
 hl.bind(mod .. " + minus", hl.dsp.layout("colresize -0.1"))
 -- 니리의 switch-preset-column-width. 목록은 위 explicit_column_widths 다.
--- rift 에는 이 동작이 아예 없어서 그쪽은 같은 키에 monocle 스크립트가 걸린다.
+-- rift-grid 에는 이 동작이 아예 없어서 그쪽은 같은 키에 monocle 스크립트가 걸린다.
 hl.bind(mod .. " + R", hl.dsp.layout("colresize +conf"))
 
 ------------------------------------------------------------------------
@@ -103,7 +103,7 @@ hl.bind(mod .. " + SHIFT + right", hl.dsp.layout("swapcol r"))
 ------------------------------------------------------------------------
 -- 티어 3 — Mod+CTRL: WM 에게 말한다
 ------------------------------------------------------------------------
--- 이웃과 합치기 / 떼기. rift 의 Mod+Ctrl+E(consume_or_expel_window)와 니리의
+-- 이웃과 합치기 / 떼기. rift-grid 의 Mod+Ctrl+E(consume_or_expel_window)와 니리의
 -- consume-or-expel-window-right 자리다. 세 WM 에서 같은 키가 같은 일을 한다.
 --
 -- 하이프랜드에는 그 하나짜리 액션이 없다. layoutmsg 로 쪼개져 있고, 둘 중 뭘

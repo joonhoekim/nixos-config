@@ -10,7 +10,7 @@ NixOS 에 어떻게 까는지를 적는다. 터미널 자체의 설계는
 tmux 의 `new -s` / `ls` / `attach -t` 를 GUI 로 하는 터미널이다. 주된 쓰임은
 Claude Code 같은 오래 도는 프로그램을, 창을 닫거나 앱을 다시 띄워도 그대로
 살려 두는 것이다. 창 나누기·탭(터미널 속 터미널)은 없다 — 배치는 창 관리자
-(rift)의 일이다.
+(rift-grid)의 일이다.
 
 | 조각 | 하는 일 |
 |---|---|
@@ -32,16 +32,16 @@ Claude Code 같은 오래 도는 프로그램을, 창을 닫거나 앱을 다시
 
 ### 쓰는 법
 
-`Mod+Return`(rift 는 `Alt+Enter`)이 인자 없이 띄운다. 그러면 **세션 목록부터** 열고(세션이
+`Mod+Return`(rift-grid 는 `Alt+Enter`)이 인자 없이 띄운다. 그러면 **세션 목록부터** 열고(세션이
 하나도 없으면 바로 새 세션), 거기서 붙을 세션을 고르거나 새로 만든다. 이건 터미널의
 `start` 설정이 정한다(기본 `pick`, `start = "new"` 면 바로 새 세션) — 창 관리자 쪽 키
-설정은 인자를 주지 않으므로 이 설정 하나가 네 창 관리자(subline·Hyprland·niri·rift)
+설정은 인자를 주지 않으므로 이 설정 하나가 네 창 관리자(subline·Hyprland·niri·rift-grid)
 모두를 정한다.
 
-rift 는 `open -n -a ~/Applications/subline-terminal.app` 으로 띄운다. LaunchServices 를
-거쳐야 앱이 처음부터 Regular 로 떠서 rift 가 바로 받고, rift 의 자식 프로세스가 아니라
-rift 를 다시 띄워도 창이 남는다. `-n` 이라 매번 새 프로세스가 뜨고, 그것이 떠 있는 앱에
-창을 넘기고 끝난다. 환경 변수는 `open` 이 rift 의 것을 그대로 넘긴다.
+rift-grid 는 `open -n -a ~/Applications/subline-terminal.app` 으로 띄운다. LaunchServices 를
+거쳐야 앱이 처음부터 Regular 로 떠서 rift-grid 가 바로 받고, rift-grid 의 자식 프로세스가 아니라
+rift-grid 를 다시 띄워도 창이 남는다. `-n` 이라 매번 새 프로세스가 뜨고, 그것이 떠 있는 앱에
+창을 넘기고 끝난다. 환경 변수는 `open` 이 rift-grid 의 것을 그대로 넘긴다.
 
 ```sh
 subline-terminal                # 세션 목록부터 (start = "new" 면 새 세션)

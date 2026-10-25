@@ -62,7 +62,7 @@
     # signature, and only the local identity from apps/mac-signing-cert keeps
     # them across rebuilds (the reasoning is at the top of apps/rift-grid).
     #
-    # `path` matters: rift's keybindings shell out to `rift-grid-cli` (sibling in
+    # `path` matters: rift-grid's keybindings shell out to `rift-grid-cli` (sibling in
     # ~/.local/bin) and to tools in systemPath — and a LaunchAgent inherits
     # none of a login shell's PATH.
     rift-grid = {
@@ -73,9 +73,9 @@
         # Kept alive while the binary exists, rather than unconditionally. On a
         # machine where apps/rift-grid has not run yet there is nothing to
         # start, and plain KeepAlive would turn that into a restart loop; with
-        # PathState launchd waits and starts rift once the binary appears.
+        # PathState launchd waits and starts rift-grid once the binary appears.
         KeepAlive.PathState."/Users/${user}/.local/bin/rift-grid" = true;
-        # Not optional in practice. Without these, rift's output goes nowhere:
+        # Not optional in practice. Without these, rift-grid's output goes nowhere:
         # the first time it refused to start (see
         # docs/postmortems/2026-08-04-macos-rift-sketchybar.md) the reason was
         # printed to a stdout nobody was reading, and the only visible symptom
@@ -195,7 +195,7 @@
         autohide-time-modifier = 0.2;
         show-recents = false;
         launchanim = true;
-        # Bottom, not right. The scrolling layout in rift moves windows
+        # Bottom, not right. The scrolling layout in rift-grid moves windows
         # horizontally, so a right-edge Dock sits exactly where columns enter
         # and leave the screen — every reveal collides with the strip. At the
         # bottom it only ever eats vertical space, which the layout has to
@@ -255,23 +255,23 @@
       #   false = each display gets its own Spaces (macOS default)
       #   true  = one Space spans every display
       #
-      # This is a hard requirement of the window manager. rift refuses to
+      # This is a hard requirement of the window manager. rift-grid refuses to
       # start otherwise — not a degraded mode, an immediate exit:
       #
       #   Rift detected that the macOS setting "Displays have separate Spaces"
       #   is disabled. Rift currently requires this setting to be enabled.
       #
       # And because the LaunchAgent has KeepAlive, that exit becomes a crash
-      # loop that looks like "rift just doesn't run" — `launchctl print
+      # loop that looks like "rift-grid just doesn't run" — `launchctl print
       # gui/$UID/org.nixos.rift-grid` showing `last exit code = 1` is the tell.
       # Running ~/.local/bin/rift-grid in a terminal prints the reason; the
       # agent's stdout goes nowhere.
       #
-      # So: leave this at `false` for as long as rift is the WM.
+      # So: leave this at `false` for as long as rift-grid is the WM.
       #
       # A logout is required either way — the value lands in
       # com.apple.spaces immediately, but WindowServer only reads it at login.
-      # rift's own check reads the preference, so it will start before the
+      # rift-grid's own check reads the preference, so it will start before the
       # logout while windows still behave the old way.
       #
       # (The companion "Automatically rearrange Spaces" toggle is handled
@@ -301,7 +301,7 @@
 
       # No _HIHideMenuBar here. It was left off while sketchybar was competing
       # for the same strip, and now there is nothing to compete: the menu bar
-      # is where rift draws its workspace indicator
+      # is where rift-grid draws its workspace indicator
       # ([settings.ui.menu_bar] in modules/darwin/rice/rift-grid/config.toml), so hiding
       # it would hide the one thing this setup added to it.
 

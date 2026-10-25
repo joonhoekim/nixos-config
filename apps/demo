@@ -41,7 +41,7 @@
 # 자막의 키 이름과 아래 호출들은 두 설정 파일을 그대로 옮긴 것이다. 그 파일이
 # 바뀌면 여기도 같이 바뀌어야 한다.
 #
-#   macOS      modules/darwin/rice/rift/config.toml   의 [keys]
+#   macOS      modules/darwin/rice/rift-grid/config.toml   의 [keys]
 #   NixOS      modules/nixos/hyprland/rice/hyprland.lua 의 키바인드 절
 #
 # 하이프랜드 쪽에서 무엇을 부를 수 있는지(그리고 무엇이 `ok` 를 돌려주면서

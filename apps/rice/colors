@@ -170,7 +170,7 @@ inactive="0xff${inactive_hex}"
 # 값과 다르면 사람이 바꾼 것으로 보고 건너뛴다. 다시 벽지를 따르게 하려면 $state 를
 # 지우거나 설정의 색을 그 파일의 값으로 되돌린다. $state 가 없으면(처음) 쓴다.
 riftcfg="$HOME/.config/rift-grid/config.toml"
-state="$cache/rift-border-colors"
+state="$cache/rift-grid-border-colors"
 border_colors() {
 	awk '
 		/^\[/ { in_borders = ($0 == "[settings.ui.borders]") }

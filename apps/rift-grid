@@ -33,7 +33,7 @@
 # ── 어디에 까는가 ─────────────────────────────────────────────────────────
 # ~/.local/bin/rift-grid, ~/.local/bin/rift-grid-cli. launchd 에이전트(hosts/darwin/
 # common.nix 의 rift)가 이 경로를 띄우고, 셸과 rift 키바인딩은 PATH 로 rift-grid-cli
-# 에 닿는다. brew 의 rift 는 더 쓰지 않는다 — 설정(rice/rift/config.toml)이
+# 에 닿는다. brew 의 rift 는 더 쓰지 않는다 — 설정(rice/rift-grid/config.toml)이
 # grid_focus 같은 포크 전용 명령을 쓰므로 원본 rift 는 그 설정을 읽지 못한다.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
@@ -48,7 +48,7 @@ REPO="https://github.com/joonhoekim/rift-grid.git"
 BIN="$HOME/.local/bin"
 # apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
 CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
-AGENT="gui/$(id -u)/org.nixos.rift"
+AGENT="gui/$(id -u)/org.nixos.rift-grid"
 # 마지막으로 깐 소스 커밋. --auto 가 "할 일 없음"을 가르는 기준이다.
 STAMP="$BIN/.rift-grid.commit"
 # mise 가 rustup 으로 까는 자리. build-switch 의 셸 PATH 에는 아직 없을 수 있다.

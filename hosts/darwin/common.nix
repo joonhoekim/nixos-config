@@ -65,7 +65,7 @@
     # `path` matters: rift's keybindings shell out to `rift-grid-cli` (sibling in
     # ~/.local/bin) and to tools in systemPath — and a LaunchAgent inherits
     # none of a login shell's PATH.
-    rift = {
+    rift-grid = {
       command = "/Users/${user}/.local/bin/rift-grid";
       path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];
       serviceConfig = {
@@ -81,8 +81,8 @@
         # printed to a stdout nobody was reading, and the only visible symptom
         # was a WM that silently did not run. run_on_start failures are the
         # same shape — a hook that never fires leaves no trace at all.
-        StandardOutPath = "/tmp/rift.log";
-        StandardErrorPath = "/tmp/rift.log";
+        StandardOutPath = "/tmp/rift-grid.log";
+        StandardErrorPath = "/tmp/rift-grid.log";
       };
     };
     # Menu-bar system monitor — start at login, but respect a manual quit.
@@ -263,7 +263,7 @@
       #
       # And because the LaunchAgent has KeepAlive, that exit becomes a crash
       # loop that looks like "rift just doesn't run" — `launchctl print
-      # gui/$UID/org.nixos.rift` showing `last exit code = 1` is the tell.
+      # gui/$UID/org.nixos.rift-grid` showing `last exit code = 1` is the tell.
       # Running ~/.local/bin/rift-grid in a terminal prints the reason; the
       # agent's stdout goes nowhere.
       #
@@ -302,7 +302,7 @@
       # No _HIHideMenuBar here. It was left off while sketchybar was competing
       # for the same strip, and now there is nothing to compete: the menu bar
       # is where rift draws its workspace indicator
-      # ([settings.ui.menu_bar] in modules/darwin/rice/rift/config.toml), so hiding
+      # ([settings.ui.menu_bar] in modules/darwin/rice/rift-grid/config.toml), so hiding
       # it would hide the one thing this setup added to it.
 
     };

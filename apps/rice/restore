@@ -32,7 +32,7 @@
 #   fuzzel      fuzzel.ini                                          니리 세션
 #   gtk         gtk-3.0 과 gtk-4.0 의 settings.ini (레포엔 파일 하나) 니리 세션
 #   wezterm     wezterm.lua                                        macOS
-#   rift        config.toml (키맵)                                  macOS
+#   rift-grid   config.toml (키맵)                                  macOS
 #   linearmouse linearmouse.json (마우스 휠 방향)                    macOS
 #   helpers     rift 키바인딩이 부르는 스크립트들 (rice/bin)          macOS
 #
@@ -72,7 +72,7 @@ if [ -z "$repo" ] || [ ! -d "$repo/modules/nixos/niri" ]; then
 fi
 
 linux_only="niri profiles hypr studio dms fuzzel gtk"
-mac_only="wezterm rift linearmouse helpers"
+mac_only="wezterm rift-grid linearmouse helpers"
 # 터미널 라이싱만 두 플랫폼이 공유한다.
 all="$linux_only ghostty $mac_only"
 # 이 플랫폼에서 실제로 다룰 수 있는 것.
@@ -251,15 +251,15 @@ plan() {
   esac
 
   # ── macOS ───────────────────────────────────────────────────────────────
-  # rift/config.toml 을 덮으면 테두리 색도 레포의 것이 된다. 벽지 색으로 되돌리려면
+  # rift-grid/config.toml 을 덮으면 테두리 색도 레포의 것이 된다. 벽지 색으로 되돌리려면
   # `apps/rice/colors --reload`.
   case " $want " in *" wezterm "*)
     item "$dr/wezterm" "$cfg/wezterm"
     ;;
   esac
 
-  case " $want " in *" rift "*)
-    item "$dr/rift/config.toml" "$cfg/rift-grid/config.toml"
+  case " $want " in *" rift-grid "*)
+    item "$dr/rift-grid/config.toml" "$cfg/rift-grid/config.toml"
     ;;
   esac
 
@@ -415,7 +415,7 @@ esac
 # 전체를 거부하고 *조용히 이전 설정으로 계속 돈다*. 그러면 "복원 완료" 를 보고도
 # 키맵은 옛것이고, 다음 로그인에야 알게 된다. reload 의 출력이 그 이유를 찍는
 # 유일한 자리라 삼키지 않고 그대로 흘린다.
-case " $want " in *" rift "*)
+case " $want " in *" rift-grid "*)
   if command -v rift-grid-cli >/dev/null 2>&1; then
     if rift-grid-cli execute config reload; then
       printf "${DIM}rift 설정 다시 읽혔다.${NC}\n"

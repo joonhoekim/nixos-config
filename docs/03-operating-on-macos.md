@@ -263,7 +263,7 @@ nix run .#rift-grid             # 커밋이 같아도 다시 빌드하고 rift �
 띄워야 먹는다. 창을 놓쳤으면 시스템 설정 > 개인정보 보호 및 보안에서 `~/.local/bin/rift-grid` 에 직접 준다:
 
 ```bash
-launchctl kickstart -k gui/$UID/org.nixos.rift
+launchctl kickstart -k gui/$UID/org.nixos.rift-grid
 ```
 
 함정: 예전 brew rift 를 쓰던 기계면 목록에 `rift` 가 이미 켜져 있을 수 있는데, 그건

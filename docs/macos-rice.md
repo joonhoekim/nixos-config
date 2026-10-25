@@ -7,7 +7,7 @@
 
 | 조각 | 하는 일 | 자리 |
 |---|---|---|
-| rift-grid | 타일링 WM, 창 테두리, 메뉴 바 워크스페이스 표시 | `apps/rift-grid`(빌드·서명), `hosts/darwin/common.nix`(로그인 에이전트), `rice/rift/config.toml`(설정 시드) |
+| rift-grid | 타일링 WM, 창 테두리, 메뉴 바 워크스페이스 표시 | `apps/rift-grid`(빌드·서명), `hosts/darwin/common.nix`(로그인 에이전트), `rice/rift-grid/config.toml`(설정 시드) |
 | wal-watch | 벽지가 바뀌면 `apps/rice/colors` 를 부른다 | `rice/default.nix` 의 `launchd.user.agents.wal-watch` |
 | `apps/rice/colors` | pywal 로 팔레트를 뽑아 rift 테두리 색 두 줄을 다시 쓴다 | — |
 | wezterm | `~/.cache/wal/colors.json` 을 직접 읽고 감시한다 | `rice/wezterm/wezterm.lua` |

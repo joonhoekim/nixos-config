@@ -7,7 +7,7 @@
 |---|---|
 | 하이프랜드 | `modules/nixos/hyprland/rice/hyprland.lua` |
 | 니리 | `modules/nixos/niri/rice/config.kdl` |
-| rift | `modules/darwin/rice/rift/config.toml` |
+| rift | `modules/darwin/rice/rift-grid/config.toml` |
 
 **rift 열은 subline 의 ijkl 프리셋을 따른다.** rift 의 워크스페이스가 subline 과 같은
 격자라서, 격자를 다루는 키도 subline 과 같게 두었다. 하이프랜드·니리와 subline 이

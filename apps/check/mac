@@ -268,8 +268,8 @@ fi
 # ── rift ─────────────────────────────────────────────────────────────────
 # 창 목록이 돌아오면 rift 가 떠 있고 손쉬운 사용 권한도 살아 있다는 뜻이다.
 # TCC 는 직접 읽을 수 없으므로 이게 권한을 확인하는 유일한 방법이다.
-if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift.plist" ]; then
-  section "rift"
+if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift-grid.plist" ]; then
+  section "rift-grid"
   if ! out="$($HOME/.local/bin/rift-grid-cli query windows 2>&1)"; then
     bad "rift-grid-cli 가 응답하지 않는다: $(printf '%s' "$out" | head -1)"
   else

@@ -13,7 +13,7 @@
 # 전역 불린 하나로는 이 둘을 구분할 수 없다.
 
 RIFT="$HOME/.local/bin/rift-grid-cli"
-STATE="${TMPDIR:-/tmp}/rift-monocle-window"
+STATE="${TMPDIR:-/tmp}/rift-grid-monocle-window"
 
 command -v jq >/dev/null 2>&1 || exit 0
 [ -x "$RIFT" ] || exit 0

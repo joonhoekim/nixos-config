@@ -96,7 +96,7 @@ in
 
       rice_sync ${./wezterm} "$HOME/.config/wezterm"
 
-      rice_sync ${./rift/config.toml} "$HOME/.config/rift-grid/config.toml"
+      rice_sync ${./rift-grid/config.toml} "$HOME/.config/rift-grid/config.toml"
 
       # LinearMouse 는 처음 뜰 때 설정이 없으면 빈 설정을 스스로 만들고, 첫
       # 설치에서는 앱이 이 활성화보다 먼저 뜰 수 있다. 그러면 빈 파일이 "있음"으로
@@ -116,7 +116,7 @@ sys.exit(0 if not d.get("schemes") else 1)
       fi
       rice_sync ${./linearmouse/linearmouse.json} "$lmcfg"
 
-      # rift 키바인딩이 부르는 헬퍼. rift/config.toml 이 이 경로를 직접 쓰므로
+      # rift 키바인딩이 부르는 헬퍼. rift-grid/config.toml 이 이 경로를 직접 쓰므로
       # 옮기려면 키맵도 같이 고친다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 

@@ -3,7 +3,7 @@
 # This copy is a *seed*. modules/darwin/rice plants it at
 # ~/.config/rift-grid/config.toml on a machine that has none, and after that the
 # live file is the original — edit that one, watch rift hot-reload it, and run
-# `apps/rice/save rift` to bring the result back here. `apps/rice/restore rift`
+# `apps/rice/save` to bring the result back here. `apps/rice/restore rift-grid`
 # pushes the other way. If a change does not seem to take, press Alt+Ctrl+R
 # (reload_config, bound below); it also prints the reason when the file is bad.
 #

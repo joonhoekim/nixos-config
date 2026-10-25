@@ -43,7 +43,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 - `nix flake lock` — `nikitabobko-tap` 이 lock 에 다시 들어간다.
 - `hosts/darwin/common.nix` 의 `spaces.spans-displays` 를 `true` 로. AeroSpace 는
   `true`, rift 는 `false` 를 요구한다. 로그아웃해야 반영된다.
-- rift 를 먼저 끈다 — `launchctl bootout gui/$UID/org.nixos.rift`. 두 타일링 WM 이
+- rift 를 먼저 끈다 — `launchctl bootout gui/$UID/org.nixos.rift-grid`. 두 타일링 WM 이
   같은 창을 잡으면 둘 다 제대로 안 돈다.
 
 ## upstream rift 탭
@@ -55,7 +55,7 @@ squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 | 대체 | rift-grid 포크 |
 
 `modules/darwin/brews.nix` 에 `"acsandmann/tap/rift"` 를 다시 넣을 수 있게 남겨 둔
-탭이다(그 파일도 뒤에 지웠다, 아래 brews.nix). `modules/darwin/rice/rift/config.toml` 은 포크에만 있는 명령을 쓰므로
+탭이다(그 파일도 뒤에 지웠다, 아래 brews.nix). `modules/darwin/rice/rift-grid/config.toml` 은 포크에만 있는 명령을 쓰므로
 upstream rift 는 그 설정을 읽지 못한다. 되돌리려면 탭과 함께 설정도 포크 이전으로
 꺼내야 한다.
 

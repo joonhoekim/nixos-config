@@ -128,11 +128,7 @@ enabled = true
 # On because Alt+O drives it (`show_mission_control_all`), the overview key of
 # subline's ijkl preset. rift-grid can only reach the overview with this enabled.
 enabled = true
-# Recapture the visible previews twice a second while the overview is open, so
-# the cells show what the windows are doing now (rift-grid only).
-live_preview_interval_ms = 500
 fade_enabled = true
-grid_style = "zoom"
 grid_fit = false
 grid_follow = "center"
 grid_gap = 0.01
@@ -160,6 +156,9 @@ easing = "snappy"
 duration_ms = 250.0
 zoom_out_time = 0.3
 zoom_in_time = 0.3
+# Capture windows for the slide between cells at the display's full
+# resolution (rift-grid only). Sharper on Retina, for four times the pixels.
+full_resolution = true
 
 [settings.gestures]
 # Upstream's three-finger horizontal swipe between workspaces. With the grid on

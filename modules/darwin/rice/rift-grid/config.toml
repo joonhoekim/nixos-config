@@ -129,6 +129,9 @@ enabled = true
 # subline's ijkl preset. rift-grid can only reach the overview with this enabled.
 enabled = true
 fade_enabled = true
+# Capture every preview at the size it shows at, at the display's resolution
+# (rift-grid only). Sharp, for more memory while the overview is open.
+full_resolution = true
 grid_fit = false
 grid_follow = "center"
 grid_gap = 0.01

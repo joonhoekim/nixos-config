@@ -1,0 +1,85 @@
+#!/bin/sh -e
+#
+# subline(이 flake 의 `subline` 입력)을 올리고 이 기계에 깐다. NixOS 전용.
+#
+#   nix run .#subline-update                  lock 을 최신으로 → 설치 → 세션 제자리 다시 시작 → flake.lock 커밋
+#   nix run .#subline-update -- --local [DIR] lock 은 두고 작업 트리(기본 ~/git/subline)로 짓는다. 커밋하지 않는다
+#   nix run .#subline-update -- --no-restart  새 빌드는 다음 로그인부터
+#
+# 설치는 subline 의 tools/session/install.sh 가 한다(그 레포의 docs/install.md):
+# nixos-rebuild switch 를 하고 살아 있는 세션을 새 바이너리로 제자리에서 다시 시작한다.
+# 앱은 닫혔다가 배치 복원으로 다시 뜬다. 그 스크립트를 lock 이 고정한 소스에서 부르므로
+# 스크립트와 깔리는 빌드가 늘 같은 커밋이다(--local 이면 그 트리의 스크립트). 로그인 화면도
+# 다음에 뜰 때 새 빌드다.
+#
+# 설치가 실패하면 lock 을 되돌린다 — 남겨 두면 다음 build-switch 가 깨진 subline 을 짓는다.
+# 전환은 됐는데 세션 다시 시작만 실패했으면(install.sh 의 끝 상태 3) 깔린 것이 새 것이므로
+# lock 은 커밋한다. build-switch 와 달리 이 기계의 nixosConfigurations.<hostname> 만 짓는다.
+
+GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; NC='\033[0m'
+
+usage() { sed -n '5,7p' "$0" | sed 's/^# //'; }
+
+if [ "$(uname -s)" != "Linux" ]; then
+  printf "${RED}NixOS 전용이다.${NC} macOS 에서 subline 은 쓰지 않는다.\n"
+  exit 1
+fi
+
+local_src=""; passthru=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --local)
+      local_src="$HOME/git/subline"
+      case "${2:-}" in ""|-*) ;; *) local_src="$2"; shift ;; esac ;;
+    --no-restart) passthru="--no-restart" ;;
+    -h|--help) usage; exit 0 ;;
+    *) printf "${RED}모르는 인자: %s${NC}\n" "$1"; usage; exit 2 ;;
+  esac
+  shift
+done
+
+# `nix run` 아래서 $0 은 스토어에 있다. lock 을 고칠 곳은 지금 디렉토리의 체크아웃이다.
+repo="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ ! -d "$repo/hosts/nixos" ]; then
+  printf "${RED}nixos-config 체크아웃 안에서 돌린다.${NC}\n"
+  exit 1
+fi
+cd "$repo"
+
+if [ -n "$local_src" ]; then
+  local_src="$(cd "$local_src" && pwd)"
+  printf "${YELLOW}%s 로 짓는다 (lock 은 그대로).${NC}\n" \
+    "$(git -C "$local_src" describe --always --dirty 2>/dev/null || echo "$local_src")"
+  # path: 는 .gitignore 를 무시하고 target/ 까지 스토어로 복사한다. git+file 은 추적하는
+  # 파일만(커밋하지 않은 수정 포함) 가져가므로, 새 파일은 git add -N 해야 들어간다.
+  sh "$local_src/tools/session/install.sh" --flake "$repo" $passthru \
+    -- --override-input subline "git+file://$local_src" || [ $? = 3 ]
+  printf "${GREEN}끝.${NC} 다음 build-switch 는 lock 의 subline 으로 돌아간다.\n"
+  exit 0
+fi
+
+# 남의 lock 변경을 이 커밋에 싣지 않는다.
+if ! git diff --quiet -- flake.lock || ! git diff --cached --quiet -- flake.lock; then
+  printf "${RED}flake.lock 에 커밋하지 않은 변경이 있다.${NC} 먼저 커밋하거나 되돌린다.\n"
+  exit 1
+fi
+
+printf "${YELLOW}subline 입력을 올린다...${NC}\n"
+nix flake update subline
+src="$(nix eval --impure --raw --expr "(builtins.getFlake \"$repo\").inputs.subline.outPath")"
+status=0
+sh "$src/tools/session/install.sh" --flake "$repo" $passthru || status=$?
+if [ "$status" != 0 ] && [ "$status" != 3 ]; then
+  git checkout -- flake.lock
+  printf "${RED}설치하지 못해 flake.lock 을 되돌렸다.${NC}\n"
+  exit "$status"
+fi
+
+if git diff --quiet -- flake.lock; then
+  printf "${GREEN}끝.${NC} subline 은 이미 최신이었다.\n"
+else
+  rev="$(nix eval --impure --raw --expr "(builtins.getFlake \"$repo\").inputs.subline.shortRev")"
+  git commit -q -m "chore(flake): subline 을 최신으로 올린다 ($rev)" -- flake.lock
+  printf "${GREEN}끝.${NC} flake.lock 을 커밋했다: %s\n" "$(git log --oneline -1)"
+fi
+[ "$status" = 0 ] || printf "${YELLOW}세션은 아직 옛 빌드다.${NC} 위의 install.sh 메시지를 본다.\n"

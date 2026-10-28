@@ -14,7 +14,7 @@
 - `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
 - `apps.<system>.<name>` → `apps/` 아래 스크립트 (`nix run`의 실체) — 빌드 4종(build-switch,
   build, rollback, clean), 라이싱 도구들(rice-* → `apps/rice/`), 점검(check → `apps/check/`),
-  demo, mac-signing-cert, rift-grid.
+  demo, mac-signing-cert, rift-grid, subline-update.
   전체 목록은 `flake.nix`의 `mkApps` 한 곳이다
 - `devShells`
 
@@ -140,6 +140,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 | `screencast` | 녹화본을 데모 영상으로 | spec 파일대로 자르고 자막과 앞뒤 카드를 얹어 mp4·gif로 낸다. 흐름과 함정은 `docs/packages/screencast.md` |
 | `mac-signing-cert` | 코드 서명 신원 고정 | macOS 전용 (docs/03 참고) |
 | `rift-grid` | rift 포크 빌드·설치·서명 | macOS 전용. build-switch 가 `--auto` 로 부른다(소스가 그대로면 건너뜀). `--status` |
+| `subline-update` | subline 올리기·설치 | NixOS 전용. lock 갱신 → subline 의 `install.sh`(전환, 세션 제자리 다시 시작) → lock 커밋. `--local [DIR]` 은 작업 트리로, `--no-restart` |
 
 인자 규칙 세 가지:
 

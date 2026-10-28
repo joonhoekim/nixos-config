@@ -18,7 +18,7 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 ├── niri/              # niri 세션 + DankMaterialShell, 라이싱 시드
 ├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
 ├── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
-└── subline/           # subline 세션 (기본) + subline 로그인 화면; 패키지·배선은 그 레포의 모듈
+└── subline/           # subline 세션 (기본) + subline 로그인 화면; 패키지·배선은 그 레포의 모듈, 올리기는 `nix run .#subline-update`
 ```
 
 시스템 레벨 설정(부팅, 데스크톱, 서비스, 유저 계정)은 이 디렉토리가 아니라

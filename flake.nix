@@ -38,9 +38,8 @@
     # GTK 스택을 두 벌 짓지 않기 위해서다(subline 은 러스트 1.95 이상을 요구하고
     # 이 nixpkgs 는 1.98).
     #
-    # subline 을 올리는 것은 `nix flake update subline`. 푸시하지 않은 작업
-    # 트리로 지어 보려면 lock 은 두고 입력만 덮는다:
-    #   nix run .#build-switch -- --override-input subline path:$HOME/git/subline
+    # subline 을 올리는 것은 `nix run .#subline-update`(lock 갱신, 설치, 세션 제자리
+    # 다시 시작, lock 커밋). 푸시하지 않은 작업 트리로는 `nix run .#subline-update -- --local`.
     subline = {
       url = "git+https://github.com/joonhoekim/subline";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -211,7 +210,7 @@
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe"
-        "demo" "screencast" "mac-signing-cert" "rift-grid" "subline-terminal"
+        "demo" "screencast" "mac-signing-cert" "rift-grid" "subline-terminal" "subline-update"
         "kanata"
       ] (name: mkApp name name system)
       // nixpkgs.lib.listToAttrs (map (n: {

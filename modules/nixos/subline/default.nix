@@ -9,9 +9,15 @@
 # choice (gtk + gnome-keyring + wlr for screenshots/screen share + subline's
 # own), a mate-polkit agent unit that only runs under XDG_CURRENT_DESKTOP=subline,
 # the PAM service the lock screen checks passwords through, and — with
-# `greeter` — greetd's default_session command. This file only turns it on
-# and settles what is *this repo's* to decide: which session is the default,
-# which greeter is the fallback, and a home for the greeter user.
+# `greeter` — greetd itself (command, no text-greeter TTY handling, a home where
+# the greeter remembers the last user and session). This file only turns it on
+# and settles what is *this repo's* to decide: which session is the default and
+# which greeter is the fallback.
+#
+# ── Updating ──────────────────────────────────────────────────────────────
+# `nix run .#subline-update` (apps/subline-update): bumps the input, switches,
+# restarts the live session in place into the new build and commits flake.lock.
+# The login screen is the new build the next time it comes up.
 #
 # ── Sessions: subline is the default, nothing else is removed ─────────────
 # subline is under development, so every other session stays installed and
@@ -65,35 +71,15 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    {
-      programs.subline = {
-        enable = true;
-        greeter = cfg.greeter;
-      };
+  config = lib.mkIf cfg.enable {
+    programs.subline = {
+      enable = true;
+      greeter = cfg.greeter;
+    };
 
-      # hosts/nixos/common.nix says niri with mkDefault; this wins while subline
-      # is installed. The value has to be one of sessionData.sessionNames, and
-      # "subline" is there through the package's passthru.providedSessions.
-      services.displayManager.defaultSession = "subline";
-    }
-
-    (lib.mkIf cfg.greeter {
-      # common.nix sets this with mkDefault for tuigreet. It rewires greetd's
-      # stdio onto /dev/tty1 (TTYReset, VHangup) for a text UI; a DRM
-      # compositor owns the VT itself and wants none of that.
-      services.greetd.useTextGreeter = false;
-
-      # The greeter remembers the last user and session in
-      # $HOME/.local/state/subline/greeter (greeter.rs). nixpkgs gives the
-      # greeter user /var/empty as its home, so without this the write fails
-      # silently and every login starts on subline again — the "go back to
-      # Hyprland" choice would not stick. The display arrangement subline keeps
-      # in its state dir lands here too.
-      users.users.greeter = {
-        home = "/var/lib/greeter";
-        createHome = true;
-      };
-    })
-  ]);
+    # hosts/nixos/common.nix says niri with mkDefault; this wins while subline
+    # is installed. The value has to be one of sessionData.sessionNames, and
+    # "subline" is there through the package's passthru.providedSessions.
+    services.displayManager.defaultSession = "subline";
+  };
 }

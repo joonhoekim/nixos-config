@@ -160,11 +160,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793255862,
-        "narHash": "sha256-Su67iNUL58C7NqxI/LFgZHA4X4wOgyNfJn+8jEDwDKo=",
+        "lastModified": 1793257464,
+        "narHash": "sha256-E76OrcC29cxQdCFGlsUPVKAXA3Y8Pqd10lGA+dCdGAI=",
         "ref": "refs/heads/main",
-        "rev": "5b13ca1af0874ab0ee3d7008283c13cfa0165000",
-        "revCount": 880,
+        "rev": "2539fffdf0e87045ce722394972bda2cf6a86f99",
+        "revCount": 882,
         "type": "git",
         "url": "https://github.com/joonhoekim/subline"
       },

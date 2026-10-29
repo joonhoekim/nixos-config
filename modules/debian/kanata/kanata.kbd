@@ -23,8 +23,12 @@
   ;; kanata 는 키 이벤트만 다시 내보내므로, 이어폰 잭의 SW_HEADPHONE_INSERT 같은
   ;; 스위치 이벤트가 다른 소비자에게 조용히 사라진다. 전원 키는 키 116 뿐이라
   ;; 지금은 안 걸리지만 같은 이유로 막아 둔다. 이름은 /proc/bus/input/devices 의
-  ;; N: 값.
+  ;; N: 값. subline-check inject --isolated 의 키보드는 시험 시트(seat-subline-check)
+  ;; 에 따로 두는 것인데, 잡히면 그 키가 kanata 가상 키보드로 seat0 의 살아 있는
+  ;; 세션에 들어가고 시험 쪽은 아무 키도 못 받는다.
   linux-dev-names-exclude (
+    "subline-check isolated keyboard"
+    "subline-check isolated usb keyboard"
     "pmic_pwrkey"
     "pmic_resin"
     "gpio-keys"

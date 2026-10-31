@@ -1,6 +1,7 @@
 { ... }:
 
 {
+  imports = [ ./nix-implementation.nix ];
 
   nixpkgs = {
     config = {

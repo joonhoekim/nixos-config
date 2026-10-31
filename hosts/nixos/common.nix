@@ -145,7 +145,7 @@
     # every build and slows them down.
     optimise.automatic = true;
 
-    package = pkgs.nix;
+    # package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
     extraOptions = ''
       experimental-features = nix-command flakes
     '';

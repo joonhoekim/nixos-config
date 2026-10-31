@@ -11,9 +11,8 @@
     ../../modules/shared
   ];
 
+  # nix.package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
   nix = {
-    package = pkgs.nix;
-
     settings = {
       trusted-users = [ "@admin" "${user}" ];
       substituters = [ "https://nix-community.cachix.org" "https://cache.nixos.org" ];

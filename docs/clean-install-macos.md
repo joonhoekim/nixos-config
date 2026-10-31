@@ -81,7 +81,7 @@ macOS 가 클릭을 요구해서 레포가 대신할 수 없다. activation 은 
 
 | 순서 | 대상 | 할 일 | 설정 화면 (macOS 27 영어 표기) | 확인 |
 |---|---|---|---|---|
-| 1 | Karabiner VirtualHIDDevice | 드라이버 확장 승인 | General > Login Items & Extensions > Driver Extensions | `systemextensionsctl list` 가 `[activated enabled]` |
+| 1 | Karabiner VirtualHIDDevice | 드라이버 확장 승인 | General > Login Items & Extensions > (아래로) Extensions > Driver Extensions | `systemextensionsctl list` 가 `[activated enabled]` |
 | 2 | `/usr/local/libexec/kanata` | **두 목록 모두** 켜기 (목록에 없으면 `+` → `⌘⇧G` 로 경로) | Privacy & Security > Input Monitoring, Privacy & Security > Device Control and Data Access | `sudo launchctl kickstart -k system/org.nixos.kanata` 뒤 `/var/log/kanata.log` 에 오류가 없다 |
 | 3 | `~/.local/bin/rift-grid` | 두 목록 켜기 | Privacy & Security > Device Control and Data Access, Privacy & Security > Screen & System Audio Recording | `nix run .#check` 의 rift-grid 절 |
 | 4 | LinearMouse (cask 가 있는 호스트만) | 켜기 | Privacy & Security > Input Monitoring | 외장 마우스 휠 방향 |
@@ -93,6 +93,9 @@ macOS 가 클릭을 요구해서 레포가 대신할 수 없다. activation 은 
 - kanata 는 모자란 권한을 한 번에 하나씩만 로그에 적는다 — Input Monitoring 을 주면 다음
   실행에서야 Accessibility 를 요구한다. 그래서 2 는 처음부터 둘 다 켠다.
 - Driver Extensions 경로는 `systemextensionsctl list` 가 스스로 출력하는 안내와 같다.
+- `apps/check/pending --open` 이 남은 단계의 화면을 차례로 띄우고, 토글이 켜질 때까지 기다렸다가
+  다음으로 넘어간다. 쓰는 URL 과 각각을 확인한 방법은 그 스크립트 머리말에 있다(macOS 27.0.1 에서
+  화면을 찍어 확인). Login Items & Extensions 는 페이지 맨 위로 열리므로 Extensions 까지는 스크롤한다.
 
 1 이 2 보다 먼저다. 드라이버가 없으면 kanata 는 권한이 있어도 키를 내보낼 곳이 없다.
 kanata·rift-grid 는 이 기계의 서명 신원(`apps/mac-signing-cert`)으로 서명되므로 허가는

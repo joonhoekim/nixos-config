@@ -2,7 +2,8 @@
 #
 # 사람이 해야 하는 단계 중 아직 안 된 것만 보인다. macOS 전용. **아무것도 고치지 않는다.**
 #
-#   apps/check/pending      build-switch 가 끝에서 부른다. 남은 것이 없으면 아무것도 안 찍는다
+#   apps/check/pending          build-switch 가 끝에서 부른다. 남은 것이 없으면 아무것도 안 찍는다
+#   apps/check/pending --open   남은 단계의 설정 화면을 차례로 띄우고, 승인될 때까지 기다린다
 #
 # ── 왜 따로 있나 ─────────────────────────────────────────────────────────
 # 여기 있는 것은 전부 macOS 가 사람의 클릭을 요구하는 단계다(드라이버 확장 승인,
@@ -10,20 +11,66 @@
 # 조용히 재시작을 반복한다 — 첫 셋업 뒤 며칠이 지나도 "키 레이어가 안 먹는다"로만
 # 보인다. 전체 점검은 apps/check/mac 이고, 이건 그중 사람이 할 일만 짧게 뽑은 것이다.
 #
-# 설정 화면의 이름은 macOS 27.0.1 의 영어 표기다. 출처는
+# ── 화면 이름과 URL ──────────────────────────────────────────────────────
+# 이름은 macOS 27.0.1 의 영어 표기다. 출처는
 # /System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex 의
 # Localizable.loctable — 키 ACCESSIBILITY 의 표시 이름이 "Accessibility" 에서
 # "Device Control and Data Access" 로 바뀌었다(한국어 "기기 제어 및 데이터 접근"). 사이드바의
 # Accessibility 는 VoiceOver 같은 보조 기능 설정이라 다른 화면이다.
 #
-# 설정 화면은 경로로만 적는다. x-apple.systempreferences: URL 로 바로 여는 방법은
-# macOS 판마다 패널 식별자가 바뀌어서, 확인하지 않은 URL 을 박아 두면 엉뚱한 화면이
-# 뜬다.
+# URL 은 macOS 27.0.1 에서 `open` 한 뒤 화면을 찍어 확인한 것만 둔다(2026-10-31):
+#   …preference.security?Privacy_ListenEvent      → Input Monitoring
+#   …preference.security?Privacy_Accessibility    → Device Control and Data Access
+#   …preference.security?Privacy_ScreenCapture    → Screen & System Audio Recording
+#   …LoginItems-Settings.extension?ExtensionItems → Login Items 의 맨 위. Extensions 까지
+#                                                   내려가지 않아서 거기서 스크롤해야 한다
+# 식별자는 판마다 바뀔 수 있다. 엉뚱한 화면이 뜨면 위 출처의 바이너리를
+# `strings | grep '^Privacy_'` 로 다시 보고, 같은 방법으로 확인한 뒤 고친다.
 
-YELLOW='\033[1;33m'; DIM='\033[2m'; NC='\033[0m'
+YELLOW='\033[1;33m'; GREEN='\033[1;32m'; DIM='\033[2m'; NC='\033[0m'
 
 [ "$(uname)" = Darwin ] || exit 0
+open_mode=0
+[ "${1:-}" = --open ] && open_mode=1
+
 sys=/run/current-system
+url_im='x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent'
+url_ax='x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility'
+url_sc='x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
+url_ext='x-apple.systempreferences:com.apple.LoginItems-Settings.extension?ExtensionItems'
+
+# ── 상태 ─────────────────────────────────────────────────────────────────
+has_kanata() { [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; }
+dext_ok() {
+  systemextensionsctl list 2>/dev/null \
+    | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'
+}
+# kanata 는 입력 모니터링과 Device Control and Data Access 를 둘 다 요구하는데, 모자란 것을
+# 한 번에 하나씩만 로그에 적고 끝난다(kanata 1.12, macOS 27 실측: Input Monitoring 을 주자
+# 다음 실행에서 Accessibility 를 요구했다). 그래서 로그의 마지막 권한 오류가 지금 모자란
+# 것이다. 출력: im / ax / ok / other
+kanata_need() {
+  if sudo -n launchctl print system/org.nixos.kanata 2>/dev/null | grep -q 'state = running'; then
+    echo ok; return
+  fi
+  last="$(grep 'failed to open keyboard' /var/log/kanata.log 2>/dev/null | tail -1)"
+  case "$last" in
+    *"Input Monitoring"*) echo im ;;
+    *"Accessibility"*) echo ax ;;
+    *) echo other ;;
+  esac
+}
+# Device Control and Data Access 권한이 없으면 rift-grid 는 떠 있어도 창을 못 본다.
+# apps/check/mac 의 rift-grid 절과 같은 기준(rift-grid-cli 가 보는 창의 bundle_id)이다. 창이
+# 정말 하나도 없을 때도 실패하지만, 이 스크립트는 터미널 창 안에서 돌기 때문에 여기서
+# 실패하면 권한 쪽일 가능성이 높다.
+cli="$HOME/.local/bin/rift-grid-cli"
+has_rift() {
+  [ -x "$cli" ] && launchctl print "gui/$(id -u)/org.nixos.rift-grid" 2>/dev/null | grep -q 'state = running'
+}
+rift_ok() { "$cli" query windows 2>/dev/null | grep -q '"bundle_id"'; }
+
+# ── 목록 ─────────────────────────────────────────────────────────────────
 n=0
 item() {  # <무엇을> <어디서> [<확인>]
   [ $n -eq 0 ] && printf "\n${YELLOW}사람이 해야 할 단계가 남아 있다${NC}\n"
@@ -33,40 +80,71 @@ item() {  # <무엇을> <어디서> [<확인>]
   [ -n "${3:-}" ] && printf "     ${DIM}확인: %s${NC}\n" "$3"
 }
 
-# ── kanata ───────────────────────────────────────────────────────────────
-# 순서가 있다. 드라이버가 승인되기 전에는 kanata 가 입력 모니터링 권한이 있어도
-# 키를 내보낼 곳이 없다.
-if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
-  if ! systemextensionsctl list 2>/dev/null \
-      | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'; then
-    item "Karabiner VirtualHIDDevice 드라이버 확장을 켠다" \
-      "System Settings > General > Login Items & Extensions > Driver Extensions" \
-      "systemextensionsctl list 가 [activated enabled]"
-  fi
-  # kanata 는 입력 모니터링과 Device Control and Data Access 를 둘 다 요구하는데, 모자란 것을
-  # 한 번에 하나씩만 로그에 적고 끝난다(kanata 1.12, macOS 27 실측: Input Monitoring 을 주자
-  # 다음 실행에서 Accessibility 를 요구했다). 하나씩 따라가면 왕복이 두 번이 되므로, 데몬이
-  # 돌고 있지 않고 원인이 권한이면 둘을 한꺼번에 안내한다.
-  if ! sudo -n launchctl print system/org.nixos.kanata 2>/dev/null | grep -q 'state = running' \
-      && grep 'failed to open keyboard' /var/log/kanata.log 2>/dev/null | tail -1 | grep -q 'permission'; then
-    item "/usr/local/libexec/kanata 를 두 목록에 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
+if has_kanata; then
+  # 순서가 있다. 드라이버가 승인되기 전에는 kanata 가 권한이 있어도 키를 내보낼 곳이 없다.
+  dext_ok || item "Karabiner VirtualHIDDevice 드라이버 확장을 켠다" \
+    "System Settings > General > Login Items & Extensions > (아래로) Extensions > Driver Extensions" \
+    "systemextensionsctl list 가 [activated enabled]"
+  # 목록에서는 둘을 한꺼번에 안내한다. 하나씩 따라가면 왕복이 두 번이 된다.
+  case "$(kanata_need)" in
+    im|ax) item "/usr/local/libexec/kanata 를 두 목록에 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
       "System Settings > Privacy & Security > Input Monitoring, 그리고 > Device Control and Data Access" \
-      "sudo launchctl kickstart -k system/org.nixos.kanata 뒤 /var/log/kanata.log 의 'entering the event loop' 뒤로 오류가 없다"
-  fi
+      "/var/log/kanata.log 의 'entering the event loop' 뒤로 오류가 없다" ;;
+  esac
+fi
+if has_rift && ! rift_ok; then
+  item "~/.local/bin/rift-grid 를 두 목록에 켠다" \
+    "System Settings > Privacy & Security > Device Control and Data Access, 그리고 > Screen & System Audio Recording" \
+    "launchctl kickstart -k gui/$(id -u)/org.nixos.rift-grid 뒤 nix run .#check 의 rift-grid 절"
 fi
 
-# ── rift-grid ────────────────────────────────────────────────────────────
-# Device Control and Data Access 권한이 없으면 rift-grid 는 떠 있어도 창을 못 본다. apps/check/mac 의
-# rift-grid 절과 같은 기준(rift-grid-cli 가 보는 창의 bundle_id 개수)이다. 창이 정말
-# 하나도 없을 때도 0 이지만, build-switch 는 터미널 창 안에서 돌기 때문에 여기서
-# 0 이면 권한 쪽일 가능성이 높다.
-cli="$HOME/.local/bin/rift-grid-cli"
-if [ -x "$cli" ] && launchctl print "gui/$(id -u)/org.nixos.rift-grid" 2>/dev/null | grep -q 'state = running'; then
-  if ! "$cli" query windows 2>/dev/null | grep -q '"bundle_id"'; then
-    item "~/.local/bin/rift-grid 를 두 목록에 켠다" \
-      "System Settings > Privacy & Security > Device Control and Data Access, 그리고 > Screen & System Audio Recording. 그 뒤 launchctl kickstart -k gui/$(id -u)/org.nixos.rift-grid"
-  fi
+if [ $n -eq 0 ]; then
+  [ $open_mode = 1 ] && printf "${GREEN}남은 단계가 없다.${NC}\n"
+  exit 0
+fi
+if [ $open_mode = 0 ]; then
+  printf "  ${DIM}설정 화면을 차례로 띄우려면: apps/check/pending --open   전체 점검: nix run .#check${NC}\n"
+  exit 0
 fi
 
-[ $n -eq 0 ] || printf "  ${DIM}전체 점검: nix run .#check${NC}\n"
+# ── --open: 화면을 띄우고 승인될 때까지 기다린다 ───────────────────────────
+# 상태를 3 초마다 다시 읽는다. 사람이 토글을 켜면 다음 단계의 화면으로 넘어간다.
+# kanata 는 KeepAlive 로 스스로 다시 뜨면서 다음에 모자란 권한을 로그에 적으므로, 그
+# 로그를 따라 Input Monitoring → Device Control and Data Access 로 화면을 바꾼다.
+# 기다리기를 그만두려면 Ctrl-C. 아무것도 고치지 않는 것은 이 모드도 같다.
+shown=""
+show() {  # <url> <안내>
+  [ "$shown" = "$1" ] && return
+  shown="$1"
+  printf "\n${YELLOW}→ %s${NC}\n" "$2"
+  open "$1"
+}
+waiting() { printf "${DIM}.${NC}"; sleep 3; }
+
+if has_kanata; then
+  while ! dext_ok; do
+    show "$url_ext" "Login Items & Extensions 를 아래로 내려 Extensions 의 Driver Extensions (i) 에서 Karabiner 를 켠다"
+    waiting
+  done
+  while :; do
+    case "$(kanata_need)" in
+      ok|other) break ;;
+      im) show "$url_im" "Input Monitoring 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata)" ;;
+      ax) show "$url_ax" "Device Control and Data Access 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata)" ;;
+    esac
+    waiting
+  done
+  [ "$(kanata_need)" = ok ] && printf "\n${GREEN}kanata 가 돈다.${NC}\n"
+fi
+if has_rift && ! rift_ok; then
+  show "$url_ax" "Device Control and Data Access 에 rift-grid 를 켠다"
+  printf "${DIM}  다음으로 Screen & System Audio Recording 을 띄운다. 켰으면 Enter.${NC}"
+  read -r _ </dev/tty
+  show "$url_sc" "Screen & System Audio Recording 에 rift-grid 를 켠다 — 켰으면 Enter"
+  read -r _ </dev/tty
+  # 허가는 다시 띄워야 먹는다.
+  launchctl kickstart -k "gui/$(id -u)/org.nixos.rift-grid" 2>/dev/null
+  sleep 3
+  rift_ok && printf "${GREEN}rift-grid 가 창을 본다.${NC}\n"
+fi
 exit 0

@@ -14,6 +14,8 @@ in
     ../../modules/darwin/ios.nix
     # Caps Lock 레이어와 한/영(오른쪽 ⌘ → F18). 레이어는 Windows 와 같은 파일이다.
     ../../modules/darwin/kanata.nix
+    # launchd 서비스가 Background App Activity 에 "sh" 가 아니라 제 이름으로 보이게.
+    ../../modules/darwin/launchd-names.nix
     ../../modules/darwin/rice
     ../../modules/shared
   ];

@@ -55,11 +55,11 @@
     useUserPackages = true;
     # Thread `user` into home-manager modules (separate arg scope from the
     # system modules' specialArgs).
-    extraSpecialArgs = { inherit user identity; };
+    extraSpecialArgs = { inherit user identity; bundles = config.local.packages.bundles; };
     # Back up pre-existing dotfiles (e.g. ~/.zshrc) to <name>.backup instead
     # of refusing to overwrite them on first activation.
     backupFileExtension = "backup";
-    users.${user} = { pkgs, config, lib, ... }:{
+    users.${user} = { pkgs, config, lib, bundles, ... }:{
       # 터미널 라이싱(셰이더 포함). NixOS 쪽 home-manager 도 같은 모듈을 쓴다 —
       # ghostty 는 여기서 cask 로 깔리고(./casks.nix), custom-shader 는 문서상
       # 모든 플랫폼이라 조각을 한 벌만 둔다. 자세한 건 그 모듈의 머리말.
@@ -67,14 +67,14 @@
 
       home = {
         enableNixpkgsReleaseCheck = false;
-        packages = pkgs.callPackage ./packages.nix {};
+        packages = pkgs.callPackage ./packages.nix { inherit bundles; };
         stateVersion = "23.11";
 
         # mise 도구 설치. NixOS 와 같은 조각을 쓴다.
         activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
         activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
       };
-      programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
+      programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity bundles; };
     };
   };
 

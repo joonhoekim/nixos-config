@@ -57,7 +57,7 @@
     # Thread `user` into home-manager modules (separate arg scope from the
     # system modules' specialArgs). `subline` is the flake input, for
     # subline-tts in modules/nixos/nautice.nix.
-    extraSpecialArgs = { inherit user identity subline; };
+    extraSpecialArgs = { inherit user identity subline; bundles = config.local.packages.bundles; };
     users.${user} = import ../../modules/nixos/home-manager.nix;
   };
 

@@ -1,4 +1,4 @@
-{ ... }:
+{ config, lib, ... }:
 
 # iOS / Apple-platform development toolchain.
 #
@@ -20,8 +20,11 @@
 # The CLI tools around Xcode (cocoapods, xcodes, ...) are in ./packages.nix;
 # docs/packages/mobile.md has why each one is there.
 
+# Behind the `ios` bundle (local.packages.bundles), together with the CLI tools.
+# Leaving the bundle out does not delete an installed Xcode — masApps only
+# installs. Remove /Applications/Xcode.app by hand.
 {
-  homebrew.masApps = {
+  homebrew.masApps = lib.mkIf (builtins.elem "ios" config.local.packages.bundles) {
     # Requires being signed in to the App Store. ~10GB download, so the
     # activation that first installs it takes a long while.
     "Xcode" = 497799835;

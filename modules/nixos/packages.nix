@@ -1,8 +1,12 @@
-{ pkgs }:
+{ pkgs, lib, bundles }:
 
 with pkgs;
-let shared-packages = import ../shared/packages.nix { inherit pkgs; }; in
-shared-packages ++ [
+# 공유 도구는 core 와 고른 묶음(local.packages.bundles, ../shared/package-bundles.nix).
+# `ios` 는 macOS 전용이라 여기서는 건너뛴다.
+let shared = import ../shared/packages.nix { inherit pkgs; }; in
+shared.core
+++ lib.concatMap (b: shared.${b} or [ ]) bundles
+++ [
 
   # Security and authentication
   yubikey-agent

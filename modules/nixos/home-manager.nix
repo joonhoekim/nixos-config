@@ -1,7 +1,7 @@
-{ config, pkgs, lib, user, identity, ... }:
+{ config, pkgs, lib, user, identity, bundles, ... }:
 
 let
-  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity; };
+  shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib user identity bundles; };
 in
 {
   # 터미널 라이싱(셰이더 포함)을 $HOME 에 심는다. macOS 쪽 home-manager 도 같은
@@ -14,7 +14,7 @@ in
     enableNixpkgsReleaseCheck = false;
     username = "${user}";
     homeDirectory = "/home/${user}";
-    packages = (pkgs.callPackage ./packages.nix {}) ++ [
+    packages = (pkgs.callPackage ./packages.nix { inherit bundles; }) ++ [
       # GTK themes. Nothing in this repo *configures* GTK any more (see the
       # note where `gtk.enable` used to be) — DMS writes the config files and
       # needs these to exist to name them.

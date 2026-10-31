@@ -3,14 +3,14 @@
 #
 # 로그인 셸은 macOS(modules/darwin/home-manager.nix)와 NixOS(hosts/nixos/common.nix)
 # 모두 bash 다. zsh 설정은 zsh 를 직접 띄웠을 때만 쓰인다.
-{ pkgs, lib, ... }:
+{ pkgs, lib, bundles, ... }:
 {
   bash = {
     enable = true;
     historyControl = [ "ignoredups" "erasedups" ];
     historySize = 50000;
     historyFileSize = 50000;
-    initExtra = import ../shell-init.nix { inherit pkgs lib; };
+    initExtra = import ../shell-init.nix { inherit pkgs lib bundles; };
 
     # macOS 의 /etc/profile 은 로그인 bash 마다 path_helper 를 돌려 /usr/bin 등을
     # PATH 맨 앞으로 올린다. 새 터미널에서는 뒤이어 nix-darwin 의 /etc/bashrc 가

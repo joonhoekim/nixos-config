@@ -8,7 +8,8 @@
 # 두 셸에서 똑같이 파싱되어야 한다. `[[ ]]`, `(( ))`, `local` 은 둘 다 되지만
 # zsh 전용 문법(glob 한정자, `setopt`)이나 bash 전용 문법(`shopt`)은 여기 두지 않고
 # 각 셸의 파일에 둔다.
-{ pkgs, lib }:
+{ pkgs, lib, bundles }:
+let has = b: builtins.elem b bundles; in
 ''
   # 설치기의 profile.d/nix-daemon.sh 는 source 하지 않는다. nix 환경은 nix-darwin 의
   # /etc/bashrc·/etc/zshrc 가 set-environment 로 이미 잡는다(PATH, NIX_PROFILES,
@@ -35,12 +36,15 @@
   export EDITOR="vim"
   export VISUAL="vim"
 
+'' + lib.optionalString (has "web") ''
   # Playwright uses the nix-pinned browser bundle instead of downloading its
   # own into ~/Library/Caches. Without SKIP_BROWSER_DOWNLOAD, `npm i
   # playwright` in any project re-downloads ~400MB and then runs a browser
   # nix doesn't know about. See docs/packages/browser-tooling.md.
+  # Behind the `web` bundle: the path alone pulls the browsers into the closure.
   export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
   export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+'' + ''
 
   # nix shortcuts
   shell() {
@@ -55,5 +59,5 @@
 
   # Claude Code without permission prompts
   alias cld='claude --dangerously-skip-permissions'
-'' + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
+'' + lib.optionalString (pkgs.stdenv.hostPlatform.isDarwin && has "containers")
   ("\n" + builtins.readFile ../darwin/scripts/colima-up.sh)

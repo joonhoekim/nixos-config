@@ -1,7 +1,7 @@
 { ... }:
 
 {
-  imports = [ ./nix-implementation.nix ];
+  imports = [ ./nix-implementation.nix ./package-bundles.nix ];
 
   nixpkgs = {
     config = {

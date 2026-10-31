@@ -38,7 +38,11 @@
     enable = true;
     # Taps are managed declaratively via nix-homebrew in flake.nix, so no
     # `homebrew.taps` entry is needed here.
-    casks = pkgs.callPackage ./casks.nix {};
+    # mkDefault: 호스트가 `homebrew.casks = [ ... ];` 로 목록을 통째로 바꿀 수 있다
+    # (hosts/darwin/jhs-MacBook-Air). cask 에 매인 설정 — 아래 Dock, 기본 앱 핸들러
+    # (./default-apps.nix), Stats·LinearMouse 의 LaunchAgent(hosts/darwin/common.nix) —
+    # 은 이 목록을 보고 따라 빠진다.
+    casks = lib.mkDefault (pkgs.callPackage ./casks.nix {});
     # formula 는 선언하지 않는다. nixpkgs 에 있는 것은 modules/shared/packages.nix 로
     # 가고(flake.lock 이 판을 고정한다), 꼭 brew 여야 하면 여기 `brews = [ ... ];` 를 쓴다.
     # onActivation.cleanup = "uninstall";
@@ -81,23 +85,29 @@
   local.dock = {
     enable = true;
     username = user;
-    entries = [
+    # cask 가 붙은 항목은 그 cask 가 이 호스트에 선언됐을 때만 넣는다. 없는 앱을
+    # 남겨 두면 dockutil 이 그 항목을 못 넣고, 그러면 원하는 목록과 실제 Dock 이
+    # 영영 안 맞아서 activation 마다 Dock 을 비우고 다시 채운다.
+    entries = let
+      casks = map (c: c.name) config.homebrew.casks;
+    in map (e: removeAttrs e [ "cask" ])
+      (builtins.filter (e: !(e ? cask) || builtins.elem e.cask casks) [
       # NOTE: Finder is auto-pinned at the far left (slot 1) by macOS, so it is
       # not listed here — adding it would create a duplicate icon.
-      { path = "/Applications/Visual Studio Code.app/"; }
-      { path = "/Applications/Google Chrome.app/"; }
+      { path = "/Applications/Visual Studio Code.app/"; cask = "visual-studio-code"; }
+      { path = "/Applications/Google Chrome.app/"; cask = "google-chrome"; }
       # 손으로 까는 앱이라 없을 수 있다. 경로가 없으면 dockutil 이 경고만 하고 넘어간다.
       { path = "/Applications/Claude.app/"; }
-      { path = "/Applications/Zed.app/"; }
-      { path = "/Applications/Brave Browser.app/"; }
-      { path = "/Applications/Ghostty.app/"; }
-      { path = "/Applications/DBeaver.app/"; }
-      { path = "/Applications/Redis Insight.app/"; }
-      { path = "/Applications/Bruno.app/"; }
+      { path = "/Applications/Zed.app/"; cask = "zed"; }
+      { path = "/Applications/Brave Browser.app/"; cask = "brave-browser"; }
+      { path = "/Applications/Ghostty.app/"; cask = "ghostty"; }
+      { path = "/Applications/DBeaver.app/"; cask = "dbeaver-community"; }
+      { path = "/Applications/Redis Insight.app/"; cask = "redis-insight"; }
+      { path = "/Applications/Bruno.app/"; cask = "bruno"; }
       { path = "/System/Applications/Messages.app/"; }
       { path = "/System/Applications/Utilities/Activity Monitor.app/"; }
       { path = "/System/Applications/System Settings.app/"; }
-    ];
+    ]);
   };
 
 }

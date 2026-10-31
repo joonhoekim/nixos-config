@@ -1,4 +1,4 @@
-{ pkgs, user, ... }:
+{ config, lib, pkgs, user, ... }:
 
 # Default-application handlers: which app opens which kind of file.
 #
@@ -57,7 +57,12 @@ let
   terminal = "io.github.joonhoekim.SublineTerminal";
   vscode = "com.microsoft.VSCode";
 
-  handlers = {
+  # The VS Code half only applies where its cask is declared. Elsewhere its
+  # bundle id is passed as a drop (`!<id>`, see set-default-handlers.py) so
+  # entries left from when it was installed do not keep pointing at nothing.
+  haveVscode = builtins.elem "visual-studio-code" (map (c: c.name) config.homebrew.casks);
+
+  terminalHandlers = {
     # ── Shell scripts → subline-terminal ─────────────────────────────────
     # Exactly the types subline-terminal declares in its Info.plist
     # (tools/macos-bundle.sh in that repo); it runs each in a window, in the
@@ -71,7 +76,9 @@ let
     "public.ksh-script" = terminal;                # .ksh
     "public.csh-script" = terminal;                # .csh
     "public.tcsh-script" = terminal;               # .tcsh
+  };
 
+  vscodeHandlers = {
     # ── Code and config → VS Code ────────────────────────────────────────
     # The umbrella types. public.text is what Zed was riding to claim
     # everything; taking it means an unrecognised text file lands in the
@@ -106,10 +113,13 @@ let
     "public.css" = vscode;
   };
 
+  handlers = terminalHandlers // lib.optionalAttrs haveVscode vscodeHandlers;
+
   args = builtins.concatStringsSep " " (
     builtins.attrValues (
       builtins.mapAttrs (uti: bundle: "${uti}=${bundle}") handlers
     )
+    ++ lib.optional (!haveVscode) "'!${vscode}'"
   );
 
   plist = "/Users/${user}/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure.plist";

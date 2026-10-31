@@ -1,4 +1,11 @@
-{ config, pkgs, user, ... }:
+{ config, lib, pkgs, user, ... }:
+
+let
+  # cask 로 까는 앱에 매인 LaunchAgent 는 그 cask 가 이 호스트에 있을 때만 둔다.
+  # 앱이 없는데 `open -a` 를 남기면 로그인마다 실패하고, apps/check/mac 이 그
+  # job 의 last exit code 를 ✗ 로 보인다.
+  hasCask = name: builtins.elem name (map (c: c.name) config.homebrew.casks);
+in
 
 {
   imports = [
@@ -101,7 +108,7 @@
     # two Stats in the menu bar. Nothing in the app prevents it — what keeps it
     # to one today is only that its own item happens to be disabled
     # (`sudo sfltool dumpbtm` prints the disposition of both).
-    stats = {
+    stats = lib.mkIf (hasCask "stats") {
       command = "/usr/bin/open -a /Applications/Stats.app";
       serviceConfig.RunAtLoad = true;
     };
@@ -127,7 +134,7 @@
     # modules/darwin/rice/default.nix, 근거는 그 옆 linearmouse/README.md).
     # 첫 실행에서 입력 모니터링 권한을 한 번 물어본다 — 거부하면 앱은 떠 있는 채로
     # 아무 일도 안 하고, 휠 방향이 안 바뀌는 것 말고는 증상이 없다.
-    linearmouse = {
+    linearmouse = lib.mkIf (hasCask "linearmouse") {
       command = "/usr/bin/open -a /Applications/LinearMouse.app";
       serviceConfig.RunAtLoad = true;
     };

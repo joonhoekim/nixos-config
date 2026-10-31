@@ -1,5 +1,7 @@
 # 맨 땅에서 부팅까지 — NixOS 클린 설치
 
+macOS 는 [clean-install-macos.md](clean-install-macos.md).
+
 빈 기기에 이 레포의 설정을 얹어 부팅시키는 데까지의 기록. `evo-t1`(GMKtec EVO-T1)을
 이 순서로 깔았고, 그때 실제로 걸린 것들을 그대로 적었다.
 

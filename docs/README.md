@@ -24,7 +24,7 @@ Nix의 동작 원리, 이 저장소의 구조, flake, macOS 설정 관리의 범
 목록을 돌고 있는 컴포지터에서 직접 뽑아 적었고, 조용히 실패하는 함정들을 함께
 담았습니다.
 
-[`clean-install.md`](clean-install.md)는 **절차서**입니다 — 빈 기기에 이 설정을 얹어
+[`clean-install.md`](clean-install.md)와 macOS 짝인 [`clean-install-macos.md`](clean-install-macos.md)는 **절차서**입니다 — 빈 기기에 이 설정을 얹어
 부팅시키기까지, Secure Boot를 끄는 데서 시작해 첫 로그인에서 끝납니다. 학습 노트가
 아니라 순서대로 따라 치는 문서이고, 그래서 왜 그런지보다 **어디서 깨지는지**를 더
 많이 적었습니다(git이 추적하지 않는 `hardware-configuration.nix`, 재귀하지 않는

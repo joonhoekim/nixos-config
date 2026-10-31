@@ -103,6 +103,10 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 
 ## 부트스트랩 — macOS (새 머신 최초 1회)
 
+전체 절차(Command Line Tools, gh 인증, TCC·드라이버 승인, 제거까지)는
+[docs/clean-install-macos.md](docs/clean-install-macos.md)에 있다. 아래는 그중 flakes 를
+켜는 닭-달걀 부분만이다.
+
 이 설정을 적용하면 `nix-command`와 `flakes`가 시스템 전역으로 켜진다(`nix.extraOptions`
 → `/etc/nix/nix.conf`). 그런데 닭-달걀 문제가 있다: 설정을 *적용*하려면 flake 명령을 써야
 하고, 그건 이미 flakes가 켜져 있어야 한다. 그래서 **맨 처음 한 번**은 직접 flakes를
@@ -146,9 +150,11 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 `/etc/static/nix/`로의 심링크가 된다) flakes를 계속 켜둔다. 그래서 위 1회성 단계는 이
 머신에서 다시 필요 없다.
 
-> 팁: [Determinate Systems 설치 프로그램](https://install.determinate.systems)은 flakes를
-> 기본으로 켜줘서 2단계가 통째로 생략된다. 나는 공식 설치 프로그램을 써서 수동 단계가
-> 남아 있다.
+> 이 레포는 CppNix 를 쓴다(`local.nix.implementation`, `modules/shared/nix-implementation.nix`).
+> Lix 설치기로 깔아도 nix-darwin 이 데몬과 셸의 `nix` 를 CppNix 로 맞추고, 남는 차이는
+> 제거 경로뿐이다. Determinate Nix 는 nix-darwin 에서 `nix.enable = false` 를 요구해 이 레포의
+> `nix.settings`·`nix.gc` 가 먹지 않으므로 지원하지 않는다 — 근거는
+> [docs/clean-install-macos.md](docs/clean-install-macos.md)의 "다른 설치기로 깔았을 때".
 
 ## NixOS 첫 빌드
 

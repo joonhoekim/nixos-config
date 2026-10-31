@@ -10,10 +10,17 @@
 # 각 셸의 파일에 둔다.
 { pkgs, lib }:
 ''
-  if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-    . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-    . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
-  fi
+  # 설치기의 profile.d/nix-daemon.sh 는 source 하지 않는다. nix 환경은 nix-darwin 의
+  # /etc/bashrc·/etc/zshrc 가 set-environment 로 이미 잡는다(PATH, NIX_PROFILES,
+  # NIX_SSL_CERT_FILE, XDG_DATA_DIRS). NixOS 에는 그 파일이 없다.
+  #
+  # 그 스크립트를 여기서 부르면 두 가지가 조용히 틀어진다:
+  #   - PATH 맨 앞에 /nix/var/nix/profiles/default/bin 을 넣는다. 셸의 `nix` 가
+  #     nix.package 가 아니라 설치할 때 깐 판이 되고, sudo 아래도 같다. 데몬은
+  #     nix.package 라서 클라이언트와 데몬의 판(심지어 구현체)이 갈린다.
+  #   - NIX_PROFILES 를 "default ~/.nix-profile" 로 덮어써서 /run/current-system/sw 와
+  #     /etc/profiles/per-user/<user> 가 빠진다.
+  # 확인: `command -v nix` 가 /run/current-system/sw/bin/nix 여야 한다(apps/check/mac).
 
   # Define variables for directories
   export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH

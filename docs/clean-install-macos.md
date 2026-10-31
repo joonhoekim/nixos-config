@@ -79,12 +79,20 @@ nix --extra-experimental-features 'nix-command flakes' run .#build-switch
 macOS 가 클릭을 요구해서 레포가 대신할 수 없다. activation 은 이 앞에서 멈추지 않고 성공으로
 끝나고, 해당 데몬은 조용히 재시작을 반복한다.
 
-| 순서 | 대상 | 할 일 | 설정 화면 | 확인 |
+| 순서 | 대상 | 할 일 | 설정 화면 (macOS 27 영어 표기) | 확인 |
 |---|---|---|---|---|
-| 1 | Karabiner VirtualHIDDevice | 드라이버 확장 승인 | 일반 > 로그인 항목 및 확장 > 드라이버 확장 | `systemextensionsctl list` 가 `[activated enabled]` |
-| 2 | `/usr/local/libexec/kanata` | 입력 모니터링 켜기 (목록에 없으면 `+` → `⌘⇧G` 로 경로) | 개인정보 보호 및 보안 > 입력 모니터링 | `sudo launchctl kickstart -k system/org.nixos.kanata` 뒤 `/var/log/kanata.log` 에 오류가 없다 |
-| 3 | `~/.local/bin/rift-grid` | 손쉬운 사용, 화면 및 시스템 오디오 녹음 | 개인정보 보호 및 보안 | `nix run .#check` 의 rift-grid 절 |
-| 4 | LinearMouse (cask 가 있는 호스트만) | 입력 모니터링 | 개인정보 보호 및 보안 > 입력 모니터링 | 외장 마우스 휠 방향 |
+| 1 | Karabiner VirtualHIDDevice | 드라이버 확장 승인 | General > Login Items & Extensions > Driver Extensions | `systemextensionsctl list` 가 `[activated enabled]` |
+| 2 | `/usr/local/libexec/kanata` | **두 목록 모두** 켜기 (목록에 없으면 `+` → `⌘⇧G` 로 경로) | Privacy & Security > Input Monitoring, Privacy & Security > Device Control and Data Access | `sudo launchctl kickstart -k system/org.nixos.kanata` 뒤 `/var/log/kanata.log` 에 오류가 없다 |
+| 3 | `~/.local/bin/rift-grid` | 두 목록 켜기 | Privacy & Security > Device Control and Data Access, Privacy & Security > Screen & System Audio Recording | `nix run .#check` 의 rift-grid 절 |
+| 4 | LinearMouse (cask 가 있는 호스트만) | 켜기 | Privacy & Security > Input Monitoring | 외장 마우스 휠 방향 |
+
+- **Device Control and Data Access** 는 macOS 26 까지의 **Accessibility** 다. 키는 그대로
+  `ACCESSIBILITY` 이고 표시 이름만 바뀌었다(SecurityPrivacyExtension.appex 의
+  `Localizable.loctable`, macOS 27.0.1. 한국어 표기는 "기기 제어 및 데이터 접근"). 사이드바 최상위의
+  **Accessibility** 는 VoiceOver 같은 보조 기능 설정이라 다른 화면이다.
+- kanata 는 모자란 권한을 한 번에 하나씩만 로그에 적는다 — Input Monitoring 을 주면 다음
+  실행에서야 Accessibility 를 요구한다. 그래서 2 는 처음부터 둘 다 켠다.
+- Driver Extensions 경로는 `systemextensionsctl list` 가 스스로 출력하는 안내와 같다.
 
 1 이 2 보다 먼저다. 드라이버가 없으면 kanata 는 권한이 있어도 키를 내보낼 곳이 없다.
 kanata·rift-grid 는 이 기계의 서명 신원(`apps/mac-signing-cert`)으로 서명되므로 허가는

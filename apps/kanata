@@ -94,5 +94,6 @@ if sudo launchctl print "$DAEMON" >/dev/null 2>&1; then
   printf "kanata 를 다시 띄웠다.\n"
 fi
 
-printf "\n${DIM}처음 까는 기계라면 시스템 설정 > 개인정보 보호 및 보안 에서 입력 모니터링과\n"
-printf "손쉬운 사용(macOS 27: Device Control and Data Access)에 %s 를 넣고 켠다(목록에 없으면 + 로 추가). 그 뒤로는 kanata 판이 바뀌어도 그대로다.${NC}\n" "$DEST"
+printf "\n${DIM}처음 까는 기계라면 System Settings > Privacy & Security 의 Input Monitoring 과\n"
+printf "Device Control and Data Access(macOS 26 까지 Accessibility) 두 목록에 %s 를 넣고 켠다\n" "$DEST"
+printf "(목록에 없으면 + 로 추가). 그 뒤로는 kanata 판이 바뀌어도 그대로다. 남은 단계는 apps/check/pending.${NC}\n"

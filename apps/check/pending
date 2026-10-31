@@ -10,6 +10,12 @@
 # 조용히 재시작을 반복한다 — 첫 셋업 뒤 며칠이 지나도 "키 레이어가 안 먹는다"로만
 # 보인다. 전체 점검은 apps/check/mac 이고, 이건 그중 사람이 할 일만 짧게 뽑은 것이다.
 #
+# 설정 화면의 이름은 macOS 27.0.1 의 영어 표기다. 출처는
+# /System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex 의
+# Localizable.loctable — 키 ACCESSIBILITY 의 표시 이름이 "Accessibility" 에서
+# "Device Control and Data Access" 로 바뀌었다(한국어 "기기 제어 및 데이터 접근"). 사이드바의
+# Accessibility 는 VoiceOver 같은 보조 기능 설정이라 다른 화면이다.
+#
 # 설정 화면은 경로로만 적는다. x-apple.systempreferences: URL 로 바로 여는 방법은
 # macOS 판마다 패널 식별자가 바뀌어서, 확인하지 않은 URL 을 박아 두면 엉뚱한 화면이
 # 뜬다.
@@ -34,29 +40,31 @@ if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
   if ! systemextensionsctl list 2>/dev/null \
       | grep 'org.pqrs.Karabiner-DriverKit-VirtualHIDDevice' | grep -q 'activated enabled'; then
     item "Karabiner VirtualHIDDevice 드라이버 확장을 켠다" \
-      "시스템 설정 > 일반 > 로그인 항목 및 확장 > 드라이버 확장" \
+      "System Settings > General > Login Items & Extensions > Driver Extensions" \
       "systemextensionsctl list 가 [activated enabled]"
   fi
-  # kanata 는 권한이 없으면 이 문장을 남기고 끝난다(kanata 1.12, macOS 27 실측).
-  # 데몬이 지금 돌고 있으면 로그에 옛 줄이 남아 있어도 이미 된 것이다.
+  # kanata 는 입력 모니터링과 Device Control and Data Access 를 둘 다 요구하는데, 모자란 것을
+  # 한 번에 하나씩만 로그에 적고 끝난다(kanata 1.12, macOS 27 실측: Input Monitoring 을 주자
+  # 다음 실행에서 Accessibility 를 요구했다). 하나씩 따라가면 왕복이 두 번이 되므로, 데몬이
+  # 돌고 있지 않고 원인이 권한이면 둘을 한꺼번에 안내한다.
   if ! sudo -n launchctl print system/org.nixos.kanata 2>/dev/null | grep -q 'state = running' \
-      && tail -n 30 /var/log/kanata.log 2>/dev/null | grep -q 'Input Monitoring permission'; then
-    item "입력 모니터링에 /usr/local/libexec/kanata 를 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
-      "시스템 설정 > 개인정보 보호 및 보안 > 입력 모니터링, 그 뒤 sudo launchctl kickstart -k system/org.nixos.kanata" \
-      "tail /var/log/kanata.log 에 'entering the event loop' 뒤로 오류가 없다"
+      && grep 'failed to open keyboard' /var/log/kanata.log 2>/dev/null | tail -1 | grep -q 'permission'; then
+    item "/usr/local/libexec/kanata 를 두 목록에 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
+      "System Settings > Privacy & Security > Input Monitoring, 그리고 > Device Control and Data Access" \
+      "sudo launchctl kickstart -k system/org.nixos.kanata 뒤 /var/log/kanata.log 의 'entering the event loop' 뒤로 오류가 없다"
   fi
 fi
 
 # ── rift-grid ────────────────────────────────────────────────────────────
-# 손쉬운 사용 권한이 없으면 rift-grid 는 떠 있어도 창을 못 본다. apps/check/mac 의
+# Device Control and Data Access 권한이 없으면 rift-grid 는 떠 있어도 창을 못 본다. apps/check/mac 의
 # rift-grid 절과 같은 기준(rift-grid-cli 가 보는 창의 bundle_id 개수)이다. 창이 정말
 # 하나도 없을 때도 0 이지만, build-switch 는 터미널 창 안에서 돌기 때문에 여기서
 # 0 이면 권한 쪽일 가능성이 높다.
 cli="$HOME/.local/bin/rift-grid-cli"
 if [ -x "$cli" ] && launchctl print "gui/$(id -u)/org.nixos.rift-grid" 2>/dev/null | grep -q 'state = running'; then
   if ! "$cli" query windows 2>/dev/null | grep -q '"bundle_id"'; then
-    item "손쉬운 사용과 화면 및 시스템 오디오 녹음에 ~/.local/bin/rift-grid 를 켠다" \
-      "시스템 설정 > 개인정보 보호 및 보안, 그 뒤 launchctl kickstart -k gui/$(id -u)/org.nixos.rift-grid"
+    item "~/.local/bin/rift-grid 를 두 목록에 켠다" \
+      "System Settings > Privacy & Security > Device Control and Data Access, 그리고 > Screen & System Audio Recording. 그 뒤 launchctl kickstart -k gui/$(id -u)/org.nixos.rift-grid"
   fi
 fi
 

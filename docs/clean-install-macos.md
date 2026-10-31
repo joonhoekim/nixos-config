@@ -47,7 +47,7 @@ macOS 에서는 다중 사용자(데몬) 설치가 기본이다. 하는 일: `Ni
 ```bash
 git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
 cd ~/nixos-config
-nix --extra-experimental-features 'nix-command flakes' run nixpkgs#gh -- auth login
+nix --extra-experimental-features 'nix-command flakes' run nixpkgs#gh -- auth login   # 이미 했다면 건너뛴다
 ```
 
 `subline`·`subline-terminal` input 이 비공개 `git+https` 라서 첫 빌드 전에 gh 인증이
@@ -63,10 +63,13 @@ nix --extra-experimental-features 'nix-command flakes' run nixpkgs#gh -- auth lo
 ### 6. 첫 switch
 
 ```bash
-nix --extra-experimental-features 'nix-command flakes' run .#build-switch
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh --command ./apps/build-switch
 ```
 
 - flakes 는 이번 한 번만 플래그로 켠다. switch 뒤로는 nix-darwin 의 `/etc/nix/nix.conf` 가 켠다.
+- `nix shell nixpkgs#gh` 로 감싸는 이유: 비공개 input 을 받을 때 git 이 `~/.config/git/config` 의
+  `!gh auth git-credential` 을 부르는데, 첫 switch 전에는 PATH 에 gh 가 없다. 그러면 인증 없이
+  받으려다 실패한다. switch 뒤로는 home-manager 의 gh 가 PATH 에 있다.
 - `/etc` 의 파일이 가로막으면(`Unexpected files in /etc`) 그 파일을 `.before-nix-darwin` 으로
   옮기고 다시 — [03 §3](03-operating-on-macos.md) 의 2·3 번. 공식 설치기는 `/etc/nix/nix.conf`,
   `/etc/bashrc`, `/etc/zshrc` 를 남긴다.
@@ -171,8 +174,20 @@ p1~p6 은 `--purge` 때만. 기본 `--run` 이 kanata·드라이버·서명 신�
 
 ### 알려진 함정
 
-- **Lix 설치기의 uninstall 이 볼륨 언마운트에서 멈춘다**는 보고가 있다(2026-05,
-  lix-installer#80). 먼저 `sudo lsof +D /nix | head` 로 `/nix` 를 쓰는 프로세스를 본다.
+- **Lix 설치기의 uninstall 이 마지막 단계에서 멈춘다**(lix-installer#80. nix-installer 3.95.0,
+  macOS 27.0.1 에서 실측). "Revert: Create an encrypted APFS volume `Nix Store`…" 를 찍은 뒤로
+  끝나지 않는다. `/nix` 는 이미 언마운트돼 있고 쓰는 프로세스도 없다 — 설치기가 띄운 자식이
+  `<defunct>` 로 남은 채 설치기 자신이 교착한 것이라 기다려도 소용없다. 그 앞의 되돌리기
+  (nixbld 사용자, 데몬, 셸 훅, fstab)는 끝나 있으므로 설치기를 죽이고 남은 셋만 지운다:
+  ```bash
+  diskutil list | grep "Nix Store"                      # 남은 볼륨의 diskXsY
+  sudo diskutil apfs deleteVolume diskXsY
+  sudo security delete-generic-password -s "Nix Store" /Library/Keychains/System.keychain
+  ```
+  `/etc/synthetic.conf` 의 `nix` 줄은 바로 다시 깔 거면 남긴다(공식 설치기도 같은 줄을 쓴다).
+- **darwin-uninstaller 는 사용자 에이전트를 내리지 않는다.** root 로 돌아서 `~/Library/LaunchAgents`
+  의 plist 만 지우고 gui 도메인의 job 은 그대로 둔다. nix 의 bash 로 도는 `wal-watch` 가 남으면
+  `/nix` 를 언마운트하지 못하므로 `apps/uninstall` 이 그 앞에서 사용자 권한으로 내린다.
 - **공식 설치기는 fstab 을 손으로** 고쳐야 한다: `sudo vifs` 로 `/nix` 줄을 지운다. 스크립트는
   그 줄만 남기고 나머지를 한다.
 - 끝나면 빈 `/nix` 와 `/run` 이 남는다. 재부팅 때 사라진다.
@@ -185,6 +200,19 @@ p1~p6 은 `--purge` 때만. 기본 `--run` 이 kanata·드라이버·서명 신�
 
 ### 검증 상태
 
-- 계획 모드: `jhs-MacBook-Air`(Lix 설치기, nix-darwin, home-manager 링크 17 개)에서 단계와
-  명령이 맞게 나오는 것을 확인했다. 스토어의 셸 아래에서 `--run` 을 거절하는 것도 확인했다.
-- `--run`: **아직 돌려 보지 않았다.** 처음 돌린 결과로 이 절을 고친다.
+2026-10-31, `jhs-MacBook-Air`(macOS 27.0.1)에서 Lix 설치기 판을 걷어 내고 공식 설치기로 다시 깔았다.
+
+- 단계는 계획 모드가 찍는 명령을 그대로 손으로 돌렸다(`--run` 의 단계별 y/N 루프 자체는 쓰지 않았다).
+  중간에 nix-darwin 의 NOPASSWD 가 사라지므로 `/etc/sudoers.d/` 에 같은 규칙의 임시 파일을 두고,
+  첫 switch 뒤에 지웠다.
+- nix-darwin 제거, home-manager 링크(17 개) 정리와 `.backup` 복원은 그대로 됐다. 사용자 에이전트가
+  남는 문제와 Lix uninstall 교착은 위 "알려진 함정" 에 적었고, 앞의 것은 스크립트에 반영했다.
+- 공식 설치기(2.35.4, `--daemon --yes --no-channel-add`) 뒤 `/etc/nix/nix.conf`·`/etc/bashrc`·`/etc/zshrc`
+  를 `.before-nix-darwin` 으로 옮기고 `nix shell nixpkgs#gh --command ./apps/build-switch` 한 번으로
+  switch 가 끝났다. 기본 `--run` 이 남긴 kanata·드라이버·서명 신원·nix 밖 빌드 덕에 TCC 와 드라이버
+  승인을 다시 할 것이 없었다.
+- 손으로 내린 `wal-watch` 는 activation 이 다시 올리지 않았다(plist 만 다시 깐다). 로그아웃·로그인이나
+  `launchctl bootstrap gui/$UID ~/Library/LaunchAgents/org.nixos.wal-watch.plist` 로 올린다 — 설치 8 절의
+  로그아웃이 이것도 해결한다.
+- 끝난 뒤 `nix run .#check` 이상 없음: 셸·시스템·데몬 모두 Nix 2.34.8, VirtualHIDDevice `activated enabled`,
+  rift-grid 가 창을 본다.

@@ -128,9 +128,14 @@ fi
 printf "${YELLOW}Nix${NC}\n"
 # /usr/local/libexec/nix-darwin 은 이 레포의 launchd 래퍼다(modules/darwin/launchd-names.nix).
 # darwin-uninstaller 는 그 모듈을 모르므로 여기서 같이 지운다.
+#
+# 사용자 에이전트는 먼저 사용자 권한으로 내린다. darwin-uninstaller 는 root 로 돌아서
+# ~/Library/LaunchAgents 의 plist 파일만 지우고 gui 도메인에 올라 있는 job 은 그대로 둔다
+# (2026-10-31 실측: wal-watch·rift-grid 가 남았다). nix 의 bash 로 도는 wal-watch 가 남으면
+# 마지막 단계에서 /nix 를 언마운트하지 못한다.
 step "nix-darwin 을 걷는다 (로그인 셸 → /bin/zsh, /etc 복원, launchd 서비스 · sudoers · pam · 래퍼 제거)" \
   "$(has /run/current-system)" \
-  "sudo \"$uninst\"; sudo rm -rf /usr/local/libexec/nix-darwin"
+  "for p in \"\$HOME\"/Library/LaunchAgents/org.nixos.*.plist; do [ -e \"\$p\" ] && launchctl bootout gui/\$(id -u) \"\$p\"; done; sudo \"$uninst\"; sudo rm -rf /usr/local/libexec/nix-darwin"
 
 # home-manager 의 링크는 nix-darwin 제거가 건드리지 않는다. 스토어의 home-manager-files 를
 # 가리키는 링크만 지우고, 그 자리에 첫 활성화 때 옮겨 둔 <이름>.backup 이 있으면 되돌린다

@@ -353,10 +353,22 @@ with pkgs; {
 
   # Document conversion and OCR. Split from core because of size: pandoc is
   # ~230M on its own and OCR brings tesseract's language data.
-  documents = [
+  #
+  # ocrmypdf gets the same trimmed tesseract as the CLI. The stock ocrmypdf
+  # references its own tesseract with every language (~1G of traineddata), so
+  # trimming only the CLI saved nothing. Measured on aarch64-darwin: ocrmypdf
+  # closure 2794M → 1826M, at the cost of building ocrmypdf locally (~80s,
+  # its test suite included) on each nixpkgs bump.
+  #
+  # `osd` is not optional: ocrmypdf's page-rotation detection reads
+  # osd.traineddata, and without it `--rotate-pages` fails with "Error opening
+  # data file …/osd.traineddata" (its own tests catch this at build time).
+  documents = let
+    tesseract' = tesseract.override { enableLanguages = [ "kor" "eng" "osd" ]; };
+  in [
     pandoc         # universal document converter (md/docx/html/epub/...)
-    ocrmypdf       # add a text layer to scanned PDFs (bundles its own tesseract)
-    (tesseract.override { enableLanguages = [ "kor" "eng" ]; }) # direct `tesseract` CLI with Korean traineddata
+    (ocrmypdf.override { tesseract = tesseract'; }) # add a text layer to scanned PDFs
+    tesseract'     # direct `tesseract` CLI with Korean traineddata
   ];
 
   # Mobile / on-device web verification — docs: docs/packages/mobile.md

@@ -85,7 +85,7 @@ macOS 가 클릭을 요구해서 레포가 대신할 수 없다. activation 은 
 | 순서 | 대상 | 할 일 | 설정 화면 (macOS 27 영어 표기) | 확인 |
 |---|---|---|---|---|
 | 1 | Karabiner VirtualHIDDevice | 드라이버 확장 승인 | General > Login Items & Extensions > (아래로) Extensions > Driver Extensions | `systemextensionsctl list` 가 `[activated enabled]` |
-| 2 | `/usr/local/libexec/kanata` | **두 목록 모두** 켜기 (목록에 없으면 `+` → `⌘⇧G` 로 경로) | Privacy & Security > Input Monitoring, Privacy & Security > Device Control and Data Access | `sudo launchctl kickstart -k system/org.nixos.kanata` 뒤 `/var/log/kanata.log` 에 오류가 없다 |
+| 2 | `/usr/local/libexec/kanata/kanata` | **두 목록 모두** 켜기 (목록에 없으면 `+` → `⌘⇧G` 로 경로) | Privacy & Security > Input Monitoring, Privacy & Security > Device Control and Data Access | `sudo launchctl kickstart -k system/org.nixos.kanata` 뒤 `/var/log/kanata.log` 에 오류가 없다 |
 | 3 | `~/.local/bin/rift-grid` | 두 목록 켜기 | Privacy & Security > Device Control and Data Access, Privacy & Security > Screen & System Audio Recording | `nix run .#check` 의 rift-grid 절 |
 | 4 | LinearMouse (cask 가 있는 호스트만) | 켜기 | Privacy & Security > Input Monitoring | 외장 마우스 휠 방향 |
 
@@ -160,7 +160,7 @@ subline-terminal 은 스토어 밖 바이너리지만, 그 안의 셸이 로그�
 | p1 | brew cask | `brew uninstall --cask` 전부 | brew 가 nix-homebrew 의 스토어 링크라 Nix 를 지운 뒤에는 못 부른다 |
 | p2 | Homebrew | `/opt/homebrew` | 같은 이유 |
 | p3 | 드라이버 | Manager `deactivate`, `.Karabiner-VirtualHIDDevice-Manager.app` | |
-| p4 | kanata | `/usr/local/libexec/kanata`, 로그 | |
+| p4 | kanata | `/usr/local/libexec/kanata/`, 로그 | |
 | p5 | nix 밖 빌드 | `~/.local/bin` 의 rift-grid·subline-terminal, `~/Applications/subline-terminal.app` | 소스(`~/git`)는 남긴다 |
 | p6 | 서명 신원 | `apps/mac-signing-cert --remove` | 지우면 그 신원에 묶인 TCC 허가도 의미를 잃는다 |
 | 1 | nix-darwin | `darwin-uninstaller` (이 flake 가 고정한 판) | 로그인 셸 → `/bin/zsh`, `/etc/*.before-nix-darwin` 복원, launchd 서비스·`/etc/sudoers.d`(NOPASSWD)·`pam sudo_local` 제거 |

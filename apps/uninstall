@@ -113,8 +113,8 @@ if [ "$purge" = 1 ]; then
   step "Karabiner VirtualHIDDevice 드라이버를 내리고 Manager 앱을 지운다" \
     "$(has /Applications/.Karabiner-VirtualHIDDevice-Manager.app)" \
     "sudo /Applications/.Karabiner-VirtualHIDDevice-Manager.app/Contents/MacOS/Karabiner-VirtualHIDDevice-Manager deactivate; sudo rm -rf /Applications/.Karabiner-VirtualHIDDevice-Manager.app"
-  step "kanata 바이너리와 로그를 지운다" "$(has /usr/local/libexec/kanata)" \
-    "sudo rm -f /usr/local/libexec/kanata /usr/local/libexec/.kanata.source /var/log/kanata.log /var/log/karabiner-vhid-daemon.log"
+  step "kanata 바이너리 · 설정과 로그를 지운다" "$(has /usr/local/libexec/kanata)" \
+    "sudo rm -rf /usr/local/libexec/kanata /usr/local/libexec/.kanata.source /var/log/kanata.log /var/log/karabiner-vhid-daemon.log"
   step "nix 밖 빌드(rift-grid · subline-terminal)를 지운다 (소스 ~/git 은 남긴다)" \
     "$(has "$HOME/.local/bin/rift-grid")" \
     "cd \"\$HOME\" && rm -rf .local/bin/rift-grid .local/bin/rift-grid-cli .local/bin/.rift-grid.commit .local/bin/subline-terminal .local/bin/subline-terminald .local/bin/.subline-terminal.commit Applications/subline-terminal.app"

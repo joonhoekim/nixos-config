@@ -379,12 +379,26 @@ if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
     hint "brew uninstall --cask karabiner-elements 후 ./apps/build-switch"
   fi
   # 임의 서명이면 kanata 판이 바뀔 때마다 TCC 허가가 끊긴다(apps/kanata 머리말).
-  req="$(codesign -d -r- /usr/local/libexec/kanata 2>&1 | sed -n 's/^#* *designated => //p')"
+  kbin=/usr/local/libexec/kanata/kanata
+  req="$(codesign -d -r- "$kbin" 2>&1 | sed -n 's/^#* *designated => //p')"
   case "$req" in
-    "") bad "/usr/local/libexec/kanata 가 없다"; hint "./apps/kanata" ;;
+    "") bad "$kbin 이 없다"; hint "./apps/kanata" ;;
     *cdhash*) bad "kanata 가 임의 서명이다 — 판이 바뀌면 입력 모니터링 허가가 끊긴다"; hint "./apps/kanata" ;;
     *) ok "kanata 가 인증서로 서명돼 있다" ;;
   esac
+  # 데몬은 /nix 가 붙기 전에 뜬다. 스토어를 가리키면 부팅마다 첫 실행이 죽는다.
+  if [ -x "$kbin" ]; then
+    if otool -L "$kbin" | awk 'NR > 1' | grep -q /nix/store; then
+      warn "kanata 가 스토어 라이브러리를 링크한다 — 부팅 직후 첫 실행이 dyld 에서 죽는다"
+      hint "otool -L $kbin, apps/kanata 의 libiconv 바꿔 달기"
+    fi
+    if cmp -s /etc/kanata/kanata.kbd "${kbin%/*}/kanata.kbd"; then
+      ok "kanata 설정이 레포의 kanata.kbd 와 같다"
+    else
+      warn "kanata 가 옛 설정으로 돈다"
+      hint "./apps/kanata --auto"
+    fi
+  fi
 fi
 
 # ── 체크아웃 ─────────────────────────────────────────────────────────────

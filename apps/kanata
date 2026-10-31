@@ -1,20 +1,37 @@
 #!/bin/sh -e
 #
-# kanata 바이너리를 이 기계 신원으로 서명해 /usr/local/libexec/kanata 에 둔다. macOS 전용.
+# kanata 를 이 기계 신원으로 서명해 /usr/local/libexec/kanata/ 에 둔다. macOS 전용.
 #
 #   apps/kanata              서명 → 설치 → 데몬 다시 띄우기
 #   apps/kanata --status     깔린 것과 원본, 서명 요구사항
 #   apps/kanata --auto       build-switch 가 매번 부르는 꼴. 원본이 그대로면 바로 끝난다
 #
-# 원본은 nix 가 빌드한 것이다(/etc/kanata/kanata-unsigned → 스토어). 이 스크립트는
-# 빌드하지 않고 서명만 갈아 끼운다.
+# 원본은 nix 가 빌드한 것이다(/etc/kanata/kanata-unsigned, /etc/kanata/kanata.kbd → 스토어).
+# 이 스크립트는 빌드하지 않고 서명만 갈아 끼운다. 깔리는 것:
+#
+#   /usr/local/libexec/kanata/kanata      서명한 바이너리
+#   /usr/local/libexec/kanata/kanata.kbd  설정 복사본
+#   /usr/local/libexec/kanata/source      서명한 원본의 스토어 경로
 #
 # ── 왜 스토어의 바이너리를 그대로 쓰지 않는가 ───────────────────────────────
 # kanata 는 입력 모니터링과 손쉬운 사용 허가가 있어야 돈다. TCC 는 그 허가를
 # 바이너리의 서명 요구사항에 묶는데, 스토어의 것은 임의 서명이라 요구사항이
 # cdhash 다. nixpkgs 의 kanata 가 바뀔 때마다 허가가 조용히 끊기고, 시스템 설정의
 # 체크박스는 켜진 채로 레이어만 안 먹는다(apps/mac-signing-cert 머리말). 인증서로
-# 서명하면 요구사항에 cdhash 가 안 들어가서 허가는 기계당 한 번이다.
+# 서명하면 요구사항에 cdhash 가 안 들어가서 허가는 기계당 한 번이다. 서명 열쇠는
+# 로그인 키체인에 있으므로 nix 빌드 안에서는 할 수 없다.
+#
+# 낱개 바이너리의 허가는 경로에도 묶인다. 이 디렉터리를 옮기면 두 목록에서 다시
+# 켜야 한다. 바이너리를 /usr/local/libexec/kanata 에 바로 두던 판의 허가는 그 경로가
+# 디렉터리가 된 뒤에도 목록에 폴더 아이콘으로 켜진 채 남는다. 효과는 없고, 이미 켜져
+# 있는 것처럼 보여서 새 항목을 안 넣게 만든다.
+#
+# ── 왜 /nix 를 하나도 안 가리키게 하는가 ─────────────────────────────────────
+# launchd 는 부팅 때 /nix 볼륨이 붙기 전에 kanata 를 띄운다. 바이너리가 스토어의
+# libiconv 를 링크하거나 설정이 스토어 경로면 그 첫 실행이 OS_REASON_DYLD 로 죽고,
+# KeepAlive 가 다시 띄울 때까지 레이어가 안 먹는다. 그래서 libiconv 를 macOS 의
+# /usr/lib/libiconv.2.dylib 로 바꿔 달고(nixpkgs 의 것도 Apple libiconv 라 ABI 가 같다.
+# kanata 1.12 에서 --version · --check 로 확인), 설정은 복사해 둔다.
 #
 # 설치 자리가 root 소유인 것은 데몬이 root 로 돌기 때문이다. 사용자가 쓸 수 있는
 # 파일을 root 데몬이 실행하면 그 파일을 바꾸는 것이 곧 root 권한이 된다.
@@ -27,9 +44,12 @@ if [ "$(uname -s)" != "Darwin" ]; then
 fi
 
 SRC_LINK=/etc/kanata/kanata-unsigned
-DEST=/usr/local/libexec/kanata
-# 마지막으로 서명한 원본의 스토어 경로. --auto 가 "할 일 없음"을 가르는 기준이다.
-STAMP=/usr/local/libexec/.kanata.source
+CFG_LINK=/etc/kanata/kanata.kbd
+DIR=/usr/local/libexec/kanata
+DEST=$DIR/kanata
+CFG=$DIR/kanata.kbd
+# 마지막으로 서명한 원본의 스토어 경로. --auto 가 "바이너리는 할 일 없음"을 가르는 기준이다.
+STAMP=$DIR/source
 DAEMON=system/org.nixos.kanata
 # apps/mac-signing-cert 와 같은 이름을 쓴다. 신원을 따로 만들지 않는다.
 CN="${MAC_SIGN_ID:-$(id -un) local codesign}"
@@ -38,6 +58,7 @@ auto=""
 if [ "${1:-}" = "--auto" ]; then auto=1; fi
 
 src="$(readlink -f "$SRC_LINK" 2>/dev/null || true)"
+cfg_src="$(readlink -f "$CFG_LINK" 2>/dev/null || true)"
 
 if [ "${1:-}" = "--status" ]; then
   if [ -x "$DEST" ]; then
@@ -47,15 +68,33 @@ if [ "${1:-}" = "--status" ]; then
     printf "깔린 것: ${YELLOW}없다${NC} (%s)\n" "$DEST"
   fi
   printf "원본:     %s\n" "${src:-없다 ($SRC_LINK — build-switch 전이다)}"
+  if cmp -s "$CFG_LINK" "$CFG"; then printf "설정:     ${GREEN}원본과 같다${NC}\n"
+  else printf "설정:     ${YELLOW}원본과 다르다${NC} (%s)\n" "$CFG"; fi
   exit 0
 fi
 
-if [ -z "$src" ] || [ ! -x "$src" ]; then
+if [ -z "$src" ] || [ ! -x "$src" ] || [ ! -f "$cfg_src" ]; then
   printf "${RED}원본이 없다 (%s).${NC} build-switch 로 modules/darwin/kanata.nix 를 먼저 활성화한다.\n" "$SRC_LINK"
   exit 1
 fi
 
+kickstart() {
+  if sudo launchctl print "$DAEMON" >/dev/null 2>&1; then
+    sudo launchctl kickstart -k "$DAEMON"
+    printf "kanata 를 다시 띄웠다.\n"
+  fi
+}
+# 설정은 plist 에 경로로만 들어가므로, 내용이 바뀌어도 nix-darwin 이 데몬을 다시
+# 올려 주지 않는다. 여기서 바뀐 것을 보고 다시 띄운다.
+install_cfg() {
+  cmp -s "$cfg_src" "$CFG" && return 1
+  sudo install -o root -g wheel -m 644 "$cfg_src" "$CFG.new"
+  sudo mv -f "$CFG.new" "$CFG"
+  printf "설정을 갈아 넣었다 ${DIM}(%s)${NC}\n" "$cfg_src"
+}
+
 if [ -n "$auto" ] && [ -x "$DEST" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$src" ]; then
+  if [ -d "$DIR" ] && install_cfg; then kickstart; fi
   printf "kanata: ${GREEN}최신${NC} ${DIM}(%s)${NC}\n" "$("$DEST" --version 2>/dev/null)"
   exit 0
 fi
@@ -75,12 +114,30 @@ trap 'rm -rf "$tmp"' EXIT INT TERM
 # 서명은 사용자로 한다. 열쇠가 사용자의 로그인 키체인에 있다.
 cp "$src" "$tmp/kanata"
 chmod u+w "$tmp/kanata"
+# 서명 전에 바꿔야 한다. install_name_tool 은 서명을 깬다.
+iconv="$(otool -L "$tmp/kanata" | awk '$1 ~ /^\/nix\/store\/.*\/libiconv\.2\.dylib$/ { print $1 }')"
+[ -n "$iconv" ] && install_name_tool -change "$iconv" /usr/lib/libiconv.2.dylib "$tmp/kanata" 2>/dev/null
+left="$(otool -L "$tmp/kanata" | awk 'NR > 1 && $1 ~ /^\/nix\/store\// { print $1 }')"
+if [ -n "$left" ]; then
+  # 그래도 돈다 — 부팅 때 첫 실행만 죽고 KeepAlive 가 다시 띄운다. 막지는 않고 알린다.
+  printf "${YELLOW}kanata 가 아직 스토어 라이브러리를 링크한다. 부팅 직후 첫 실행이 죽는다:${NC}\n%s\n" "$left"
+fi
 codesign --force --sign "$CN" --identifier io.github.joonhoekim.kanata \
   --timestamp=none "$tmp/kanata"
 
+# 깔기 전에 돌려 본다. 바꿔 단 libiconv 가 안 맞으면 여기서 dyld 가 멈춘다.
+"$tmp/kanata" --check --cfg "$cfg_src" >/dev/null 2>&1 || {
+  printf "${RED}서명한 kanata 가 설정을 못 읽는다.${NC} 깔지 않는다: %s --check --cfg %s\n" "$tmp/kanata" "$cfg_src"
+  exit 1
+}
+
+# 바이너리 하나를 /usr/local/libexec/kanata 에 두던 판의 것. 같은 이름의 디렉터리를
+# 만들려면 먼저 비켜야 한다.
+[ -f "$DIR" ] && sudo rm -f "$DIR" /usr/local/libexec/.kanata.source
+sudo mkdir -p "$DIR"
+install_cfg || true
 # 덮어쓰지 않고 옮겨 넣는다. 돌고 있는 kanata 의 실행 파일을 그 자리에서 고쳐 쓰면
 # macOS 가 그 프로세스를 죽인다(코드 서명 페이지 검증).
-sudo mkdir -p "$(dirname "$DEST")"
 sudo install -o root -g wheel -m 755 "$tmp/kanata" "$DEST.new"
 sudo mv -f "$DEST.new" "$DEST"
 echo "$src" | sudo tee "$STAMP" >/dev/null
@@ -89,10 +146,7 @@ codesign -d -r- "$DEST" 2>&1 | sed -n 's/^#* *designated => /  요구사항 /p'
 
 # 데몬이 이미 올라와 있으면 새 바이너리로 다시 띄운다. 처음 깔린 것이면
 # KeepAlive.PathState 가 바이너리가 생긴 것을 보고 알아서 띄운다.
-if sudo launchctl print "$DAEMON" >/dev/null 2>&1; then
-  sudo launchctl kickstart -k "$DAEMON"
-  printf "kanata 를 다시 띄웠다.\n"
-fi
+kickstart
 
 printf "\n${DIM}처음 까는 기계라면 System Settings > Privacy & Security 의 Input Monitoring 과\n"
 printf "Device Control and Data Access(macOS 26 까지 Accessibility) 두 목록에 %s 를 넣고 켠다\n" "$DEST"

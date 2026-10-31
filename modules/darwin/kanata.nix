@@ -9,7 +9,8 @@
 #   2. VirtualHIDDevice-Daemon — root 로 돈다. 소켓이
 #      /Library/Application Support/org.pqrs/tmp/rootonly/ 에 생기고, 그래서
 #      kanata 도 root 여야 한다.
-#   3. kanata — root 데몬. 바이너리는 스토어가 아니라 /usr/local/libexec/kanata 다.
+#   3. kanata — root 데몬. 바이너리와 설정은 스토어가 아니라 /usr/local/libexec/kanata/ 에
+#      있다.
 #
 # 드라이버 버전은 pkgs.kanata.passthru.darwinDriver 를 그대로 쓴다. kanata 의
 # karabiner-driverkit 크레이트가 그 릴리스의 IPC 에 맞춰 빌드되고, pqrs 는 마이너
@@ -22,7 +23,8 @@
 # cdhash 이고, kanata 판이 바뀔 때마다 허가가 **조용히** 끊긴다 — 설정 화면의
 # 체크박스는 켜진 채로 레이어만 안 먹는다(apps/mac-signing-cert 머리말). 그래서
 # apps/kanata 가 스토어의 바이너리를 이 기계 신원으로 다시 서명해서 그 자리에 둔다.
-# build-switch 가 매번 부른다.
+# 설정도 같이 복사해서, 부팅 때 /nix 가 붙기 전에 떠도 /nix 를 건드릴 일이 없다
+# (apps/kanata 머리말). build-switch 가 매번 부른다.
 { pkgs, ... }:
 
 let
@@ -31,12 +33,14 @@ let
   managerApp = "/Applications/.Karabiner-VirtualHIDDevice-Manager.app";
   manager = "${managerApp}/Contents/MacOS/Karabiner-VirtualHIDDevice-Manager";
   vhidDaemon = "${driver}/Library/Application Support/org.pqrs/Karabiner-DriverKit-VirtualHIDDevice/Applications/Karabiner-VirtualHIDDevice-Daemon.app/Contents/MacOS/Karabiner-VirtualHIDDevice-Daemon";
-  bin = "/usr/local/libexec/kanata";
+  dir = "/usr/local/libexec/kanata";
+  bin = "${dir}/kanata";
 in
 {
   # apps/kanata 가 서명할 원본을 찾는 자리. /run/current-system 을 뒤지지 않고
   # 이름 하나로 집게 한다.
   environment.etc."kanata/kanata-unsigned".source = "${kanata}/bin/kanata";
+  environment.etc."kanata/kanata.kbd".source = "${../shared/kanata/kanata.kbd}";
 
   # Manager 앱은 판이 바뀔 때만 갈아 넣는다. 활성화된 확장의 주인 앱을 매번
   # 지웠다 다시 두면, 그 사이에 macOS 가 확장을 주인 없는 것으로 보고 비활성화를
@@ -74,14 +78,14 @@ in
     };
 
     # ProgramArguments 로 바이너리를 직접 띄운다. 셸을 거치면 TCC 가 허가를
-    # 찾는 대상이 그 셸이 될 수 있다. 대신 부팅 때 /nix/store 가 아직 안
-    # 붙었으면 설정을 못 읽고 끝나는데, KeepAlive 가 10초 뒤에 다시 띄운다.
+    # 찾는 대상이 그 셸이 될 수 있다. 같은 이유로 launchd-names.nix 의
+    # wait4path 래퍼도 안 거치므로, 바이너리와 설정이 /nix 를 가리키면 안 된다.
     #
-    # 설정을 스토어 경로로 넘기므로 kanata.kbd 가 바뀌면 plist 도 바뀌고,
-    # nix-darwin 이 이 데몬을 다시 올린다. 따로 kickstart 할 것이 없다.
+    # 설정은 고정 경로라 kanata.kbd 가 바뀌어도 plist 는 그대로다. 복사본을
+    # 갈아 넣고 데몬을 다시 띄우는 것은 apps/kanata --auto 가 한다.
     kanata = {
       serviceConfig = {
-        ProgramArguments = [ bin "--cfg" "${../shared/kanata/kanata.kbd}" ];
+        ProgramArguments = [ bin "--cfg" "${dir}/kanata.kbd" ];
         RunAtLoad = true;
         # 바이너리가 있는 동안만 살려 둔다. apps/kanata 를 아직 안 돌린
         # 기계에서는 띄울 것이 없고, 그냥 KeepAlive 면 재시작 루프가 된다.

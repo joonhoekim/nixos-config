@@ -55,8 +55,9 @@ kanata --check -c modules/shared/kanata/kanata.kbd   # 지금 OS 의 블록만 �
 - kanata 와 드라이버 데몬은 root launchd 데몬이다(`org.nixos.kanata`,
   `org.nixos.karabiner-vhid-daemon`). 로그는 `/var/log/kanata.log`,
   `/var/log/karabiner-vhid-daemon.log`.
-- 바이너리는 `/usr/local/libexec/kanata` — 스토어의 것을 이 기계 신원으로 다시 서명한
-  복사본이다. 그래야 kanata 판이 바뀌어도 TCC 허가가 남는다.
+- 바이너리와 설정은 `/usr/local/libexec/kanata/` — 스토어의 것을 이 기계 신원으로 다시
+  서명한 복사본이다. 그래야 kanata 판이 바뀌어도 TCC 허가가 남고, 부팅 때 `/nix` 가
+  붙기 전에 떠도 죽지 않는다.
 
 ### 새 Mac, 또는 Karabiner-Elements 에서 넘어올 때
 
@@ -70,7 +71,7 @@ brew uninstall --cask karabiner-elements   # 깔려 있으면. cask 목록에서
 1. 시스템 설정 > 일반 > 로그인 항목 및 확장 프로그램 > 드라이버 확장 —
    `org.pqrs.Karabiner-DriverKit-VirtualHIDDevice` 를 켠다(이미 켜져 있으면 그대로).
 2. 시스템 설정 > 개인정보 보호 및 보안 > **입력 모니터링**과 **손쉬운 사용** —
-   `/usr/local/libexec/kanata` 를 켠다. 목록에 없으면 `+` 로 넣는다(⌘⇧G 로 경로 입력).
+   `/usr/local/libexec/kanata/kanata` 를 켠다. 목록에 없으면 `+` 로 넣는다(⌘⇧G 로 경로 입력).
    macOS 27 에서는 손쉬운 사용 목록이 **Device Control and Data Access** 라는 이름이다.
    입력 모니터링은 kanata 가 처음 뜰 때 스스로 목록에 올린다.
 3. `sudo launchctl kickstart -k system/org.nixos.kanata`

@@ -87,9 +87,10 @@ if has_kanata; then
     "systemextensionsctl list 가 [activated enabled]"
   # 목록에서는 둘을 한꺼번에 안내한다. 하나씩 따라가면 왕복이 두 번이 된다.
   case "$(kanata_need)" in
-    im|ax) item "/usr/local/libexec/kanata 를 두 목록에 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
+    im|ax) item "/usr/local/libexec/kanata/kanata 를 두 목록에 넣고 켠다 (목록에 없으면 + 에서 ⌘⇧G 로 경로 입력)" \
       "System Settings > Privacy & Security > Input Monitoring, 그리고 > Device Control and Data Access" \
-      "/var/log/kanata.log 의 'entering the event loop' 뒤로 오류가 없다" ;;
+      "/var/log/kanata.log 의 'entering the event loop' 뒤로 오류가 없다
+     예전 자리 /usr/local/libexec/kanata 의 항목이 폴더 아이콘으로 켜져 있으면 그건 효과가 없다. − 로 지우고 그 안의 kanata 를 넣는다" ;;
   esac
 fi
 if has_rift && ! rift_ok; then
@@ -129,8 +130,8 @@ if has_kanata; then
   while :; do
     case "$(kanata_need)" in
       ok|other) break ;;
-      im) show "$url_im" "Input Monitoring 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata)" ;;
-      ax) show "$url_ax" "Device Control and Data Access 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata)" ;;
+      im) show "$url_im" "Input Monitoring 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata/kanata. 폴더 아이콘의 kanata 는 옛 자리라 효과가 없다)" ;;
+      ax) show "$url_ax" "Device Control and Data Access 에 kanata 를 켠다 (없으면 + → ⌘⇧G → /usr/local/libexec/kanata/kanata. 폴더 아이콘의 kanata 는 옛 자리라 효과가 없다)" ;;
     esac
     waiting
   done

@@ -34,6 +34,8 @@ if [ "$(uname)" = "Darwin" ]; then
     || printf "${YELLOW}subline-terminal 을 깔지 못했다.${NC} nix run .#subline-terminal 로 다시.\n"
   "$(dirname "$0")/kanata" --auto \
     || printf "${YELLOW}kanata 를 깔지 못했다.${NC} nix run .#kanata 로 다시.\n"
+  # 드라이버 승인·TCC 처럼 사람이 할 단계가 남았으면 여기서 보인다. 없으면 조용하다.
+  "$(dirname "$0")/check/pending" || true
 else
   printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
   # Build as the user so private inputs are fetched with their gh credentials;

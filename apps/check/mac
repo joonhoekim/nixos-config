@@ -63,11 +63,38 @@ else
   bad "/nix 가 마운트되어 있지 않다"
   hint "/etc/synthetic.conf 와 /etc/fstab 에 nix 항목이 남아 있는지 볼 것"
 fi
-if "$nix" store info >/dev/null 2>&1; then
+# `store info` 는 CppNix 에만 있다. Lix 는 `store ping` 만 알고, CppNix 에서 ping 은
+# 경고와 함께 info 로 넘어간다. 한쪽만 부르면 다른 구현체에서 데몬이 멀쩡해도 ✗ 가 된다.
+if "$nix" store info >"$tmp/store" 2>/dev/null || "$nix" store ping >"$tmp/store" 2>/dev/null; then
   ok "nix-daemon 에 붙는다"
 else
   bad "nix-daemon 에 붙지 못한다"
   hint "sudo launchctl kickstart -k system/org.nixos.nix-daemon"
+fi
+
+# 셸·시스템·데몬이 같은 nix 인가. nix.package(modules/shared/nix-implementation.nix)
+# 가 정하는 것은 데몬과 $sys/sw/bin/nix 이고, 셸이 집는 것은 PATH 가 정한다. 설치기의
+# 기본 프로필이 PATH 앞에 오면 셸만 설치할 때 깐 판(다른 구현체일 수도)이 되는데,
+# 어떤 명령도 실패하지 않아서 여기서만 드러난다.
+#
+# 셸은 지금 이 스크립트의 PATH 가 아니라 새 로그인·대화형 셸로 본다. 문제가 되는 줄은
+# rc 파일에 있고, 이 스크립트를 띄운 셸은 고치기 전의 PATH 를 들고 있을 수 있다.
+want="$("$nix" --version 2>/dev/null | head -1)"
+daemon_v="$(sed -n 's/^Version: //p' "$tmp/store" 2>/dev/null)"
+login="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{ print $2 }')"
+shell_nix="$(env -i HOME="$HOME" USER="$USER" LOGNAME="$USER" TERM=dumb "${login:-/bin/zsh}" -lic \
+  'printf "@@%s|%s\n" "$(command -v nix)" "$(nix --version 2>/dev/null | head -1)"' \
+  </dev/null 2>/dev/null | sed -n 's/^@@//p' | tail -1)"
+shell_path="${shell_nix%%|*}"; shell_v="${shell_nix#*|}"
+if [ -n "$daemon_v" ] && [ "$daemon_v" != "${want##* }" ]; then
+  bad "데몬은 $daemon_v, 세대의 nix 는 ${want:-?} 다"
+  hint "sudo launchctl kickstart -k system/org.nixos.nix-daemon"
+elif [ "$shell_v" != "$want" ]; then
+  bad "새 로그인 셸의 nix 는 ${shell_v:-없음} (${shell_path:-PATH 에 없다}), 세대는 $want 다"
+  hint "PATH 앞쪽에서 가린다. 설치기의 profile.d/nix-daemon.sh 를 source 하는 rc 가 있는지"
+  hint "  (modules/shared/shell-init.nix 머리말). 데몬과 클라이언트의 판·구현체가 갈린다"
+else
+  ok "nix 한 벌: 셸·시스템·데몬 모두 $want"
 fi
 if [ ! -e "$act" ]; then
   bad "$act 가 없다 — 활성화된 세대가 없으므로 나머지는 볼 수 없다"

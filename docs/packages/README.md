@@ -7,6 +7,12 @@
 문서 단위는 패키지가 아니라 **시나리오**다 — 한 문서 안의 도구들은 같은 상황에서
 함께 꺼내 쓰게 된다.
 
+선언 쪽은 `modules/shared/packages.nix` 가 `core` 와 **묶음**(`web` · `containers` · `cloud` ·
+`backend` · `security` · `media` · `documents` · `mobile` · `mobile-e2e` · `toys`, macOS 의 `ios`)
+으로 나뉘어 있고, 호스트가 `local.packages.bundles` 로 고른다(기본값은 전부). 그래서 아래
+문서의 도구가 어느 기계에는 없을 수 있다 — `nix shell nixpkgs#<이름>` 으로 한 번 쓰거나,
+그 호스트의 묶음 목록에 이름을 더한다.
+
 | 문서 | 다루는 상황 |
 |---|---|
 | [`web-toolchain.md`](web-toolchain.md) | Next/Nest 소스를 읽고 고치고 검증 (LSP·biome·ast-grep) |

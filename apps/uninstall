@@ -126,9 +126,11 @@ fi
 
 # ── nix-darwin → home-manager → Nix ──────────────────────────────────────
 printf "${YELLOW}Nix${NC}\n"
-step "nix-darwin 을 걷는다 (로그인 셸 → /bin/zsh, /etc 복원, launchd 서비스 · sudoers · pam 제거)" \
+# /usr/local/libexec/nix-darwin 은 이 레포의 launchd 래퍼다(modules/darwin/launchd-names.nix).
+# darwin-uninstaller 는 그 모듈을 모르므로 여기서 같이 지운다.
+step "nix-darwin 을 걷는다 (로그인 셸 → /bin/zsh, /etc 복원, launchd 서비스 · sudoers · pam · 래퍼 제거)" \
   "$(has /run/current-system)" \
-  "sudo \"$uninst\""
+  "sudo \"$uninst\"; sudo rm -rf /usr/local/libexec/nix-darwin"
 
 # home-manager 의 링크는 nix-darwin 제거가 건드리지 않는다. 스토어의 home-manager-files 를
 # 가리키는 링크만 지우고, 그 자리에 첫 활성화 때 옮겨 둔 <이름>.backup 이 있으면 되돌린다

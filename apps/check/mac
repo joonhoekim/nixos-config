@@ -179,6 +179,21 @@ for p in "$sys"/user/Library/LaunchAgents/*.plist; do
   [ -e "$p" ] && check_job "gui/$uid" "$p"
 done
 
+# Background App Activity 는 서비스 이름을 첫 ProgramArguments 의 basename 으로 보인다.
+# modules/darwin/launchd-names.nix 가 그걸 서비스 이름의 래퍼로 바꾸므로, 여기서 /bin/sh 가
+# 보이면 그 모듈이 빠졌거나 nix-darwin 의 감싸는 방식이 바뀐 것이다 — 동작은 멀쩡하고
+# 목록에 "sh" 만 늘어난다.
+shs=""
+for p in "$sys"/Library/LaunchDaemons/*.plist "$sys"/user/Library/LaunchAgents/*.plist; do
+  [ -e "$p" ] || continue
+  [ "$(plutil -extract ProgramArguments.0 raw -o - "$p" 2>/dev/null)" = /bin/sh ] \
+    && shs="$shs $(plutil -extract Label raw -o - "$p")"
+done
+if [ -n "$shs" ]; then
+  warn "Background App Activity 에 \"sh\" 로 보이는 서비스:$shs"
+  hint "modules/darwin/launchd-names.nix 가 import 되어 있는지 (hosts/darwin/common.nix)"
+fi
+
 # ── defaults ─────────────────────────────────────────────────────────────
 section "defaults"
 # activate 안의 nix-darwin 이 쓰는 모양:

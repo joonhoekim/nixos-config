@@ -122,7 +122,7 @@ Nix 절의 "nix 한 벌: 셸·시스템·데몬 모두 …" 가 셋이 같은 �
 Lix·Determinate 설치기로 깔아도 nix-darwin 이 데몬을 `nix.package`(CppNix)로 바꾸고, 셸도
 `/run/current-system/sw/bin/nix` 를 집는다(`modules/shared/shell-init.nix` 머리말). 남는 차이는
 설치기 쪽뿐이다: 기본 프로필에 그 설치기의 nix 가 있고, 제거가 그 설치기의 `uninstall` 로
-간다. `jhs-MacBook-Air` 가 Lix 설치기로 깔린 상태다(2026-10-31).
+간다.
 
 Determinate 설치기로 Determinate Nix 를 깔았다면 nix-darwin 이 `nix.enable = false` 를 요구해서
 이 레포의 `nix.settings`·`nix.gc` 가 먹지 않는다. 이 레포가 그 구성을 지원하지 않는 이유는

@@ -36,8 +36,10 @@
 
   homebrew = {
     enable = true;
-    # Taps are managed declaratively via nix-homebrew in flake.nix, so no
-    # `homebrew.taps` entry is needed here.
+    # tap 의 내용은 nix-homebrew 가 flake.nix 에서 스토어로 넣는다. 여기서는 이름만
+    # Brewfile 에 다시 적는다 — `onActivation.cleanup` 을 켠 호스트에서 brew bundle 이
+    # Brewfile 에 없는 tap 을 untap 하려 들고, 스토어 링크라 Permission denied 로 실패한다.
+    taps = builtins.attrNames config.nix-homebrew.taps;
     # mkDefault: 호스트가 `homebrew.casks = [ ... ];` 로 목록을 통째로 바꿀 수 있다
     # (hosts/darwin/jhs-MacBook-Air). cask 에 매인 설정 — 아래 Dock, 기본 앱 핸들러
     # (./default-apps.nix), Stats·LinearMouse 의 LaunchAgent(hosts/darwin/common.nix) —

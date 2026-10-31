@@ -233,7 +233,9 @@
           })
       // nixpkgs.lib.optionalAttrs (nixpkgs.lib.hasSuffix "darwin" system) {
         check-snapshot = mkApp "check-snapshot" "check/snapshot" system;
-      };
+      }
+      # 평가만 하므로 플랫폼을 가리지 않는다 — 다른 구현체로 모든 호스트를 평가해 본다.
+      // { check-eval = mkApp "check-eval" "check/eval" system; };
     in
     {
       devShells = forAllSystems devShell;

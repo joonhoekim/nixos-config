@@ -1,0 +1,91 @@
+#!/bin/sh
+#
+# 모든 호스트를 다른 Nix 구현체로도 평가해서, 지금 쓰는 구현체와 결과가 같은지 본다.
+# **아무것도 빌드하지 않고 고치지 않는다.**
+#
+#   nix run .#check-eval                 lix 로 (기본)
+#   nix run .#check-eval -- --with cppnix
+#
+# ── 왜 따로 있나 ─────────────────────────────────────────────────────────
+# 구현체는 local.nix.implementation 하나로 바꿀 수 있게 해 두었다
+# (modules/shared/nix-implementation.nix). 그 스위치가 실제로 쓸 만한지는 공유 코드가
+# 다른 구현체에서도 평가되는지에 달려 있다. 한쪽에만 있는 문법·builtin(예: 파이프
+# 연산자는 실험 기능의 이름부터 CppNix `pipe-operators`, Lix `pipe-operator` 로
+# 다르다)이나, Lix 가 오류로 올린 deprecation 은 그 구현체로 평가해야만 드러난다.
+#
+# 통과를 강제하는 게이트가 아니다. 갈아탈 수 있는지를 재는 용도다.
+#
+# 같은 nixpkgs 로 평가하면 두 구현체의 drvPath 는 같아야 한다. 다르면 평가 결과
+# 자체가 갈린 것이므로 ✗ 다. 다른 구현체에서만 나는 경고도 그 구현체로 갈아탈 때
+# 고칠 목록이라 ⚠ 로 보인다.
+
+here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+. "$here/lib.sh"
+
+with=lix
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --with) with="$2"; shift 2 ;;
+    --with=*) with="${1#*=}"; shift ;;
+    *) printf "모르는 인자: %s\n" "$1" >&2; exit 2 ;;
+  esac
+done
+case "$with" in
+  lix) attr='lixPackageSets.stable.lix' ;;
+  cppnix) attr='nix' ;;
+  *) printf "--with 는 lix 또는 cppnix\n" >&2; exit 2 ;;
+esac
+
+find_repo && cd "$repo" || { printf "체크아웃을 못 찾았다.\n" >&2; exit 1; }
+
+# 지금 구현체는 PATH 의 nix 가 아니라 시스템 프로필의 것이다. 이 스크립트를 띄운 셸이
+# 설치기의 판을 들고 있을 수 있다(modules/shared/shell-init.nix 머리말).
+cur=/run/current-system/sw/bin/nix; [ -x "$cur" ] || cur=nix
+nf="--extra-experimental-features nix-command --extra-experimental-features flakes"
+
+# 다른 구현체는 이 flake 가 고정한 nixpkgs 에서 받는다. 캐시에 있어서 빌드는 없다.
+alt="$($cur $nf build --no-link --print-out-paths --inputs-from . "nixpkgs#$attr" 2>/dev/null | tail -1)/bin/nix"
+if [ ! -x "$alt" ]; then
+  printf "${RED}%s 를 받지 못했다${NC} (nixpkgs#%s)\n" "$with" "$attr" >&2
+  exit 1
+fi
+
+arch="$(uname -m)"; [ "$arch" = arm64 ] && arch=aarch64
+targets=""
+for d in hosts/darwin/*/; do
+  [ -d "$d" ] && targets="$targets darwinConfigurations.$(basename "$d").system"
+done
+targets="$targets darwinConfigurations.${arch}-darwin.system"
+for d in hosts/nixos/*/; do
+  [ -d "$d" ] && targets="$targets nixosConfigurations.$(basename "$d").config.system.build.toplevel"
+done
+
+printf "\n${YELLOW}지금${NC}  %s\n" "$($cur --version | head -1)"
+printf "${YELLOW}비교${NC}  %s\n" "$($alt --version | head -1)"
+section "호스트"
+
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+for t in $targets; do
+  name="${t#*Configurations.}"; name="${name%%.*}"
+  a="$($cur $nf eval --raw ".#$t.drvPath" 2>"$tmp/a.err")" || a=""
+  b="$($alt $nf eval --raw ".#$t.drvPath" 2>"$tmp/b.err")" || b=""
+  # git 트리가 더럽다는 경고는 구현체와 무관하다.
+  grep -v -e 'Git tree .* is dirty' -e 'channels.* does not exist' "$tmp/b.err" \
+    | grep -i 'warning' | sort -u > "$tmp/b.warn"
+  if [ -z "$a" ]; then
+    warn "$name — 지금 구현체로도 평가되지 않는다: $(grep -m1 error "$tmp/a.err")"
+  elif [ -z "$b" ]; then
+    bad "$name — $with 로 평가되지 않는다"
+    hint "$(grep -m1 -i error "$tmp/b.err")"
+  elif [ "$a" != "$b" ]; then
+    bad "$name — drvPath 가 갈린다"
+    hint "지금 $a"; hint "$with $b"
+  elif [ -s "$tmp/b.warn" ]; then
+    warn "$name — 같은 결과, $with 에서만 경고 $(wc -l < "$tmp/b.warn" | tr -d ' ')개"
+    while read -r l; do hint "$l"; done < "$tmp/b.warn"
+  else
+    ok "$name"
+  fi
+done
+
+summary

@@ -118,8 +118,6 @@ with pkgs; {
     xz             # xz/lzma compression
     unrar          # rar extraction (unfree)
     glow           # markdown renderer
-    d2             # text → diagram (SVG/PNG); renders without a browser, so an
-                   # architecture sketch can be written and then looked at
     navi           # interactive cheatsheets
     hyperfine      # CLI benchmarking
     tokei          # source line counter
@@ -351,7 +349,7 @@ with pkgs; {
     gifski         # high-quality video → GIF (better output than ffmpeg alone)
   ];
 
-  # Document conversion and OCR. Split from core because of size: pandoc is
+  # Document conversion, OCR and diagrams. Split from core because of size: pandoc is
   # ~230M on its own and OCR brings tesseract's language data.
   #
   # ocrmypdf gets the same trimmed tesseract as the CLI. The stock ocrmypdf
@@ -369,6 +367,11 @@ with pkgs; {
     pandoc         # universal document converter (md/docx/html/epub/...)
     (ocrmypdf.override { tesseract = tesseract'; }) # add a text layer to scanned PDFs
     tesseract'     # direct `tesseract` CLI with Korean traineddata
+
+    # text → diagram (SVG/PNG). Linux 판은 PNG 내보내기용으로 playwright 의
+    # Chromium·Firefox·WebKit 을 함께 끌어와 클로저가 1.3 GiB 다(macOS 판은 61 MiB,
+    # 둘 다 2026-11 cache.nixos.org 의 narSize). 그래서 core 가 아니라 여기 둔다.
+    d2
   ];
 
   # Mobile / on-device web verification — docs: docs/packages/mobile.md

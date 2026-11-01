@@ -13,6 +13,13 @@
 문서의 도구가 어느 기계에는 없을 수 있다 — `nix shell nixpkgs#<이름>` 으로 한 번 쓰거나,
 그 호스트의 묶음 목록에 이름을 더한다.
 
+묶음에 넣을 만큼 여러 기계가 쓰지 않는 무거운 패키지는 그 호스트 파일의
+`local.packages.extra = with pkgs; [ ... ];` 에 적는다. 빼면 다음 switch 에서 PATH 에서
+사라지고, 디스크는 `nix run .#clean` 같은 gc 가 비운다. 어느 호스트가 무엇을 고르고
+있는지는 `nix run .#inventory` 가 한 화면에 찍는다(묶음 · 빠진 묶음 · extra · cask).
+GUI 앱(cask)도 같은 구조다 — `modules/darwin/casks.nix` 의 `core` 는 모든 Mac 에, 나머지는
+호스트의 `local.casks` 로 고른다.
+
 | 문서 | 다루는 상황 |
 |---|---|
 | [`web-toolchain.md`](web-toolchain.md) | Next/Nest 소스를 읽고 고치고 검증 (LSP·biome·ast-grep) |

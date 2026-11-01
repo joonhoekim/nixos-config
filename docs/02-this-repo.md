@@ -62,8 +62,8 @@ hosts/darwin/default.nix          ← 공용 macOS 호스트 (imports ./common.n
 hosts/darwin/common.nix           ← macOS 진입점 (시스템 레벨 설정)
 │   imports = [
 ├──→ modules/darwin/home-manager.nix   ← macOS 유저/홈 레벨
+│    │   imports ./casks.nix         (GUI 앱. core + 호스트가 고르는 local.casks)
 │    │   imports ./dock              (Dock 관리 모듈)
-│    │   casks   = ./casks.nix       (GUI 앱)
 │    │   home-manager.users.<user>:
 │    │     packages = ./packages.nix             (shared + macOS 전용 패키지)
 │    │     programs = ../shared/home-manager.nix          ← 공유
@@ -179,10 +179,12 @@ sourced 되는 조각은 목록에 넣지 않는다.
 
 ## 무엇을 어디서 고치나
 
-- CLI 패키지(양쪽 OS): `modules/shared/packages.nix`
+- CLI 패키지(양쪽 OS): `modules/shared/packages.nix` — `core` 와 묶음. 호스트는
+  `local.packages.bundles` 로 묶음을, `local.packages.extra` 로 묶음 밖의 패키지를 고른다
 - 셸/git/vim 설정: `modules/shared/home-manager.nix`
 - 폰트: `modules/shared/fonts.nix` (각 호스트의 `fonts.packages`로 등록)
-- GUI 앱(cask): `modules/darwin/casks.nix`
+- GUI 앱(cask): `modules/darwin/casks.nix` — `core` 는 모든 Mac, 나머지는 호스트의 `local.casks`
+- 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`
 - macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고

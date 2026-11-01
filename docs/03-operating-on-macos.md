@@ -387,7 +387,8 @@ cargo install <pkg>   # → ~/.cargo
 
 **졸업 절차(명령형 → 선언형):** 영구·재현 가능하게 만들고 싶을 때.
 
-1. 적절한 파일에 추가 — CLI면 `modules/shared/packages.nix`, GUI면 `modules/darwin/casks.nix`
+1. 적절한 파일에 추가 — CLI면 `modules/shared/packages.nix`, GUI면 `modules/darwin/casks.nix`.
+   한 기계에서만 쓸 것이면 그 호스트 파일의 `local.packages.extra` / `local.casks` 에 더한다
 2. `nix run .#build-switch`
 3. 명령형 사본 제거(`nix profile remove` 또는 `brew uninstall`) — 안 하면 두 벌이 깔려 PATH 순서로 충돌
 

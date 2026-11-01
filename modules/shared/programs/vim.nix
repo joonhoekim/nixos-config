@@ -1,4 +1,3 @@
-# Vim configuration. Returns a `programs`-shaped fragment.
 { pkgs, ... }:
 {
   vim = {

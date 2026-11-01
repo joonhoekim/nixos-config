@@ -1,4 +1,3 @@
-# tmux configuration. Returns a `programs`-shaped fragment.
 { pkgs, ... }:
 {
   tmux = {
@@ -17,8 +16,7 @@
       {
         plugin = resurrect; # Used by tmux-continuum
 
-        # Use XDG data directory
-        # https://github.com/tmux-plugins/tmux-resurrect/issues/348
+        # XDG data directory — https://github.com/tmux-plugins/tmux-resurrect/issues/348
         extraConfig = ''
           set -g @resurrect-dir '$HOME/.cache/tmux/resurrect'
           set -g @resurrect-capture-pane-contents 'on'
@@ -41,30 +39,21 @@
       # Remove Vim mode delays
       set -g focus-events on
 
-      # Enable full mouse support
       set -g mouse on
 
-      # -----------------------------------------------------------------------------
-      # Key bindings
-      # -----------------------------------------------------------------------------
-
-      # Unbind default keys
       unbind C-b
       unbind '"'
       unbind %
 
-      # Split panes, vertical or horizontal
       bind-key x split-window -v
       bind-key v split-window -h
 
-      # Move around panes with vim-like bindings (h,j,k,l)
       bind-key -n M-k select-pane -U
       bind-key -n M-h select-pane -L
       bind-key -n M-j select-pane -D
       bind-key -n M-l select-pane -R
 
-      # Smart pane switching with awareness of Vim splits.
-      # This is copy paste from https://github.com/christoomey/vim-tmux-navigator
+      # From https://github.com/christoomey/vim-tmux-navigator
       is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
         | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
       bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h'  'select-pane -L'

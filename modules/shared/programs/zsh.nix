@@ -1,5 +1,3 @@
-# Shared zsh configuration. Returns a `programs`-shaped fragment merged by
-# modules/shared/home-manager.nix.
 { pkgs, lib, bundles, ... }:
 {
   zsh = {

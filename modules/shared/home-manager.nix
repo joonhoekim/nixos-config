@@ -1,13 +1,7 @@
 { config, pkgs, lib, user, identity, bundles, ... }:
 
-# Aggregates the per-program home-manager fragments under ./programs into a
-# single `programs`-shaped attrset. Each fragment returns a plain attrset keyed
-# by its program name (e.g. `{ zsh = {...}; }`); they are folded together here.
-#
-# The result MUST stay a plain attrset: the darwin/nixos home-manager modules
-# consume it as `programs = import ./shared/home-manager.nix {...}`, which
-# cannot resolve a `lib.mkMerge` thunk. Program keys do not overlap across
-# fragments, so a left-fold with `//` is sufficient and order-independent.
+# The result MUST stay a plain attrset: it is consumed as `programs = import ./shared/home-manager.nix {...}`,
+# which cannot resolve a `lib.mkMerge` thunk. Program keys don't overlap, so the `//` fold is order-independent.
 let
   args = { inherit config pkgs lib user identity bundles; };
   fragments = [

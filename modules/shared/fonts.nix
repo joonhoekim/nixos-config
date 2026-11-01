@@ -1,67 +1,32 @@
-# Shared font packages for both macOS (nix-darwin) and NixOS.
-#
-# Registered via `fonts.packages` on each platform (see hosts/darwin and
-# hosts/nixos). On macOS this is what actually exposes fonts to apps —
-# putting a font in environment.systemPackages does NOT register it with
-# the system font manager, so terminals can't find it (cue broken glyphs).
-#
-# Nerd Fonts provide the powerline/devicon glyphs that prevent symbol
-# corruption ("기호 깨짐") in terminals, shells (powerlevel10k), and TUIs.
-#
-# `fonts.packages` 는 fontconfig 을 통해 노출된다. 그것을 읽지 않는 앱은 이
-# 목록의 혜택을 받지 못한다 — 지금은 OnlyOffice 가 그렇고, 그쪽 목록은
-# overlays/onlyoffice-fonts.nix 에 따로 있다. 목록을 하나로 합치지 않은 이유는
-# 그 파일 주석에 적어뒀다(요약: 전부 넘기면 1.9GB / 378 패밀리가 되고, 문서
-# 편집기의 폰트 드롭다운에 Nerd Font 와 아이콘 폰트가 쏟아진다).
+# Registered via `fonts.packages` (hosts/darwin, hosts/nixos): on macOS a font in
+# environment.systemPackages is NOT registered with the font manager, so terminals show broken glyphs.
+# fontconfig 을 안 읽는 OnlyOffice 는 목록이 overlays/onlyoffice-fonts.nix 에 따로 있다(이유는 그 파일).
 { pkgs }:
 
 with pkgs; [
-  # Nerd Fonts (patched with extra glyphs/icons)
-  nerd-fonts.jetbrains-mono   # primary coding font (matches nixpkgs jetbrains-mono)
+  nerd-fonts.jetbrains-mono   # primary coding font
   nerd-fonts.hack
   nerd-fonts.meslo-lg         # "MesloLGS Nerd Font" — powerlevel10k's reference font
   nerd-fonts.symbols-only     # glyph-only fallback for any non-patched font
 
-  # Coverage / emoji
   noto-fonts
   noto-fonts-color-emoji
   font-awesome
 
-  # ── Korean / CJK ───────────────────────────────────────────────────────
-  # noto-fonts above does NOT cover CJK — nixpkgs splits that out — and no
-  # Nerd Font is patched with Hangul. So without this block a machine can end
-  # up with zero Korean faces of its own, and the OS picks one for you: macOS
-  # was rendering Hangul in PCMyungjo, a serif face, inside a mono terminal.
-  # That is what "한글만 폰트가 다르다" looks like. Check with
-  # `ghostty +show-face --string=한글`.
-  #
-  # NixOS had these already (modules/nixos/korean.nix); they live here now so
-  # both platforms get the same faces and the terminal config can name one.
-  nerd-fonts.d2coding   # "D2CodingLigature Nerd Font" — Hangul cells exactly 2x
-                        # the latin ones, so columns don't drift. Terminal default.
-  sarasa-gothic         # "Sarasa Mono K" / "Sarasa Term K" — Iosevka + Source Han.
-                        # Ships as .ttc collections; one file holds every language cut.
-  noto-fonts-cjk-sans-static # coverage insurance — nothing should render as □.
-                        # -static on purpose: the default package is VF-only
-                        # (wght default 100, CFF2) and OnlyOffice draws that
-                        # as Thin — see overlays/onlyoffice-fonts.nix.
+  # noto-fonts 는 CJK 를 안 덮고 Nerd Font 에는 한글이 없다. 이 묶음이 없으면 OS 가 아무 한글
+  # 폰트나 집는다(macOS 는 모노 터미널에 명조 PCMyungjo). 확인: `ghostty +show-face --string=한글`
+  nerd-fonts.d2coding   # "D2CodingLigature Nerd Font" — Hangul exactly 2x latin width; terminal default
+  sarasa-gothic         # "Sarasa Mono K" / "Sarasa Term K" (.ttc collections)
+  noto-fonts-cjk-sans-static # -static: the default is VF-only (wght 100) and OnlyOffice draws it Thin
   pretendard            # UI/document sans (proportional; not for the terminal)
 
-  # ── UI / ricing ────────────────────────────────────────────────────────
-  # DankMaterialShell does NOT need these: it bundles Inter, FiraCode Nerd
-  # Font and Material Symbols under share/quickshell/dms/assets/fonts and
-  # loads them with Qt FontLoader, which bypasses fontconfig entirely. So
-  # `fc-match Inter` failing does not mean the shell is falling back.
-  #
-  # They are installed anyway so *everything else* can use the same faces —
-  # GTK apps, the terminal, and DMS's own greeter mode, which runs before the
-  # user session and reads fontconfig rather than the bundled assets.
+  # DMS bundles these itself (share/quickshell/dms/assets/fonts via Qt FontLoader, bypassing fontconfig),
+  # so `fc-match Inter` failing is not a fallback. Installed for GTK, the terminal and DMS's greeter.
   inter
   material-symbols
   nerd-fonts.fira-code
 
-  # Alternates worth having on hand while ricing; swapping a profile's font
-  # is then a settings change instead of a rebuild.
+  # Alternates for ricing: swapping a profile's font is then a settings change, not a rebuild.
   nerd-fonts.caskaydia-cove   # Cascadia Code + Nerd glyphs
   geist-font                  # Vercel's UI/mono pair
 ]

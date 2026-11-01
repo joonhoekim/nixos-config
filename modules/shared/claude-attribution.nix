@@ -1,8 +1,6 @@
-# home.activation fragment: keeps Claude Code from adding its trailers (Co-Authored-By,
-# the remote-session link) to commits and PRs by forcing the attribution keys off on every switch.
-#
-# An absent key means "on" (Claude Code's default adds Co-Authored-By), so a missing
-# file is created too. Other keys are left alone because Claude Code rewrites this file itself.
+# home.activation fragment: forces Claude Code's attribution keys off on every switch.
+# An absent key means "on", so a missing file is created too; other keys are left alone
+# because Claude Code rewrites this file itself.
 { pkgs, lib }:
 lib.hm.dag.entryAfter [ "writeBoundary" ] ''
   claude_settings="$HOME/.claude/settings.json"

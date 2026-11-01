@@ -8,7 +8,7 @@ local.nix.implementation = "cppnix";   # 또는 "lix" — modules/shared/nix-imp
 
 `nix.package` 는 이 값에서 나온다(`cppnix` → `pkgs.nix`, `lix` → `pkgs.lixPackageSets.stable.lix`).
 그것이 정하는 것은 데몬과 `/run/current-system/sw/bin/nix` 이고, 셸의 `nix` 가 같은 판이 되는 것은
-설치기의 `nix-daemon.sh` 를 source 하지 않아서다(`modules/shared/shell-init.nix` 머리말). 셋이 같은지는
+설치기의 `nix-daemon.sh` 를 source 하지 않아서다(아래 "셸이 설치기의 nix-daemon.sh 를 source 하지 않는 이유"). 셋이 같은지는
 `nix run .#check` 의 Nix 절이 본다.
 
 ## 왜 CppNix 인가 (2026-10)
@@ -40,6 +40,34 @@ local.nix.implementation = "cppnix";   # 또는 "lix" — modules/shared/nix-imp
    (CppNix `pipe-operators`, Lix `pipe-operator`). 한쪽만 아는 `nix.conf` 키도 공용 `nix.settings` 에
    두지 않는다.
 3. 옵션값을 바꾸고 switch 한 뒤 `nix run .#check` 의 "nix 한 벌" 항목을 본다.
+
+### check-eval 결과 읽기 (`apps/check/eval`)
+
+`nix run .#check-eval [-- --with cppnix]`(기본 lix)는 모든 호스트를 다른 구현체로도 평가해 지금 구현체와
+비교한다. 아무것도 빌드하지 않고 고치지 않는다. 다른 구현체는 이 flake 가 고정한 nixpkgs 에서 받으므로 캐시에
+있어 빌드가 없다.
+
+- 같은 nixpkgs 로 평가하면 두 구현체의 drvPath 는 같아야 한다. 다르면 평가 결과 자체가 갈린 것이라 ✗.
+- 다른 구현체에서만 평가되지 않으면 ✗. 한쪽에만 있는 문법·builtin 이나, Lix 가 오류로 올린 deprecation 은 그
+  구현체로 평가해야만 드러난다.
+- 같은 결과인데 다른 구현체에서만 나는 경고는 갈아탈 때 고칠 목록이라 ⚠.
+
+통과를 강제하는 게이트가 아니라 갈아탈 수 있는지를 재는 용도다.
+
+## 셸이 설치기의 nix-daemon.sh 를 source 하지 않는 이유
+
+nix 환경은 nix-darwin 의 /etc/bashrc·/etc/zshrc 가 set-environment 로 이미 잡는다(PATH, NIX_PROFILES,
+NIX_SSL_CERT_FILE, XDG_DATA_DIRS). NixOS 에는 그 파일이 없다. 설치기의 `profile.d/nix-daemon.sh` 를
+`modules/shared/shell-init.nix` 에서 부르면 두 가지가 조용히 틀어진다:
+
+- PATH 맨 앞에 `/nix/var/nix/profiles/default/bin` 을 넣는다. 셸의 `nix` 가 nix.package 가 아니라 설치할 때
+  깐 판이 되고, sudo 아래도 같다. 데몬은 nix.package 라서 클라이언트와 데몬의 판(심지어 구현체)이 갈린다.
+- NIX_PROFILES 를 "default ~/.nix-profile" 로 덮어써서 `/run/current-system/sw` 와 `/etc/profiles/per-user/<user>`
+  가 빠진다.
+
+확인: `command -v nix` 가 `/run/current-system/sw/bin/nix` 여야 한다(`apps/check/mac`).
+
+## 설치기
 
 설치기는 구현체와 따로다. 설치기는 설치·제거와 macOS 업데이트 뒤 복구에만 관여한다
 (`docs/clean-install-macos.md`).

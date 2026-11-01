@@ -1,7 +1,4 @@
-# Git configuration. Returns a `programs`-shaped fragment.
-#
-# 이름과 메일은 사람마다 다른 값이라 여기 없다 — users/<이름>.nix 가 들고 있고
-# (users/README.md), 그래야 포크하는 쪽이 공유 모듈을 고치지 않는다.
+# 이름·메일은 users/<이름>.nix 가 든다(users/README.md) — 포크가 공유 모듈을 안 고치게.
 { identity, ... }:
 {
   git = {

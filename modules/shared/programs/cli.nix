@@ -1,38 +1,28 @@
-# Shell-integrated CLI tools (zsh integration added automatically) plus the
-# mise runtime version manager. Returns a `programs`-shaped fragment.
 { ... }:
 {
-  atuin.enable = true;        # better shell history search (Ctrl-R)
-  zoxide.enable = true;       # smarter cd — use `z <dir>`
-  eza.enable = true;          # modern `ls`
-  pay-respects.enable = true; # correct the previous command (thefuck successor) — use `f`
-  direnv = {                  # per-directory env; nix-direnv caches `use flake`
+  atuin.enable = true;        # Ctrl-R
+  zoxide.enable = true;       # `z <dir>`
+  eza.enable = true;
+  pay-respects.enable = true; # `f`
+  direnv = {                  # nix-direnv caches `use flake`
     enable = true;
     nix-direnv.enable = true;
   };
-  mise = {                    # runtime version manager (node, etc.)
+  mise = {
     enable = true;
     globalConfig = {
-      # On NixOS mise defaults to all_compile=true, so node builds from source
-      # (minutes and counting on this laptop) instead of using the prebuilt
-      # tarball (~3 s). nix-ld (hosts/nixos/common.nix) makes prebuilts run.
+      # On NixOS mise defaults to all_compile=true: node builds from source (minutes) instead of the
+      # prebuilt tarball (~3 s). nix-ld (hosts/nixos/common.nix) makes prebuilts run.
       settings.all_compile = false;
       tools = {
         node = "lts";
-        # pnpm as its own tool, not via corepack: Node 25+ no longer bundles
-        # corepack, so `node = "lts"` would silently drop pnpm once Node 26
-        # goes LTS. The global pnpm still switches to the version a project
-        # pins in package.json `packageManager`.
+        # Not via corepack: Node 25+ no longer bundles it, so pnpm would silently vanish once Node 26 is LTS.
         pnpm = "latest";
         bun = "latest";
         go = "latest";
         rust = "stable";     # mise core plugin wraps rustup
-        java = "temurin-25";  # LTS (Temurin / Eclipse Adoptium)
-        # Python is NOT managed by mise. The global python3 is provided by
-        # nixpkgs (python3.withPackages in modules/shared/packages.nix) so the
-        # shell `python3` has batteries (pymupdf, ...) pre-imported for quick
-        # static analysis, fully declaratively. uv still handles per-project
-        # venvs when a project needs pinned/extra deps.
+        java = "temurin-25";  # LTS
+        # No python: python3 comes from nixpkgs (../packages.nix), per-project venvs from uv.
       };
     };
   };

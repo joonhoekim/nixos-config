@@ -209,7 +209,7 @@
       # (apps/rice/switch → `nix run .#rice-switch`).
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
-        "ddc-probe"
+        "ddc-probe" "inventory"
         "demo" "screencast" "mac-signing-cert" "rift-grid" "subline-terminal" "subline-update"
         "kanata"
       ] (name: mkApp name name system)

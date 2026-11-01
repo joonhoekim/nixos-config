@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+# 호스트마다 무엇을 고르게 해 두었는지 한 화면에 찍는다. **아무것도 빌드하지
+# 않고 고치지 않는다.**
+#
+#   nix run .#inventory
+#
+# 보이는 것은 선언에서 고르는 세 가지다 — 묶음(local.packages.bundles),
+# 묶음 밖의 패키지(local.packages.extra), macOS 의 cask(homebrew.casks).
+# 평가만 하므로 어느 기계에서든 모든 호스트가 나온다. 지금 깔려 있는 것이 아니라
+# 다음 switch 가 깔 것이고, 둘이 다르면 그 기계가 아직 switch 를 안 한 것이다.
+#
+# NixOS 의 GUI 앱은 modules/nixos/packages.nix 의 고정 목록이라 고를 수 있는 값이
+# 아니어서 여기 나오지 않는다.
+
+here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+. "$here/check/lib.sh"
+
+find_repo && cd "$repo" || { printf "체크아웃을 못 찾았다.\n" >&2; exit 1; }
+
+# 이 기계의 호스트 이름. build-switch 가 타겟을 고르는 값과 같다.
+if [ "$(uname)" = Darwin ]; then
+  me="$(scutil --get LocalHostName 2>/dev/null)"
+else
+  me="$(hostname)"
+fi
+
+# 출력 모양을 Nix 안에서 만든다. jq 가 없는 첫 설치 직후에도 돌아야 해서다.
+# 빠진 묶음은 옵션의 default(= 전부)에서 고른 것을 뺀 것이다.
+apply='cs: let
+  join = xs: if xs == [ ] then "—" else builtins.concatStringsSep " " xs;
+  row = k: v: "  ${k}  ${v}\n";
+  one = name: c: let
+    cfg = c.config;
+    picked = cfg.local.packages.bundles;
+    all = c.options.local.packages.bundles.default;
+    casks = cfg.homebrew.casks or null;
+  in "@HOST@${name}\n"
+    + row "묶음 " (join picked)
+    + row "빠짐 " (join (builtins.filter (b: !(builtins.elem b picked)) all))
+    + row "extra" (join (map (p: p.pname or p.name) cfg.local.packages.extra))
+    + (if casks == null then "" else
+        row "cask " "(${toString (builtins.length casks)}) ${join (map (x: x.name) casks)}");
+in builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs one cs))'
+
+show() {
+  out="$(nix eval --raw ".#$1" --apply "$apply" 2>&1)" || {
+    bad "$1 를 평가하지 못했다"
+    printf "%s\n" "$out" | tail -n 5 >&2
+    return
+  }
+  printf "%s\n" "$out" | grep -v '^warning: Git tree' | while IFS= read -r line; do
+    case "$line" in
+      @HOST@*)
+        h="${line#@HOST@}"
+        if [ "$h" = "$me" ]; then
+          printf "${GREEN}%s${NC} ${DIM}← 이 기계${NC}\n" "$h"
+        else
+          printf "${YELLOW}%s${NC}\n" "$h"
+        fi ;;
+      *) printf "%s\n" "$line" ;;
+    esac
+  done
+}
+
+section "macOS"
+show darwinConfigurations
+section "NixOS"
+show nixosConfigurations

@@ -32,9 +32,8 @@
     '')
   ];
 
-  # `wacom`, not hid-generic, for the i2c-HID stylus (WCOM006C:00 2D1F:009D);
-  # otherwise the pen is a plain pointer with no pressure or tilt.
-  boot.kernelModules = [ "wacom" ];
+  # The stylus (WCOM006C:00 2D1F:009D) needs no extra module: hid-generic gives pressure
+  # (0-4095), tilt (±60°) and the tip. `wacom` only claims vendor 056A, so it never binds here.
 
   # i915 lists no eDP mode but the panel's fixed 3840x2160, so FHD needs this patch
   # (why it suffices: its header). Costs a full local kernel build on every bump.

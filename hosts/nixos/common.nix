@@ -385,9 +385,11 @@
   # host dir.
   hardware.graphics.enable = true;
 
-  # Add docker daemon
+  # docker 데몬. containers 묶음(docker CLI 가 든 곳)을 고른 호스트에서만 켠다.
+  # 켜면 dockerd·containerd 가 부팅 때부터 메모리에 상주하므로, 묶음을 뺀 기계에
+  # 데몬만 남는 일이 없게 한다.
   virtualisation.docker = {
-    enable = true;
+    enable = builtins.elem "containers" config.local.packages.bundles;
     logDriver = "json-file";
     # json-file has no rotation of its own — a container that logs steadily
     # will grow /var/lib/docker/containers until the root filesystem is full,
@@ -406,7 +408,8 @@
       extraGroups = [
         "wheel"          # Enable 'sudo' for the user.
         "networkmanager"
-        "docker"
+      ] ++ lib.optionals config.virtualisation.docker.enable [
+        "docker"         # sudo 없이 docker 데몬 소켓에 닿게.
       ];
       # 로그인 셸은 macOS 와 같은 bash 다. 에이전트의 셸 스크립트가 bash 를
       # 가정하고, subline-terminal 의 프롬프트 테마도 bash 에서만 돈다.

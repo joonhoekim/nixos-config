@@ -29,6 +29,8 @@ Nix의 동작 원리, 이 저장소의 구조, flake, macOS 설정 관리의 범
 아니라 순서대로 따라 치는 문서이고, 그래서 왜 그런지보다 **어디서 깨지는지**를 더
 많이 적었습니다(git이 추적하지 않는 `hardware-configuration.nix`, 재귀하지 않는
 `createHome`의 chown 같은 것들). 레포 쪽 규칙은 루트 [README](../README.md)가 이어받습니다.
+두 절차서가 공통으로 쓰는 GitHub 로그인(비공개 레포를 gh 를 빌려 받는 법)은
+[`github-auth.md`](github-auth.md)에 따로 있습니다.
 
 [`packages/`](packages/)는 **도구 안내서** 디렉토리입니다 — `packages.nix`에 선언된
 도구들이 왜 있고 어떻게 쓰는지, 무엇을 일부러 안 넣었는지를 시나리오별 문서

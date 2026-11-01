@@ -44,14 +44,16 @@ macOS 에서는 다중 사용자(데몬) 설치가 기본이다. 하는 일: `Ni
 
 ### 4. 레포와 비공개 input
 
-```bash
-git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
-cd ~/nixos-config
-nix --extra-experimental-features 'nix-command flakes' run nixpkgs#gh -- auth login   # 이미 했다면 건너뛴다
-```
+레포와 `subline`·`subline-terminal` input 이 비공개라 GitHub 로그인이 먼저다. gh 는 아직 없으니
+nixpkgs 에서 빌려 쓴다. 왜 이 모양인지는 [github-auth.md](github-auth.md).
 
-`subline`·`subline-terminal` input 이 비공개 `git+https` 라서 첫 빌드 전에 gh 인증이
-있어야 한다(`flake.nix` 의 그 input 주석). 이 기계의 SSH 키는 GitHub 에 없다.
+```bash
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh   # 6 까지 이 셸 안에서
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.https://github.com.helper GIT_CONFIG_VALUE_0='!gh auth git-credential'
+gh auth login                                          # 이미 했다면 건너뛴다
+gh repo clone joonhoekim/nixos-config ~/nixos-config
+cd ~/nixos-config
+```
 
 ### 5. 호스트 붙이기
 
@@ -62,14 +64,15 @@ nix --extra-experimental-features 'nix-command flakes' run nixpkgs#gh -- auth lo
 
 ### 6. 첫 switch
 
+4 에서 연 셸 안에서:
+
 ```bash
-nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh --command ./apps/build-switch
+./apps/build-switch
 ```
 
 - flakes 는 이번 한 번만 플래그로 켠다. switch 뒤로는 nix-darwin 의 `/etc/nix/nix.conf` 가 켠다.
-- `nix shell nixpkgs#gh` 로 감싸는 이유: 비공개 input 을 받을 때 git 이 `~/.config/git/config` 의
-  `!gh auth git-credential` 을 부르는데, 첫 switch 전에는 PATH 에 gh 가 없다. 그러면 인증 없이
-  받으려다 실패한다. switch 뒤로는 home-manager 의 gh 가 PATH 에 있다.
+- 4 의 셸 밖에서 돌리면 비공개 input 앞에서 `could not read Username` 으로 멈춘다. git 이 gh 에
+  인증을 묻는 설정은 첫 switch 가 만든다. switch 뒤로는 레포의 gh 와 git 설정이 그 일을 한다.
 - `/etc` 의 파일이 가로막으면(`Unexpected files in /etc`) 그 파일을 `.before-nix-darwin` 으로
   옮기고 다시 — [03 §3](03-operating-on-macos.md) 의 2·3 번. 공식 설치기는 `/etc/nix/nix.conf`,
   `/etc/bashrc`, `/etc/zshrc` 를 남긴다.

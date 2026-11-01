@@ -79,6 +79,10 @@ in one go.
 
 ## Bootstrap — macOS (first run on a new machine)
 
+The repo is private: cloning it and the first build both need a GitHub login.
+See [docs/github-auth.md](docs/github-auth.md) for borrowing gh from nixpkgs
+until the first switch installs it.
+
 Applying this config enables `nix-command` and `flakes` system-wide (via
 `nix.extraOptions` → `/etc/nix/nix.conf`). But there's a chicken-and-egg
 problem: to *apply* the config you must run a flake command, which already
@@ -138,8 +142,15 @@ Everything after that is `./apps/setup`'s job. **Call it by path, not as
 work yet. That is also why the script assumes nothing beyond sh, coreutils, git
 and `nixos-generate-config`.
 
+The repo is private, so log in to GitHub first. gh is not installed yet, so
+borrow it from nixpkgs and stay in that shell through the first build (why:
+[docs/github-auth.md](docs/github-auth.md)).
+
 ```sh
-git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.https://github.com.helper GIT_CONFIG_VALUE_0='!gh auth git-credential'
+gh auth login
+gh repo clone joonhoekim/nixos-config ~/nixos-config
 cd ~/nixos-config
 ./apps/setup
 ```
@@ -214,7 +225,7 @@ passwd <name>
 
 `users.mutableUsers` defaults to `true`, so the password you set survives later
 rebuilds. You could declare a hash instead (`initialHashedPassword`) and skip
-this step, but this is a public repo — not recommended. `./apps/doctor` points
+this step, but passwords stay out of the repo. `./apps/doctor` points
 out a locked account.
 
 > Not seeing your dev tools in a root shell is expected.

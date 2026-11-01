@@ -39,6 +39,23 @@ minimal ISO에도 NetworkManager가 들어 있어서(`installation-device.nix`�
 `networking.networkmanager.enable = true`) `nmtui`가 그냥 뜬다. 로그인 화면 안내문에도
 같은 말이 적혀 있다.
 
+### GitHub 로그인
+
+이 레포와 그것이 끌어오는 `subline`·`subline-terminal` 은 비공개라, 클론(6 절)과
+`nixos-install`(9 절)이 둘 다 GitHub 로그인을 요구한다. 설치 USB 에는 gh 가 없으니 nixpkgs 에서
+빌려 쓰고, **설치가 끝날 때까지 이 셸 안에서 진행한다.** 왜 이 모양인지는
+[github-auth.md](github-auth.md).
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.https://github.com.helper GIT_CONFIG_VALUE_0='!gh auth git-credential'
+gh auth login
+```
+
+`gh auth login` 에서 "Login with a web browser" 를 고르면 한 번 쓰는 코드가 뜬다. 설치 USB 에는
+브라우저가 없으니 폰 같은 다른 기기에서 <https://github.com/login/device> 를 열고 그 코드를 넣는다.
+이 로그인은 USB 와 함께 사라진다 — 설치한 기계에서는 10 절에서 다시 한다.
+
 설치 릴리스를 여기서 확인해 둔다. 나중에 `system.stateVersion`에 그대로 박을 값이다:
 
 ```bash
@@ -175,7 +192,7 @@ user=jh    # ← 이 기계를 쓸 계정 이름
 ```bash
 # 1. 홈 경로를 만들고 클론한다 (아직 root 소유)
 mkdir -p "/mnt/home/$user"
-git clone https://github.com/joonhoekim/nixos-config "/mnt/home/$user/nixos-config"
+gh repo clone joonhoekim/nixos-config "/mnt/home/$user/nixos-config"
 cd "/mnt/home/$user/nixos-config"
 
 # 2. (아래 7~9 절: hardware-configuration.nix 생성 → git add → nixos-install)
@@ -184,8 +201,8 @@ cd "/mnt/home/$user/nixos-config"
 chown -R 1000:100 "/mnt/home/$user"
 ```
 
-- `git`은 minimal ISO에 이미 들어 있다(`installation-cd-base.nix`가
-  `programs.git.enable`을 켠다). `nix-shell -p git` 안 해도 된다.
+- `gh repo clone` 은 2 절의 gh 셸에서 돈다. 그 안의 git 은 minimal ISO 에 이미 들어 있는 것이다
+  (`installation-cd-base.nix`가 `programs.git.enable`을 켠다).
 - 숫자로 `chown` 하는 이유: 설치 미디어의 `/etc/passwd`에는 그 계정이 없어서
   `chown $user:users`가 안 먹는다. NixOS는 일반 유저 uid를 **1000**부터, `users` 그룹은
   gid **100**으로 준다. 이 계정이 이 머신의 첫 일반 유저면 1000이 맞다. 확신이 안 서면
@@ -202,7 +219,7 @@ chown -R 1000:100 "/mnt/home/$user"
 
 ```bash
 # 설치 중 (루트 셸)
-git clone https://github.com/joonhoekim/nixos-config /mnt/root/nixos-config
+gh repo clone joonhoekim/nixos-config /mnt/root/nixos-config
 cd /mnt/root/nixos-config
 # ... 7~9 절 진행 ...
 ```
@@ -212,8 +229,10 @@ cd /mnt/root/nixos-config
 ```bash
 # 방법 1 — 새로 클론한다. 소유권이 처음부터 맞는다.
 #   단, /root 쪽에서 만든 커밋(= hardware-configuration.nix!)이
-#   origin 에 push 되어 있어야 한다. 안 그러면 그 파일을 잃는다.
-git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
+#   origin 에 push 되어 있어야 한다(설치 USB 의 gh 셸 안에서 push 한다). 안 그러면 그 파일을 잃는다.
+#   gh 는 설치된 시스템에 이미 있다. 로그인만 다시 한다.
+gh auth login
+gh repo clone joonhoekim/nixos-config ~/nixos-config
 
 # 방법 2 — 있는 걸 그대로 옮긴다. push 안 한 커밋도 살아온다.
 sudo cp -r /root/nixos-config ~/nixos-config
@@ -331,6 +350,8 @@ flake는 계속 nixos-unstable을 따라가므로 패키지는 그대로 최신�
 nixos-install --root /mnt --flake .#<hostname>
 ```
 
+- **2 절의 gh 셸 안에서 돌린다.** 밖에서 돌리면 비공개 input 을 받다가
+  `could not read Username for 'https://github.com'` 로 멈춘다.
 - **flakes를 따로 켤 필요 없다.** `nixos-install`은 `--flake`를 보면
   `--extra-experimental-features 'nix-command flakes'`를 자기가 붙여서 `nix`를 부른다.
   (`nix flake check` 같은 걸 직접 칠 거라면 그때는
@@ -358,7 +379,7 @@ reboot
 **유저는 자동 생성되지만 비밀번호는 직접 설정해야 한다.** `common.nix`의
 `users.users`가 계정을 선언하므로 activation이 `users/<이름>.nix`의 계정을 만들어준다 —
 홈 디렉토리, 셸, `wheel`/`networkmanager`/`docker` 그룹까지. 하지만 비밀번호는 레포
-어디에도 선언돼 있지 않아서(공개 저장소라 일부러 그렇다) 계정이 **잠긴 상태**로
+어디에도 선언돼 있지 않아서(비밀번호는 레포에 두지 않는다) 계정이 **잠긴 상태**로
 생긴다. tuigreet 로그인도, TTY 로그인도, `su - <이름>`도 안 된다.
 
 tuigreet 화면에서 `Ctrl+Alt+F2` 등으로 TTY를 열고 root로 로그인해서:
@@ -392,6 +413,16 @@ stat -c '%U:%G' ~/nixos-config ~/nixos-config/flake.nix
 
 tuigreet에서 세션을 고른다 — niri(기본), Hyprland(uwsm), GNOME(폴백). `--remember-session`
 때문에 **두 번째 로그인부터는 마지막에 쓴 세션으로 자동으로 간다.**
+
+### GitHub 로그인
+
+설치 USB 에서 한 로그인은 USB 와 함께 사라졌다. gh 는 이제 이 레포가 깔아 두었으니 로그인만
+다시 한다. 안 하면 다음 `build-switch` 가 비공개 input 을 다시 받아야 할 때(`nix flake update` 뒤
+등) 멈추고, `git push` 도 안 된다.
+
+```bash
+gh auth login
+```
 
 ### 일상 명령으로 넘어가기
 

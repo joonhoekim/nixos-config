@@ -105,7 +105,8 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 
 전체 절차(Command Line Tools, gh 인증, TCC·드라이버 승인, 제거까지)는
 [docs/clean-install-macos.md](docs/clean-install-macos.md)에 있다. 아래는 그중 flakes 를
-켜는 닭-달걀 부분만이다.
+켜는 닭-달걀 부분만이다. 레포를 받는 것과 첫 빌드는 GitHub 로그인이 필요하다 —
+[docs/github-auth.md](docs/github-auth.md).
 
 이 설정을 적용하면 `nix-command`와 `flakes`가 시스템 전역으로 켜진다(`nix.extraOptions`
 → `/etc/nix/nix.conf`). 그런데 닭-달걀 문제가 있다: 설정을 *적용*하려면 flake 명령을 써야
@@ -166,8 +167,14 @@ lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드
 안 된다. 이 스크립트는 그래서 sh·coreutils·git·`nixos-generate-config` 말고는 아무것도
 전제하지 않는다.
 
+레포가 비공개라 GitHub 로그인이 먼저다. gh 는 아직 없으니 nixpkgs 에서 빌려 쓰고, 첫 빌드까지
+이 셸 안에서 진행한다(왜 이 모양인지: [docs/github-auth.md](docs/github-auth.md)).
+
 ```sh
-git clone https://github.com/joonhoekim/nixos-config ~/nixos-config
+nix --extra-experimental-features 'nix-command flakes' shell nixpkgs#gh
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=credential.https://github.com.helper GIT_CONFIG_VALUE_0='!gh auth git-credential'
+gh auth login
+gh repo clone joonhoekim/nixos-config ~/nixos-config
 cd ~/nixos-config
 ./apps/setup
 ```
@@ -237,7 +244,7 @@ passwd <이름>
 ```
 
 `users.mutableUsers`가 기본값 `true`라 이렇게 잡은 비밀번호는 이후 rebuild에도 유지된다.
-해시를 선언해서 이 단계를 없앨 수도 있지만(`initialHashedPassword`), 공개 저장소라 권하지
+해시를 선언해서 이 단계를 없앨 수도 있지만(`initialHashedPassword`), 비밀번호는 레포에 두지
 않는다. `./apps/doctor`가 잠긴 계정을 짚어 준다.
 
 > root 셸에서 개발 도구가 안 보이는 건 정상이다. `modules/nixos/packages.nix`는

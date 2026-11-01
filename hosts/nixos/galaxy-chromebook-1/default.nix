@@ -16,6 +16,23 @@
     ./touch.nix
   ];
 
+  # 전체 개발을 돌릴 성능이 아니라서, 디스크를 많이 쓰는 개발 묶음과 그림·개발용
+  # GUI 를 뺀다. core 의 CLI 와 GUI(VS Code, ghostty)는 항상 깔린다. 무엇이 얼마나
+  # 무거운지는 docs/packages/footprint.md, 지금 고른 것은 `nix run .#inventory`.
+  #
+  # containers 를 빼면 docker 데몬도 꺼진다(../common.nix).
+  local.packages.bundles = [ "media" "mobile" ];
+  local.guiApps = [
+    "brave"
+    "google-chrome"
+    "firefox-devedition"
+    "onlyoffice-desktopeditors"
+    "dbeaver-bin"
+    "mpv"
+    "zathura"
+    "resources"
+  ];
+
 
   # No navigation layer on this host, and nothing to configure for it. The
   # layer in modules/nixos/keyboard.nix hangs off held Caps Lock, and this

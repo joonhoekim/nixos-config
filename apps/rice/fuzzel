@@ -1,25 +1,7 @@
 #!/bin/sh -e
-#
-# fuzzel 을 DMS 팔레트에 맞춘다.
-#
-#   apps/rice/fuzzel              지금 팔레트로 다시 만든다
-#   apps/rice/fuzzel --wait       팔레트 파일이 갱신될 때까지 잠깐 기다렸다가
-#
-# DMS 의 matugen 템플릿 목록은 소스에 하드코딩돼 있어서(Common/Theme.qml) fuzzel
-# 을 끼워 넣을 수 없다. 대신 DMS 는 뽑아낸 팔레트를 통째로
-# ~/.cache/DankMaterialShell/dms-colors.json 에 떨궈 두므로, 그걸 읽어서 우리가
-# 직접 fuzzel 색을 쓴다.
-#
-# 쓰는 파일은 dank-rice.ini 하나뿐이다. fuzzel.ini 는 맨 위에서 그걸 include
-# 하는데, 그 줄은 이 스크립트가 붙인다 — fuzzel 의 include 는 절대 경로만 받고
-# 기본 섹션(첫 [main] 앞)에만 쓸 수 있어서 레포 시드에 넣어둘 수 없다.
-# 형태(폰트/여백/줄 수)와 색을 갈라 두는
-# 이유는 niri 나 ghostty 와 같다 — 손으로 고치는 파일과 기계가 쓰는 파일이 섞이면
-# 한쪽이 다른 쪽을 덮어쓴다.
-#
-# 투명도와 곡률은 활성 프로필의 dms.json 에서 그대로 가져온다. fuzzel 은 팝업이니
-# popupTransparency 를, 곡률은 cornerRadius 를 쓴다 — 프로필에 fuzzel 전용 조각을
-# 만들지 않아도 되는 건 이 두 값이 이미 같은 뜻이기 때문이다.
+# DMS 팔레트(~/.cache/DankMaterialShell/dms-colors.json)로 fuzzel 색을 dank-rice.ini 에 쓴다. --wait 는 갱신을 기다린다.
+# DMS 의 matugen 템플릿 목록은 Common/Theme.qml 에 하드코딩돼 fuzzel 을 끼울 수 없어서 직접 쓴다.
+# 전체 그림: docs/rice-tools.md
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; DIM='\033[2m'; NC='\033[0m'
 
@@ -32,10 +14,7 @@ gen="$cfg/fuzzel/dank-rice.ini"
 # 창이 차지할 화면 높이의 비율. fuzzel 에는 % 단위가 없어서 줄 수로 환산해야 한다.
 ratio="${RICE_FUZZEL_RATIO:-0.8}"
 
-# ── 팔레트가 갱신되기를 기다린다 ──────────────────────────────────────────
-# rice-wall 이 월페이퍼를 바꾸면 matugen 이 비동기로 돈다. 바로 읽으면 이전
-# 팔레트가 나오므로, 파일이 새로 쓰일 때까지 최대 8초 기다린다. 그 안에 안 되면
-# (matugen 프로필이 아니거나 이미 최신이거나) 그냥 지금 값으로 진행한다.
+# matugen 이 비동기라 바로 읽으면 이전 팔레트가 나온다. 최대 8초 기다리고 안 바뀌면 지금 값으로 간다.
 if [ "${1:-}" = "--wait" ]; then
   [ -f "$palette" ] && before="$(stat -c %Y "$palette" 2>/dev/null || echo 0)" || before=0
   i=0
@@ -47,11 +26,8 @@ if [ "${1:-}" = "--wait" ]; then
   done
 fi
 
-# ── include 배선 ──────────────────────────────────────────────────────────
-# fuzzel 의 include 는 (1) 절대 경로만 받고 (2) 기본 섹션 전용이다. 파일 끝에
-# 붙이면 마지막 섹션 안으로 들어가서 "[colors].include: not a valid option" 으로
-# 죽는다 — 폴백 런처가 안 뜨는 최악의 실패라, 반드시 첫 줄에 넣는다.
-# 시드에 못 넣는 것도 (1) 때문이다: 홈 경로는 머신마다 다르다.
+# include 는 절대 경로만 받고(그래서 시드에 못 넣는다) 기본 섹션 전용이라 맨 위에 넣는다.
+# 파일 끝에 붙이면 "[colors].include: not a valid option" 으로 죽어 폴백 런처가 안 뜬다.
 if [ -f "$ini" ] && ! grep -q "^include=$gen\$" "$ini"; then
   tmp="$(mktemp)"
   printf '# apps/rice/fuzzel 이 붙임. 기본 섹션이어야 해서 맨 위다.\ninclude=%s\n\n' "$gen" > "$tmp"
@@ -61,13 +37,10 @@ if [ -f "$ini" ] && ! grep -q "^include=$gen\$" "$ini"; then
 fi
 
 if [ ! -f "$palette" ]; then
-  # 시드된 dank-rice.ini 의 중성 폴백이 그대로 남는다 — 첫 로그인이나 DMS 가
-  # 안 뜬 상태에서 여는 경우다.
   printf "${YELLOW}팔레트가 아직 없다(%s). dank-rice.ini 의 폴백 값을 그대로 쓴다.${NC}\n" "$palette"
   exit 0
 fi
 
-# ── 프로필에서 형태 값 ────────────────────────────────────────────────────
 profile="$(cat "$cfg/rice/current" 2>/dev/null || echo "")"
 pfile="$cfg/rice/profiles/$profile/dms.json"
 
@@ -81,17 +54,9 @@ fi
 # 0.85 -> "d9". fuzzel 색은 # 없는 RRGGBBAA 라 알파를 직접 붙여야 한다.
 alpha="$(awk -v o="$opacity" 'BEGIN { printf "%02x", int(o * 255 + 0.5) }')"
 
-# ── 높이 → 줄 수 ─────────────────────────────────────────────────────────
-# fuzzel 은 창 높이를 직접 못 정한다. `lines`(표시할 항목 수)만 받고 높이는 거기서
-# 따라 나오므로, 원하는 높이를 역산해서 줄 수로 바꾼다.
-#
-#   높이 = 보더*2 + 세로여백*2 + 프롬프트줄 + 안쪽여백 + 줄수 * 줄높이
-#
-# 값은 fuzzel.ini 에서 읽는다. 여백이나 줄높이를 손보면 계산도 따라오도록.
-# 논리 픽셀 기준이라 출력 스케일은 곱하지 않는다 — niri 가 주는 logical.height 와
-# fuzzel 설정값이 같은 좌표계다.
-# 섹션까지 봐야 한다: `width` 는 [main] 에서는 문자 수, [border] 에서는 픽셀이라
-# 이름만 보고 집으면 45 를 보더 두께로 쓰게 된다.
+# fuzzel 은 높이 대신 lines 만 받아 역산한다: 높이 = 보더*2 + 세로여백*2 + 프롬프트줄 + 안쪽여백 + 줄수*줄높이.
+# 논리 픽셀끼리라 스케일은 안 곱한다. 섹션까지 보는 건 `width` 가 [main] 에선 문자 수,
+# [border] 에선 픽셀이라서다 — 이름만 보면 45 를 보더 두께로 쓴다.
 read_ini() { # read_ini <section> <key> <default>
   awk -v sec="$1" -v key="$2" -v def="$3" '
     /^[[:space:]]*\[/ { cur = $0; gsub(/[][[:space:]]/, "", cur); next }
@@ -120,14 +85,10 @@ if [ -n "$screen_h" ]; then
     'BEGIN { n = int((h * r - 2*b - 2*v - l - i) / l); print (n < 3 ? 3 : n) }')"
 fi
 
-# ── 라이트/다크 ───────────────────────────────────────────────────────────
 mode="$(dms ipc call theme getMode 2>/dev/null | tr -d '"' | tr -d '[:space:]')"
 case "$mode" in light) mode=light ;; *) mode=dark ;; esac
 
-# ── 생성 ──────────────────────────────────────────────────────────────────
-# Material You 롤을 fuzzel 의 슬롯에 대응시킨다. selection 은 primary_container,
-# 그 위의 강조는 primary — 이 둘은 M3 가 대비를 보장하는 짝이라 어떤 월페이퍼에서도
-# 읽힌다. 무채색 배경에 primary 를 얹는 조합은 톤이 낮은 사진에서 흐려진다.
+# selection=primary_container, 강조=primary: M3 가 대비를 보장하는 짝이라 어떤 벽지에서도 읽힌다.
 mkdir -p "$(dirname "$gen")"
 jq -r --arg a "$alpha" --arg r "$radius" --arg m "$mode" --arg n "$lines" '
   .colors[$m] as $c

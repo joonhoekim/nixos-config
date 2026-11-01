@@ -1,26 +1,8 @@
 #!/bin/sh -e
-#
 # Switch the desktop look between rice profiles, live.
-#
-#   apps/rice/switch              현재 프로필과 목록만 출력
-#   apps/rice/switch frosted      전환
-#   apps/rice/switch --next       목록 순서대로 다음 것 (키에 바인딩하기 좋다)
-#
-# 재시작도 리빌드도 없다. 세 소비자가 전부 파일을 감시하기 때문이다:
-#
-#   niri   config.kdl 과 그것이 include 한 파일까지 감시 → 즉시 리로드
-#   DMS    settings.json 에 watchChanges (Common/SettingsData.qml)
-#
-# 프로필은 ~/.config/rice/profiles/<name>/ 에 있고, 각각 두 조각이다:
-#
-#   niri.kdl   → ~/.config/niri/profile.kdl   (통째로 교체)
-#   dms.json   → settings.json 에 jq 병합     (오버레이)
-#
-# DMS 만 오버레이인 이유: settings.json 에는 룩과 무관한 머신 상태(디스플레이
-# 프로필, 위젯 사용 기록 등)가 같이 들어 있어서, 통째로 갈아끼우면 그것까지
-# 날아간다. 월페이퍼는 애초에 여기 없다 — session.json 에 따로 산다.
+# 프로필 = ~/.config/rice/profiles/<name>/ 의 niri.kdl(niri/profile.kdl 로 교체)과 dms.json(settings.json 에 병합).
+# DMS 만 병합인 건 settings.json 에 룩과 무관한 머신 상태가 같이 있어서다. 전체 그림: docs/rice-tools.md
 
-# 목록·순환·거절은 apps/rice/term 과 같은 모양이어야 해서 lib.sh 에 있다.
 . "$(dirname "$0")/lib.sh"
 
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -29,8 +11,7 @@ profiles="$rice/profiles"
 
 rice_kind="프로필"
 rice_current_file="$rice/current"
-# find -printf 은 GNU 확장이다. 이 스크립트는 리눅스 전용이지만, 짝인 rice-term 이
-# macOS 에서도 돌아야 해서 같은 모양으로 맞춰 둔다.
+# find -printf(GNU 확장) 대신 글롭: 짝인 rice-term 이 macOS 에서도 돌아서 모양을 맞춘다.
 rice_list() {
   for d in "$profiles"/*/; do
     [ -d "$d" ] || continue
@@ -50,14 +31,11 @@ name="$RICE_NAME"
 dir="$profiles/$name"
 [ -d "$dir" ] || rice_reject "$name"
 
-# ── niri ──────────────────────────────────────────────────────────────────
-# 먼저 검증한다. 깨진 조각을 그대로 밀어 넣어도 니리는 이전 설정을 유지하지만,
-# 그러면 "바꿨는데 아무 일도 안 일어났다"가 되어 원인을 찾기 어렵다.
+# 먼저 검증한다. 깨진 조각이면 니리가 이전 설정을 유지해 "바꿨는데 아무 일도 없다"가 된다.
 if [ -f "$dir/niri.kdl" ]; then
   tmp="$(mktemp -d)"
   trap 'rm -rf "$tmp"' EXIT
   cp "$dir/niri.kdl" "$tmp/profile.kdl"
-  # 조각만으로도 유효한 설정이어야 하므로 단독 검증이 가능하다.
   if ! niri validate --config "$tmp/profile.kdl" >/dev/null 2>&1; then
     printf "${RED}%s/niri.kdl 이 유효하지 않다:${NC}\n" "$name"
     niri validate --config "$tmp/profile.kdl" 2>&1 | sed 's/^/  /'
@@ -67,16 +45,12 @@ if [ -f "$dir/niri.kdl" ]; then
   printf "  niri       %s\n" "profile.kdl"
 fi
 
-# ── DMS ───────────────────────────────────────────────────────────────────
-# `*` 는 재귀 병합이라 barConfigs 같은 배열은 통째로 교체된다. 그래서 바는
-# 최상위 병합에서 빼고, 각 항목에 .bar 를 따로 병합한다 — 모니터마다 바를
-# 여러 개 둔 설정에서도 전부에 같은 룩이 적용된다.
+# `*` 는 재귀 병합이라 barConfigs 배열은 통째로 바뀐다. 그래서 바는 각 항목에 .bar 를 따로 병합한다.
 settings="$cfg/DankMaterialShell/settings.json"
 theme_changed=0
 if [ -f "$dir/dms.json" ] && [ -f "$settings" ]; then
-  # 테마 이름이 바뀌면 DMS 가 matugen 을 다시 돌린다. 그건 비동기라, 바로 뒤에서
-  # fuzzel 색을 만들면 직전 프로필의 팔레트를 읽는다(실제로 한 박자씩 밀렸다).
-  # 바뀌는지 여부를 병합 *전에* 봐 둬야 하는 이유다.
+  # 테마 이름이 바뀌면 DMS 가 matugen 을 비동기로 다시 돌린다. 뒤의 fuzzel 이 직전 팔레트를 안 읽게
+  # 바뀌는지를 병합 전에 봐 둔다.
   old_theme="$(jq -r '.currentThemeName // ""' "$settings")"
   new_theme="$(jq -r '.settings.currentThemeName // ""' "$dir/dms.json")"
   [ -n "$new_theme" ] && [ "$new_theme" != "$old_theme" ] && theme_changed=1
@@ -88,24 +62,18 @@ if [ -f "$dir/dms.json" ] && [ -f "$settings" ]; then
       else .barConfigs = [ .barConfigs[] | . * $p[0].bar ]
       end
   ' "$settings" > "$tmpf"
-  # 원자적 교체. DMS 도 같은 방식으로 쓰기 때문에, 부분적으로 쓰인 JSON 을
-  # 읽고 "Failed to parse settings.json" 토스트를 띄우는 일이 없다.
+  # 원자적 교체 — DMS 가 반쯤 쓴 JSON 을 읽으면 "Failed to parse settings.json" 토스트가 뜬다.
   mv "$tmpf" "$settings"
   printf "  dms        %s\n" "settings.json (오버레이 병합)"
 fi
 
-# 터미널은 프로필에 조각을 두지 않는다. ghostty 가 DMS/matugen 이 써 주는
-# themes/dankcolors 를 읽으므로 색은 이미 프로필을 따라온다. 남는 건 투명도와
-# 패딩 정도인데, 그것 때문에 프로필마다 파일을 하나씩 더 두는 건 남는 장사가
-# 아니라고 봤다 — ~/.config/ghostty/config 에서 한 번만 정한다.
+# 터미널은 프로필 조각이 없다 — ghostty 가 themes/dankcolors 를 읽어 색은 이미 따라온다.
 
 mkdir -p "$rice"
 printf '%s\n' "$name" > "$rice_current_file"
 
-# fuzzel 은 DMS 팔레트를 스스로 못 따라가서(matugen 템플릿 목록이 하드코딩) 우리가
-# 밀어 넣는다. current 를 쓴 다음에 불러야 새 프로필의 투명도/곡률을 읽는다.
-# 테마가 그대로면 팔레트도 그대로라 기다릴 이유가 없다.
-# 실패해도 전환 자체는 성공이니 죽이지 않는다 — 런처 색이 한 박자 늦을 뿐이다.
+# fuzzel 은 DMS 팔레트를 스스로 못 따라가서 밀어 넣는다. current 를 쓴 뒤에 불러야 새 프로필의 투명도·곡률을 읽는다.
+# 실패해도 전환은 성공이라 죽이지 않는다.
 if [ "$theme_changed" -eq 1 ]; then
   "$(dirname "$0")/fuzzel" --wait || true
 else

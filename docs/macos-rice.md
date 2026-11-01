@@ -42,6 +42,34 @@ rift-grid 가 그린다(`[settings.ui.borders]`). 그 전에는 JankyBorders 를
 띄웠다 — `ax_focus` 모드가 rift 의 손쉬운 사용 허가를 물려받게 하려고. 배선은
 `git log -- modules/darwin/rice/borders`.
 
+## apps/rice/colors
+
+벽지에서 pywal(이미지에서 16색 팔레트를 뽑는 도구)로 팔레트를 뽑아 rift-grid 테두리 색에 밀어 넣는다.
+
+```sh
+apps/rice/colors                      # 현재 데스크톱 배경화면에서
+apps/rice/colors ~/Pictures/x.jpg     # 그 이미지에서
+apps/rice/colors --light | --dark     # 밝은/어두운 변형
+apps/rice/colors --reload             # wal 은 다시 안 돌리고 지금 팔레트만 재적용
+apps/rice/colors --backend colorz     # 추출 백엔드
+```
+
+현재 배경화면 경로는 `apps/rice/wallpaper-path.py` 가 찾는다([rice-tools.md](rice-tools.md#배경화면-경로--appsricewallpaper-pathpy)).
+
+pywal 은 색을 `~/.cache/wal/` 에 쓰기만 하고 끝난다(훅이 없다). 그래서 "누가 그 색을 다시 읽게 만드는가"는 전부 이
+스크립트 몫이고 소비자마다 다르다:
+
+- 창 테두리: rift-grid 설정의 `[settings.ui.borders]` 에서 색 두 줄을 다시 쓰면 rift-grid 가 설정 파일을 감시하다 다시
+  읽는다. 두께·둥글기·glow 는 사람이 고친 그대로 두고, 섹션이 없으면(rift-grid 전의 설정) 손대지 않는다.
+- wezterm: 할 일이 없다. wezterm.lua 가 colors.json 을 감시 목록에 넣어 뒀다(`add_to_config_reload_watch_list`).
+
+테두리 색은 고정 슬롯(color4/color8)이 아니라 16색을 지각 휘도(299/587/114 — 같은 값이어도 초록이 파랑보다 훨씬 밝게
+보인다)순으로 세워, 활성은 위에서 세 번째, 비활성은 아래서 두 번째를 쓴다. rift-grid 설정 앱에서 손으로 고른 색은
+`~/.cache/wal/rift-grid-border-colors` 와 견줘 알아보고 덮지 않는다. 다시 벽지를 따르게 하려면 그 파일을 지우거나 설정의
+색을 그 값으로 되돌린다.
+
+NixOS 에서는 안 쓴다. 거기서 같은 일은 DMS + matugen 이 하고, 벽지를 바꾸면(`apps/rice/wall`) 셸·니리 보더·터미널이 따라온다.
+
 ## 키맵의 계보
 
 niri 세션(`modules/nixos/niri/rice/config.kdl`) → AeroSpace → rift → rift-grid 순으로 옮겨 왔고, 지금 기준은

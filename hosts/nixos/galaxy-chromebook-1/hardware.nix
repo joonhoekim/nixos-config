@@ -1,40 +1,15 @@
 { pkgs, ... }:
 
-# Machine-specific hardware quirks for the Galaxy Chromebook 1. Anything here
-# is about THIS chassis; vendor-neutral tooling lives in
-# modules/nixos/packages.nix, and the Intel-but-not-chassis-specific parts
-# (thermald, the iHD VAAPI driver, intel_gpu_top/i7z/cpupower, the
-# intel_pstate note) moved to modules/nixos/intel.nix once a second Intel
-# host existed — ./default.nix imports it.
+# 이 섀시만의 사정. Intel 공통은 modules/nixos/intel.nix. 전체 그림: docs/galaxy-chromebook-1.md
 
 {
   hardware.firmware = with pkgs; [
-    # Sound Open Firmware — the DSP-based audio codec needs it to produce sound.
+    # Sound Open Firmware — the DSP audio codec stays silent without it.
     sof-firmware
 
-    # EDID candidates for the FHD downscale described at `boot.kernelParams`
-    # below. Modern kernels carry no built-in generic EDID blobs —
-    # CONFIG_DRM_LOAD_EDID_FIRMWARE only enables the *loader*, which goes to
-    # /lib/firmware/edid/ and, finding nothing, fails with -2. So we ship the
-    # blobs ourselves.
-    #
-    # These are fallbacks now — `video=` in boot.kernelParams is the primary
-    # approach. They are kept because `display-try` (below) can kexec into any
-    # of them without a rebuild, which makes them cheap to keep around:
-    #
-    #   1920x1080.bin     generic, CEA-861 1080p60
-    #   1920x1080rb.bin   generic, CVT reduced-blanking (lower pixel clock)
-    #   panelfhd2.bin     panel's own EDID, DTD 2 rewritten to 1080p
-    #   panelfhd.bin      panel's own EDID, DTD 1 rewritten to 1080p
-    #
-    # panelfhd.bin is a known failure, kept only so the negative result stays
-    # reproducible: booted 2026-08-02, reached greetd, panel stayed dark. All
-    # the blobs that make 1080p the *preferred* timing share that flaw — see
-    # the comment on boot.kernelParams.
-    #
-    # `clean = true` drops the presets bundled with edid-generator so only the
-    # modelines below get built; the .bin filenames come from the modeline
-    # names, which is what the kernel parameter references.
+    # EDID candidates for `display-try`. Kernels ship no generic blobs (the loader finds
+    # nothing in /lib/firmware/edid/ and fails -2), so we build them; results per blob in
+    # docs/galaxy-chromebook-1.md. clean = true: only these modelines, named as the .bin.
     (edid-generator.overrideAttrs (_: {
       clean = true;
       modelines = ''
@@ -43,14 +18,8 @@
       '';
     }))
 
-    # The panel-derived candidates. Both keep the real vendor block, so the
-    # connector still reads as a digital DisplayPort sink at 10bpc, where the
-    # generic blobs above declare themselves *analog* — a hardcoded quirk of
-    # edid-generator's template.
-    # `compressFirmware = false` keeps these plain .bin like the two above.
-    # The kernel would happily decompress a .zst, but leaving them
-    # uncompressed keeps every candidate under one predictable name for
-    # `display-try`.
+    # Panel-derived: the real vendor block keeps it a digital DP sink at 10bpc, where
+    # edid-generator's template says analog. Uncompressed: display-try wants plain .bin.
     (runCommand "edid-panel-fhd" {
       nativeBuildInputs = [ python3 ];
       passthru.compressFirmware = false;
@@ -63,97 +32,38 @@
     '')
   ];
 
-  # Nudge the dedicated `wacom` HID driver to load instead of `hid-generic`
-  # for the i2c-HID Wacom stylus (WCOM006C:00 2D1F:009D). Without it the pen
-  # works as a plain pointer, with no pressure or tilt.
+  # `wacom`, not hid-generic, for the i2c-HID stylus (WCOM006C:00 2D1F:009D);
+  # otherwise the pen is a plain pointer with no pressure or tilt.
   boot.kernelModules = [ "wacom" ];
 
-  # Force the 4K eDP panel down to FHD. The Samsung AMOLED's EDID advertises
-  # exactly one detailed timing (3840x2160@60), so DRM exposes a single mode,
-  # niri has nothing else to offer, and DMS's resolution dropdown comes up
-  # empty. Compositor scale can't help — it only resizes the UI, the
-  # framebuffer stays 4K — and UHD 620 does not enjoy compositing 4K.
-  #
-  # i915 refuses to list any mode on an eDP connector that isn't the panel's
-  # fixed mode, which is the last thing standing between us and a 1080p
-  # framebuffer. See the patch header for why the rest of the driver is
-  # already on our side. Costs a full local kernel build on every bump.
+  # i915 lists no eDP mode but the panel's fixed 3840x2160, so FHD needs this patch
+  # (why it suffices: its header). Costs a full local kernel build on every bump.
   boot.kernelPatches = [{
     name = "i915-edp-scaled-modes";
     patch = ./kernel/i915-edp-scaled-modes.patch;
   }];
 
-  # `video=` appends a mode to the connector's list and leaves the EDID alone.
-  # That distinction is the whole ballgame on eDP: i915 treats an eDP panel's
-  # *preferred* timing as its native timing, drives the link with it, and uses
-  # the panel fitter to scale any smaller mode onto it. Keep 3840x2160
-  # preferred and 1080p is a scaled mode; make 1080p preferred and i915
-  # concludes the panel really is 1080p and transmits 1080p timing to a
-  # fixed-pixel 4K panel, which displays nothing.
-  #
-  # Learned the hard way on 2026-08-02: substituting a whole EDID via
-  # drm.edid_firmware booted fine — all the way to greetd, no i915 errors —
-  # with the panel dark the entire time. The blobs in hardware.firmware above
-  # survive as fallbacks, but every one of them makes 1080p preferred, so
-  # panelfhd2.bin (which does not) is the only one worth another boot.
-  #
-  # Also note the runtime knob does not help here:
-  # /sys/kernel/debug/dri/*/eDP-1/edid_override works on external HDMI/DP but
-  # is inert on eDP, because i915 builds the fixed-mode list once at connector
-  # init and never rebuilds it on reprobe. Verified the same day: the override
-  # stores (128 bytes read back) while the live connector EDID stays the
-  # panel's own 256 bytes. Hence `display-try`, which kexecs instead.
-  #
-  # If this ever leaves a black screen: pick the previous generation from the
-  # boot menu.
+  # Adds a mode and keeps 3840x2160 preferred. Make 1080p preferred and i915 sends 1080p
+  # timing to the 4K panel, which stays dark. Black screen: boot the previous generation.
+  # Why not an EDID or debugfs override: docs/galaxy-chromebook-1.md
   boot.kernelParams = [ "video=eDP-1:1920x1080@60" ];
 
-  # 이 섀시의 Synaptics 터치패드는 멀쩡하지 않다 — 팬텀 터치가 나는 개체이고,
-  # 아래 `touchpad` CLI 가 있는 이유가 그것이다. 기본값은 켜짐(커널 기본
-  # inhibited=0)이고, 증상이 나면 `touchpad off` 로 소스에서 끊는다.
-  #
-  # 부팅부터 꺼 두고 싶으면 libinput 이나 컴포지터가 아니라 udev 에 건다.
-  # 컴포지터 설정은 세션에만 걸려서 그리터와 TTY 에 안 먹고, 무엇보다
-  # 재개(resume)와 재열거 때 다시 안 걸린다 — 증상은 "껐는데 뚜껑 닫았다 열면
-  # 다시 살아 있다" 다. udev 는 입력 노드가 나타나는 매 순간 건다:
-  #
-  #   services.udev.extraRules = ''
-  #     SUBSYSTEM=="input", KERNEL=="input*", \
-  #       ATTR{name}=="Synaptics TM3579-001", ATTR{inhibited}="1"
-  #   '';
+  # 이 개체의 터치패드는 팬텀 터치가 나서 `touchpad off` 가 있다. 부팅부터 끄려면 udev 에
+  # 건다 — 컴포지터 설정은 resume·재열거 뒤에 풀린다. 규칙: docs/galaxy-chromebook-1.md
 
-  # IIO sensors (accelerometer, gyro, ambient light, lid-angle from
-  # cros_ec_sensorhub) — GNOME needs these for auto-rotate, auto-brightness
-  # and the tablet-mode switch.
+  # cros_ec_sensorhub's accel/gyro/light/lid-angle, for auto-rotate (iio-sensor-proxy),
+  # auto-brightness and the tablet-mode switch.
   hardware.sensor.iio.enable = true;
 
-  # Stylus — X11 xf86-input-wacom driver. On Wayland, GNOME/Mutter reads the
-  # pen through libinput+evdev instead, so this only matters for Xwayland.
+  # Only matters for Xwayland; Wayland sessions read the pen through libinput.
   services.xserver.wacom.enable = true;
 
-  # X11 HiDPI fallback for Xwayland apps that ignore the compositor's scale.
-  # The Wayland session uses GNOME's own per-monitor scaling.
+  # For Xwayland apps that ignore the compositor's scale.
   services.xserver.dpi = 192;
 
-  # thermald matters more here than on any other host — this chassis is
-  # fanless — but it is not chassis-*specific*, so it lives in
-  # modules/nixos/intel.nix along with the rest of the Intel-common layer.
-
   environment.systemPackages = with pkgs; [
-    # `display-try <target>` — restart into a different display setting
-    # without a rebuild. i915 only reads both knobs when it initialises the
-    # eDP connector, so trying anything means restarting the kernel; this does
-    # it with kexec, which skips the firmware POST and takes seconds rather
-    # than a full cold boot. Nothing is persisted — the next ordinary boot
-    # goes back to whatever boot.kernelParams says, which is also what makes
-    # this the safe way to try something that might blank the panel.
-    #
-    #   display-try list          show targets and what's running
-    #   display-try video         video=eDP-1:1920x1080@60 (adds a mode)
-    #   display-try panelfhd2     that EDID blob (replaces the EDID)
-    #   display-try off           neither knob (recovery)
-    #
-    # Afterwards: cat /sys/class/drm/card1-eDP-1/modes
+    # `display-try list|video|off|<blob>` — kexec into another display knob, no rebuild.
+    # i915 reads both only at eDP init; nothing persists, so a normal boot is the way back.
     (pkgs.writeShellApplication {
       name = "display-try";
       runtimeInputs = with pkgs; [ coreutils kexec-tools systemd ];
@@ -193,9 +103,8 @@
         # on init=, so it has to be a real store path.
         sys="$(readlink -f /run/current-system)"
 
-        # Rebuild the command line from the running one. initrd= is dropped
-        # because kexec takes the initrd as its own argument, and init= plus
-        # either display knob are dropped so we can set them ourselves.
+        # initrd= goes to kexec as its own argument; init= and both display
+        # knobs are set below.
         cmdline="init=$sys/init"
         while read -r opt; do
           case "$opt" in
@@ -225,10 +134,7 @@
       '';
     })
 
-    # `touchpad on|off|toggle|status` — compositor-agnostic, drives the
-    # kernel inhibit flag directly (/sys/class/input/inputN/inhibited). The
-    # attribute is standard on every evdev node, so this works with or without
-    # the udev rule described above.
+    # `touchpad on|off|toggle|status` — writes the kernel inhibit flag, so any compositor works.
     (pkgs.writeShellApplication {
       name = "touchpad";
       runtimeInputs = with pkgs; [ coreutils ];

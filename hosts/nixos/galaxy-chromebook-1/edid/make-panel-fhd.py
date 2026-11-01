@@ -1,28 +1,9 @@
 #!/usr/bin/env python3
-"""Derive an EDID offering 1920x1080 from this panel's real one.
+"""Derive an EDID offering 1920x1080 from this panel's real one (Samsung ATNA33TP04-0).
 
-The Galaxy Chromebook's Samsung ATNA33TP04-0 ships an EDID whose two detailed
-timing descriptors are both 3840x2160. We rewrite one of them as 1920x1080.
-
-Which one matters enormously, which is why it is an argument:
-
-  slot 2  DTD 1 keeps 3840x2160, so it stays the preferred timing. i915 takes
-          the preferred timing of an eDP panel as its *native* timing and
-          drives the link with it, then uses the panel fitter to scale any
-          smaller mode onto it. 1080p becomes an extra entry in the mode list.
-          This is the arrangement that can actually work.
-
-  slot 1  DTD 1 becomes 1920x1080 and thus preferred. Verified on 2026-08-02:
-          this boots cleanly all the way to greetd but leaves the panel dark,
-          because i915 concludes the panel is natively 1080p and transmits
-          1080p timing to a fixed-pixel 4K panel. Kept only as a documented
-          negative result — do not make it the default.
-
-Everything else is kept byte-for-byte: vendor block, digital/DisplayPort flags,
-10bpc depth, chromaticity, the product-name descriptor, and the CTA-861
-extension block (which carries HDR metadata but contributes no video modes, so
-it cannot smuggle 2160p back into the list). Only the base block's checksum is
-recomputed; the extension block is untouched and keeps its own.
+Both DTDs are 3840x2160 and one is rewritten. Slot 2 keeps 4K preferred, the arrangement
+that works; slot 1 makes 1080p preferred and leaves the panel dark. The rest stays
+byte-for-byte, only the base checksum is recomputed. Details: docs/galaxy-chromebook-1.md
 
 Usage: make-panel-fhd.py <panel-native.hex> <out.bin> <dtd-slot: 1|2>
 """

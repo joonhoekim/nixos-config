@@ -2,6 +2,7 @@
 
 with pkgs;
 # 공유 도구는 core 와 고른 묶음(local.packages.bundles, ../shared/package-bundles.nix).
+# 아래 목록은 NixOS 의 모든 호스트에 깔리는 Linux 전용 도구다. GUI 앱은 여기 없다.
 # `ios` 는 macOS 전용이라 여기서는 건너뛴다.
 let shared = import ../shared/packages.nix { inherit pkgs; }; in
 shared.core
@@ -30,12 +31,6 @@ shared.core
   inotify-tools # inotifywait, inotifywatch - For file system events
   libnotify
   xdg-utils
-
-  # Other utilities
-  google-chrome
-
-  # PDF viewer
-  zathura
 
   # ── Linux 전용이거나 GUI 인 것. 플랫폼을 안 가리는 CLI/TUI 는
   #    ../shared/packages.nix, macOS 의 GUI 는 cask(../darwin/casks.nix)로 간다. ──
@@ -97,31 +92,5 @@ shared.core
   stress-ng       # stress tester (useful to verify thermal behavior)
   pulsemixer      # pipewire/pulse volume TUI (CLI counterpart to pavucontrol)
 
-  # ── GUI 시스템 모니터 ────────────────────────────────────────────────────
-  # ../shared/packages.nix 의 btop / bottom / htop / procs 가 프로세스를 보는 일은
-  # 더 잘한다. 이 둘은 CLI 가 못 하는 자리를 채운다 — GPU·디스크·네트워크를 한
-  # 화면에 놓고 시간축으로 보는 일, 그리고 터미널이 없는 상태에서 손이 닿는 것.
-  mission-center  # CPU/메모리/디스크/네트워크/GPU 탭. 780M 사용률도 읽는다
-  resources       # GTK4/libadwaita. 가볍고 프로세스 kill 까지
-
-  # GUI applications
-  vscode
-  brave
-  firefox-devedition
-  mpv             # video player
-  krita           # digital painting
-  gimp            # image editor
-  inkscape        # vector graphics
-
-  # ── Counterparts to the homebrew casks in modules/darwin/casks.nix ──
-  # Everything here is a cask on macOS that also ships for Linux in nixpkgs.
-  # Casks with no Linux counterpart stay macOS-only on purpose: stats (macOS
-  # menu-bar monitor — btop/bottom above) and iina (mpv above is the same
-  # engine).
-  ghostty                    # terminal (cask "ghostty")
-  zed-editor                 # editor (cask "zed")
-  dbeaver-bin                # universal database tool / SQL client
-  redisinsight               # official Redis GUI
-  bruno                      # git-friendly API client
-  onlyoffice-desktopeditors  # office suite
+  # GUI 앱은 ./gui-apps.nix 가 호스트의 local.guiApps 에 따라 더한다.
 ]

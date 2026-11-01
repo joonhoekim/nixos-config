@@ -16,6 +16,8 @@
     home-manager.nixosModules.home-manager
     # Korean locale, IME (fcitx5-hangul), and CJK fonts.
     ../../modules/nixos/korean.nix
+    # GUI 앱. core 와 호스트가 고르는 local.guiApps.
+    ../../modules/nixos/gui-apps.nix
     # keyd remaps: Right Alt -> Hangul, and a nav layer on held Caps Lock.
     ../../modules/nixos/keyboard.nix
     # The pointer half of that layer — keyd cannot move a pointer, so the

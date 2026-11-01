@@ -5,13 +5,12 @@
 #
 #   nix run .#inventory
 #
-# 보이는 것은 선언에서 고르는 세 가지다 — 묶음(local.packages.bundles),
-# 묶음 밖의 패키지(local.packages.extra), macOS 의 cask(homebrew.casks).
+# 보이는 것은 호스트가 고르는 값이다 — CLI 묶음(local.packages.bundles), 묶음 밖의
+# 패키지(local.packages.extra), GUI 앱(macOS 는 local.casks, NixOS 는 local.guiApps).
+# 어느 기계에나 깔리는 core 는 고르는 값이 아니라서 맨 위에 한 번만 찍는다.
 # 평가만 하므로 어느 기계에서든 모든 호스트가 나온다. 지금 깔려 있는 것이 아니라
 # 다음 switch 가 깔 것이고, 둘이 다르면 그 기계가 아직 switch 를 안 한 것이다.
 #
-# NixOS 의 GUI 앱은 modules/nixos/packages.nix 의 고정 목록이라 고를 수 있는 값이
-# 아니어서 여기 나오지 않는다.
 
 here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$here/check/lib.sh"
@@ -34,13 +33,12 @@ apply='cs: let
     cfg = c.config;
     picked = cfg.local.packages.bundles;
     all = c.options.local.packages.bundles.default;
-    casks = cfg.homebrew.casks or null;
+    gui = cfg.local.casks or cfg.local.guiApps;
   in "@HOST@${name}\n"
     + row "묶음 " (join picked)
     + row "빠짐 " (join (builtins.filter (b: !(builtins.elem b picked)) all))
     + row "extra" (join (map (p: p.pname or p.name) cfg.local.packages.extra))
-    + (if casks == null then "" else
-        row "cask " "(${toString (builtins.length casks)}) ${join (map (x: x.name) casks)}");
+    + row "GUI  " (join gui);
 in builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs one cs))'
 
 show() {
@@ -63,6 +61,7 @@ show() {
   done
 }
 
+printf "${DIM}어느 기계에나: CLI core 묶음, GUI 는 macOS 의 visual-studio-code · NixOS 의 vscode ghostty${NC}\n"
 section "macOS"
 show darwinConfigurations
 section "NixOS"

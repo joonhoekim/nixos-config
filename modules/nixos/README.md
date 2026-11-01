@@ -143,8 +143,8 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 
 [`keyboard.nix.vim`](keyboard.nix.vim)에 vim 배치 버전이 import되지 않은 채로 남아 있다.
 `keyboard.nix` 자리에 넣으면 그대로 동작한다. 왜 접었는지, 그리고 OS 레벨 레이어가 vim의
-천장에 닿을 수 없는 이유(모드/문법이 없어서 `d2w` 같은 조합이 성립하지 않는다)는 그 파일
-헤더에 적어뒀다.
+천장에 닿을 수 없는 이유(모드/문법이 없어서 `d2w` 같은 조합이 성립하지 않는다)는
+[`docs/keymap.md`](../../docs/keymap.md#보관한-vim-레이어-keyboardnixvim)에 적어뒀다.
 
 리빌드하면 keyd 유닛이 자동으로 재시작된다(nixpkgs 모듈이 `/etc/keyd/*.conf`를
 `restartTriggers`에 걸어둔다). 문법 검증은 `keyd check /etc/keyd/default.conf`,

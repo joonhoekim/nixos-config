@@ -20,3 +20,6 @@
   nixpkgs PR #555140 이 병합되면 평가 에러가 나므로 그때 지운다.
 - `avro-cpp-fmt12.nix` — avro-cpp 헤더의 fmt include 를 fmt 12 에 맞게 고쳐 kcat 빌드를
   살린다. avro-cpp 헤더가 바뀌면 `--replace-fail` 로 빌드가 멈추므로 그때 지운다.
+
+각 오버레이가 무엇을 고치는지, 왜 그 방법인지, 지우는 조건은
+[`docs/overlays.md`](../docs/overlays.md).

@@ -85,6 +85,26 @@ turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는
 것입니다. 뺀 것마다 지운 커밋과 되살리는 법을 적었고, 한 대상을 한 커밋으로 지웠으므로 그 커밋만
 되돌리면 됩니다. 뺄 예정인 묶음은 그때까지 최소한으로만 고칩니다.
 
+아래는 **구성 요소별 전체 그림**입니다 — 코드 주석에는 "이 줄이 없으면 무엇이 깨지는가"만 짧게 두고,
+왜 그 모양인지·확인한 사실·실측값은 이 문서들로 뺐습니다. 코드 쪽 주석이 해당 문서를 가리킵니다.
+
+호스트는 [`hosts/evo-t1.md`](hosts/evo-t1.md)·[`hosts/mn56.md`](hosts/mn56.md)·[`galaxy-chromebook-1.md`](galaxy-chromebook-1.md)가
+기계마다 하드웨어 사실과 그 호스트 파일의 근거를 적고, [`nixos-common.md`](nixos-common.md)가 모든 NixOS 호스트의
+공통 설정(로그인 화면, nixPath, dbus, zram)을, [`hardware-vendors.md`](hardware-vendors.md)가 Intel·AMD 공통 층을 다룹니다.
+
+NixOS 세션은 [`hyprland.md`](hyprland.md)(세션 배선과 hyprland.lua·배치 파일)와 그 화면 셰이더별 설계
+[`hyprland-shaders.md`](hyprland-shaders.md), [`niri.md`](niri.md), [`subline.md`](subline.md), DMS 플러그인
+[`dms-plugins.md`](dms-plugins.md)입니다. 라이싱 쪽은 시드 규칙 [`rice-seeding.md`](rice-seeding.md), 스크립트
+[`rice-scripts.md`](rice-scripts.md)(셰이더 체인·손잡이·저장/복원)와 [`rice-tools.md`](rice-tools.md)(스위처·기준선·장식·배치·메뉴),
+창 [`rice-studio.md`](rice-studio.md), 터미널 셰이더 [`ghostty-shaders.md`](ghostty-shaders.md)로 나뉩니다.
+
+그 밖에 NixOS 모듈로는 [`korean-input.md`](korean-input.md)(로케일·fcitx5·한/영 키 경로), [`nginx.md`](nginx.md),
+[`windows-guest.md`](windows-guest.md)(libvirt), [`nautice-tts.md`](nautice-tts.md)가 있고, 양쪽 공통으로
+[`fonts.md`](fonts.md), [`kanata.md`](kanata.md)(Caps 레이어의 수치와 OS 차이), [`overlays.md`](overlays.md)(오버레이마다
+고치는 것과 지우는 조건)가 있습니다. macOS 쪽 배선(기본 앱 핸들러, 로그인 항목, kanata, launchd 이름, rift-grid 에이전트)은
+[`macos-internals.md`](macos-internals.md)입니다. 도구로는 [`ddc-probe.md`](ddc-probe.md)(모니터 DDC 를 눈으로 확인)와
+[`demo.md`](demo.md)(창 관리자 실사용 재연)가 있습니다.
+
 [`postmortems/`](postmortems/)는 성격이 다릅니다 — 구조 설명이 아니라, 실제로 겪은 고장의
 기록입니다. **에러 메시지 없이 조용히 실패한 것들**만 모읍니다("고쳤는데 화면이 안 바뀐다",
 "유닛은 enabled인데 안 뜬다"). 같은 증상을 다시 만났을 때 무슨 명령을 쳐야 보이는지가 핵심입니다.

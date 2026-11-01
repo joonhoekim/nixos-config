@@ -427,4 +427,4 @@ ESP를 `/mnt/boot`에 마운트한 채로 설치했는지 확인. 펌웨어의 �
 
 **`nix-shell -p foo`가 "file 'nixpkgs' was not found in the Nix search path"**
 `nix.nixPath`를 덮어쓴 설정이 있으면 이렇게 된다. 이 레포도 한동안 그랬다 —
-`hosts/nixos/common.nix`의 `nix` 블록 주석에 전말이 있다.
+이유는 [nixos-common.md](nixos-common.md#nixnixpath-를-두지-않는-이유).

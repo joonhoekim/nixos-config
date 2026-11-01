@@ -184,7 +184,8 @@ sourced 되는 조각은 목록에 넣지 않는다.
 - 셸/git/vim 설정: `modules/shared/home-manager.nix`
 - 폰트: `modules/shared/fonts.nix` (각 호스트의 `fonts.packages`로 등록)
 - GUI 앱(cask): `modules/darwin/casks.nix` — `core` 는 모든 Mac, 나머지는 호스트의 `local.casks`
-- 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`
+- GUI 앱(NixOS): `modules/nixos/gui-apps.nix` — `core` 는 모든 NixOS 기계, 나머지는 호스트의 `local.guiApps`
+- 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`, 무엇이 얼마나 무거운지: `nix run .#footprint -- <호스트>`
 - macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고

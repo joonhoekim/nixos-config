@@ -1,0 +1,85 @@
+#!/usr/bin/env -S python3 -I
+#
+# 한 호스트에서 묶음과 GUI 앱이 디스크를 얼마나 더 쓰는지 잰다. **아무것도
+# 빌드하지 않고 고치지 않는다.**
+#
+#   nix run .#footprint -- galaxy-chromebook-1
+#   nix run .#footprint -- jhs-MacBook-Air
+#
+# 잰 값은 "core 위에 새로 더해지는 양"이다. 같은 라이브러리를 core 가 이미
+# 끌어왔으면 그만큼은 세지 않는다. 크기는 cache.nixos.org 가 알려 주는 클로저의
+# narSize(압축을 푼 크기)라서, 그 호스트의 아키텍처로 잰다 — Mac 에서 NixOS 호스트를
+# 재도 된다.
+#
+# 캐시에 없는 것은 크기를 모른다고 찍는다. 대부분은 unfree(vscode, chrome 등)라
+# 상류 바이너리를 풀기만 하지만, override 한 패키지(documents 의 ocrmypdf)는 그
+# 기계가 직접 빌드한다 — 약한 기기에는 디스크보다 이쪽이 더 무겁다.
+#
+# 판단 기준은 docs/packages/footprint.md.
+import json, os, subprocess, sys
+from concurrent.futures import ThreadPoolExecutor
+
+if len(sys.argv) != 2:
+    sys.exit("사용법: footprint <호스트 이름>   (호스트 목록은 nix run .#inventory)")
+host = sys.argv[1]
+
+repo = os.environ.get("NIXOS_CONFIG_REPO") or subprocess.run(
+    ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
+if not repo or not os.path.exists(os.path.join(repo, "flake.nix")):
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 호스트의 pkgs 로 묶음 목록(modules/shared/packages.nix)과 GUI 앱을 평가한다.
+# NixOS 의 GUI 이름은 nixpkgs 의 속성 이름과 같게 지어 두었다(modules/nixos/gui-apps.nix).
+# macOS 의 cask 는 nix 밖이라 잴 수 없다.
+expr = f'''
+let
+  flake = builtins.getFlake "{repo}";
+  c = flake.nixosConfigurations.{host} or flake.darwinConfigurations.{host};
+  pkgs = c.pkgs;
+  b = import "{repo}/modules/shared/packages.nix" {{ inherit pkgs; }};
+  f = p: {{ name = p.pname or p.name; out = p.outPath; }};
+  gui = c.options.local.guiApps.default or [ ];
+in {{
+  bundles = builtins.mapAttrs (n: l: map f l) b;
+  gui = map (n: f pkgs.${{n}}) (gui ++ [ "vscode" "ghostty" ]);
+}}'''
+r = subprocess.run(["nix", "eval", "--impure", "--json", "--expr", expr],
+                   capture_output=True, text=True)
+if r.returncode:
+    sys.exit(r.stderr.strip().splitlines()[-1])
+d = json.loads(r.stdout)
+
+def closure(out):
+    r = subprocess.run(["nix", "path-info", "-r", "--json", "--store",
+                        "https://cache.nixos.org", out], capture_output=True, text=True)
+    if r.returncode:
+        return out, None
+    j = json.loads(r.stdout)
+    items = j.items() if isinstance(j, dict) else ((x["path"], x) for x in j)
+    return out, {k: (v or {}).get("narSize", 0) for k, v in items}
+
+outs = {p["out"] for l in d["bundles"].values() for p in l} | {p["out"] for p in d["gui"]}
+with ThreadPoolExecutor(24) as ex:
+    clo = dict(ex.map(closure, sorted(outs)))
+
+base = {}
+for p in d["bundles"]["core"]:
+    base.update(clo[p["out"]] or {})
+mib = lambda s: sum(s.values()) / 2**20
+added = lambda items: {k: v for p in items for k, v in (clo[p["out"]] or {}).items() if k not in base}
+
+print(f"{host}  core {mib(base):.0f} MiB (이 위에 더해지는 양을 잰다)\n")
+print("CLI 묶음")
+for name, items in sorted(d["bundles"].items(), key=lambda kv: -mib(added(kv[1]))):
+    if name == "core":
+        continue
+    top = sorted(((mib(added([p])), p["name"]) for p in items), reverse=True)[:3]
+    unknown = [p["name"] for p in items if clo[p["out"]] is None]
+    print(f"  {name:12s} +{mib(added(items)):6.0f} MiB   "
+          + ", ".join(f"{n} {m:.0f}" for m, n in top)
+          + (f"   [크기 모름: {' '.join(unknown)}]" if unknown else ""))
+if d["gui"]:
+    print("\nGUI 앱 (vscode · ghostty 는 core)")
+    for p in sorted(d["gui"], key=lambda p: -mib(added([p]))):
+        size = "크기 모름" if clo[p["out"]] is None else f"+{mib(added([p])):.0f} MiB"
+        print(f"  {p['name']:26s} {size}")

@@ -17,8 +17,11 @@
 `local.packages.extra = with pkgs; [ ... ];` 에 적는다. 빼면 다음 switch 에서 PATH 에서
 사라지고, 디스크는 `nix run .#clean` 같은 gc 가 비운다. 어느 호스트가 무엇을 고르고
 있는지는 `nix run .#inventory` 가 한 화면에 찍는다(묶음 · 빠진 묶음 · extra · cask).
-GUI 앱(cask)도 같은 구조다 — `modules/darwin/casks.nix` 의 `core` 는 모든 Mac 에, 나머지는
-호스트의 `local.casks` 로 고른다.
+GUI 앱도 같은 구조다 — macOS 는 `modules/darwin/casks.nix`(`local.casks`), NixOS 는
+`modules/nixos/gui-apps.nix`(`local.guiApps`). 각각의 `core` 는 모든 기계에 깔린다.
+
+가벼운 기계에 무엇을 뺄지의 기준과 실측 크기는 [`footprint.md`](footprint.md),
+다시 재는 것은 `nix run .#footprint -- <호스트>`.
 
 | 문서 | 다루는 상황 |
 |---|---|

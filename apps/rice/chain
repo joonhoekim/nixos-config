@@ -1,83 +1,7 @@
 #!/bin/sh -e
 #
-# 화면 셰이더 여러 장을 하이프랜드가 받을 수 있는 한 장으로 접는다.
-#
-#   apps/rice/chain water/still print/paper  합성해서 결과 파일 경로를 낸다
-#   apps/rice/chain --check crt/crt        합성과 검증만 (경로는 안 낸다)
-#   apps/rice/chain --cost crt/crt neon    탭 곱만 (왜 거절당했는지 볼 때)
-#   apps/rice/chain --stages <합성본>       그 파일이 어느 칸들로 만들어졌는지
-#   apps/rice/chain --motion crt/crt       이 조합이 흐르는가 (yes/no)
-#   apps/rice/chain --info-all <칸>...     칸마다 `<칸> <탭> <흐름>` (캐시된다)
-#   apps/rice/chain --addable <지금칸>...  후보를 stdin 으로, 붙일 수 있는 것만
-#   apps/rice/chain --limit                탭 한도 하나
-#
-# 칸 이름은 `갈래/이름` 이다 — ~/.config/hypr/shaders/<갈래>/<이름>.frag.
-# 절대 경로도 받는다.
-#
-# ── 터미널 셰이더도 칸이 된다 ─────────────────────────────────────────────
-# `term/<이름>` 은 ~/.config/ghostty/shaders/<이름>.glsl 을 가리킨다. 그쪽은
-# 셰이더토이 규약(mainImage / iChannel0 / iResolution)이고 이쪽은 하이프랜드
-# 규약(main / tex / screen_size)이라 서로 다른 껍데기를 두르지만, 둘 다 "화면 한
-# 장을 받아 한 장을 낸다"는 점은 같아서 같은 체인에 섞어도 된다.
-#
-# 이 길을 낸 것은 창 하나에 걸던 룩을 화면 전체로 올려 볼 수 있어서만은 아니다.
-# 맥 레포는 crt/glow.glsl 을 자기 shaders/ 안에 복사해 들고 있는데, 그 파일은
-# 이 레포의 ../../modules/shared/ghostty/shaders/glow.glsl 과 사실상 같은 파일이다.
-# 가져오면서 그 사본을 또 만들면 같은 셰이더가 한 레포 안에 두 벌이 되고, 그건
-# 맥 쪽 crt.frag/crt-motion.frag 이 이미 한 번 보여 준 실패다(그 파일 머리말 —
-# 값이 실제로 어긋나 있었다). 그래서 복사 대신 부르기로 했다.
-#
-# ── 왜 합성이 필요한가 ────────────────────────────────────────────────────
-# decoration:screen_shader 는 파일 하나만 받는다. 상류도 여러 장을 겹치는 기능을
-# 안 만들고 "합쳐서 써라"로 답해 왔다(hyprwm/Hyprland#14101). 그래서 브라운관 뒤에
-# 리소 망점을 더하려면 손으로 두 파일을 합쳐야 했고, 합치는 순간 둘을 따로 끄거나
-# 순서를 바꿔 볼 수가 없어진다. 맥 판(global-shader-for-macos)은 이 자리에서
-# 패스마다 오프스크린에 그려서 해결하는데, 여기서는 그 오프스크린이 없다.
-#
-# ── 소스는 한 글자도 안 고친다 ────────────────────────────────────────────
-# 접는 방법이 전처리기뿐인 것이 중요하다. 셰이더 파일을 고쳐서 함수로 바꾸는
-# 길도 있지만, 그러면 같은 파일이 맥에서·혼자 걸릴 때 안 돈다. 대신 칸마다
-# 이런 껍데기를 앞뒤에 두르고 파일 내용을 **그대로** 사이에 끼운다:
-#
-#   #define v_texcoord _uv1        칸의 입력 좌표를 우리 전역으로
-#   #define fragColor  _fc1        칸의 출력을 우리 전역으로
-#   #define main       _p1_main    칸의 main 을 이름 있는 함수로
-#   #define bloom      _p1_bloom   칸끼리 겹치는 이름을 갈라 놓는다
-#   #define texture(_s, _c) _p0(_c)   이 칸의 tex 는 앞 칸의 출력이다
-#   <파일 내용 그대로>
-#   #undef …
-#   vec4 _p1(vec2 _c) { _uv1 = _c; _p1_main(); return _fc1; }
-#
-# `#define` 의 매크로 이름은 매크로 확장을 안 거치므로(GLSL ES 3.00 전처리기),
-# 칸 안의 `#define BLOOM 0.32` 는 우리 이름 바꾸기와 안 부딪힌다. 그래서 칸이
-# 선언한 `#define` 은 이름을 바꾸는 대신 칸이 끝날 때 전부 `#undef` 한다.
-#
-# 잘못 접히면 컴파일 에러로 죽는다 — 조용히 다른 그림이 나오는 길이 없다. 이게
-# 맥 판이 GLSL→MSL 에 손치환기를 안 쓴 것과 같은 기준이다.
-#
-# ── 값은 곱으로 든다. 이게 진짜 제약이다 ──────────────────────────────────
-# 맥은 칸마다 화면 한 장을 만들어 넘기므로 비용이 **합**이다. 여기는 인라인이라
-# **곱**이다 — 뒷칸이 tex 를 N 번 읽으면 앞칸이 픽셀당 N 번 돈다.
-#
-#   still(10탭) → paper(5탭)  =   50    쓸 수 있다
-#   crt(23탭)   → neon(21탭)  =  483    못 쓴다
-#
-# 곱이라 순서를 바꿔도 안 줄어든다. 그래서 겹칠 수 있는 것은 사실상 **탭 많은
-# 칸 하나 + 나머지는 가벼운 칸**이다. 아래 taps() 가 픽셀당 tex 읽기 횟수를 세고,
-# 곱이 RICE_CHAIN_MAX_TAPS 를 넘으면 거절한다. 느려진 화면을 보고 원인을 찾게
-# 두는 것보다 못 건다고 말하는 편이 낫다.
-#
-# 세는 방식은 함수 단위다. `texture(tex` 가 몇 줄에 있는지만 세면 bloom() 처럼
-# 루프를 품은 함수를 두 번 부르는 경우를 놓친다.
-#
-# ── 결과 파일 ─────────────────────────────────────────────────────────────
-# ${XDG_CACHE_HOME:-~/.cache}/rice/shaders/ 에 쓴다. 손잡이를 고치면 원본이
-# 바뀌므로 걸 때마다 다시 접는다(apps/rice/crt --reload). 캐시가 통째로 없어져도
-# 다음에 걸 때 다시 만들어지므로 잃을 것이 없다.
-#
-# 첫 줄에 `// rice-chain: <칸> <칸>` 을 적어 둔다. 컴포지터에게 "지금 뭐가
-# 걸렸냐"고 물으면 이 경로가 돌아오는데, 경로만으로는 어떤 칸들이었는지 되짚을
-# 수 없기 때문이다. 이름을 파일명에 인코딩하는 것보다 이쪽이 안 깨진다.
+# 화면 셰이더 여러 장(칸)을 하이프랜드가 받는 한 장으로 접는다. 칸은 `갈래/이름`, `term/<이름>`, 절대 경로.
+# 전체 그림: modules/nixos/hyprland/rice/README.md · 쓰는 법과 접는 방식: docs/rice-scripts.md
 
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/rice/shaders"
@@ -85,14 +9,7 @@ metacache="$cache/meta.tsv"
 shaders="${RICE_SHADERS:-$cfg/hypr/shaders}"
 termshaders="${RICE_TERM_SHADERS:-$cfg/ghostty/shaders}"
 
-# 임계값. 이 레포에서 제일 무거운 한 장이 crt.frag(23탭)이고, 그 뒤에 한 탭짜리
-# 마감(term/glow)을 붙이면 23 이다. 64 는 거기에 한 겹 더 얹을 여유를 준 값이고,
-# neon(21탭) 같은 것을 crt 뒤에 붙이는 조합은 여기서 걸린다. 화면을 보고
-# 판단하고 싶으면 환경변수로 올릴 수 있다.
-#
-# 한 탭짜리 마감이 term/glow 하나뿐인 것은 print/riso 와 print/dither 를 지운
-# 뒤의 상태다(../../modules/nixos/hyprland/rice/README.md). 그전에는 이 한도가
-# 훨씬 덜 조였다.
+# crt/crt(23탭)·term/glow(1탭)에 한 겹 더 얹을 여유. crt→neon(483)은 여기서 걸린다.
 max_taps="${RICE_CHAIN_MAX_TAPS:-64}"
 
 RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
@@ -103,12 +20,8 @@ die() {
 }
 
 # ── 칸 이름 → 파일 ────────────────────────────────────────────────────────
-# 확장자로 규약이 갈리지 않는다(.frag 도 .glsl 도 양쪽일 수 있다). 규약은 아래
-# convention() 이 파일 안을 보고 정한다.
-#
-# 안 죽는 판이 따로 있는 것은 배치 모드 때문이다(--info-all). 목록 중 한 칸이
-# 사라졌다고 나머지 값까지 못 내면, 셰이더 하나를 지운 순간 GUI 목록이 통째로
-# 빈다. 이름 하나를 받는 자리에서는 여전히 죽는 쪽을 쓴다.
+# 확장자로 규약이 갈리지 않는다(convention() 이 내용을 본다). 못 찾아도 죽지 않는 것은
+# --info-all 때문이다 — 한 칸이 없다고 죽으면 GUI 목록이 통째로 빈다.
 find_stage() { # find_stage <칸>  →  경로 (없으면 1)
 	case "$1" in
 	/*)
@@ -150,8 +63,7 @@ resolve() { # resolve <칸>
 	die "그런 셰이더가 없다: $1  (${shaders} 아래를 본다)"
 }
 
-# 규약을 가르는 실질적인 표식은 mainImage 하나다. 주석을 걷고 본다 — 이 레포의
-# 셰이더는 머리말에서 다른 규약을 자주 인용한다.
+# 주석을 걷고 mainImage 를 본다 — 셰이더 머리말이 다른 규약을 자주 인용한다.
 convention() { # convention <파일>  →  shadertoy | hyprland
 	if sed 's|//.*||' "$1" | grep -q 'mainImage[[:space:]]*('; then
 		printf 'shadertoy\n'
@@ -161,11 +73,9 @@ convention() { # convention <파일>  →  shadertoy | hyprland
 }
 
 # ── 탭 세기 ───────────────────────────────────────────────────────────────
-# 픽셀당 `texture(tex, …)` 가 몇 번 평가되는지. 함수 단위로 세고 호출 횟수를
-# 곱해서 올린다 — GLSL 에 재귀가 없으므로 반복 대입으로 반드시 수렴한다.
-#
-# 루프 횟수를 못 읽으면 세는 것을 포기하고 0 이 아니라 실패를 낸다. 모르는 값을
-# 1 로 치면 무거운 조합이 조용히 통과한다.
+# 픽셀당 texture() 평가 횟수. 함수 단위로 세고 호출 횟수를 곱해 올린다 —
+# 줄만 세면 루프를 품은 bloom() 을 두 번 부르는 경우를 놓친다.
+# 루프 횟수를 못 읽으면 "?" 를 낸다. 1 로 치면 무거운 조합이 조용히 통과한다.
 taps() { # taps <파일>
 	awk '
 		function trip(head,   a, b) {
@@ -188,8 +98,7 @@ taps() { # taps <파일>
 			return -1
 		}
 
-		# 주석을 먼저 걷는다. 이 레포의 셰이더는 주석에 코드를 자주 인용해서,
-		# 안 걷고 세면 없는 탭을 센다.
+		# 주석을 먼저 걷는다 — 셰이더 주석이 코드를 자주 인용해서 없는 탭을 센다.
 		{
 			line = $0
 			if (inblock) {
@@ -236,14 +145,10 @@ taps() { # taps <파일>
 				}
 
 				if (fn != "") {
-					# 탭 그 자체. 샘플러 이름을 안 보는 것은 규약마다 다르기
-					# 때문이다(tex / iChannel0). 화면 말고 다른 것을 읽는 셰이더는
-					# 애초에 걸 수 없으므로 — 하이프랜드가 줄 수 있는 샘플러가
-					# 그것뿐이다 — texture( 는 전부 화면 읽기로 봐도 된다.
-					# textureLod( 는 안 걸린다: 뒤에 바로 여는 괄호가 와야 한다.
+					# 샘플러 이름은 안 본다(tex / iChannel0). 하이프랜드가 주는 샘플러가 화면뿐이라
+					# texture( 는 전부 화면 읽기다. textureLod( 는 안 센다.
 					c = gsub(/texture[[:space:]]*\(/, "&", line)
 					if (c > 0) own[fn] += c * mul
-					# 아는 함수 호출
 					tmp = line
 					while (match(tmp, /[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(/)) {
 						g = substr(tmp, RSTART, RLENGTH)
@@ -276,21 +181,9 @@ taps() { # taps <파일>
 }
 
 # ── 흐르는가 ──────────────────────────────────────────────────────────────
-# debug:vfr 을 끌지 말지가 여기에 달렸다. 시간을 읽는 셰이더는 화면에 바뀐 것이
-# 없어도 계속 그려야 흐르고, 안 읽으면 안 그리는 게 맞다 — 배터리 값이 통째로
-# 이 판단에 붙어 있다.
-#
-# 판정이 두 단이다. `time` 을 아예 안 읽으면 끔이다. 읽더라도 흐르는 것을 여닫는
-# 손잡이가 전부 0 이면 역시 끔이다 — crt.frag 은 GRAIN·HUM·RIPPLE 을 0 으로
-# 내리면 그 자리에서 정지 셰이더가 된다. 어느 손잡이가 그런 손잡이인지는
-# 셰이더가 `@범위` 옆에 `!motion` 으로 스스로 선언한다(apps/rice/knobs 와 같은
-# 문법이고, 맥 판이 그 문법을 여기서 가져갔다).
-#
-# 체인은 한 칸이라도 흐르면 전체가 흐른다. 시간을 읽는 칸이 안 흐르면 그 칸만
-# 멈추는 게 아니라 고장으로 보이기 때문이다.
-#
-# 주석을 먼저 걷는 것이 핵심이다. 이 레포의 셰이더는 머리말에서 `time` 을 자주
-# 언급해서, 안 걷고 세면 정지 셰이더가 전부 흐르는 것으로 읽힌다.
+# 시간을 읽고, `!motion` 손잡이가 있으면 그중 하나라도 0 이 아닐 때 흐른다(debug:vfr 판정).
+# 체인은 한 칸이라도 흐르면 흐른다. 주석을 먼저 걷는다 — 머리말의 `time` 언급 때문에
+# 정지 셰이더가 흐르는 것으로 읽힌다.
 motion() { # motion <파일>...
 	for f in "$@"; do
 		[ "$(motion_one "$f")" = yes ] && {
@@ -331,20 +224,9 @@ motion_one() { # motion_one <파일>
 }
 
 # ── 탭과 흐름을 한꺼번에 ──────────────────────────────────────────────────
-# 목록 UI 는 값마다 이 둘을 다 알아야 한다. 값 하나씩 --info 로 물으면 값 수만큼
-# 프로세스가 뜨고, 그 안에서 awk 가 또 두 번 돈다 — 열 몇 장이면 예순 번쯤이다.
-# 런처는 창을 여는 순간에만 그걸 치르지만(그래서 2초 캐시로 가려 뒀다), 창을 열어
-# 두고 만지는 GUI 에서는 가려지지 않는다.
-#
-# 그래서 (1) 한 번에 묻고 (2) mtime 으로 캐시한다. 둘 다 **파일 내용의 함수**라
-# 캐시해도 되는 값이고, 손잡이를 고치면 mtime 이 바뀌므로 그 줄만 다시 센다.
-#
-# 캐시는 요청받은 목록으로 통째로 다시 쓴다. 부르는 쪽이 늘 전체 목록을 주므로
-# 그게 곧 압축이고, 안 그러면 슬라이더를 한 번 끌 때마다 한 줄씩 자란다. 통째로
-# 지워도 다음에 물을 때 다시 만들어진다 — 합성본과 같은 성질이다.
-#
-# stat 의 플래그가 GNU 와 BSD 가 다르다. 맥에서도 이 스크립트를 부를 수 있어야
-# 해서(머리말) 둘 다 시도한다.
+# 한 번에 묻고 mtime 으로 캐시한다 — 값마다 부르면 GUI 가 목록 한 번에 수십 번 포크한다.
+# 캐시는 요청받은 목록으로 통째로 다시 쓴다. 안 그러면 슬라이더를 끌 때마다 한 줄씩 자란다.
+# stat 플래그는 GNU 와 BSD 가 달라 둘 다 시도한다(맥에서도 부른다).
 mtimes() { # mtimes <파일>...  →  <mtime>\t<경로>
 	stat -c '%Y	%n' "$@" 2>/dev/null || stat -f '%m	%N' "$@" 2>/dev/null
 }
@@ -353,8 +235,7 @@ info_all() { # info_all <칸>...  →  <칸>\t<탭>\t<흐름>
 	names=""
 	paths=""
 	for s in "$@"; do
-		# 없는 칸은 조용히 건너뛴다. 여기서 죽으면 셰이더 하나를 지운 순간
-		# 목록 전체가 빈다.
+		# 없는 칸은 건너뛴다 — 죽으면 셰이더 하나를 지운 순간 목록 전체가 빈다.
 		if p="$(find_stage "$s")"; then
 			names="$names$s	$p
 "
@@ -377,9 +258,8 @@ info_all() { # info_all <칸>...  →  <칸>\t<탭>\t<흐름>
 		fresh="$(printf '%s\n' "$miss" | while IFS= read -r f; do
 			[ -n "$f" ] || continue
 			t="$(taps "$f")"
-			# 루프 횟수를 못 읽으면 0 으로 둔다. 배치 모드는 값 하나 때문에 죽으면
-			# 안 되고, 그렇다고 1 로 치면 무거운 칸이 가벼운 척하게 된다 —
-			# 부르는 쪽이 0 을 "셀 수 없어서 못 건다"로 읽는다.
+			# 못 읽은 루프는 0 이다 — 배치는 죽으면 안 되고, 1 로 치면 무거운 칸이 가벼운 척한다.
+			# 부르는 쪽은 0 을 "셀 수 없어서 못 건다"로 읽는다.
 			if [ "$t" = "?" ]; then
 				t=0
 			elif [ "$t" -lt 1 ]; then
@@ -408,33 +288,28 @@ info_all() { # info_all <칸>...  →  <칸>\t<탭>\t<흐름>
 				print stamp[p] "\t" tap[p] "\t" mot[p] "\t" p > out
 			}
 		}'
-	# 캐시 교체. 실패해도(디스크가 찼다든가) 답은 이미 나갔으므로 조용히 넘긴다 —
-	# 다음에 부를 때 다시 세면 그만이다.
+	# 캐시 교체가 실패해도(디스크가 참) 답은 이미 나갔다 — 다음에 다시 센다.
 	mv "$cache/meta.tsv.$$" "$metacache" 2>/dev/null || rm -f "$cache/meta.tsv.$$"
 }
 
 # ── 합성 ──────────────────────────────────────────────────────────────────
-# 칸 하나짜리도 같은 길로 접는다. 갈래가 둘이면 `precision` 같은 사소한 차이를
-# 두 곳에서 처리하게 되고, 무엇보다 crt/glow.glsl 처럼 precision 선언이 없는
-# 파일이 혼자 걸릴 때만 안 되는 상태가 생긴다.
+# 칸마다 #define 껍데기를 두르고 원본을 그대로 끼운다(모양: docs/rice-scripts.md).
+# 칸 하나도 같은 길로 접는다 — 안 그러면 crt/glow.glsl 처럼 precision 이 없는 파일이
+# 혼자 걸릴 때만 깨진다.
 compose() { # compose <파일>...
-	# #version 이 반드시 첫 줄이어야 한다. es 프로파일은 그 앞에 주석도 못 둔다
-	# ("statement must appear first in es-profile shader; before comments or
-	# newlines"). 그래서 우리 머리말이 아래로 내려간다.
+	# #version 이 첫 줄이어야 한다 — es 프로파일은 그 앞에 주석도 못 둔다
+	# ("statement must appear first in es-profile shader; before comments or newlines").
 	printf '#version 300 es\n'
 	printf '// 이 파일은 apps/rice/chain 이 만든다. 고치지 말 것 — 다시 접히면\n'
 	printf '// 통째로 날아간다. 고칠 것은 아래 칸들의 원본이다.\n'
+	# --stages 가 이 줄을 되읽는다. 컴포지터는 합성본 경로만 돌려줘서 칸을 되짚을 길이 이것뿐이다.
 	printf '// rice-chain:'
 	for s in $stage_names; do printf ' %s' "$s"; done
 	printf '\n'
 
-	# 어느 유니폼이 실제로 쓰이는지 먼저 본다. 안 쓰는 것까지 다 선언해 두면
-	# apps/rice/crt 의 재그리기 판정이 `time` 을 보고 늘 켜진 것으로 읽는다.
-	# 셰이더토이 이름은 여기서 하이프랜드 이름으로 접힌다 — iTime 을 쓰는 칸이
-	# 하나라도 있으면 이 합성본은 시간을 읽는 셰이더다.
-	# awk 에서 \b 를 쓰면 안 된다 — gawk 는 그걸 낱말 경계가 아니라 백스페이스
-	# 문자로 읽는다. 그러면 이 검사가 전부 조용히 빗나가고, 증상은 합성본이
-	# "screen_size : undeclared identifier" 로 죽는 것이다.
+	# 쓰는 유니폼만 선언한다 — 다 선언하면 apps/rice/crt 의 재그리기 판정이 `time` 을 보고 늘 켬으로 읽는다.
+	# awk 에서 \b 를 쓰면 안 된다 — gawk 는 백스페이스로 읽어 검사가 조용히 빗나가고,
+	# 합성본이 "screen_size : undeclared identifier" 로 죽는다.
 	uniforms=$(cat "$@" | sed 's|//.*||' | awk -v st="$has_shadertoy" '
 		function has(w) {
 			return match($0, "(^|[^A-Za-z0-9_])" w "([^A-Za-z0-9_]|$)") > 0
@@ -455,8 +330,7 @@ compose() { # compose <파일>...
 
 	printf '\nprecision highp float;\n\n'
 	printf 'in vec2 v_texcoord;\nlayout(location = 0) out vec4 fragColor;\n\n'
-	# tex 는 조건 없이 선언한다. 첫 칸은 반드시 화면을 읽고, 셰이더토이 칸의
-	# iChannel0 도 결국 이 이름으로 접힌다.
+	# tex 는 늘 선언한다 — 첫 칸은 화면을 읽고, 셰이더토이의 iChannel0 도 이 이름으로 접힌다.
 	printf 'uniform sampler2D tex;\n'
 	for u in $uniforms; do
 		case "$u" in
@@ -471,9 +345,8 @@ compose() { # compose <파일>...
 	k=0
 	for f in "$@"; do
 		awk -v k="$k" -v path="$f" -v conv="$(convention "$f")" '
-			# 파일이 자기 규약대로 선언해 둔 줄들. 합성본은 이걸 머리에서 한 번만
-			# 한다. 여기 적힌 이름만 정확히 지운다 — 셰이더가 직접 만든 다른
-			# uniform 은 남겨 둬야 검증기가 "그건 못 준다"고 제대로 화를 낸다.
+			# 규약의 선언 줄은 합성본 머리에서 한 번만 한다. 이 이름들만 지운다 — 셰이더가 만든
+			# 다른 uniform 은 남겨야 거절된다.
 			function isdecl(l) {
 				return l ~ /^[[:space:]]*#version/ ||
 				       l ~ /^[[:space:]]*precision[[:space:]]+[a-z]+p[[:space:]]+[a-z]+[[:space:]]*;/ ||
@@ -496,9 +369,8 @@ compose() { # compose <파일>...
 					sub(/\(.*$/, "", m)   # 함수형 매크로도 이름만
 					if (!(m in seenm)) { seenm[m] = 1; macro[++nm] = m }
 				}
-				# 최상단 선언(함수·전역·const). 들여쓰기가 없는 줄만 본다 —
-				# 이 레포의 셰이더는 전부 그 모양이다. 못 찾으면 칸끼리 이름이
-				# 겹쳐서 컴파일이 깨지지, 조용히 틀린 그림이 나오지는 않는다.
+				# 최상단 선언(함수·전역·const)은 들여쓰기 없는 줄만 본다. 놓치면 칸끼리 이름이
+				# 겹쳐 컴파일이 깨질 뿐, 조용히 틀린 그림이 나오지는 않는다.
 				else if (l ~ /^(const[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*[\(=;\[]/) {
 					d = l
 					sub(/^const[[:space:]]+/, "", d)
@@ -515,11 +387,9 @@ compose() { # compose <파일>...
 				print "// 칸 " k " — " path "  (" conv ")"
 
 				if (conv == "shadertoy") {
-					# 뒤집기가 두 군데인 게 헷갈리지만 둘 다 필요하다. 셰이더토이의
-					# fragCoord 는 좌하단 원점이라 아래 껍데기에서 한 번 뒤집고,
-					# 그 좌표로 화면을 읽을 때 좌상단으로 되돌려야 해서 여기서 또
-					# 뒤집는다. 이 함수를 `#define texture` **앞에** 두는 것이
-					# 요점이다 — 그래야 몸통의 texture 가 아직 매크로가 아니다.
+					# 뒤집기가 두 번이다: fragCoord 는 좌하단 원점이라 껍데기에서 한 번, 그 좌표로 화면을
+					# 읽을 때 또 한 번. 이 함수가 `#define texture` 앞에 있어야 몸통의 texture 가 아직
+					# 매크로가 아니다.
 					if (k == 0)
 						print "vec4 _p" k "_tex(sampler2D _s, vec2 _c) { return texture(_s, vec2(_c.x, 1.0 - _c.y)); }"
 					else
@@ -584,8 +454,7 @@ case "${1:-}" in
 	exit 0
 	;;
 --limit)
-	# 한도를 밖에서 물을 수 있어야 한다. 안 그러면 UI 가 64 를 자기 파일에 또 적게
-	# 되고, RICE_CHAIN_MAX_TAPS 로 올려 둔 머신에서 둘이 어긋난다.
+	# UI 가 64 를 따로 적지 않게 밖에서 묻는다 — RICE_CHAIN_MAX_TAPS 를 올린 머신에서 어긋난다.
 	printf '%s\n' "$max_taps"
 	exit 0
 	;;
@@ -596,13 +465,10 @@ case "${1:-}" in
 	exit 0
 	;;
 --addable)
-	# 곱 한도 규칙이 사는 곳은 여기 하나여야 한다. UI 가 "이걸 더해도 되나"를
-	# 스스로 세면 규칙이 두 벌이 되고, 한쪽만 고친 날 목록이 거짓말을 한다 —
-	# 실제로 런처가 `now * taps > (maxTaps || 64)` 로 그걸 하고 있었다.
+	# 곱 한도 규칙은 여기 한 곳에만 둔다 — UI 가 따로 세면 한쪽만 고친 날 목록이 거짓말을 한다.
 	shift
 	cands="$(cat)"
-	# 현재 칸과 후보를 한 번에 센다. 캐시가 있어서 두 번 부르는 것과 값은 같지만
-	# 프로세스는 하나다.
+	# 현재 칸과 후보를 프로세스 하나로 센다.
 	# shellcheck disable=SC2086
 	table="$(info_all "$@" $cands)"
 	{
@@ -616,8 +482,7 @@ case "${1:-}" in
 			n = split(cur, c, " ")
 			for (i = 1; i <= n; i++) {
 				if (c[i] == "") continue
-				# 지금 걸린 칸을 못 세면 더할 수 있는 것도 못 센다. 그때는 빈
-				# 목록을 내는 게 맞다 — 아무거나 권하는 것보다 낫다.
+				# 지금 칸을 못 세면 빈 목록을 낸다 — 아무거나 권하는 것보다 낫다.
 				if (!(c[i] in tap) || tap[c[i]] + 0 < 1) { bad = 1; break }
 				now *= tap[c[i]]
 			}
@@ -658,11 +523,8 @@ has_shadertoy=""
 for f in "$@"; do
 	[ "$(convention "$f")" = shadertoy ] && has_shadertoy=1
 
-	# 고스티 전용 유니폼을 읽는 셰이더는 여기서 잘라 낸다. 검증기에 맡기면
-	# "iCurrentCursor : undeclared identifier" 라는, 원인은 맞지만 무엇을 해야
-	# 하는지는 안 알려 주는 말이 나온다. 하이프랜드가 화면 셰이더에 주는 유니폼
-	# 목록은 컴포지터가 정하고 커서 위치·색은 거기 없다 — 고칠 수 있는 종류의
-	# 실패가 아니라서, 그렇게 말해 주는 편이 맞다.
+	# 고스티 전용 유니폼은 하이프랜드가 안 준다. 검증기의 "iCurrentCursor : undeclared identifier"
+	# 보다 원인과 할 일을 바로 말해 준다.
 	bad="$(sed 's|//.*||' "$f" |
 		grep -o 'iCurrentCursor[A-Za-z]*\|iPreviousCursor[A-Za-z]*\|iTimeCursorChange' |
 		sort -u | tr '\n' ' ')"
@@ -671,15 +533,9 @@ for f in "$@"; do
 		die "화면 셰이더에는 그 값이 없다 — 터미널 창에서만 도는 셰이더다."
 	fi
 
-	# 그 밖의 모르는 유니폼. 위 머리말이 "잘못 접히면 컴파일 에러로 죽는다"고
-	# 적어 뒀는데 여기 구멍이 하나 있었다 — 셰이더가 자기 유니폼을 선언하면
-	# (`uniform float myKnob;`) 접기도 멀쩡하고 검증기도 통과하고, 하이프랜드가
-	# 그 값을 안 주니까 **0 이 들어온 그림**이 조용히 나온다. 검증기가 못 잡는
-	# 유일한 자리라 여기서 막는다.
-	#
-	# 셰이더토이 이름은 우리 껍데기가 #define 으로 덮으므로 목록에 있다. 이름을
-	# 마지막 낱말에서 뽑는 것은 `uniform highp float time;` 처럼 정밀도 한정자가
-	# 끼어들 수 있어서다.
+	# 셰이더가 직접 선언한 유니폼은 접기도 검증기도 통과하고, 하이프랜드가 안 주니 0 이 든 그림이
+	# 조용히 나온다 — 검증기가 못 잡는 자리라 여기서 막는다. 이름을 마지막 낱말에서 뽑는 것은
+	# `uniform highp float time;` 같은 정밀도 한정자 때문이다.
 	unknown="$(sed 's|//.*||' "$f" | awk '
 		$1 == "uniform" {
 			n = $NF
@@ -707,10 +563,6 @@ if [ "$mode" = cost ]; then
 	exit 0
 fi
 
-# `--info <칸>` (탭 수와 흐름을 한 줄로) 이 여기 있었다. 목록 UI 가 값마다
-# 부르던 것인데 --info-all 과 rice-crt --json 이 그 자리를 가져가면서 부르는
-# 곳이 없어져 뺐다 — 같은 답은 `--info-all <칸>` 으로 나온다.
-
 if [ "$product" -gt "$max_taps" ]; then
 	printf "${RED}이 조합은 픽셀당 tex 를 %d 번 읽는다 (한도 %d). 안 건다.${NC}\n" \
 		"$product" "$max_taps" >&2
@@ -721,9 +573,8 @@ fi
 
 mkdir -p "$cache"
 
-# 파일 이름은 사람이 읽으라고 있는 것이고, 신원은 뒤에 붙는 cksum 이 맡는다.
-# 이름만으로 구별하려 들면 절대 경로 칸이 서로 뭉갠다 — `/a/b` 와 `/a.b` 가 같은
-# 슬러그가 되고, 앞의 `/` 가 `.` 이 되면서 숨김 파일까지 된다.
+# 신원은 cksum 이 맡고 슬러그는 사람이 읽으라고 있다 — 슬러그만으로는 `/a/b` 와 `/a.b` 가
+# 뭉개지고, 앞의 `/` 가 `.` 이 되어 숨김 파일이 된다.
 slug="$(printf '%s' "$stage_names" | tr ' /' '+.' | tr -c 'A-Za-z0-9.+_-' '_' | sed 's/^\.*//')"
 sum="$(printf '%s' "$stage_names" | cksum | cut -d' ' -f1)"
 out="$cache/$slug.$sum.frag"
@@ -735,11 +586,9 @@ trap 'rm -f "$tmp"' EXIT
 
 compose "$@" >"$tmp"
 
-# 검증기가 있으면 여기서 잡는다. 없어도 도는 것은 맥·니리에서도 이 스크립트를
-# 부를 수 있어야 하기 때문이고, 하이프랜드 세션에는 모듈이 glslang 을 깐다.
-# 하이프랜드는 컴파일 실패를 알려 주지 않는다 — 셰이더를 걸어 두고 다음 프레임에
-# 컴파일하며, 실패해도 hyprctl 은 ok 를 돌려준다(0.56.1 실측). 생성 파일에서는
-# 그게 더 나쁘다. 원본이 멀쩡해도 접다가 깨질 수 있고, 그러면 검은 화면만 남는다.
+# 하이프랜드는 컴파일 실패를 알리지 않는다 — 다음 프레임에 컴파일하고 hyprctl 은 ok 를 돌려주며
+# 화면만 검게 남는다(0.56.1 실측). 검증기가 없어도 도는 것은 맥·니리에서도 부르기 때문이다
+# (하이프랜드 세션에는 모듈이 glslang 을 깐다).
 if command -v glslangValidator >/dev/null 2>&1; then
 	if ! err="$(glslangValidator -S frag "$tmp" 2>&1)"; then
 		printf "${RED}합성본이 컴파일되지 않는다. 안 건다.${NC}\n" >&2

@@ -13,7 +13,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 │                      #   왕복은 apps/rice/save ↔ apps/rice/restore
 ├── dock/              # macOS Dock 항목을 선언적으로 관리하는 모듈
 ├── scripts/           # 셸이 소싱하는 macOS 전용 헬퍼 (colima-up)
-├── casks.nix          # Homebrew cask 목록 (macOS GUI 앱)
+├── casks.nix          # Homebrew cask (macOS GUI 앱) — core + 호스트가 고르는 local.casks
 ├── default-apps.nix   # 파일 종류별 기본 앱 (셸 스크립트 → subline-terminal, 코드 → VS Code)
 │                      #   plist 쓰기는 set-default-handlers.py
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + macOS 고유분)

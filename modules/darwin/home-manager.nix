@@ -1,8 +1,9 @@
-{ config, pkgs, lib, user, identity, ... }:
+{ config, pkgs, user, identity, ... }:
 
 # home.file 항목은 여기 없다. macOS 쪽 설정 파일은 전부 ./rice 가 시드한다.
 {
   imports = [
+   ./casks.nix
    ./dock
   ];
 
@@ -40,11 +41,7 @@
     # Brewfile 에 다시 적는다 — `onActivation.cleanup` 을 켠 호스트에서 brew bundle 이
     # Brewfile 에 없는 tap 을 untap 하려 들고, 스토어 링크라 Permission denied 로 실패한다.
     taps = builtins.attrNames config.nix-homebrew.taps;
-    # mkDefault: 호스트가 `homebrew.casks = [ ... ];` 로 목록을 통째로 바꿀 수 있다
-    # (hosts/darwin/jhs-MacBook-Air). cask 에 매인 설정 — 아래 Dock, 기본 앱 핸들러
-    # (./default-apps.nix), Stats·LinearMouse 의 LaunchAgent(hosts/darwin/common.nix) —
-    # 은 이 목록을 보고 따라 빠진다.
-    casks = lib.mkDefault (pkgs.callPackage ./casks.nix {});
+    # casks 는 ./casks.nix 가 채운다(호스트는 local.casks 로 고른다).
     # formula 는 선언하지 않는다. nixpkgs 에 있는 것은 modules/shared/packages.nix 로
     # 가고(flake.lock 이 판을 고정한다), 꼭 brew 여야 하면 여기 `brews = [ ... ];` 를 쓴다.
     # onActivation.cleanup = "uninstall";

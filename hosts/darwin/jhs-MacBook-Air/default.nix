@@ -6,7 +6,8 @@
 # localHostName 은 이 디렉토리 이름에서 온다 (flake.nix 의 mkDarwinHost).
 #
 # 가볍게 쓰는 기계라 개발 묶음과 대부분의 GUI 앱을 뺐다. 필요해지면 묶음 이름이나
-# cask 를 이 파일에 더하고 build-switch 한다.
+# cask(local.casks), 묶음 밖의 패키지(local.packages.extra)를 이 파일에 더하고 build-switch 한다.
+# 호스트별 현황은 `nix run .#inventory`.
 
 {
   imports = [ ../common.nix ];
@@ -14,9 +15,9 @@
   # core 는 항상 깔린다.
   local.packages.bundles = [ "media" "mobile" "toys" ];
 
-  # 목록을 통째로 바꾼다. 여기서 빠진 cask 에
-  # 매인 Dock 항목·핸들러·LaunchAgent 도 같이 빠진다.
-  homebrew.casks = [
+  # core cask(visual-studio-code)는 항상 깔린다. 여기서 빠진 cask 에 매인 Dock
+  # 항목·핸들러·LaunchAgent 도 같이 빠진다.
+  local.casks = [
     "google-chrome"
     "brave-browser"
     "firefox@developer-edition"

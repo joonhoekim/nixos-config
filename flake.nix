@@ -3,10 +3,8 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # `follows` keeps home-manager on the same nixpkgs as everything else.
-    # useGlobalPkgs = true means the modules already build against the system's
-    # pkgs, so without this the only effect was a second nixpkgs pinned in
-    # flake.lock — extra fetches and a channel that could silently drift.
+    # With useGlobalPkgs the modules already build against the system pkgs; without `follows`
+    # flake.lock pins a second nixpkgs that can silently drift.
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -30,46 +28,24 @@
       url = "github:homebrew/homebrew-cask";
       flake = false;
     };
-    # subline — 터치 우선 Wayland 컴포지터(~/git/subline). NixOS 호스트의 기본
-    # 세션이고 greetd 의 로그인 화면이기도 하다(modules/nixos/subline). 레포가
-    # 비공개라 `git+https` 로 받는다: 받을 때 git 이 `gh auth git-credential`
-    # 을 쓰므로 그 호스트에서 `gh auth login` 이 되어 있어야 하고, 이 머신들의
-    # SSH 키는 GitHub 에 등록되어 있지 않다. nixpkgs 를 follows 하는 것은 러스트·
-    # GTK 스택을 두 벌 짓지 않기 위해서다(subline 은 러스트 1.95 이상을 요구하고
-    # 이 nixpkgs 는 1.98).
-    #
-    # subline 을 올리는 것은 `nix run .#subline-update`(lock 갱신, 설치, 세션 제자리
-    # 다시 시작, lock 커밋). 푸시하지 않은 작업 트리로는 `nix run .#subline-update -- --local`.
+    # 비공개 레포라 git+https 로 받는다: SSH 키가 GitHub 에 없어 그 호스트에 `gh auth login` 이 필요하다.
+    # follows 는 러스트·GTK 스택을 두 벌 짓지 않으려는 것(subline 은 러스트 1.95 이상, 이 nixpkgs 는 1.98).
     subline = {
       url = "git+https://github.com/joonhoekim/subline";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # subline-terminal — 창·앱을 닫아도 세션이 사는 터미널(~/git/subline-terminal).
-    # NixOS 호스트는 이 패키지로 깐다(modules/nixos/subline-terminal.nix). macOS 는
-    # nix 가 아니라 apps/subline-terminal 이 기계마다 빌드·서명한다(docs/subline-terminal.md).
-    # 비공개라 받는 사정은 subline 과 같고, 올리는 것은 `nix flake update subline-terminal`.
+    # 받는 사정은 subline 과 같다. macOS 는 nix 가 아니라 apps/subline-terminal 이 빌드·서명한다(docs/subline-terminal.md).
     subline-terminal = {
       url = "git+https://github.com/joonhoekim/subline-terminal";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  # 나머지 input(홈브루 탭들)은 이름으로 안 꺼낸다 — darwinConfigurations 안에서
-  # inputs.<이름> 으로 닿고, input 을 하나 늘릴 때 고칠 자리가 위 목록 하나로
-  # 줄어든다.
+  # 홈브루 탭 input 은 inputs.<이름> 으로 닿으므로 input 을 늘릴 때 고칠 자리는 위 목록 하나다.
   outputs = inputs@{ self, nixpkgs, home-manager, darwin, ... }:
     let
-      # 사람에 딸린 값(유저명 · git 신원 · authorized key)은 users/<이름>.nix
-      # 한 장이고(계약은 users/README.md), **어느 사람인지는 호스트가 고른다** —
-      # hosts/<플랫폼>/<이름>/identity.nix 가 그걸 가리키는 한 줄짜리 파일이다.
-      #
-      # 왜 호스트 안의 평범한 옵션이 아니라 별도 파일인가: specialArgs 는 모듈이
-      # 평가되기 전에 정해져야 해서, 호스트의 default.nix 안에서는 늦다.
-      #
-      # 없을 때 throw 하는 이유도 같다. 그냥 두면 `import` 가 아니라 한참 뒤
-      # `users.users.""` 근처에서 엉뚱하게 터진다. flake 는 **git 이 추적하는
-      # 파일만** 스토어로 복사하므로, 파일을 만들어 두고 `git add` 를 안 한
-      # 경우도 여기로 떨어진다.
+      # specialArgs 는 모듈 평가 전에 정해져야 해서 신원은 호스트 옵션이 아니라 별도 파일이다(users/README.md).
+      # throw 가 없으면 한참 뒤 `users.users.""` 근처에서 엉뚱하게 터진다. `git add` 안 한 파일도 여기로 온다.
       identityOf = dir:
         let f = dir + "/identity.nix"; in
         if builtins.pathExists f then import f
@@ -81,24 +57,14 @@
           파일을 못 본다. `./apps/setup` 이 둘 다 해 준다.
         '';
 
-      # hosts/<플랫폼>/ 아래의 **디렉토리**가 곧 호스트다. 손으로 적던 목록을
-      # 지운 이유: 새 기계를 붙일 때 고칠 자리가 하나(자기 디렉토리)로 줄어야
-      # 포크한 쪽이 공유 파일을 안 건드린다. common.nix / default.nix /
-      # identity.nix 는 파일이라 자연히 걸러진다.
-      #
-      # 주의: 여기 걸리는 호스트는 `nix flake check` 가 전부 평가한다. 진짜
-      # hardware-configuration.nix 가 없는 디렉토리를 두면 그 자리에서
-      # fileSystems assertion 으로 깨진다 — 빈 껍데기를 만들어 두지 말 것.
+      # hosts/<플랫폼>/ 아래 디렉토리가 곧 호스트다. 진짜 hardware-configuration.nix 가 없는
+      # 디렉토리를 두면 `nix flake check` 가 fileSystems assertion 으로 깨진다.
       hostDirs = dir:
         builtins.attrNames
           (nixpkgs.lib.filterAttrs (_: t: t == "directory") (builtins.readDir dir));
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
-      # Apple Silicon only. Nixpkgs 26.11 dropped x86_64-darwin outright — its
-      # legacyPackages now `throw` on evaluation — so listing it here does not
-      # produce a degraded Intel config, it makes `darwinConfigurations` and
-      # every forAllSystems output fail to evaluate at all. If an Intel Mac
-      # ever needs to be served, it wants its own nixpkgs input pinned to the
-      # 26.05 darwin branch (supported until end of 2026), not a line here.
+      # Nixpkgs 26.11 dropped x86_64-darwin (its legacyPackages throw), so listing it breaks evaluation
+      # of every output. An Intel Mac would need its own nixpkgs input pinned to the 26.05 darwin branch.
       darwinSystems = [ "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
@@ -109,34 +75,9 @@
           '';
         };
       } // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
-        # `nix develop .#npu` — OpenVINO with evo-t1's NPU actually reachable.
-        #
-        # It needs a shell rather than plain systemPackages because of a
-        # packaging gap: openvino's NPU plugin reaches Level Zero by
-        # dlopen("libze_loader.so.1") at runtime, but nixpkgs gives that .so no
-        # runpath entry for level-zero — so the dlopen fails, the plugin
-        # reports "No available devices" from inside itself, and the NPU simply
-        # never appears in available_devices. (strace shows it looking for
-        # libze_loader.so.1 in openvino's, onetbb's and gcc's lib dirs and
-        # nowhere else.) Fixing it properly means an overlay that patchelfs the
-        # plugin, which costs a full source rebuild of openvino on every
-        # nixpkgs bump — far too much for the two lines below.
-        #
-        # LD_LIBRARY_PATH is safe *here* precisely because it is scoped to this
-        # shell and points at a directory holding nothing but libze_*. The same
-        # variable in environment.sessionVariables would be inherited by every
-        # process on the machine, which is how NixOS setups get mysterious.
-        #
-        # ZE_ENABLE_ALT_DRIVERS is set for evo-t1 system-wide already
-        # (hosts/nixos/evo-t1), and repeated so the shell stands on its own.
-        #
-        # Verified end to end: available_devices returns
-        #   ['CPU', 'GPU', 'NPU'] -> Core Ultra 9 285H / Arc Graphics (iGPU) /
-        #   Intel(R) AI Boost
-        # and compile_model + inference runs on CPU and GPU. Compiling *for*
-        # the NPU still fails, one layer below anything this shell controls —
-        # nixpkgs does not build the driver's compiler. hosts/nixos/evo-t1 has
-        # the diagnosis; do not spend an evening re-deriving it here.
+        # `nix develop .#npu`: openvino's NPU plugin dlopens libze_loader.so.1 with no runpath to level-zero,
+        # so without this the NPU silently never appears in available_devices. LD_LIBRARY_PATH is safe only
+        # because it is shell-scoped and holds nothing but libze_*. 전체 그림: docs/local-inference.md
         npu = pkgs.mkShell {
           nativeBuildInputs = [
             (pkgs.python3.withPackages (ps: with ps; [ openvino numpy ]))
@@ -149,9 +90,7 @@
           '';
         };
       };
-      # 앱 이름과 apps/ 아래 경로를 따로 받는다. 경로에는 `/` 가 들어갈 수 있지만
-      # (apps/check/mac) 이름은 스토어 경로와 `nix run .#<이름>` 에 그대로 쓰이므로
-      # 평평해야 한다.
+      # 이름은 스토어 경로와 `nix run .#<이름>` 에 쓰여 평평해야 하므로 경로(apps/check/mac)와 따로 받는다.
       mkApp = name: path: system: {
         type = "app";
         program = "${(nixpkgs.legacyPackages.${system}.writeScriptBin name ''
@@ -160,10 +99,8 @@
           exec ${self}/apps/${path} "$@"
         '')}/bin/${name}";
       };
-      # dir 은 호스트 디렉토리, name 은 hostname(공용 호스트면 null).
-      # localHostName 만 디렉토리 이름에서 박는다 — `scutil --get LocalHostName`
-      # 이 돌려주는 값이 정확히 이것이고, apps/build-switch 가 타겟을 그 값으로
-      # 고르기 때문이다. HostName 과 ComputerName 은 건드리지 않는다.
+      # name 은 공용 호스트면 null. localHostName 만 박는 것은 apps/build-switch 가
+      # `scutil --get LocalHostName` 으로 타겟을 고르기 때문이다.
       mkDarwinHost = dir: name: system:
         let
           identity = identityOf dir;
@@ -171,8 +108,6 @@
         in
         darwin.lib.darwinSystem {
           inherit system;
-          # 신원은 <호스트>/identity.nix 에서 온다. `user` 는 그 한 줄을 꺼내
-          # 놓은 것뿐 — `${user}` 로 쓰는 자리가 열댓 곳이다.
           specialArgs = inputs // { inherit user identity; };
           modules = [
             home-manager.darwinModules.home-manager
@@ -196,17 +131,9 @@
           ++ nixpkgs.lib.optional (name != null)
                { networking.localHostName = nixpkgs.lib.mkDefault name; };
         };
-      # The app scripts are shared across platforms and self-detect macOS vs
-      # NixOS at runtime, so every system exposes the same set — macOS 전용인
-      # 것(mac-signing-cert, rice-colors)도 목록에 있고, 잘못 부르면 스크립트가
-      # 스스로 거절한다.
-      #
-      # apps/ 의 실행 파일과 이 목록은 짝이다. build-lib.sh · rice/lib.sh 처럼
-      # sourced 되는 조각만 여기서 뺀다. 새 스크립트를 이 목록에 안 더하면
-      # ./apps/<이름> 은 돌고 `nix run .#<이름>` 만 없는 앱이 되어 눈치채기 어렵다.
-      #
-      # 라이싱 스크립트는 apps/rice/ 에 있고 앱 이름에만 rice- 가 붙는다
-      # (apps/rice/switch → `nix run .#rice-switch`).
+      # The scripts self-detect macOS vs NixOS at runtime (and refuse on the wrong one), so every system
+      # gets the same set. apps/ 의 실행 파일과 짝이다: 여기 안 더하면 `nix run .#<이름>` 만 조용히 없다.
+      # sourced 조각(build-lib.sh · rice/lib.sh)만 뺀다.
       mkApps = system: nixpkgs.lib.genAttrs [
         "build" "build-switch" "rollback" "clean" "reclaim" "setup" "doctor"
         "ddc-probe" "inventory" "footprint"
@@ -221,10 +148,7 @@
         "term" "crt" "chain" "studio" "menu"
         "knobs" "decor" "layout" "colors"
       ])
-      # 점검 스크립트는 플랫폼마다 보는 것이 거의 겹치지 않아서 파일이 갈린다.
-      # 그래서 위와 달리 실행 시점이 아니라 여기서 고른다 — `nix run .#check` 는
-      # 어느 쪽에서든 자기 플랫폼의 것을 띄운다. 파일이 아직 없는 플랫폼에는
-      # 노출하지 않는다.
+      # 점검 스크립트는 플랫폼마다 파일이 갈려서 실행 시점이 아니라 여기서 고른다.
       // (let
             plat = if nixpkgs.lib.hasSuffix "darwin" system then "mac" else "nixos";
           in
@@ -241,40 +165,18 @@
       devShells = forAllSystems devShell;
       apps = forAllSystems mkApps;
 
-      # macOS 는 두 층이다.
-      #
-      #   .#<arch>       hosts/darwin/          공용. 전용 디렉토리가 없는 Mac 이
-      #                                         전부 이것을 쓴다 (여러 대 + 같은
-      #                                         계정이면 이 한 벌로 끝난다).
-      #   .#<hostname>   hosts/darwin/<이름>/   그 Mac 전용. 자기 identity.nix 를
-      #                                         들고 있어서 계정 이름을 따로 갈 수
-      #                                         있다. 있으면 build-switch 가
-      #                                         이쪽을 먼저 고른다.
-      #
-      # 이름이 겹칠 수는 없다 — arch 이름(aarch64-darwin)을 hostname 으로 쓰는
-      # 기계는 없다.
+      # 공용 .#<arch>(hosts/darwin/)와 그 Mac 전용 .#<hostname>(hosts/darwin/<이름>/) 두 층이다.
+      # 전체 그림: docs/02-this-repo.md
       darwinConfigurations =
         nixpkgs.lib.genAttrs darwinSystems (system: mkDarwinHost ./hosts/darwin null system)
         // nixpkgs.lib.genAttrs (hostDirs ./hosts/darwin)
              (name: mkDarwinHost (./hosts/darwin + "/${name}") name
                       (nixpkgs.lib.head darwinSystems));
 
-      # NixOS 호스트는 arch 가 아니라 **hostname** 으로 키잉된다. 목록은
-      # hosts/nixos/ 아래 디렉토리 그 자체다(위 hostDirs). 예:
-      #   nixos-rebuild switch --flake .#mn56
-      #
-      # 디렉토리 이름이 hostname 의 유일한 출처다 — networking.hostName 을
-      # mkDefault 로 여기서 박는다. 호스트 파일에 따로 적으면 둘이 어긋날 수
-      # 있고, 어긋난 순간 apps/build-switch 의 맨손 호출(타겟을 `hostname` 에서
-      # 잡는다)이 영영 안 맞는다. 빌드는 멀쩡히 되므로 증상이 "왜 --host 를
-      # 계속 붙여야 하지"로만 보인다.
-      #
-      # 설치 직후 기본값인 `nixos` 가 조용히 살아남는 길도 이걸로 막힌다 —
-      # 디렉토리를 그 이름으로 만들지 않는 한.
+      # networking.hostName 은 디렉토리 이름에서만 온다. 호스트 파일에 따로 적어 어긋나면 빌드는 되지만
+      # apps/build-switch 의 맨손 호출(`hostname` 으로 타겟을 고른다)이 영영 안 맞는다.
       nixosConfigurations = let
-        # home-manager 배선은 여기 없다 — darwin 이 modules/darwin/home-manager.nix
-        # 에 두는 것과 같은 모양으로 hosts/nixos/common.nix 에 있다. flake 는
-        # 순수 배선만 한다.
+        # home-manager 배선은 hosts/nixos/common.nix 에 있다 — flake 는 순수 배선만 한다.
         mkNixosHost = name:
           let
             dir = ./hosts/nixos + "/${name}";

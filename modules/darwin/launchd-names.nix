@@ -1,27 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# launchd 서비스가 System Settings > General > Login Items & Extensions 의 Background App
-# Activity 에 제 이름으로 보이게 한다.
-#
-# macOS 의 백그라운드 항목 목록(BTM)은 legacy daemon/agent 의 이름을 plist 의 Label 이 아니라
-# 첫 ProgramArguments 의 basename 으로 정한다(`sudo sfltool dumpbtm` 의 Name 과 Executable
-# Path). nix-darwin 은 `command`/`script` 가 있는 서비스를 전부
-#   [ "/bin/sh" "-c" "/bin/wait4path /nix/store && exec <command>" ]
-# 로 감싸므로(nix-darwin modules/launchd/default.nix), 그런 서비스는 모두 "sh" 로 보이고
-# 어느 것이 무엇인지 목록에서 가를 수 없다.
-#
-# 그래서 같은 한 줄을 서비스 이름의 래퍼 스크립트로 /usr/local/libexec/nix-darwin/ 에 두고
-# ProgramArguments 를 그 하나로 바꾼다. 스크립트여도 BTM 은 해석기가 아니라 스크립트
-# 경로를 기록한다(macOS 27.0.1 에서 시험 에이전트로 확인: Name: name-probe).
-#
-# 래퍼가 /nix/store 밖에 있는 이유: 부팅 때 launchd 가 이 경로를 실행하는 시점에는 Nix
-# 볼륨이 아직 안 붙었을 수 있다 — wait4path 가 바로 그걸 기다리는 줄이다. 경로가 세대마다
-# 바뀌지 않는 것도 필요하다. 바뀌면 BTM 이 새 항목으로 보고 "백그라운드 항목 추가됨"
-# 알림을 다시 띄운다.
-#
-# submodule 타입을 확장하는 방식이라 `command` 를 가진 서비스는 앞으로 더해지는 것까지
-# 자동으로 따라온다. ProgramArguments 를 직접 쓰는 서비스(org.nixos.kanata)는 이미 제
-# 바이너리로 시작하므로 건드리지 않는다.
+# Background App Activity(BTM)는 job 이름을 첫 ProgramArguments 의 basename 으로 정해서, nix-darwin 이 감싼
+# `/bin/sh -c "/bin/wait4path ... && exec"`(modules/launchd/default.nix) 서비스는 전부 "sh" 로 보인다.
+# 그래서 같은 줄을 서비스 이름의 스크립트로 /nix/store 밖에 둔다. 전체 그림: docs/macos-internals.md
 let
   dir = "/usr/local/libexec/nix-darwin";
 

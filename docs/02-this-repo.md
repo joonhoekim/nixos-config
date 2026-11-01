@@ -165,7 +165,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
   설정) + 자기 `hardware-configuration.nix` + 누가 쓰는지를 가리키는 `identity.nix`를
   import/선언한다.
 - macOS는 두 층이다. `hosts/darwin/`이 공용(arch로 키잉)이고, 그 Mac 전용이 필요하면
-  `hosts/darwin/<hostname>/`이 hostname으로 키잉되어 이긴다.
+  `hosts/darwin/<hostname>/`이 hostname으로 키잉되어 이긴다(아래 "macOS 호스트의 두 층").
 - `hardware-configuration.nix`는 **그 머신에서 생성한 진짜 파일**이어야 한다. 해당
   머신에서 `nixos-generate-config --show-hardware-config`로 뽑아 커밋한다. 그래서 호스트
   디렉토리는 실제로 존재하는 머신만 만든다 — 빈 placeholder를 커밋해두면 `fileSystems`
@@ -173,7 +173,24 @@ sourced 되는 조각은 목록에 넣지 않는다.
 - CPU 마이크로코드·initrd 모듈·디스크 UUID는 이 파일이 자동으로 담으므로, AMD/Intel 머신
   차이는 여기서 흡수된다. GPU(amdgpu / i915·xe)의 *렌더링*도 mesa로 공통 처리된다 —
   벤더별로 남는 건 `modules/nixos/{amd,intel}.nix` 정도이고, 실제 차이는 영상 디코드다
-  (radeonsi는 VAAPI를 같이 들고 오지만 Intel은 `intel-media-driver`가 따로 필요하다).
+  (radeonsi는 VAAPI를 같이 들고 오지만 Intel은 `intel-media-driver`가 따로 필요하다 —
+  [hardware-vendors.md](hardware-vendors.md)).
+
+### macOS 호스트의 두 층 — 언제 전용 디렉토리를 만드나
+
+공용 macOS 호스트(`hosts/darwin/`, `darwinConfigurations.<arch>` 예: `.#aarch64-darwin`)는 전용 디렉토리가 없는 Mac
+이 전부 쓴다. 한 사람이 Mac 을 여러 대 쓰면서 계정 이름이 같으면 이 한 벌로 충분하다.
+
+기계마다 갈라야 할 것이 생기거나(도크 구성, stateVersion) 계정 이름이 다른 사람이 끼면, 그 Mac 에서 `./apps/setup`
+을 돌려 `hosts/darwin/<hostname>/` 을 만든다. hostname 으로 키잉되고, 있으면 `apps/build-switch` 가 그쪽을 먼저
+고른다. 전용 호스트는 자기 `identity.nix` 를 들고 있어서 계정 이름을 따로 갈 수 있다. arch 이름(aarch64-darwin)을
+hostname 으로 쓰는 기계는 없으므로 두 층의 이름은 겹치지 않는다.
+
+`localHostName` 만 디렉토리 이름에서 박는다(flake.nix 의 mkDarwinHost). `scutil --get LocalHostName` 이 돌려주는
+값이 정확히 이것이고 `apps/build-switch` 가 타겟을 그 값으로 고른다. HostName 과 ComputerName 은 건드리지 않는다.
+
+NixOS 에는 이런 공용 층이 없다. 호스트마다 자기 hardware-configuration.nix 가 반드시 있어야 해서 "여러 기계가 나눠
+쓰는 호스트" 자체가 성립하지 않는다.
 
 ---
 

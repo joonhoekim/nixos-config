@@ -1,15 +1,6 @@
-# colima (macOS container runtime). `colima-up` auto-sizes the VM to this
-# host so the same function is safe on a big dev Mac and a small 8GB one:
-#   CPU = physicalcpu / 2  (clamped 2-8)
-#   MEM = memsize / 3 GB   (clamped 2-12)
-#   DISK = 60GB fixed
-# Backend: Apple Virtualization.framework (vz) + Rosetta (fast amd64
-# images) + virtiofs mounts. Extra flags pass through, e.g. `colima-up --edit`.
-# NOTE: an already-created colima VM keeps its prior CPU/MEM; run
-# `colima delete` first (or `colima stop && colima-up`) to resize.
-#
-# Sourced into both ~/.bashrc and ~/.zshrc (Darwin only) by
-# modules/shared/shell-init.nix, so it has to parse in both shells.
+# `colima-up` sizes the VM to this host: CPU = physicalcpu/2 (2-8), MEM = memsize/3 GB (2-12), DISK = 60GB.
+# An already-created VM keeps its prior CPU/MEM — `colima delete` first (or `colima stop && colima-up`) to resize.
+# Sourced into both ~/.bashrc and ~/.zshrc (Darwin only) by modules/shared/shell-init.nix, so it must parse in both.
 colima-up() {
   local phys mem_total cpu mem
   phys=$(sysctl -n hw.physicalcpu)

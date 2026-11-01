@@ -228,6 +228,32 @@ GPU 점유는 `sudo intel_gpu_top -J -s 1500`에서 `clients[].name`이 `llama-s
 
 ---
 
+## NPU 개발 셸 (`nix develop .#npu`, evo-t1)
+
+`nix develop .#npu` 는 evo-t1 의 NPU 가 실제로 보이는 OpenVINO(Intel 의 추론 런타임) 셸이다. flake.nix 에 있고
+x86_64-linux 에만 있다. LM Studio 와는 별개로, 같은 모델을 NPU / GPU / CPU 에서 비교할 때 쓴다.
+
+**왜 systemPackages 가 아니라 셸인가.** 패키징 빈틈 때문이다. openvino 의 NPU 플러그인은 실행 중에
+`dlopen("libze_loader.so.1")` 로 Level Zero(Intel 가속기의 저수준 API)에 닿는데, nixpkgs 는 그 .so 에 level-zero
+쪽 runpath 를 주지 않는다. 그래서 dlopen 이 실패하고, 플러그인은 안에서 "No available devices" 를 내고, NPU 는
+`available_devices` 에 조용히 안 나타난다. strace 로 보면 openvino·onetbb·gcc 의 lib 디렉터리만 찾고 다른 곳은
+안 본다. 제대로 고치려면 플러그인을 patchelf 하는 오버레이가 필요한데, 그러면 nixpkgs 를 올릴 때마다 openvino 를
+소스부터 다시 빌드해야 한다 — 셸의 두 줄에 비해 너무 비싸다.
+
+**LD_LIBRARY_PATH 가 여기서는 안전한 이유.** 이 셸에만 걸리고, 가리키는 디렉터리에 libze_* 말고는 아무것도 없다.
+같은 변수를 `environment.sessionVariables` 에 두면 기계의 모든 프로세스가 물려받는다 — NixOS 설정이 알 수 없게
+꼬이는 흔한 길이다.
+
+`ZE_ENABLE_ALT_DRIVERS` 는 evo-t1 에 시스템 전체로 이미 걸려 있고
+([evo-t1](hosts/evo-t1.md#npu-level-zero-에-닿게-하기-ze_enable_alt_drivers)), 셸이 혼자 서도록 한 번 더 적는다.
+
+**검증.** `available_devices` 가 `['CPU', 'GPU', 'NPU']` → Core Ultra 9 285H / Arc Graphics (iGPU) / Intel(R) AI
+Boost 를 돌려주고, compile_model + 추론이 CPU 와 GPU 에서 돈다. NPU *용으로* 컴파일하는 것은 여전히 실패한다 — 이
+셸이 다루는 층보다 한 층 아래로, nixpkgs 가 드라이버의 컴파일러를 빌드하지 않기 때문이다
+([evo-t1 의 NPU 절](hosts/evo-t1.md#npu-지금-어디까지-되나)).
+
+---
+
 ## 알아 둘 것
 
 - **모델 크기 상한은 VRAM이 아니라 RAM이다.** Arc iGPU는 시스템 메모리를 공유한다.

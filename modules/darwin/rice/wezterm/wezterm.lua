@@ -1,25 +1,13 @@
--- wezterm 설정.
---
--- 이 레포에서 wezterm 은 참고용 터미널이다(주 터미널은 subline-terminal).
--- 설정이 Lua 라 pywal 이 뱉은 JSON 을 그대로 읽고, 그 파일을 감시해서 팔레트가
--- 바뀌면 스스로 다시 읽는다.
---
--- ── 이 파일은 시드다 ─────────────────────────────────────────────────────
--- 레포(modules/darwin/rice/wezterm)에서 ~/.config/wezterm 으로 *없을 때만*
--- 복사된다. 고친 뒤 반영은 저장하는 순간 — wezterm 이 자기 설정을 감시한다.
+-- 시드다 — ~/.config/wezterm 이 없을 때만 복사되고, 그 뒤로는 저장하는 순간 반영된다(전체 그림: docs/macos-rice.md).
 
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
--- ── pywal 팔레트 ──────────────────────────────────────────────────────────
--- ~/.cache/wal/colors.json 은 apps/rice/colors 가 `wal` 을 돌릴 때마다 다시
--- 쓰인다. 없을 수도 있다는 게 정상 상태다 — 새 머신은 wal 을 한 번도 안 돌렸다.
--- 그때는 색 지정을 통째로 건너뛰고 wezterm 기본 스킴으로 뜬다. 억지로 색을
--- 만들어 넣으면 "wal 을 돌렸는데 안 바뀐다"와 구별이 안 된다.
+-- colors.json 이 없는 것(새 머신)이 정상이다 — 그때는 기본 스킴으로 뜬다. 억지로 색을 넣으면
+-- "wal 을 돌렸는데 안 바뀐다"와 구별이 안 된다.
 local wal_json = wezterm.home_dir .. "/.cache/wal/colors.json"
 
--- 이 줄이 핵심이다. wezterm 은 자기 설정 파일만 감시하므로, 캐시를 목록에
--- 넣어 두지 않으면 wal 을 돌려도 이미 열려 있는 창은 옛 색 그대로다.
+-- wezterm 은 자기 설정 파일만 감시한다. 이 줄이 없으면 wal 을 돌려도 열린 창은 옛 색 그대로다.
 wezterm.add_to_config_reload_watch_list(wal_json)
 
 local function read_wal()
@@ -29,9 +17,7 @@ local function read_wal()
 	end
 	local body = f:read("*a")
 	f:close()
-	-- json_parse 는 깨진 파일에 에러를 던진다. wal 이 쓰는 도중에 읽으면
-	-- 실제로 반쪽짜리 JSON 을 잡을 수 있고, 그때 설정 전체가 무효가 되는 것보다
-	-- 색만 포기하는 편이 낫다.
+	-- wal 이 쓰는 도중이면 반쪽 JSON 을 잡을 수 있다 — 설정 전체가 무효가 되느니 색만 포기한다.
 	local ok, data = pcall(wezterm.json_parse, body)
 	if not ok or type(data) ~= "table" then
 		return nil
@@ -56,9 +42,7 @@ if wal and wal.colors and wal.special then
 	}
 end
 
--- ── 폰트 ──────────────────────────────────────────────────────────────────
--- ghostty 쪽과 같은 얼굴을 쓴다. D2Coding 은 한글 셀이 라틴의 정확히 두 배라
--- 한영을 섞어도 열이 안 밀린다 — 자세한 건 modules/shared/fonts.nix.
+-- D2Coding 은 한글 셀이 라틴의 정확히 두 배라 한영을 섞어도 열이 안 밀린다(modules/shared/fonts.nix).
 config.font = wezterm.font_with_fallback({
 	"JetBrainsMono Nerd Font",
 	"D2CodingLigature Nerd Font",
@@ -66,18 +50,15 @@ config.font = wezterm.font_with_fallback({
 })
 config.font_size = 14.0
 
--- ── 창 ────────────────────────────────────────────────────────────────────
--- 타일링 WM 밑이라 타이틀바는 자리만 차지한다. RESIZE 는 테두리를 남겨서
--- 플로팅으로 띄웠을 때 마우스로 크기를 잡을 수 있게 한다.
+-- 타일링 WM 밑이라 타이틀바는 뺀다. RESIZE 는 플로팅일 때 마우스로 크기를 잡을 테두리를 남긴다.
 config.window_decorations = "RESIZE"
 config.window_padding = { left = 8, right = 8, top = 6, bottom = 6 }
 config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = false
 config.adjust_window_size_when_changing_font_size = false
 
--- macOS 에서 왼쪽 Option 은 rift-grid 의 수정자다(modules/darwin/rice/rift-grid/config.toml).
--- 여기서 Alt 로 잡아 버리면 alt-h 같은 바인딩이 터미널에 먹혀서 창 전환이 안
--- 된다. 오른쪽 Option 은 조판 문자용으로 남겨 둔다.
+-- 왼쪽 Option 은 rift-grid 의 수정자다 — 터미널이 Alt 로 잡으면 그 바인딩이 먹혀 창 전환이 안 된다.
+-- 오른쪽 Option 은 조판 문자용으로 남긴다.
 config.send_composed_key_when_left_alt_is_pressed = false
 config.send_composed_key_when_right_alt_is_pressed = true
 

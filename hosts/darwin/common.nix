@@ -1,9 +1,7 @@
 { config, lib, pkgs, user, ... }:
 
 let
-  # cask 로 까는 앱에 매인 LaunchAgent 는 그 cask 가 이 호스트에 있을 때만 둔다.
-  # 앱이 없는데 `open -a` 를 남기면 로그인마다 실패하고, apps/check/mac 이 그
-  # job 의 last exit code 를 ✗ 로 보인다.
+  # 앱이 없는데 `open -a` 를 남기면 로그인마다 실패하고 apps/check/mac 이 그 job 을 ✗ 로 보인다.
   hasCask = name: builtins.elem name (map (c: c.name) config.homebrew.casks);
 in
 
@@ -51,114 +49,52 @@ in
     reattach = true;
   };
 
-  # Passwordless sudo, so every machine gets it from this repo instead of a
-  # hand-edited visudo. Lands in /etc/sudoers.d/10-nix-darwin-extra-config,
-  # which macOS's /etc/sudoers already includes — and because the include sits
-  # at the end, this rule wins over the default `%admin ALL=(ALL) ALL`.
-  #
-  # This bypasses the Touch ID prompt above entirely: anything running as
-  # ${user}, including background agents, can reach root without confirmation.
-  # The prompt still applies to other users.
+  # Passwordless sudo. sudoers.d is included at the end of /etc/sudoers, so it wins over `%admin ALL=(ALL) ALL`.
+  # It bypasses the Touch ID prompt above: anything running as ${user}, background agents included, reaches root unprompted.
   security.sudo.extraConfig = ''
     ${user} ALL=(ALL) NOPASSWD: ALL
   '';
 
-  # Launch GUI apps at login (declarative "Login Items"). The apps' own
-  # start-at-login toggles don't stick on recent macOS, so we drive them
-  # via per-user LaunchAgents instead.
+  # Apps' own start-at-login toggles don't stick on recent macOS, so login items are per-user LaunchAgents.
   launchd.user.agents = {
-    # Tiling WM — keep it alive so a crash/quit relaunches it.
-    #
-    # The binary is rift-grid, a fork of rift that lays the virtual workspaces
-    # out as a 3x3 grid (https://github.com/joonhoekim/rift-grid). It is built
-    # and signed per machine by apps/rift-grid into ~/.local/bin, not by nix or
-    # brew: TCC ties the Accessibility and Screen Recording grants to the
-    # signature, and only the local identity from apps/mac-signing-cert keeps
-    # them across rebuilds (the reasoning is at the top of apps/rift-grid).
-    #
-    # `path` matters: rift-grid's keybindings shell out to `rift-grid-cli` (sibling in
-    # ~/.local/bin) and to tools in systemPath — and a LaunchAgent inherits
-    # none of a login shell's PATH.
+    # rift-grid is built and signed per machine by apps/rift-grid, not nix or brew: TCC ties its grants to the
+    # signature (reasoning at the top of apps/rift-grid). `path`: its keybindings shell out to rift-grid-cli and
+    # systemPath tools, and a LaunchAgent inherits none of a login shell's PATH.
     rift-grid = {
       command = "/Users/${user}/.local/bin/rift-grid";
       path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];
       serviceConfig = {
         RunAtLoad = true;
-        # Kept alive while the binary exists, rather than unconditionally. On a
-        # machine where apps/rift-grid has not run yet there is nothing to
-        # start, and plain KeepAlive would turn that into a restart loop; with
-        # PathState launchd waits and starts rift-grid once the binary appears.
+        # Plain KeepAlive would restart-loop until apps/rift-grid builds the binary; PathState waits for it.
         KeepAlive.PathState."/Users/${user}/.local/bin/rift-grid" = true;
-        # Not optional in practice. Without these, rift-grid's output goes nowhere:
-        # the first time it refused to start (see
-        # docs/postmortems/2026-08-04-macos-rift-sketchybar.md) the reason was
-        # printed to a stdout nobody was reading, and the only visible symptom
-        # was a WM that silently did not run. run_on_start failures are the
-        # same shape — a hook that never fires leaves no trace at all.
+        # Without these, refusal reasons and run_on_start failures go to an unread stdout — the WM just silently doesn't run.
         StandardOutPath = "/tmp/rift-grid.log";
         StandardErrorPath = "/tmp/rift-grid.log";
       };
     };
-    # Menu-bar system monitor — start at login, but respect a manual quit.
-    #
-    # Stats replaced eul here: same job, strictly more of it (sensors, GPU,
-    # battery health), so running both just duplicated the menu bar. eul's
-    # cask, defaults module and LaunchAgent were removed outright — git
-    # history has them if it ever comes back.
-    #
-    # Stats does have its own "Start at login" toggle, but it registers a
-    # SMAppService login item that the app rewrites from its own preferences —
-    # exactly the kind of state this repo keeps declarative. Driving it from
-    # launchd matches every other GUI app here and survives a reinstall.
-    #
-    # `open -a` for the same reason as linearmouse above: if that in-app toggle
-    # is ever flipped on, both login items fire and a direct Mach-O exec gives
-    # two Stats in the menu bar. Nothing in the app prevents it — what keeps it
-    # to one today is only that its own item happens to be disabled
-    # (`sudo sfltool dumpbtm` prints the disposition of both).
+    # Driven from launchd, not Stats' own SMAppService login item that the app rewrites from its prefs.
+    # `open -a` as with linearmouse below: if that in-app toggle is ever on, a direct exec gives two Stats
+    # (`sudo sfltool dumpbtm` prints both dispositions). 전체 그림: docs/macos-internals.md
     stats = lib.mkIf (hasCask "stats") {
       command = "/usr/bin/open -a /Applications/Stats.app";
       serviceConfig.RunAtLoad = true;
     };
 
 
-    # 마우스 휠 방향 교정 — 트랙패드는 자연스러운 스크롤 그대로, 외장 마우스만 반전.
-    #
-    # 번들 안의 Mach-O 를 직접 exec 하지 않고 `open -a` 를 거치는 것이 요점이다.
-    # LinearMouse 는 자기 "Start at login" 을 SMAppService 로그인 항목으로도
-    # 등록하고, 그게 켜져 있으면 부팅 때 두 군데서 발화한다. 실측:
-    #
-    #   open -a            이미 떠 있으면 아무 일도 안 한다 (LaunchServices 가 막는다)
-    #   .../MacOS/Linear…  막지 않는다 — 두 번째 프로세스가 생긴다
-    #
-    # 두 인스턴스가 같은 스크롤 이벤트를 각각 뒤집으면 서로 상쇄되므로, 증상은
-    # "상단바 아이콘이 둘"과 "휠 방향이 안 바뀐다"로 같이 온다. 하나를 끄면
-    # 낫는다는 게 이 조합의 표식이다.
-    #
-    # launchd 는 이 job 을 곧 끝난 것으로 본다. RunAtLoad 뿐이고 KeepAlive 가
-    # 없으니 그게 맞는 모양이다 — 로그인에 한 번 띄우는 것이 하는 일의 전부다.
-    #
-    # 읽는 설정은 ~/.config/linearmouse/linearmouse.json (시드는
-    # modules/darwin/rice/default.nix, 근거는 그 옆 linearmouse/README.md).
-    # 첫 실행에서 입력 모니터링 권한을 한 번 물어본다 — 거부하면 앱은 떠 있는 채로
-    # 아무 일도 안 하고, 휠 방향이 안 바뀌는 것 말고는 증상이 없다.
+    # 외장 마우스 휠만 뒤집는다(설정과 근거: modules/darwin/rice/linearmouse/README.md).
+    # Mach-O 직접 exec 이 아니라 `open -a` 여야 앱 자체 로그인 항목과 겹쳐도 하나만 뜬다. 둘이 뜨면 서로
+    # 상쇄해 "아이콘 둘 + 휠 방향 그대로"로 보인다. 전체 그림: docs/macos-internals.md
     linearmouse = lib.mkIf (hasCask "linearmouse") {
       command = "/usr/bin/open -a /Applications/LinearMouse.app";
       serviceConfig.RunAtLoad = true;
     };
   };
 
-  # environment.systemPackages 는 없다. shared 패키지는 home-manager 의
-  # home.packages 로 들어가고(modules/darwin/packages.nix → home-manager.nix),
-  # 여기서 또 넣으면 같은 패키지가 시스템·홈에 이중으로 깔린다 — NixOS 쪽이
-  # home.packages 하나만 쓰는 것과 같은 모양으로 맞췄다(README.md 의 패키지 절).
+  # environment.systemPackages 는 두지 않는다 — shared 패키지는 home.packages 로 들어가 여기 넣으면 이중으로 깔린다.
 
-  # Register fonts with the macOS font system (symlinked into
-  # /Library/Fonts/Nix Fonts). Fonts in systemPackages are NOT picked up by
-  # macOS apps, so terminals show broken glyphs without this.
+  # Fonts in systemPackages are NOT picked up by macOS apps, so terminals show broken glyphs without this.
   fonts.packages = import ../../modules/shared/fonts.nix { inherit pkgs; } ++ [
-    # macOS 에서만 — OnlyOffice 의 한글 폴백이 Heiti 로 가는 것을 막는 "Batang"
-    # 별칭. 왜 이 이름이고 왜 NixOS 엔 없는지는 overlays/onlyoffice-batang-alias.nix.
+    # OnlyOffice 한글 폴백이 Heiti 로 가는 것을 막는 macOS 전용 별칭(overlays/onlyoffice-batang-alias.nix).
     pkgs.onlyoffice-batang-alias
   ];
 
@@ -169,12 +105,10 @@ in
 
     defaults = {
       NSGlobalDomain = {
-        # Appearance
         AppleInterfaceStyle = "Dark";
         AppleShowAllExtensions = true;
-        AppleShowScrollBars = "Always";   # always show scroll bars
+        AppleShowScrollBars = "Always";
 
-        # Keyboard
         ApplePressAndHoldEnabled = false;
         KeyRepeat = 2; # Values: 120, 90, 60, 30, 12, 6, 2
         InitialKeyRepeat = 15; # Values: 120, 94, 68, 35, 25, 15
@@ -187,14 +121,11 @@ in
         NSAutomaticQuoteSubstitutionEnabled = false;
         NSAutomaticSpellingCorrectionEnabled = false;
 
-        # Expand save/print panels by default
         NSNavPanelExpandedStateForSaveMode = true;
         PMPrintingExpandedStateForPrint = true;
 
-        # Don't default new documents to iCloud
         NSDocumentSaveNewDocumentsToCloud = false;
 
-        # Mouse / sound
         "com.apple.mouse.tapBehavior" = 1;
         "com.apple.sound.beep.volume" = 0.0;
         "com.apple.sound.beep.feedback" = 0;
@@ -202,18 +133,12 @@ in
 
       dock = {
         autohide = true;
-        # Snappy reveal: no dwell time before it slides out, and a short
-        # animation. Both are floats macOS reads as seconds — 0.5/1.0 are the
-        # stock values, which feel sluggish next to a tiling WM.
+        # Stock values are 0.5/1.0 seconds, which feel sluggish next to a tiling WM.
         autohide-delay = 0.0;
         autohide-time-modifier = 0.2;
         show-recents = false;
         launchanim = true;
-        # Bottom, not right. The scrolling layout in rift-grid moves windows
-        # horizontally, so a right-edge Dock sits exactly where columns enter
-        # and leave the screen — every reveal collides with the strip. At the
-        # bottom it only ever eats vertical space, which the layout has to
-        # spare.
+        # Bottom, not right: rift-grid's scrolling layout moves columns in and out at the side edges.
         orientation = "bottom";
         tilesize = 48;
         mru-spaces = false;           # don't reorder Spaces by recent use
@@ -264,32 +189,9 @@ in
         EnableStandardClickToShowDesktop = false;
       };
 
-      # Mission Control > "Displays have separate Spaces".
-      #
-      #   false = each display gets its own Spaces (macOS default)
-      #   true  = one Space spans every display
-      #
-      # This is a hard requirement of the window manager. rift-grid refuses to
-      # start otherwise — not a degraded mode, an immediate exit:
-      #
-      #   Rift detected that the macOS setting "Displays have separate Spaces"
-      #   is disabled. Rift currently requires this setting to be enabled.
-      #
-      # And because the LaunchAgent has KeepAlive, that exit becomes a crash
-      # loop that looks like "rift-grid just doesn't run" — `launchctl print
-      # gui/$UID/org.nixos.rift-grid` showing `last exit code = 1` is the tell.
-      # Running ~/.local/bin/rift-grid in a terminal prints the reason; the
-      # agent's stdout goes nowhere.
-      #
-      # So: leave this at `false` for as long as rift-grid is the WM.
-      #
-      # A logout is required either way — the value lands in
-      # com.apple.spaces immediately, but WindowServer only reads it at login.
-      # rift-grid's own check reads the preference, so it will start before the
-      # logout while windows still behave the old way.
-      #
-      # (The companion "Automatically rearrange Spaces" toggle is handled
-      # above via dock.mru-spaces = false.)
+      # "Displays have separate Spaces" must stay on (false) while rift-grid is the WM: otherwise it exits at once
+      # and KeepAlive makes a silent crash loop (`launchctl print gui/$UID/org.nixos.rift-grid`: last exit code = 1).
+      # WindowServer only reads it at login, so a change needs a logout.
       spaces.spans-displays = false;
 
       menuExtraClock = {
@@ -313,19 +215,13 @@ in
         };
       };
 
-      # No _HIHideMenuBar here. It was left off while sketchybar was competing
-      # for the same strip, and now there is nothing to compete: the menu bar
-      # is where rift-grid draws its workspace indicator
-      # ([settings.ui.menu_bar] in modules/darwin/rice/rift-grid/config.toml), so hiding
-      # it would hide the one thing this setup added to it.
+      # No _HIHideMenuBar: rift-grid draws its workspace indicator in the menu bar
+      # ([settings.ui.menu_bar] in modules/darwin/rice/rift-grid/config.toml).
 
     };
 
-    # "Select next source in Input menu" → F18. kanata sends Right Command as
-    # F18 (modules/shared/kanata/kanata.kbd), which makes that key 한/영.
-    # We merge just key 61 with `defaults -dict-add`
-    # rather than system.defaults.CustomUserPreferences, which would overwrite
-    # the entire AppleSymbolicHotKeys dict and wipe other shortcuts (Spotlight, etc).
+    # "Select next source in Input menu" → F18; kanata sends Right Command as F18, making it 한/영.
+    # `defaults -dict-add` merges just key 61 — CustomUserPreferences would overwrite all of AppleSymbolicHotKeys.
     # params = [ char keycode modifiers ]; 65535 = no char, 79 = F18, 8388608 = fn flag.
     activationScripts.postActivation.text = ''
       echo "configuring input-source hotkey (next source = F18)..." >&2

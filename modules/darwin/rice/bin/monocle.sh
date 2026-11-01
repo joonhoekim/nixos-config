@@ -1,16 +1,7 @@
 #!/bin/sh
-#
 # 포커스된 컬럼을 화면 가득 채우고, 다시 누르면 원래 폭으로 되돌린다 (Alt+R).
-#
-# ── 왜 스크립트인가 ───────────────────────────────────────────────────────
-# rift-grid 에는 maximise 명령이 없다. column_width_ratio 는 레이아웃을 만들 때만
-# 읽히므로 설정을 고쳐도 이미 떠 있는 컬럼은 안 변한다. 남는 건 resize-by 로
-# 살아 있는 폭을 밀어 주는 것뿐이고, 그건 상대값이라 "지금 커져 있나"를 누군가
-# 기억해야 한다. 그 기억이 $STATE 파일이다.
-#
-# 창 단위로 기억하는 게 요점이다. 키운 창을 그대로 두고 다른 창으로 갔다가
-# 돌아오면 여전히 커져 있고, 다른 창에서 Alt+R 을 누르면 그 창이 새로 커진다 —
-# 전역 불린 하나로는 이 둘을 구분할 수 없다.
+# rift-grid 엔 maximise 가 없고 column_width_ratio 는 레이아웃을 만들 때만 읽힌다. resize-by 는 상대값이라
+# 어느 창을 키웠는지 $STATE 에 창 단위로 기억한다(전역 불린으로는 창을 오가면 어긋난다).
 
 CLI="$HOME/.local/bin/rift-grid-cli"
 STATE="${TMPDIR:-/tmp}/rift-grid-monocle-window"
@@ -34,8 +25,7 @@ focused="$(timeout 3 "$CLI" query workspaces 2>/dev/null |
 prev="$(cat "$STATE" 2>/dev/null)"
 
 if [ "$focused" = "$prev" ]; then
-	# 이미 키워 둔 그 창이다. 줄이는 쪽으로 같은 크기만큼 되돌린다.
-	# `--` 는 뒤따르는 음수를 옵션으로 읽지 않게 한다.
+	# 이미 키워 둔 창이면 같은 크기만큼 되돌린다. `--` 는 뒤의 음수를 옵션으로 읽지 않게 한다.
 	delta="$(awk -v m="$max" -v b="$base" 'BEGIN { printf "%.4f", -1 * (m - b) }')"
 	"$CLI" execute window resize-by -- "$delta" >/dev/null 2>&1
 	rm -f "$STATE"

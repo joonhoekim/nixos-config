@@ -105,9 +105,28 @@ cloudflared 절 참고.
 | `xcodes` | Xcode 버전 설치·전환 CLI |
 | `swiftformat` / `swiftlint` | Swift 포매터/린터 |
 
-**Xcode 본체는 nix로 못 깐다** — App Store 또는 `xcodes install`. iOS
-시뮬레이터의 웹 디버깅은 macOS Safari의 개발자 메뉴(Develop > Simulator)로
+iOS 시뮬레이터의 웹 디버깅은 macOS Safari의 개발자 메뉴(Develop > Simulator)로
 연결한다 — adb/chrome://inspect의 Safari판.
+
+### Xcode 본체와 설치 뒤 할 일
+
+Xcode 본체는 nixpkgs 에서 올 수 없다. Apple 이 재배포를 금지해서 iOS SDK·시뮬레이터 런타임·코드 서명
+도구는 Xcode.app 안에만 있다(nixpkgs 의 `xcbuild` 는 `xcodebuild` 를 다시 구현하지만 SDK 가 없어 iOS 앱을
+못 짓는다). 선언에 가장 가까운 길이 Mac App Store 이고, nix-darwin 의 `homebrew.masApps` 를 통해 `mas`(App
+Store CLI)가 깐다 — `ios` 묶음 뒤에 있다(`modules/darwin/ios.nix`). App Store 로그인이 필요하고 내려받는 양이
+~10GB 라 처음 까는 activation 은 오래 걸린다. 버전을 골라 깔려면 `xcodes install`.
+
+Xcode 를 깐 첫 `darwin-rebuild switch` 뒤에:
+
+1. `/Applications/Xcode.app` 을 한 번 열어 추가 구성 요소를 깔게 한다
+2. `sudo xcodebuild -license accept`
+3. `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+4. `xcodebuild -downloadPlatform iOS` — 시뮬레이터 런타임(번들돼 있지 않으면)
+
+Command Line Tools 만(`xcode-select --install`)으로는 iOS 에 **부족하다** — macOS SDK 만 들어 있다.
+
+`ios` 묶음을 빼도 이미 깔린 Xcode 는 지워지지 않는다(masApps 는 설치만 한다). `/Applications/Xcode.app` 은
+손으로 지운다.
 
 ---
 

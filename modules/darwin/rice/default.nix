@@ -1,8 +1,7 @@
 { config, pkgs, user, ... }:
 
 let
-  # 벽지가 바뀌면 팔레트를 다시 뽑는 감시자. 실제 작업은 apps/rice/colors 가
-  # 한다 — 손으로 부르든 감시자가 부르든 같은 절차가 돌게.
+  # 벽지가 바뀌면 apps/rice/colors 를 부른다 — 손으로 부를 때와 같은 절차가 돈다.
   wallpaperPath = "${pkgs.python3}/bin/python3 ${../../../apps/rice/wallpaper-path.py}";
 
   walWatch = pkgs.writeShellScript "wal-watch" ''
@@ -34,34 +33,23 @@ let
       ${../../../apps/rice/colors} "$img" || echo "rice-colors 실패"
     }
 
-    # 로그인 직후 한 번. state 검사가 있으니 벽지가 그대로면 아무 일도 안 한다 —
-    # 매 로그인마다 wal 을 돌리는 게 아니라, 로그인 사이에 바뀐 경우를 잡는다.
+    # 로그인 직후 한 번. state 검사가 있어 로그인 사이에 벽지가 바뀐 경우만 wal 이 돈다.
     apply
 
-    # plist 가 아직 없는 새 계정. fswatch 는 없는 경로에 대고 바로 죽고, KeepAlive
-    # 가 그걸 재시작 루프로 만든다. 생길 때까지 조용히 기다리는 편이 낫다.
+    # 새 계정엔 plist 가 없다. fswatch 는 없는 경로에 바로 죽고 KeepAlive 가 그걸 재시작 루프로 만든다.
     while [ ! -f "$plist" ]; do sleep 30; done
 
-    # -o 는 "몇 건 바뀌었다"만 뱉는다. 어느 파일인지는 어차피 하나뿐이라 필요 없다.
     fswatch -o "$plist" | while read -r _; do
       apply
     done
   '';
 in
 
-# macOS ricing: the wallpaper → palette watcher and the seeded config files
-# (rift-grid, wezterm, LinearMouse, rift-grid's helper scripts). What each piece
-# does and why there is no status bar: docs/macos-rice.md.
-#
-# The files below are seeds, not the live config. Once planted, ~/.config is
-# the original — `apps/rice/save` carries changes back to the repo and
-# `apps/rice/restore` pushes the repo the other way.
+# 아래 파일은 시드다 — 심은 뒤로는 ~/.config 가 원본이고 apps/rice/save · restore 가 양쪽을 옮긴다.
+# 전체 그림: docs/macos-rice.md
 
 {
-  # ── Wallpaper → palette ──────────────────────────────────────────────────
-  # macOS rewrites Index.plist however the wallpaper was changed (System
-  # Settings, a picker app, a script), so watching that one file catches every
-  # route. apps/rice/wallpaper-path.py reads the picture's path out of it.
+  # macOS rewrites Index.plist however the wallpaper was changed, so watching that one file catches every route.
   launchd.user.agents.wal-watch = {
     command = "${walWatch}";
     path = [
@@ -82,9 +70,8 @@ in
 
   home-manager.users.${user} = { lib, ... }: {
     home.packages = with pkgs; [
-      # pywal16, not pywal: upstream only really varies 8 of the 16 colours,
-      # and wezterm's brights and the border ranking in apps/rice/colors use
-      # all 16. The nixpkgs wrapper puts imagemagick on its PATH.
+      # pywal16, not pywal: upstream only really varies 8 of the 16 colours, and wezterm's brights
+      # and the border ranking in apps/rice/colors use all 16.
       pywal16
     ];
 
@@ -98,10 +85,8 @@ in
 
       rice_sync ${./rift-grid/config.toml} "$HOME/.config/rift-grid/config.toml"
 
-      # LinearMouse 는 처음 뜰 때 설정이 없으면 빈 설정을 스스로 만들고, 첫
-      # 설치에서는 앱이 이 활성화보다 먼저 뜰 수 있다. 그러면 빈 파일이 "있음"으로
-      # 통과해 리빌드는 성공했는데 휠 방향만 안 바뀐다. 그래서 schemes 가 빈
-      # 파일은 없는 것으로 친다. JSON 이 깨져 있으면(고치던 중) 손대지 않는다.
+      # 첫 설치에서 LinearMouse 가 먼저 떠 빈 설정을 만들면 "있음"으로 통과해 휠 방향만 조용히 안 바뀐다.
+      # 그래서 schemes 가 빈 파일은 없는 것으로 친다. JSON 이 깨져 있으면(고치던 중) 손대지 않는다.
       lmcfg="$HOME/.config/linearmouse/linearmouse.json"
       if [ -f "$lmcfg" ] && ${pkgs.python3}/bin/python3 -c '
 import json, sys
@@ -120,9 +105,8 @@ sys.exit(0 if not d.get("schemes") else 1)
       # 옮기려면 키맵도 같이 고친다.
       rice_sync ${./bin} "$HOME/.config/rice/bin"
 
-      # 시드한 뒤 다시 읽히는 단계는 없다. wezterm·rift-grid·LinearMouse 는 자기
-      # 설정 파일을 감시하고, rice/bin 은 호출할 때마다 새로 읽힌다.
-      # apps/rice/restore 는 rm+cp 로 덮어 감시를 끊으므로 그쪽이 reload 를 부른다.
+      # reload 단계는 없다 — 각 앱이 제 설정 파일을 감시하고 rice/bin 은 부를 때마다 읽힌다.
+      # apps/rice/restore 는 rm+cp 로 감시를 끊으므로 그쪽이 reload 를 부른다.
     '';
   };
 }

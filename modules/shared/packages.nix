@@ -106,7 +106,7 @@ with pkgs; {
     dust           # friendlier du
     procs          # modern `ps`
 
-    # Modern CLI / TUI tools — extended set (ported from previous NixOS config).
+    # Modern CLI / TUI tools — extended set.
     # atuin / zoxide / eza / pay-respects are enabled as programs in
     # home-manager.nix, so they're intentionally not listed here.
     fx             # interactive JSON viewer
@@ -186,7 +186,7 @@ with pkgs; {
 
     # Nix tooling (handy while editing this config) — docs: docs/packages/nix-hygiene.md
     nil            # Nix language server
-    nixfmt         # Nix formatter (was nixfmt-rfc-style)
+    nixfmt         # Nix formatter (RFC 166 style)
     statix         # Nix linter — antipatterns, with autofix (`statix fix`)
     deadnix        # unused let-bindings and function arguments
     nix-output-monitor # `nom` — build progress as a live tree instead of a log wall
@@ -252,7 +252,7 @@ with pkgs; {
     # No RabbitMQ client here: nixpkgs dropped `amqp-tools`, and `rabbitmqadmin`
     # ships inside the broker package rather than standalone. Its management API
     # is plain HTTP, so `xh` (core) already reaches it.
-    kcat           # Kafka produce/consume/metadata from the shell (was kafkacat)
+    kcat           # Kafka produce/consume/metadata from the shell
     natscli        # NATS `nats` CLI — pub/sub, JetStream streams and consumers
     nats-top       # per-connection and per-subject NATS traffic view
     grpcurl        # curl for gRPC; server reflection means no .proto file needed

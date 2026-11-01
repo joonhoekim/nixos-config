@@ -19,8 +19,6 @@ shared.core
   # Media and design tools
   fontconfig
 
-  # Productivity tools
-
   # Audio tools
   pavucontrol # Pulse audio controls
 
@@ -39,9 +37,8 @@ shared.core
   # PDF viewer
   zathura
 
-  # ── Ported from previous NixOS config (Linux-only or GUI). Cross-platform
-  #    CLI/TUI tools live in ../shared/packages.nix instead. GUI apps on
-  #    macOS are managed via homebrew casks (modules/darwin/casks.nix). ──
+  # ── Linux 전용이거나 GUI 인 것. 플랫폼을 안 가리는 CLI/TUI 는
+  #    ../shared/packages.nix, macOS 의 GUI 는 cask(../darwin/casks.nix)로 간다. ──
 
   # Compilers / toolchain
   gcc

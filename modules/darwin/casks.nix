@@ -45,8 +45,7 @@ let
     "google-chrome"
     "brave-browser"
     "firefox@developer-edition"
-    "zen"                # Firefox-based, arc-like workspaces (cask token is
-                         # "zen"; it was renamed from "zen-browser" upstream)
+    "zen"                # Firefox-based, arc-like workspaces
 
     # Communication Tools
     # "discord"

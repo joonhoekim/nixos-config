@@ -202,8 +202,8 @@
       # 스스로 거절한다.
       #
       # apps/ 의 실행 파일과 이 목록은 짝이다. build-lib.sh · rice/lib.sh 처럼
-      # sourced 되는 조각만 여기서 뺀다 — 한동안 손으로 하나씩 적다가 새
-      # 스크립트(rice-decor)를 빠뜨린 적이 있어서 목록 하나로 접었다.
+      # sourced 되는 조각만 여기서 뺀다. 새 스크립트를 이 목록에 안 더하면
+      # ./apps/<이름> 은 돌고 `nix run .#<이름>` 만 없는 앱이 되어 눈치채기 어렵다.
       #
       # 라이싱 스크립트는 apps/rice/ 에 있고 앱 이름에만 rice- 가 붙는다
       # (apps/rice/switch → `nix run .#rice-switch`).
@@ -264,10 +264,10 @@
       #   nixos-rebuild switch --flake .#mn56
       #
       # 디렉토리 이름이 hostname 의 유일한 출처다 — networking.hostName 을
-      # mkDefault 로 여기서 박는다. 예전에는 호스트가 자기 파일에 따로 적었고,
-      # 그러면 둘이 어긋날 수 있었다: 어긋난 순간 apps/build-switch 의 맨손
-      # 호출(타겟을 `hostname` 에서 잡는다)이 영영 안 맞는데, 빌드는 멀쩡히
-      # 되므로 증상이 "왜 --host 를 계속 붙여야 하지"로만 보인다.
+      # mkDefault 로 여기서 박는다. 호스트 파일에 따로 적으면 둘이 어긋날 수
+      # 있고, 어긋난 순간 apps/build-switch 의 맨손 호출(타겟을 `hostname` 에서
+      # 잡는다)이 영영 안 맞는다. 빌드는 멀쩡히 되므로 증상이 "왜 --host 를
+      # 계속 붙여야 하지"로만 보인다.
       #
       # 설치 직후 기본값인 `nixos` 가 조용히 살아남는 길도 이걸로 막힌다 —
       # 디렉토리를 그 이름으로 만들지 않는 한.

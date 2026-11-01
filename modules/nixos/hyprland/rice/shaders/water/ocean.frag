@@ -2,40 +2,8 @@
 //
 // ocean.frag — 파도치는 바다. 화면 전체가 너울에 실린다.
 //
-// 셋이 공유하는 결정 — 왜 굴절인지, 가장자리(clampToEdge)와 글자를 어떻게
-// 다루는지, 커서와 배터리에서 무엇을 못 고치는지 — 는 ./still.frag
-// 머리말에 있다. 여기는 다른 점과, 이 파일만 치르는 값을 적는다.
-//
-// ── 상시용이 아니다 ───────────────────────────────────────────────────────
-// 셋 중 이것만 그렇다. REFRACT 기본값이 7 픽셀인데, ./still.frag 머리말에
-// 적은 커서 어긋남이 그 폭에서는 명백히 보인다 — 커서가 가리키는 자리와 실제로
-// 눌리는 자리가 벌어지고, 너울이 지나갈 때마다 그 벌어짐이 움직인다. 글자도
-// PRESERVE 를 끝까지 올려야 겨우 읽힌다.
-//
-// 이걸 결함으로 적는 게 아니라 **이 파일의 성격**으로 적는다. 잔잔한 수면은
-// 걸어 두고 일하는 것이고 바다는 보는 것이다. 그래서 여기서는 REFRACT 를 크게
-// 두고, 대신 잔잔한 쪽을 안 건드렸다. 하나로 합쳐서 손잡이만 다르게 두지 않은
-// 것은 ../crt/crt.frag 과 ../crt/crt-motion.frag 을 나눠 둔 것과 같은 판단이다.
-//
-// ── 너울은 사인, 잔물결은 FBM ─────────────────────────────────────────────
-// 둘을 섞는다. 큰 너울은 실제로 몇 개의 긴 파가 겹친 것이라 사인 셋이면 되고,
-// 사인이라 기울기가 해석적으로 나온다. 잔물결까지 사인으로 쌓으면 되풀이가
-// 눈에 보이므로 그쪽만 FBM 이다.
-//
-// 사인으로 두는 데는 공짜로 딸려 오는 것이 하나 더 있다. 굴절은 기울기 방향으로
-// 미는데, 사인 파의 기울기는 마루에서 가장 크고 골에서 0 이다 — 그래서 밀림이
-// **마루를 저절로 뾰족하게** 만든다. 실제 파도가 마루에서 날카롭고 골에서
-// 둥근 것과 같은 모양이고, 게르스트너 파가 하는 일이 바로 이 수평 밀림이다.
-// 따로 만들 것이 없다. REFRACT 를 키우면 저절로 나온다.
-//
-// ── 깊이 ──────────────────────────────────────────────────────────────────
-// 화면 위쪽을 수면, 아래쪽을 깊은 곳으로 놓는다. 아래로 갈수록 물빛이 짙어지고
-// 붉은 쪽이 먼저 빠진다 — 물에서 파장이 긴 빛이 먼저 흡수되는 것이 실제로
-// 그렇고, 바다처럼 보이게 하는 데 파도만큼 값을 한다.
-//
-// 이건 화면 좌표에 억지로 얹은 원근이라 "맞는" 것은 아니다. 다만 화면 아래쪽이
-// 대개 독과 창 아랫부분이라 어두워져도 잃는 정보가 적고, 위쪽의 메뉴 막대는
-// 밝게 남는다 — 그 점에서 방향을 반대로 두는 것보다 낫다.
+// 상시용이 아니다 — REFRACT 7 px 에서는 커서 어긋남이 명백하고 글자도 겨우 읽힌다.
+// 공유하는 결정은 ./still.frag, 너울(사인)·잔물결(FBM)·깊이: docs/hyprland-shaders.md
 
 precision highp float;
 
@@ -128,7 +96,7 @@ vec2 aspect() {
     return vec2(screen_size.x / screen_size.y, 1.0);
 }
 
-// 한 겹. (높이, 기울기x, 기울기y). ./still.frag 의 같은 함수다.
+// ./still.frag 의 같은 함수.
 vec3 wave(vec2 p, vec2 k, float speed, float amp, float t) {
     float ph = dot(p, k) + t * speed;
     return vec3(amp * sin(ph), amp * k * cos(ph));
@@ -138,8 +106,7 @@ float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
-// 값 노이즈와 그 기울기를 한 번에. 왜 유한차분이 아닌지는 ./river.frag 의
-// 같은 함수에 적어 뒀다.
+// 유한차분이 아닌 이유는 ./river.frag 의 같은 함수.
 vec3 noised(vec2 p) {
     vec2 i = floor(p), f = fract(p);
     vec2 u  = f * f * (3.0 - 2.0 * f);
@@ -156,8 +123,7 @@ vec3 noised(vec2 p) {
                 du.y * (k2 + k3 * u.x));
 }
 
-// 배율이 2.03 인 이유(격자 겹침)와 기울기에 주파수를 곱하는 이유(연쇄법칙)는
-// ./river.frag 의 같은 함수에 있다.
+// 배율 2.03 과 주파수 곱의 이유는 ./river.frag 의 같은 함수.
 vec3 fbmd(vec2 p) {
     vec3  s = vec3(0.0);
     float amp = 0.5, freq = 1.0;
@@ -171,16 +137,14 @@ vec3 fbmd(vec2 p) {
     return s;
 }
 
-// 너울 셋. 파수는 서로 정수배가 아니고, 셋 다 대체로 같은 쪽으로 간다 —
-// 방향이 흩어지면 너울이 아니라 물이 끓는 것처럼 보인다.
+// 파수는 서로 정수배가 아니고 대체로 같은 쪽으로 간다(흩어지면 물이 끓는 것처럼 보인다).
 vec3 swell(vec2 p, float t) {
     return wave(p, vec2( 1.00,  0.26), 1.00, 1.00, t)
          + wave(p, vec2( 0.71,  0.63), 0.79, 0.62, t)
          + wave(p, vec2( 1.23, -0.41), 1.27, 0.35, t);
 }
 
-// 이 자리가 얼마나 잔글씨로 붐비는가. 최대가 아니라 평균인 이유, 탭이 나선인
-// 이유는 ./still.frag 의 같은 함수에 적어 뒀다.
+// 평균·나선 탭인 이유는 ./still.frag 의 같은 함수.
 float busy(vec2 uv, vec2 px) {
     const vec3 W = vec3(0.2126, 0.7152, 0.0722);
     float c = dot(texture(tex, uv).rgb, W);
@@ -203,9 +167,7 @@ void main() {
     vec3 s = swell(uv * a * SWELL, time * SPEED) * SWELL_AMP;
     vec3 c = fbmd(uv * a * CHOP_SCALE + vec2(time * SPEED * 2.2, 0.0));
 
-    // 잔물결의 기울기에는 촘촘함이 곱해져 있다(연쇄법칙). 그대로 더하면 CHOP 을
-    // 올릴 때 잔결이 너울을 덮어 버리므로, 촘촘함으로 한 번 나눠서 CHOP 이
-    // "세기"라는 뜻을 지키게 한다.
+    // 잔물결 기울기엔 촘촘함이 곱해져 있어, 나누지 않으면 CHOP 을 올릴 때 잔결이 너울을 덮는다.
     float h = s.x + CHOP * c.x;
     vec2  g = s.yz + CHOP * c.yz / CHOP_SCALE;
 
@@ -213,11 +175,10 @@ void main() {
     float fade = f.x * f.y;
     if (PRESERVE > 0.001) fade *= 1.0 - busy(uv, px) * PRESERVE;
 
-    // 마루가 저절로 뾰족해지는 것이 이 한 줄이다(위 머리말 참고).
+    // 마루가 저절로 뾰족해진다(기울기 방향 밀림 = 게르스트너 파의 수평 밀림).
     vec2 off = -g * REFRACT * px * fade;
     vec3 col = texture(tex, uv + off).rgb;
 
-    // 깊이. 아래로 갈수록 짙어지고 붉은 쪽이 빠진다.
     float depth = uv.y;
     col = mix(col, col * TINT * 1.35, TINT_MIX + DEPTH * depth * 0.6);
     col.r *= 1.0 - ABSORB * depth;
@@ -226,12 +187,11 @@ void main() {
     float crest = smoothstep(FOAM_CUT, FOAM_CUT + FOAM_KNEE, h);
     col += FOAM * crest * smoothstep(0.35, 0.75, c.x);
 
-    // 윤슬.
     vec3 n = normalize(vec3(-g, 1.0));
     col += SHINE * pow(max(dot(n, LIGHT), 0.0), SHINE_TIGHT);
 
     col *= BRIGHTNESS;
 
-    // 오버레이 레이어가 불투명이라 알파는 버려진다(Sources/Renderer.swift).
+    // 화면 셰이더의 결과는 그대로 프레임버퍼로 가므로 알파는 1 이다.
     fragColor = vec4(col, 1.0);
 }

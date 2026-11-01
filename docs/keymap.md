@@ -200,6 +200,30 @@ rift-grid-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] ==
 | rift-grid `join_window` ×4 + `unjoin` | `Mod+Ctrl+E` 하나 | `consume_or_expel_window` 가 둘 다 한다 |
 | rift-grid `Alt+M` monocle | `Mod+R` | 다른 둘의 폭 프리셋 자리와 같은 키로 |
 
+## 보관한 vim 레이어 (keyboard.nix.vim)
+
+`modules/nixos/keyboard.nix.vim` 은 import 되지 않은 채 남겨 둔 Caps 홀드 vim/neovim 레이어다. macOS 용
+Karabiner-Elements 설정에서 옮긴 것이고, `keyboard.nix` 자리에 넣으면 그대로 동작한다. 지금 쓰는 레이어는
+`keyboard.nix`(TouchCursor 배치)다.
+
+vim 레이어의 논거는 neovim, yazi, lazygit, tmux copy-mode, less, vimium 과 공유하는 어휘가 복리로 쌓이고 사적인
+매핑표가 아니라는 것이다. 맞는 말이지만, 편집 시간을 VS Code, 커서 이동 시간을 브라우저에서 보내는 이 머신을
+결정하지는 않는다. TouchCursor 가 그 시간의 모양이고, 설정 파일을 import 할 수 없는 윈도우 머신도 그걸 돈다.
+
+OS 레벨 vim 레이어의 한계 둘:
+
+1. **OS 에는 모드가 없어서 문법도 없다.** vim 의 힘은 `hjkl` 이 아니라 합성 — operator × count × motion/text-object
+   (`d2w`, `ci"`, `>ip`). 전부 키 입력 언어를 파싱하는 애플리케이션이 필요하다. keyd 는 단일 키 이벤트만 내서 어휘만
+   빌리고 천장은 못 빌린다. 실제 천장은 ~30 키짜리 평평한 표(TouchCursor 와 같은 천장)다. 올리려면 애플리케이션에
+   vim 지원을 더한다(vimium, zsh `bindkey -v`, yazi).
+2. **Shift 는 OS 의 선택 modifier 인데 vim 은 Shift 를 명령에 쓴다.** [nav+shift] 의 바인딩(`$ { } G N X`)은 커서만
+   옮기고 선택을 못 늘린다 — 합성 레이어가 `$` 가 Shift-End 를 내지 않게 Shift 를 떼야 해서다. unshifted 쪽(`hjkl`,
+   `w e b`, `0`)은 선택된다. 구조적 문제이고, TouchCursor 는 모든 바인딩이 unshifted 라 없다.
+
+이 레이어에는 vim 이 정의한 키만 둔다. OS 수준에 vim 대응물이 없는 동작(PageUp/PageDown, redo)을 vim 에서 다른 뜻인
+키(`i`·`m`, `U`)에 얹으면 레이어의 존재 이유가 흐려진다. `n = "C-g"` 는 GTK/Firefox/Chromium 의 찾기 다음(일부
+앱은 F3).
+
 ## 검증 기록
 
 이 키맵은 **macOS에서 작성됐고**, rift는 거기서 전부 눌러 확인했다 — 설정을 다시

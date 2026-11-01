@@ -1,24 +1,7 @@
 { pkgs, user, ... }:
 
-# libvirt/QEMU-KVM, for one job: a Windows guest that can run the work app's
-# TrustNet client.
-#
-# The signing half of that app's 공동인증 flow is a native Windows program. The
-# browser SDK does not sign anything itself — it probes localhost:18448 (then
-# 28448, 38448) for a local HTTPS daemon the installer puts there, and
-# npkisign.js takes the non-win32 branch outright when
-# navigator.platform.toLowerCase() !== "win32". So no amount of Linux-side work
-# reaches it: Wine is out too, since the program is a service plus Windows
-# certificate-store integration rather than a UI binary.
-#
-# What this box *can* do is serve the other end. nginx here already fronts the
-# reproduced webapp (../nixos/nginx.nix), so a guest on the NAT network gets a
-# complete loop: guest browser -> host nginx -> the TrustNet Tomcat container.
-#
-# Snapshots are the reason this is a VM and not the work laptop. The code path
-# being tested is the *transition* — "not installed" to "installed" — so it has
-# to be walked more than once, and qcow2 lets the pre-install state come back
-# verbatim.
+# TrustNet 클라이언트를 돌릴 Windows 게스트용 libvirt/QEMU-KVM. 왜 VM 인가(서명 쪽이 Windows 전용): docs/windows-guest.md
+# 처음 rebuild 뒤 한 번: sudo virsh net-start default && sudo virsh net-autostart default
 
 {
   virtualisation.libvirtd = {
@@ -27,68 +10,27 @@
     qemu = {
       package = pkgs.qemu_kvm;
 
-      # Windows 11 will not install without UEFI and a TPM 2.0, and refuses at
-      # the first setup screen rather than saying which one is missing.
-      #
-      # Only the TPM needs declaring. The matching virtualisation.libvirtd.qemu
-      # .ovmf submodule was removed from nixpkgs — every OVMF image QEMU ships
-      # is now registered with libvirt by default, Secure Boot variants
-      # included — and setting it is a build-time assertion, not a no-op.
-      # Pick the firmware per guest in virt-manager instead ("Customize
-      # configuration before install" -> Overview -> Firmware -> UEFI).
-      #
-      # swtpm is the emulated TPM. libvirt starts one per guest on demand once
-      # this is set; the guest XML still needs a <tpm model='tpm-crb'> device,
-      # which virt-manager adds when the OS profile is Windows 11.
+      # Windows 11 은 UEFI 와 TPM 2.0 없이 설치를 거부한다. OVMF 는 이제 기본 등록이라 qemu.ovmf 는
+      # 선언하면 평가 단계 assertion 이다 — 펌웨어는 virt-manager 에서 게스트마다 고른다.
       swtpm.enable = true;
     };
   };
 
   programs.virt-manager.enable = true;
 
-  # libvirtd's socket is group-owned. Without this, virsh and virt-manager fall
-  # back to prompting for root on every connection to qemu:///system.
+  # 없으면 virsh·virt-manager 가 qemu:///system 에 붙을 때마다 root 를 묻는다.
   users.users.${user}.extraGroups = [ "libvirtd" ];
 
   environment.systemPackages = [
-    # Windows ships no virtio drivers, so a guest put straight onto a virtio
-    # disk cannot see it in setup. Note this package is the *extracted* driver
-    # tree (amd64/w11/..., virtio-win-guest-tools.exe at the top level), not
-    # the .iso the upstream project distributes — there is nothing here to
-    # attach as a CD-ROM as-is.
-    #
-    # Simplest route for one guest: install on emulated SATA + e1000, which
-    # need no drivers, then run virtio-win-guest-tools.exe afterwards and move
-    # the devices over. If setup-time virtio is wanted instead, wrap the tree
-    # first:
-    #   xorriso -as mkisofs -o /var/lib/libvirt/images/virtio-win.iso \
-    #     $(nix eval --raw nixpkgs#virtio-win.outPath)
+    # Windows 에는 virtio 드라이버가 없다. 이 패키지는 .iso 가 아니라 풀린 트리다 — SATA + e1000 으로
+    # 설치한 뒤 virtio-win-guest-tools.exe 를 돌린다. iso 로 만드는 법: docs/windows-guest.md
     pkgs.virtio-win
   ];
 
-  # The guest reaches the host at 192.168.122.1 on libvirt's default NAT
-  # network. nginx binds 0.0.0.0, so the only thing in the way is this box's
-  # firewall — which ../nixos/nginx.nix deliberately leaves shut, noting that
-  # ports should open "only if another device on the LAN ever needs to reach
-  # it". The guest is that device, so this is that exception, scoped to the
-  # virtual bridge instead of every interface.
-  #
-  # Per-interface rather than networking.firewall.trustedInterfaces: trusting
-  # virbr0 would expose every listening port on the host to the guest, and the
-  # guest only needs 443. Guest DHCP and DNS still work without being listed —
-  # libvirt inserts its own ACCEPT rules for those at the top of INPUT, ahead
-  # of the nixos-fw chain.
+  # 게스트는 192.168.122.1 로 호스트 nginx 에 닿는다. trustedInterfaces 가 아니라 443 만 연다 —
+  # virbr0 를 믿으면 호스트의 모든 포트가 게스트에 열린다. DHCP·DNS 는 libvirt 가 따로 ACCEPT 를 넣는다.
   networking.firewall.interfaces."virbr0".allowedTCPPorts = [ 443 ];
 
-  # Left off deliberately: virtualisation.spiceUSBRedirection.enable. It is how
-  # a USB security token would be passed through to the guest, and some 공동인증서
-  # are issued on one — but the certificate for this testing is a file, and the
-  # option pulls in a setuid spice-client helper. Turn it on if a token shows up.
+  # spiceUSBRedirection 은 끈다(setuid helper). USB 토큰 인증서가 생기면 켠다.
 
-  # Not declared here: the `default` NAT network itself. libvirt ships the
-  # definition but leaves activation to runtime state, and this repo does not
-  # try to own that (same split as nginx.nix). Once, after the first rebuild:
-  #
-  #   sudo virsh net-start default
-  #   sudo virsh net-autostart default
 }

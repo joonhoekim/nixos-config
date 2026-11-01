@@ -1,13 +1,5 @@
-# The pointer half of the Caps Lock layer: a daemon that turns the sentinel
-# keys keyd emits (F13-F21) into pointer motion, wheel clicks and buttons.
-#
-# Why it is a separate process at all is argued in ./pointerd.py and in the
-# header of ../keyboard.nix — the short version is that keyd can press mouse
-# buttons but cannot move a pointer, and nothing in nixpkgs does mouse keys
-# on Wayland the way this layer wants them (held trigger, diagonals,
-# acceleration, Shift for fine aim).
-#
-# Imported by hosts/nixos/common.nix.
+# Caps 레이어의 포인터 쪽: keyd 가 내는 F키 센티넬을 포인터 이동·휠·버튼으로 바꾸는 데몬.
+# keyd 는 포인터를 못 움직인다. 전체 그림: modules/nixos/README.md 「포인터 (pointer)」
 { pkgs, ... }:
 
 let
@@ -17,20 +9,16 @@ in
   systemd.services.pointerd = {
     description = "Pointer motion for the Caps Lock layer";
 
-    # keyd's virtual keyboard is the input. `after` only orders the initial
-    # start; the daemon waits for the device itself and reconnects when keyd
-    # is restarted, so a missing keyd is a pause rather than a failure.
+    # `after` 는 첫 시작 순서뿐이다. 데몬이 장치를 기다리고 keyd 재시작 때 다시 붙는다.
     after = [ "keyd.service" ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
-      # Root: it reads /dev/input and creates a uinput device. uinput is
-      # already in boot.kernelModules for keyd's sake (hosts/nixos/common.nix).
+      # root: /dev/input 을 읽고 uinput 장치를 만든다(uinput 은 hosts/nixos/common.nix 가 로드).
       ExecStart = "${python}/bin/python3 ${./pointerd.py}";
       Restart = "always";
       RestartSec = 2;
-      # A pointer that is nudged 125 times a second should never be the
-      # reason something else stutters.
+      # 초당 125 번 미는 포인터가 다른 것을 버벅이게 하면 안 된다.
       Nice = -5;
     };
   };

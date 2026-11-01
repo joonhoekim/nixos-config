@@ -1,23 +1,8 @@
 pragma Singleton
 
-// 화면 셰이더 축의 상태. 창은 이 싱글턴만 보고 그린다.
-//
-// ── 아는 것이 하나도 없다 ─────────────────────────────────────────────────
-// 목록도, 지금 걸린 것도, 탭 수도, 무엇을 더할 수 있는지도 여기서 계산하지
-// 않는다. `apps/rice/crt --json` 한 번이 그걸 전부 준다. 특히 **곱 한도**는
-// 여기서 세면 안 된다 — 규칙은 apps/rice/chain 에 있고, 예전 런처 플러그인이
-// 그걸 QML 에서 한 번 더 세다가 값이 갈렸다(`now * taps > (maxTaps || 64)`).
-//
-// ── 왜 한 번인가 ──────────────────────────────────────────────────────────
-// 예전에는 값마다 apps/rice/chain --info 를 불렀다. 열 몇 장이면 프로세스가
-// 예순 개고, 런처는 창을 닫았다 여는 물건이라 2 초 캐시로 가릴 수 있었다. 창을
-// 열어 두고 만지는 여기서는 못 가린다. --json 은 프로세스 하나이고, 그 안의
-// 탭·흐름은 mtime 으로 캐시된다(apps/rice/chain --info-all).
-//
-// ── 스크립트 경로 ─────────────────────────────────────────────────────────
-// RICE_APPS 를 apps/rice/studio 가 넣어 준다. 그게 없으면 관례 경로다 — 라이싱
-// 중에는 스크립트를 자주 고치므로 스토어가 아니라 체크아웃을 부르는 것이 기본이고,
-// `nix run` 으로 띄웠을 때만 스토어 쪽이 env 로 들어온다.
+// 화면 셰이더 축의 상태. 목록·걸린 것·탭 수·더할 수 있는 것은 `apps/rice/crt --json` 한 번이 준다.
+// 곱 한도는 여기서 세면 안 된다 — 규칙은 apps/rice/chain 에만 있다.
+// RICE_APPS 는 apps/rice/studio 가 넣는다. 없으면 체크아웃 경로(스크립트를 자주 고쳐서).
 
 import QtQuick
 import Quickshell
@@ -35,14 +20,12 @@ Singleton {
     property string current: "off"
     property var chain: []
     property int maxTaps: 64
-    // 하이프랜드 세션인가. 읽기는 어디서나 되지만 거는 것은 여기서만 된다
-    // (apps/rice/crt 의 need_session). 창이 그 사정을 머리에 적는다.
+    // 거는 것은 하이프랜드에서만 된다(apps/rice/crt 의 need_session).
     property bool session: true
 
     property bool busy: false
     property string error: ""
 
-    // 창이 토스트를 띄우는 자리. 실패한 명령과 그 마지막 줄.
     signal failed(string label, string message)
     signal changed
 
@@ -66,7 +49,7 @@ Singleton {
         return null;
     }
 
-    // 지금 체인의 탭 곱. 표시용이다 — 무엇을 더할 수 있는지의 판단은 여기서 안 한다.
+    // 표시용이다 — 더할 수 있는지의 판단은 여기서 안 한다.
     readonly property int chainTaps: {
         let n = 1;
         for (var i = 0; i < chain.length; i++) {
@@ -101,9 +84,7 @@ Singleton {
                     root.session = d.session !== false;
                     root.error = "";
                 } catch (e) {
-                    // 셰이더 폴더가 아직 시드되지 않았거나 jq 가 없으면 stdout 이
-                    // 비어 온다. 목록을 비우고 이유를 창에 띄운다 — 빈 목록만
-                    // 보여 주면 "셰이더가 하나도 없다"로 읽힌다.
+                    // 시드 전이거나 jq 가 없으면 stdout 이 비어 온다. 빈 목록만 보이면 "셰이더가 없다"로 읽힌다.
                     root.values = [];
                     root.error = "rice-crt --json 을 읽지 못했다. ~/.config/hypr/shaders 가 있는지 확인할 것.";
                 }
@@ -113,14 +94,8 @@ Singleton {
     }
 
     // ── 밖에서 바뀐 것을 따라간다 ─────────────────────────────────────────
-    // 이 창이 떠 있는 동안에도 셰이더는 다른 길로 바뀐다 — Mod+Shift+C, 런처의
-    // off. 그걸 모르면 목록의 ✓ 와 체인이 화면과 다른 것을 가리키고, 그 상태에서
-    // 누른 ＋ 는 옛 체인 위에 얹는다. rice-crt 는 걸 때마다 마지막 칸들을 이
-    // 파일에 적으므로(리로드 뒤 --boot 이 되돌릴 자리) 그 파일을 보면 된다.
-    //
-    // 내용이 같으면 안 읽는다. 손잡이를 끌면 rice-knobs 가 --reload 를 부르고
-    // 그것도 같은 파일을 다시 쓰는데, 그때마다 목록을 갈아 끼우면 changed 가
-    // Knobs 를 다시 불러서 끌던 슬라이더가 새로 만들어진다 — 손을 놓친다.
+    // Mod+Shift+C·런처 off 로도 바뀌므로 rice-crt 가 적는 이 파일을 본다. 내용이 같으면 안 읽는다 —
+    // 손잡이를 끌 때마다 rice-knobs 가 이 파일을 다시 써서, 읽으면 끌던 슬라이더가 새로 만들어진다.
     FileView {
         property string seen: ""
         property bool primed: false
@@ -140,8 +115,7 @@ Singleton {
     }
 
     // ── 거는 것들 ─────────────────────────────────────────────────────────
-    // 전부 rice-crt 한 곳으로 간다. "지금 것에 한 장 더" 같은 것도 여기서 칸
-    // 목록을 만들어 넘기는 것이라 rice-crt 는 여전히 "이 칸들을 걸어라"만 안다.
+    // 전부 rice-crt 로 간다. "한 장 더"도 여기서 칸 목록을 만들어 넘긴다.
     function apply(name) {
         run([name], name);
     }
@@ -204,8 +178,7 @@ Singleton {
         property string label: ""
         property string out: ""
 
-        // 거절 이유는 stdout 에 오기도 하고(rice_reject) stderr 에 오기도 한다
-        // (rice-chain 의 한도 초과). 둘 다 모아 두고 마지막 줄을 쓴다.
+        // 거절 이유는 stdout(rice_reject)에도 stderr(rice-chain 한도 초과)에도 온다.
         stdout: StdioCollector {
             onStreamFinished: applier.out = text
         }
@@ -220,12 +193,11 @@ Singleton {
             root.busy = false;
             if (code !== 0) {
                 const lines = applier.out.split("\n").filter(l => l.trim().length > 0);
-                // 색 코드가 섞여 온다 — 스크립트들이 터미널에도 같은 말을 쓴다.
+                // 스크립트들이 터미널과 같은 말을 써서 색 코드가 섞여 온다.
                 const last = (lines.length > 0 ? lines[lines.length - 1] : "").replace(/\x1b\[[0-9;]*m/g, "");
                 root.failed(applier.label, last || ("종료 코드 " + code));
             }
-            // 실패해도 다시 읽는다. 앞의 칸만 걸렸다든가 하는 중간 상태가 있을 수
-            // 있고, 그때 화면과 목록이 어긋난 채로 남는 것이 제일 나쁘다.
+            // 실패해도 다시 읽는다 — 앞 칸만 걸린 중간 상태에서 화면과 목록이 어긋난 채 남지 않게.
             root.refresh();
         }
     }

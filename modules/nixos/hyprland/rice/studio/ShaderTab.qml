@@ -1,11 +1,5 @@
-// 셰이더 탭 — 화면 셰이더를 고르고, 겹치고, 값을 맞춘다.
-//
-// 창이 두 축을 들고 있어도 이 파일은 셰이더만 안다. 장식 값은 DecorTab.qml 이
-// 따로 알고, 둘은 서로를 안 부른다 — 유일한 접점은 shell.qml 의 탭 인덱스다.
-//
-// 왼쪽은 "무엇을 볼까"(목록), 오른쪽은 "지금 것을 어떻게"(체인 · 값)다. 체인이
-// 값 쪽에 붙어 있는 것은 손잡이 대상 칩이 곧 체인의 칸이기 때문이다 — 몇째 칸을
-// 만지는 중인지가 두 자리에서 같이 보여야 한다.
+// 셰이더 탭 — 화면 셰이더를 고르고, 겹치고, 값을 맞춘다. 장식 탭과는 서로 안 부른다.
+// 체인이 값 쪽에 붙은 것은 손잡이 대상 칩이 곧 체인의 칸이기 때문이다.
 
 import QtQuick
 import qs.Rice
@@ -17,8 +11,7 @@ Item {
     // 토스트는 창이 소유한다. 탭이 여럿이어도 뜨는 자리는 하나여야 해서다.
     signal note(string msg)
 
-    // 목록 쪽은 이름 길이가 정해져 있어서 넓힐 이유가 없다. 창을 키우면 남는
-    // 폭은 값 쪽으로 간다.
+    // 창을 키우면 남는 폭은 값 쪽으로 간다.
     readonly property int railW: Math.round(Math.max(280, Math.min(340, width * 0.3)))
 
     Column {
@@ -44,9 +37,7 @@ Item {
                     color: Shaders.current === "off" ? Theme.surfaceVariantText : Theme.surfaceText
                 }
 
-                // 체인 이름은 아래 ChainPanel 이 칸마다 보여 준다. 여기서는 비용과
-                // 흐름만 — 같은 것을 두 자리에 적으면 어느 쪽이 최신인지 매번
-                // 확인하게 된다.
+                // 체인 이름은 ChainPanel 이 보여 준다. 여기는 비용과 흐름만.
                 Row {
                     width: parent.width
                     spacing: Theme.spacingS
@@ -60,9 +51,7 @@ Item {
                         color: Theme.surfaceVariantText
                     }
 
-                    // 남은 예산. 얹을 수 있느냐 없느냐가 곱셈이라 눈으로는 안
-                    // 보이는데, 이 막대가 차 있으면 목록의 "얹으면 한도 넘음"이
-                    // 왜 나오는지가 설명 없이 읽힌다.
+                    // 얹을 수 있느냐가 곱셈이라 눈에 안 보여서, 남은 예산을 막대로 보인다.
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 96
@@ -102,8 +91,7 @@ Item {
                     text: {
                         if (Shaders.error !== "")
                             return Shaders.error;
-                        // 세션이 없으면 체인은 늘 비어 있다 — 컴포지터에 물을 데가
-                        // 없어서다. "하나 고르면 걸린다"는 그때 거짓말이 된다.
+                        // 세션이 없으면 컴포지터에 물을 데가 없어 체인이 늘 비어 있다.
                         if (!Shaders.session)
                             return "하이프랜드 세션이 아니다 — 값은 고칠 수 있지만 화면에 거는 것은 안 된다";
                         return "셰이더 없음 — 아래에서 하나 고르면 걸린다";
@@ -143,16 +131,12 @@ Item {
         }
 
         // ── 이름 붙여 저장 ────────────────────────────────────────────────
-        // 저장은 이름이 있어야 하는 유일한 동작이다. 늘 띄워 두면 자리를
-        // 차지하므로 누를 때만 펼친다.
         Panel {
             id: saveRow
 
             property bool open: false
 
-            // 같은 이름이 이미 있으면 rice-crt 는 묻지 않고 덮어쓴다. 이름을 치는
-            // 동안 단추가 먼저 말해 줘야 한다 — 저장한 뒤에 알면 옛 체인은 이미
-            // 없다. 목록은 Shaders.values 가 들고 있으므로 여기서 따로 안 센다.
+            // rice-crt 는 같은 이름을 묻지 않고 덮어쓰므로, 치는 동안 단추가 먼저 알려야 한다.
             readonly property bool exists: saveName.text.length > 0 && Shaders.valueOf("chain/" + saveName.text) !== null
 
             function commit() {
@@ -204,8 +188,7 @@ Item {
                         selectByMouse: true
                         selectionColor: Theme.fade(Theme.primary, 0.35)
                         selectedTextColor: Theme.surfaceText
-                        // `/` 와 앞점은 rice-crt 가 거절한다. 눌러 보고
-                        // 거절당하는 것보다 못 치게 하는 편이 낫다.
+                        // `/` 와 앞점은 rice-crt 가 거절하므로 아예 못 치게 한다.
                         validator: RegularExpressionValidator {
                             regularExpression: /[A-Za-z0-9][A-Za-z0-9._-]*/
                         }

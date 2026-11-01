@@ -1,43 +1,18 @@
 { config, pkgs, ... }:
 
-# Shared AMD Ryzen + Radeon (iGPU) layer. Vendor-common settings only —
-# per-chassis quirks live in the host dirs (hosts/nixos/<hostname>/). mn56
-# (7840HS) imports this; any future AMD host should too.
-#
-# CPU microcode (hardware.cpu.amd.updateMicrocode) and redistributable
-# firmware are already switched on by the generated hardware-configuration.nix
-# via not-detected.nix, so they are not repeated here.
+# AMD Ryzen + Radeon iGPU 공통 층(mn56). 섀시별 사정은 hosts/nixos/<hostname>/.
+# 마이크로코드와 펌웨어는 hardware-configuration.nix(not-detected.nix)가 이미 켠다.
 
 {
-  # amdgpu (RDNA3 / 780M) is fully covered by mesa — no extra driver package.
-  # radeonsi also provides VAAPI (H.264/HEVC/AV1 decode), so nothing has to be
-  # added to hardware.graphics.extraPackages here. Intel iGPUs are the contrast
-  # worth remembering: i915/xe render fine on mesa alone, but VAAPI/QSV video
-  # decode needs pkgs.intel-media-driver (iHD) added explicitly — see
-  # ./intel.nix, which is this file's opposite number.
-  #
-  # If OpenCL (ROCm) is ever needed:
-  #   hardware.graphics.extraPackages = [ pkgs.rocmPackages.clr.icd ];
-  # It is a heavy build — only enable it when something actually uses it.
+  # radeonsi 가 VAAPI 까지 실어 extraPackages 가 필요 없다(Intel 은 iHD 를 따로 넣는다, ./intel.nix).
+  # OpenCL(ROCm)이 필요하면 rocmPackages.clr.icd — 빌드가 무거워 쓸 때만 켠다.
 
-  # NOTE: powerManagement.cpuFreqGovernor is intentionally NOT set. On Zen4 the
-  # amd_pstate driver runs in EPP (active) mode and ignores generic cpufreq
-  # governors; services.power-profiles-daemon (common.nix) drives the Energy
-  # Performance Preference instead:
-  #   powerprofilesctl set {power-saver|balanced|performance}
-  # Check which driver is bound with:
-  #   cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
+  # cpuFreqGovernor 는 일부러 안 둔다. Zen4 의 amd_pstate(EPP)는 일반 governor 를 무시하고 power-profiles-daemon 이 정한다.
 
   environment.systemPackages = with pkgs; [
-    # AMD-specific inspection (the vendor-neutral set is in
-    # modules/nixos/packages.nix).
-    radeontop          # iGPU utilization
-    nvtopPackages.amd  # GPU monitor
-    # cpupower + turbostat, taken from the running kernel's package set so they
-    # match boot.kernelPackages (linuxPackages_latest). The comment here has
-    # named both since it was written; turbostat was never actually in the list
-    # until ./intel.nix needed it (i7z does not understand Arrow Lake, see
-    # there) and the omission turned up. It reads AMD's RAPL/MSR interfaces too.
+    radeontop
+    nvtopPackages.amd
+    # 커널 패키지 세트에서 가져와 boot.kernelPackages 와 맞춘다. turbostat 은 AMD 의 RAPL/MSR 도 읽는다.
     config.boot.kernelPackages.cpupower
     config.boot.kernelPackages.turbostat
   ];

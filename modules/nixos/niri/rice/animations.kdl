@@ -1,42 +1,8 @@
 // niri 창 열림/닫힘을 브라운관 전원처럼. config.kdl 이 optional 로 include 한다.
 //
-// 파일을 통째로 지우면 니리 기본 애니메이션으로 돌아간다 — include 가 optional 이라
-// 없는 게 에러가 아니다. 저장하면 즉시 반영된다(니리는 include 한 파일도 감시한다).
-//
-// ── 셰이더 규약 ───────────────────────────────────────────────────────────
-// 니리는 애니메이션 안에서만 셰이더를 받는다. 화면 전체에 거는 훅은 26.04 설정
-// 표면에 아예 없다(`screen-shader` 같은 노드가 없다). 그래서 여기서 할 수 있는
-// 건 "창 하나가 열리고 닫히는 동안"뿐이고, 정상 상태 비용은 0 이다.
-//
-// 니리가 감싸는 본문은 이렇다:
-//
-//     varying vec2 niri_v_coords;
-//     uniform vec2 niri_geo_size;
-//     uniform sampler2D niri_tex;
-//     void main() {
-//         vec3 coords_geo = niri_input_to_geo * vec3(niri_v_coords, 1.0);
-//         vec3 size_geo = vec3(niri_geo_size, 1.0);
-//         vec4 color = open_color(coords_geo, size_geo);
-//         gl_FragColor = color;
-//     }
-//
-// 그러니 우리가 정의할 건 open_color / close_color 하나씩이다. 내용은
-// niri_geo_to_tex 로 텍스처 좌표를 만들어 niri_tex 에서 뽑고, 진행도는
-// niri_clamped_progress 다.
-//
-// **coords_geo 는 0..1 로 정규화돼 있다. 픽셀이 아니다.**
-// 이름과 짝이 되는 size_geo 가 논리 픽셀이라 픽셀 좌표라고 착각하기 쉬운데,
-// 실측으로 확인했다 — step(1.5, coords_geo.x) 를 칠해 보니 창 전체가 한 색이었다.
-// 픽셀로 가정하면 중심을 size_geo/2 (≈1000) 로 잡게 되고, 그러면 마스크가 항상
-// 0 이라 애니메이션 내내 창이 아예 안 그려진다. 증상이 "셰이더가 무시된다"가
-// 아니라 "창이 사라진다"로 나오므로 원인을 찾기 어렵다.
-// 그래서 픽셀 단위로 정하고 싶은 값(선 두께 등)은 size_geo 로 나눠 쓴다.
-//
-// GLSL ES 1.00 이다(#version 100). texture2D 를 쓰고, #define 은 못 쓴다 —
-// KDL 원시 문자열 안이라 const 로 둔다. 색은 프리멀티플라이드 알파라서
-// vec4(f) 가 곧 "불투명한 흰색 × f" 다.
-//
-// 곡선은 linear 로 둔다. 완급은 셰이더 안에서 구간별로 따로 주기 때문이다.
+// 니리는 애니메이션 안에서만 셰이더를 받는다(26.04 에 화면 전체 훅 없음). open_color/close_color 만 정의한다.
+// coords_geo 는 픽셀이 아니라 0..1 이다 — 픽셀로 가정하면 마스크가 늘 0 이라 창이 사라진다(실측).
+// GLSL ES 1.00, KDL 원시 문자열이라 #define 대신 const. 셰이더 규약 전체: docs/niri.md
 
 animations {
 	// 켜짐: 가운데에 가로선이 그어지고(앞 35%), 그 선이 세로로 열린다.
@@ -59,8 +25,7 @@ animations {
 			    pw = 1.0 - (1.0 - pw) * (1.0 - pw);
 			    ph = 1.0 - (1.0 - ph) * (1.0 - ph);
 
-			    // 픽셀로 정한 값을 정규화 좌표로 옮긴다. 창 크기가 달라도 선
-			    // 두께는 같게 보여야 한다.
+			    // 창 크기가 달라도 선 두께가 같게 보이도록 정규화 좌표로 옮긴다.
 			    vec2 sz   = max(size_geo.xy, vec2(1.0));
 			    vec2 line = vec2(LINE_PX) / sz;
 			    vec2 soft = vec2(SOFT_PX) / sz;

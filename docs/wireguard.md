@@ -59,6 +59,14 @@ NetworkManager(`nmcli connection import type wireguard ...`)로도 붙일 수 �
 쓰지 않는다. 설정이 NetworkManager 쪽에 사본으로 한 벌 더 생기고, 같은 `wg0` 을
 두고 위 유닛과 충돌한다.
 
+### wg0.conf 가 스토어에 안 들어가는 이유 (`modules/nixos/wireguard.nix`)
+
+모듈의 configFile 은 문자열 경로라 스토어로 복사되지 않는다. nixpkgs 의
+`nixos/modules/services/networking/wg-quick.nix` 는 유닛이 뜰 때마다 이 파일을 PrivateTmp 로 cp 한 뒤
+`wg-quick up` 하므로, 파일을 고친 뒤 `systemctl restart wg-quick-wg0` 이면 되고 rebuild 는 필요 없다. 공개
+저장소라 키를 nix 식에 넣으면 /nix/store 와 GitHub 양쪽에 남는다. ConditionPathExists 가 없으면 파일이 없는
+기계에서 부팅·switch 마다 wg-quick-wg0 이 failed 로 찍히고 switch 가 0 이 아닌 코드로 끝난다.
+
 ## macOS
 
 nix-darwin 에는 wg-quick 모듈이 없어서 자동 연결은 없다. 손으로 올리고 내린다.

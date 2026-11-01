@@ -1,25 +1,10 @@
-# Korean localization for NixOS, ported from the previous machine config:
-# locale, input method (fcitx5 + Hangul), and CJK fonts + fallbacks. All of
-# this is machine-independent. The 한/영 key remap itself lives in
-# ./keyboard.nix with the rest of the keyd config.
-#
-# Imported by hosts/nixos/default.nix.
+# 한국어 로케일·입력기(fcitx5 + Hangul)·CJK 폰트. 한/영 리맵은 ./keyboard.nix.
+# 전체 그림(한/영 키가 거치는 세 키코드 이름공간, 확인 명령): docs/korean-input.md
 { pkgs, ... }:
 
 {
-  # Locale: English UI, Korean regional formats.
-  #
-  # LC_TIME is the exception: it used to be ko_KR, which made anything that
-  # renders a date do it in Korean — `date` printing "2026. 08. 01. (토)", and
-  # DankMaterialShell's bar clock showing 토 / 오후 next to its English labels,
-  # since Qt takes day names and the 12h-vs-24h choice from this category.
-  #
-  # en_DK is the standard way out: an English locale (Sat, August) whose LC_TIME
-  # is ISO 8601 — d_fmt "%Y-%m-%d", t_fmt "%T", empty am_pm. So messages and
-  # names stay English and searchable, and dates stop being US-ordered.
-  #
-  # Everything listed here is generated automatically: i18n.supportedLocales
-  # defaults to the union of defaultLocale and these values.
+  # LC_TIME 만 en_DK: 영어 이름에 ISO 8601(%Y-%m-%d, %T, am_pm 없음). ko_KR 이면 Qt 가 요일·12시간제를
+  # 여기서 가져가 DMS 바 시계에 토 / 오후 가 섞인다.
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "ko_KR.UTF-8";
@@ -33,83 +18,11 @@
     LC_TIME = "en_DK.UTF-8"; # English names, ISO YYYY-MM-DD, 24-hour
   };
 
-  # 한/영 is Right Alt -> Hangul, remapped by keyd in ./keyboard.nix rather
-  # than here: keyd takes one config per machine, and this box also puts a
-  # navigation layer on held Caps Lock.
-  #
-  # The full chain, since it crosses three keycode namespaces and every one of
-  # them names the key differently:
-  #
-  #   keyd `rightalt = hangeul`  ->  evdev KEY_HANGEUL (122)
-  #     -> xkb <HNGL>, which is keycode 130 (evdev + 8)
-  #     -> keysym `Hangul`, from symbols/pc — its only section, pc105, so every
-  #        layout including a bare `us` carries it
-  #     -> fcitx5 Hotkey/TriggerKeys -> toggle keyboard-us <-> hangul
-  #
-  # To check a hop rather than guess at it: `sudo evtest` on the *keyd virtual
-  # keyboard* device for the first, and fcitx5's own key log for the last —
-  #
-  #   gdbus call --session --dest org.fcitx.Fcitx5 --object-path /controller \
-  #     --method org.fcitx.Fcitx.Controller1.SetLogRule "keytrace=5"
-  #   journalctl --user -fu 'app-org.fcitx.Fcitx5@autostart.service'
-  #
-  # which prints `KeyEvent: Key(Hangul ...) keycode: 130` when the key lands.
-  # Pass "" to SetLogRule to turn it back off; it is very noisy.
-
-  # nixpkgs gates every Wayland IME flag for Electron/Chromium apps behind this
-  # one variable — its wrappers end with
-  #
-  #   ${NIXOS_OZONE_WL:+${WAYLAND_DISPLAY:+--ozone-platform-hint=auto
-  #     --enable-features=WaylandWindowDecorations
-  #     --enable-wayland-ime=true --wayland-text-input-version=3}}
-  #
-  # and it was never set here, so VS Code came up as a native Wayland window
-  # (hyprctl clients: xwayland false) with none of them. Setting it is what
-  # nixpkgs intends for a Wayland session, and Brave already carried the same
-  # flags by hand in hosts/nixos/galaxy-chromebook-1/home.nix — that file's
-  # brave-flags.conf is now redundant, but harmless, and stays for its touch-UI
-  # flag.
-  #
-  # Read the next part before concluding anything about what this fixed. The
-  # variable was first set while chasing the Hangul-drop bug in
-  # docs/postmortems/2026-08-05-vscode-terminal-hangul.md, which makes it very
-  # easy to mistake for the fix. It was not.
-  #
-  #   verified    the flags do reach Chromium with it set — they appear in
-  #               /proc/<pid>/cmdline, and `code` prints a "not in the list of
-  #               known options, but still passed to Electron/Chromium" warning
-  #               for each one (that warning is normal, not a failure)
-  #   verified    Hangul input worked in VS Code both before and after
-  #   NOT tested  which text-input version Chromium negotiates, either way
-  #   NOT tested  whether this changes the Hangul dropping at all. The one
-  #               impression that it "seemed reduced" was uncontrolled — no
-  #               measurement, and not even the same phrase before and after —
-  #               and was withdrawn on reflection. The dropping turned out to be
-  #               fully explained by a scheduling bug inside the xterm.js bundle,
-  #               with no role for this flag in the mechanism.
-  #
-  # An earlier version of this comment asserted that Chromium defaults to
-  # text-input-v1 and that Hyprland does not implement it. The second half is
-  # simply false here, and it is one command to check:
-  #
-  #   wayland-info | grep text_input
-  #   #  interface: 'zwp_text_input_manager_v1', version: 1, name: 20
-  #   #  interface: 'zwp_text_input_manager_v3', version: 1, name: 21
-  #
-  # Hyprland offers both. So "no version could be negotiated" was never a
-  # sound explanation for anything.
-  #
-  # Kept because it is the configuration nixpkgs intends, not because it was
-  # shown to fix a symptom. If it ever needs to justify itself, the experiment
-  # is in the postmortem.
-  #
-  # Session variable, so it needs a logout — not just a rebuild — to take.
+  # nixpkgs 의 Electron/Chromium 래퍼는 Wayland IME 플래그(--enable-wayland-ime 등)를 전부 이 변수 뒤에 둔다.
+  # 한글 누락을 고친 것은 아니다(그건 overlays/vscode-xterm-hangul.nix) — 경위: docs/postmortems/2026-08-05-vscode-terminal-hangul.md
+  # 세션 변수라 rebuild 가 아니라 로그아웃해야 먹는다.
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
-  # The Hangul dropping itself is fixed in overlays/vscode-xterm-hangul.nix,
-  # picked up automatically by the overlay loader in modules/shared/default.nix.
-
-  # Korean input via fcitx5 + Hangul engine, tuned for GNOME / Wayland.
   i18n.inputMethod = {
     enable = true;
     type = "fcitx5";
@@ -117,26 +30,18 @@
       waylandFrontend = true; # Wayland text-input-v3 (GNOME/Mutter, GTK apps)
       addons = with pkgs; [
         fcitx5-hangul
-        fcitx5-gtk                      # GTK3/GTK4 IM module (GNOME apps)
-        qt6Packages.fcitx5-qt           # Qt6 IM module (Qt apps under GNOME)
-        qt6Packages.fcitx5-configtool   # GUI configurator
+        fcitx5-gtk
+        qt6Packages.fcitx5-qt
+        qt6Packages.fcitx5-configtool
       ];
-      # Declarative profile — adds Hangul to the active input-method group.
-      # NOTE: fcitx5 reads ~/.config/fcitx5/* before /etc/xdg/fcitx5/*, and it
-      # *writes* ~/.config/fcitx5/profile itself on startup. So everything below
-      # is a seed for a machine that has no user-local copy yet; on one that
-      # does, delete ~/.config/fcitx5/{profile,config} once after rebuilding or
-      # none of it takes effect. (i18n.inputMethod.fcitx5.ignoreUserConfig would
-      # make this unconditional, at the cost of fcitx5 never persisting anything
-      # — including whatever the config GUI writes. Not worth it here.)
+      # fcitx5 는 ~/.config/fcitx5/* 를 먼저 읽고 시작할 때 profile 을 직접 쓴다. 그래서 이건 시드다 —
+      # 사용자 사본이 있는 머신은 rebuild 뒤 ~/.config/fcitx5/{profile,config} 를 한 번 지워야 먹는다.
       settings = {
         inputMethod = {
           "Groups/0" = {
             Name = "Default";
             "Default Layout" = "us";
-            # Which IM the toggle turns *on*. Not the startup state: fcitx5's
-            # Behavior/ActiveByDefault is false, so a text field opens inactive
-            # — that is, on Items/0, English — and 한/영 activates this one.
+            # 토글이 켜는 IM. 시작 상태가 아니다(ActiveByDefault 가 false 라 입력란은 영어로 열린다).
             DefaultIM = "hangul";
           };
           "Groups/0/Items/0" = {
@@ -147,54 +52,19 @@
             Name = "hangul";
             Layout = "us"; # use US physical layout while in Hangul IM
           };
-          # Exactly two entries, and that is load-bearing — see the
-          # EnumerateWithTriggerKeys note below. A third one used to sit here:
-          #
-          #   "Groups/0/Items/2" = { Name = "keyboard-kr"; Layout = ""; };
-          #
-          # It bought nothing. keyboard-kr is an xkb layout, not an engine; the
-          # `kr` layout is US QWERTY with a couple of extra keys, so selecting
-          # it types Latin exactly like keyboard-us does. Hangul comes from the
-          # hangul *engine* above, never from the layout. All it did was give
-          # the trigger key a third state that looks identical to the first.
+          # 정확히 둘이어야 한다 — 셋째가 있으면 아래 EnumerateWithTriggerKeys 의 enumerate 로 빠진다.
           GroupOrder."0" = "Default";
         };
 
-        # Written to /etc/xdg/fcitx5/config. There was no such file at all
-        # before — every hotkey came from fcitx5's compiled-in defaults.
-        #
-        # EnumerateWithTriggerKeys is the one that matters. fcitx5's
-        # Instance::trigger() branches like this (src/lib/fcitx/instance.cpp):
-        #
-        #   if (!enumerateWithTriggerKeys() || (firstTrigger_ && isActive()) ||
-        #       (enumerateSkipFirst() && inputMethodList().size() <= 2))
-        #     toggle(ic);
-        #   else
-        #     enumerate(ic, true);
-        #
-        # Left at its default (true), the trigger key can fall through to
-        # enumerate() — cycling forward through the group rather than flipping
-        # between two states. With the old three-entry group that meant
-        # keyboard-us → hangul → keyboard-kr, and since two of those three type
-        # Latin, 한/영 behaved as if it were half broken. Setting this false
-        # makes trigger() unconditionally toggle(), which is what a 한/영 key
-        # is supposed to do.
+        # /etc/xdg/fcitx5/config. EnumerateWithTriggerKeys 를 끄면 trigger() 가 무조건 toggle() 한다
+        # (src/lib/fcitx/instance.cpp 의 Instance::trigger). 켜 두면 그룹을 순환한다.
         globalOptions = {
-          # "False", not false. The nixpkgs module renders this file with a
-          # bare `lib.generators.toINI {}`, which spells a Nix bool `false`,
-          # and fcitx5 only ever accepts "True"/"False" — case-sensitively,
-          # falling back to the compiled-in default on anything else
-          # (unmarshallOption(bool), src/lib/fcitx-config/marshallfunction.cpp).
-          # A bool here therefore reads as "correct config that does nothing".
-          # Same reason the hangul addon block below is quoted.
+          # 문자열 "False" 여야 한다. toINI 는 bool 을 `false` 로 쓰는데 fcitx5 는 "True"/"False" 만 받고
+          # 그 밖은 조용히 기본값으로 돌린다(marshallfunction.cpp 의 unmarshallOption(bool)). 아래 hangul 도 같다.
           Hotkey.EnumerateWithTriggerKeys = "False";
 
-          # Pinned rather than inherited, so an upstream change to the defaults
-          # cannot quietly take the 한/영 key away. Hangul is the keysym keyd
-          # produces from Right Alt (see ./keyboard.nix); Control+space is kept
-          # deliberately as an escape hatch for when the Hangul path itself is
-          # what is being debugged. Zenkaku_Hankaku is in the stock list too and
-          # is dropped here — nothing on this machine emits it.
+          # 상류 기본값이 바뀌어도 한/영이 안 사라지게 고정한다. Hangul 은 keyd 가 Right Alt 로 내는 keysym,
+          # Control+space 는 Hangul 경로를 디버깅할 때의 탈출구다.
           "Hotkey/TriggerKeys" = {
             "0" = "Hangul";
             "1" = "Control+space";
@@ -224,27 +94,15 @@
     };
   };
 
-  # Korean / CJK fonts (merged with the general fonts in hosts/nixos).
-  #
-  # The shared set — D2Coding Nerd Font, Sarasa Gothic, Noto Sans CJK,
-  # Pretendard, and the plain Noto/emoji faces — moved to
-  # modules/shared/fonts.nix, because macOS turned out to need it too: it had
-  # no Hangul face of its own to lend a terminal. What is left here is what
-  # only this side wants.
-  #
-  # 여기에 문서용 한글 얼굴을 더해도 OnlyOffice 는 보지 못한다. 그쪽은
-  # fontconfig 을 쓰지 않아 overlays/onlyoffice-fonts.nix 가 자기 목록을 따로
-  # 들고 있다 — 오피스에서도 쓸 폰트라면 그 파일도 같이 고쳐야 한다.
+  # 공통 한글 폰트는 modules/shared/fonts.nix. OnlyOffice 는 fontconfig 를 안 써서
+  # 오피스에서도 쓸 폰트면 overlays/onlyoffice-fonts.nix 도 같이 고친다.
   fonts.packages = with pkgs; [
     noto-fonts-cjk-serif-static # VF 판은 OnlyOffice 에서 Thin 으로 그려진다 (아래 sans 와 같은 이유)
     nanum
-    nanum-gothic-coding # Korean monospace (Nanum Gothic Coding)
-    d2coding            # unpatched "D2Coding" — the family name the fallbacks
-                        # below ask for. The Nerd patch is a different family
-                        # ("D2CodingLigature Nerd Font"), so it can't stand in.
+    nanum-gothic-coding
+    d2coding            # 폴백이 찾는 "D2Coding" 패밀리. Nerd 패치판은 패밀리 이름이 달라 대신 못 한다.
   ];
 
-  # Make sure apps fall back to Korean-capable fonts.
   fonts.fontconfig.defaultFonts = {
     monospace = [ "D2Coding" "Noto Sans Mono CJK KR" ];
     sansSerif = [ "Pretendard" "Noto Sans CJK KR" ];

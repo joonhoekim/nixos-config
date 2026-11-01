@@ -51,23 +51,14 @@ TICK = 1 / 125  # seconds between motion steps, while a key is held
 
 # --- tuning ---------------------------------------------------------------
 #
-# Flat speeds, no acceleration curve. There was one here (200 -> 1800 px/s
-# over 400ms) and it was dropped for two reasons: the macOS and Windows side
-# (movemouse in modules/shared/kanata/kanata.kbd) runs flat, so keeping it meant the same layer
-# behaving differently depending on which machine you sat at — and once it was
-# actually used, the ramp did not earn that cost. Two flat speeds a Shift
-# apart cover both jobs, and they are predictable, which turns out to be worth
-# more than being fast.
+# 등속 두 단계(Shift 로 저속)다. macOS·Windows 의 kanata movemouse 가 등속이라 같은 레이어를 맞춘다.
 
 MOVE_FAST = 700.0  # px/s
 MOVE_SLOW = 100.0  # px/s while Shift is held, for aiming
 
 SCROLL_RATE = 15.0  # wheel clicks/s
 
-# A sentinel that never comes back up would fly the pointer off the screen or
-# leave a button stuck down, and this process runs as root with a synthetic
-# pointer — so it refuses to believe in holds longer than these. Neither is a
-# length any of these keys is legitimately held for.
+# 안 올라오는 센티넬은 root 합성 포인터를 날리거나 버튼을 눌린 채 두므로 이보다 긴 홀드는 안 믿는다.
 STUCK_MOVE = 15.0
 STUCK_BUTTON = 60.0
 
@@ -167,14 +158,12 @@ class Pointer:
 
         speed = MOVE_SLOW if self.shift else MOVE_FAST
 
-        # Normalised, so w+d travels at the same speed as w alone rather than
-        # sqrt(2) times faster.
+        # 정규화해서 w+d 가 √2 배 빨라지지 않는다.
         norm = math.hypot(x, y)
         self.acc_x += speed * dt * x / norm
         self.acc_y += speed * dt * y / norm
 
-        # Whole pixels go out, the fraction stays behind — at 125 Hz the
-        # per-tick step is often < 1 px and truncating it would stall.
+        # 정수 픽셀만 내고 소수는 남긴다 — 125 Hz 에서 한 틱은 흔히 1 px 미만이라 버리면 멈춘다.
         step_x = int(self.acc_x)
         step_y = int(self.acc_y)
         self.acc_x -= step_x
@@ -226,13 +215,8 @@ def pump(dev, pointer):
     last = time.monotonic()
     try:
         while True:
-            # Tick only while a sentinel is down. With an empty hand there is
-            # nothing to integrate, so block until the next key event rather
-            # than wake 125 times a second to decide that — and an empty hand
-            # is what this process has for all but a few minutes of the day.
-            # The wakeups cost more by keeping the CPU out of its deep sleep
-            # states than they do in CPU time, which is the part that shows up
-            # on a laptop battery.
+            # 센티넬이 눌렸을 때만 틱한다. 빈 손일 때 초당 125 번 깨면 CPU 가 깊은 절전에 못 들어가
+            # 노트북 배터리에 보인다.
             sel.select(TICK if pointer.held else None)
             try:
                 for event in dev.read():
@@ -242,9 +226,7 @@ def pump(dev, pointer):
             except BlockingIOError:
                 pass
             now = time.monotonic()
-            # Clamped, because the first tick after an idle block — or after a
-            # suspend/resume — would otherwise integrate the whole gap at once
-            # and fling the pointer off the screen.
+            # 유휴 블록이나 suspend 뒤 첫 틱이 공백 전체를 한 번에 적분해 포인터를 날리지 않게 자른다.
             pointer.step(min(now - last, TICK * 4), now)
             last = now
     finally:
@@ -262,8 +244,7 @@ def main():
             except OSError:
                 pass  # keyd restarted and took its device with it
             finally:
-                # Whatever was held is not held any more, and nothing else
-                # will ever send the key-up for it.
+                # 눌려 있던 것의 key-up 은 이제 아무도 안 보낸다.
                 pointer.release_all()
                 try:
                     dev.close()

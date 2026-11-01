@@ -1,22 +1,6 @@
-// 값 하나를 맞추는 줄. 셰이더 손잡이(KnobPanel)와 하이프랜드 장식(DecorTab)이
-// 같은 것을 쓴다. 두 축은 뒤판도 되돌리기 기준도 다르지만 화면에서 하는 일은
-// 같다 — 이름을 보고, 지금 값을 보고, 끌고, 기본값으로 되돌린다.
-//
-// ── 칸 너비를 고정한다 ────────────────────────────────────────────────────
-// 이름·값·흐름·되돌리기 칸은 내용이 없어도 자리를 지킨다. 내용에 맞춰 줄이면
-// 한 구역 안에서도 줄마다 슬라이더 시작점이 달라져서, 여러 값을 잇달아 맞출 때
-// 손이 매번 다른 자리로 가야 한다. 특히 장식 쪽은 한 구역에 불리언과 실수가
-// 섞여 있어서(흐리게 그룹) 값 칸을 비워 두지 않으면 눈에 띄게 어긋난다.
-//
-// ── 슬라이더에 최대 폭이 있다 ─────────────────────────────────────────────
-// 0..1 값을 창 폭만큼 늘여 놓으면 한 픽셀이 눈금 하나보다 훨씬 잘아져서 오히려
-// 맞추기 어렵고, 값 숫자가 손잡이에서 멀어진다. 남는 폭은 그냥 비워 둔다.
-//
-// ── 설명은 기본으로 접는다 ────────────────────────────────────────────────
-// 이 줄은 설명을 자기가 펴고 접지 않는다. 접힌 상태에서 마우스를 올리면 패널이
-// 자기 아래쪽 띠에 `docLine` 을 띄우고, 스위치를 켜면 줄 안에 그대로 편다.
-// 호버 때 줄 안에서 폈다 접었다 하면 마우스 밑에서 목록이 튀어서, 옆 줄을 보려고
-// 움직이는 동안 손잡이가 따라 도망간다.
+// 값 하나를 맞추는 줄(KnobPanel·DecorTab 공용).
+// 칸 너비는 내용이 없어도 고정한다 — 줄이면 줄마다 슬라이더 시작점이 달라진다.
+// 설명은 호버 때 줄 안에서 펴지 않고 패널 아래 띠에 띄운다(펴면 목록이 마우스 밑에서 튄다).
 
 import QtQuick
 import qs.Rice
@@ -33,7 +17,7 @@ Column {
 
     property bool motion: false
     property bool dirty: false
-    // 되돌리면 갈 값. 셰이더는 레포 사본, 장식은 하이프랜드 기본값이다.
+    // 셰이더는 레포 사본, 장식은 하이프랜드 기본값.
     property string resetTo: ""
     property string resetLabel: ""
     property string doc: ""
@@ -47,24 +31,16 @@ Column {
     readonly property bool isBool: kind === "bool"
     readonly property bool hovered: hover.hovered
 
-    // 되돌릴 곳은 설명에 붙는다 — 줄 안에는 되돌리기 단추만 두고 그 값은 안 적기
-    // 때문에, 무엇으로 돌아가는지는 설명에서만 보인다.
+    // 되돌릴 값은 줄에 안 적어서 설명에만 보인다.
     readonly property string docTail: dirty && resetTo !== "" ? "   · " + resetLabel + " " + resetTo : ""
 
-    // 띠에 띄울 것에는 이름이 붙는다. 띠는 목록에서 떨어져 있어서 어느 손잡이
-    // 이야기인지가 글에 없으면 안 된다.
+    // 띠는 목록에서 떨어져 있어 어느 손잡이인지 이름을 붙인다.
     readonly property string docLine: name + (doc !== "" ? " — " + doc : "") + docTail
 
-    // 줄 안에 펴는 것에는 안 붙인다. 왼쪽 칸에 이미 있는 이름을 한 줄 아래에서
-    // 또 읽게 된다.
     readonly property string docInline: doc + docTail
 
-    // 눈금 크기가 소수 몇째 자리까지 뜻이 있는지 정한다. 눈금은 셰이더가 스스로
-    // 정하거나 범위의 1/100 이라 0.0038 같은 값이 온다(apps/rice/knobs). 자리를
-    // 고정해 두면 그런 눈금에서 화면에 안 보이는 자리가 생긴다.
-    //
-    // 최소 한 자리는 남긴다. 0 자리로 깎으면 뒤의 0 을 떼는 규칙이 "40" 을 "4" 로
-    // 만든다.
+    // 눈금은 0.0038 같은 값도 온다(apps/rice/knobs). 최소 한 자리는 남긴다 —
+    // 0 자리면 뒤의 0 을 떼는 규칙이 "40" 을 "4" 로 만든다.
     readonly property int decimals: Math.max(1, Math.min(4, Math.ceil(-Math.log(step) / Math.LN10 - 1e-9)))
 
     function fmt(v) {
@@ -91,7 +67,6 @@ Column {
             font.pixelSize: Theme.fontS
         }
 
-        // 불리언은 값 글자가 없다 — 스위치가 곧 값이다. 그래도 칸은 남긴다.
         Txt {
             width: 48
             anchors.verticalCenter: parent.verticalCenter
@@ -100,8 +75,6 @@ Column {
             text: root.fmt(slider.live)
             font.family: Theme.monoFamily
             font.pixelSize: Theme.fontS
-            // 기본값과 다르다는 것을 색으로 먼저 알린다. 되돌리기 단추는 그
-            // 확인이지 첫 신호가 아니다.
             color: root.dirty ? Theme.primary : Theme.surfaceText
         }
 
@@ -111,9 +84,7 @@ Column {
             visible: root.isBool
         }
 
-        // 이 값을 0 으로 내리면 흐르는 것이 멈춘다는 표시. 배터리 값이 통째로
-        // 여기 붙어 있어서(debug:vfr), 어느 손잡이가 그런 손잡이인지 보이는 편이
-        // 낫다.
+        // `!motion` 표시. 배터리 값(debug:vfr)이 이 손잡이에 붙어 있다.
         Txt {
             width: 32
             anchors.verticalCenter: parent.verticalCenter
@@ -132,7 +103,7 @@ Column {
             Slide {
                 id: slider
                 visible: !root.isBool
-                // 남는 폭은 비워 둔다. 끝까지 늘이면 한 픽셀이 눈금보다 잘아진다.
+                // 끝까지 늘이면 한 픽셀이 눈금보다 잘아진다.
                 width: Math.min(parent.width, 380)
                 anchors.verticalCenter: parent.verticalCenter
                 minimum: root.minimum
@@ -153,8 +124,6 @@ Column {
             }
         }
 
-        // 되돌리기. 어디로 되돌아가는지는 설명 줄에 적힌다 — 줄마다 그 값을 달면
-        // 거의 안 쓰는 것에 슬라이더 폭을 계속 내주게 된다.
         Btn {
             anchors.verticalCenter: parent.verticalCenter
             width: Theme.hit

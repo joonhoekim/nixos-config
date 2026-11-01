@@ -1,45 +1,30 @@
 #!/bin/sh -e
-#
-# Build and activate this machine's configuration.
-#   macOS  -> nix build, then sudo darwin-rebuild activate, 이어서
-#             apps/rift-grid --auto (창 관리자. nix 밖에서 빌드·서명한다),
-#             apps/subline-terminal --auto (터미널. 같은 까닭으로 nix 밖에서),
-#             apps/kanata --auto (키 리매퍼. nix 가 빌드한 것을 이 기계 신원으로 다시 서명)
-#   NixOS  -> nix build, then sudo switch-to-configuration switch
-# 타겟은 build-lib.sh 가 고르고, 없는 이름이면 거기서 목록과 함께 멈춘다.
-# --host NAME 으로 덮어쓴다 — 첫 switch 전(hostname 이 아직 'nixos')에 필요하다.
-#
-# Don't run the whole thing under sudo: it builds as your user and only the
-# activation step escalates. Extra flags pass through, e.g. `-- --show-trace`.
+# Build and activate this machine's configuration; on macOS then install rift-grid, subline-terminal
+# and kanata outside nix (each script's header says why). --host NAME: build-lib.sh.
+# Don't run under sudo: it builds as your user and only activation escalates. Extra flags pass through.
 
-# --host 파싱, NIXPKGS_ALLOW_UNFREE, $arch. build 와 같은 프롤로그다.
 . "$(dirname "$0")/build-lib.sh"
 
 if [ "$(uname)" = "Darwin" ]; then
   printf "${YELLOW}Building darwinConfigurations.%s...${NC}\n" "$target"
-  # Build as the user so private inputs are fetched with their gh credentials;
-  # only activation runs as root (nix-darwin#1457).
+  # Build as the user so private inputs are fetched with their gh credentials (nix-darwin#1457).
   nix --extra-experimental-features 'nix-command flakes' build ".#darwinConfigurations.${target}.system" $passthru
   system="$(readlink -f ./result)"
   unlink ./result 2>/dev/null || true
   printf "${YELLOW}Activating (sudo)...${NC}\n"
   sudo nix-env -p /nix/var/nix/profiles/system --set "$system"
   sudo "$system/sw/bin/darwin-rebuild" activate
-  # 창 관리자 rift-grid 는 nix 가 아니라 여기서 빌드·서명해 깐다(apps/rift-grid
-  # 머리말). 소스가 그대로면 바로 끝난다. 실패해도 시스템 전환은 이미 끝났으니
-  # 경고만 하고 넘어간다.
+  # 실패해도 시스템 전환은 이미 끝났으니 경고만 하고 넘어간다.
   "$(dirname "$0")/rift-grid" --auto \
     || printf "${YELLOW}rift-grid 를 깔지 못했다.${NC} nix run .#rift-grid 로 다시.\n"
   "$(dirname "$0")/subline-terminal" --auto \
     || printf "${YELLOW}subline-terminal 을 깔지 못했다.${NC} nix run .#subline-terminal 로 다시.\n"
   "$(dirname "$0")/kanata" --auto \
     || printf "${YELLOW}kanata 를 깔지 못했다.${NC} nix run .#kanata 로 다시.\n"
-  # 드라이버 승인·TCC 처럼 사람이 할 단계가 남았으면 여기서 보인다. 없으면 조용하다.
+  # 사람이 할 단계(드라이버 승인·TCC)가 남았을 때만 출력한다.
   "$(dirname "$0")/check/pending" || true
 else
   printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
-  # Build as the user so private inputs are fetched with their gh credentials;
-  # only activation runs as root.
   nix --extra-experimental-features 'nix-command flakes' build ".#nixosConfigurations.${target}.config.system.build.toplevel" $passthru
   system="$(readlink -f ./result)"
   unlink ./result 2>/dev/null || true

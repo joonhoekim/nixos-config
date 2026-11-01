@@ -6,19 +6,9 @@
 #   ./apps/check/snapshot diff      가장 최근 두 벌을 비교
 #   ./apps/check/snapshot diff A B  이름을 골라 비교 (ls 로 본 디렉토리 이름)
 #   ./apps/check/snapshot list
-#
-# apps/check/mac 은 **예상한 것**만 본다 — 선언한 값이 맞는가. 이 스크립트는
-# 예상하지 못한 변화를 보기 위한 것이다: 메이저 업그레이드 전에 한 벌, 뒤에 한
-# 벌 떠서 diff 하면 OS 가 바꾼 것이 선언 밖의 것까지 보인다.
-#
-# 저장 위치는 체크아웃의 local/snapshot/<빌드번호>-<시각>/ 이고 local/ 은
-# .gitignore 에 있다. defaults 덤프와 로그인 항목 목록에는 계정명·경로·설치한 앱이
-# 그대로 들어 있어서, public 레포에는 올리지 않고 체크아웃 옆에만 둔다. 어느
-# 시점에 어느 OS 에서 통과했는지만 docs/os-support.md 로 공개한다
-# (apps/check/mac --record).
-#
-# 대상 도메인 목록은 /run/current-system/activate 에서 읽으므로 nix 가 동작하지
-# 않아도(업그레이드 직후 흔하다) 뜰 수 있다.
+# check/mac 은 선언한 값만 보고, 이것은 업그레이드 전후 diff 로 선언 밖 변화를 본다.
+# 계정명·앱 목록이 들어 있어 .gitignore 된 local/snapshot/ 에만 둔다. 전체 그림: docs/03-operating-on-macos.md
+# 위 3~8행은 사용법으로 그대로 출력된다(아래 sed -n '3,8p').
 
 here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 . "$here/lib.sh"
@@ -63,10 +53,7 @@ act=/run/current-system/activate
 sw_vers > "$out/sw_vers.txt"
 readlink /run/current-system > "$out/generation.txt" 2>&1
 
-# ── defaults ─────────────────────────────────────────────────────────────
-# 이 레포가 쓰는 도메인 전부 + 선언은 안 했지만 업그레이드가 자주 건드리는 것
-# (입력 소스, 단축키, 기본 앱). 도메인 전체를 읽으므로 선언하지 않은 이웃 key 의
-# 변화도 diff 에 나온다.
+# 도메인 전체를 읽으므로 선언하지 않은 이웃 key 의 변화도 diff 에 나온다.
 {
   [ -e "$act" ] && grep -o 'defaults write [^ ]*' "$act" | awk '{ print $3 }'
   printf '%s\n' com.apple.symbolichotkeys com.apple.HIToolbox \
@@ -80,8 +67,7 @@ while IFS= read -r dom; do
   defaults read "$dom" > "$out/defaults/$name.txt" 2>&1
 done < "$out/defaults/.domains"
 
-# ── launchd ──────────────────────────────────────────────────────────────
-# pid 는 매번 달라서 뺀다. 상태와 종료 코드, 재시작 횟수만.
+# pid 는 매번 달라서 뺀다.
 for p in /run/current-system/Library/LaunchDaemons/*.plist \
          /run/current-system/user/Library/LaunchAgents/*.plist; do
   [ -e "$p" ] || continue
@@ -92,7 +78,6 @@ for p in /run/current-system/Library/LaunchDaemons/*.plist \
     | awk -F' = ' '$1 ~ /^\t(state|runs|last exit code)$/ { print "  " $0 }'
 done > "$out/launchd.txt"
 
-# ── 시스템 ───────────────────────────────────────────────────────────────
 (
   cd /run/current-system/etc 2>/dev/null && find . -mindepth 1 -type l | sed 's|^\./||' \
     | while IFS= read -r f; do printf '%s -> %s\n' "$f" "$(readlink "/etc/$f")"; done
@@ -103,9 +88,7 @@ done
 mount | grep ' on /nix ' > "$out/nix-mount.txt"
 systemextensionsctl list > "$out/system-extensions.txt" 2>&1
 xcode-select -p > "$out/xcode-select.txt" 2>&1
-# 로그인 항목·백그라운드 항목(System Settings > General > Login Items). 업그레이드가
-# "백그라운드에서 허용" 을 다시 묻게 만드는 자리다. root 가 필요해서, 암호 없이
-# sudo 가 안 되면 건너뛴다.
+# 업그레이드가 "백그라운드에서 허용" 을 다시 묻게 만드는 자리. root 가 필요해 암호 없는 sudo 가 안 되면 건너뛴다.
 sudo -n sfltool dumpbtm > "$out/btm.txt" 2>/dev/null || rm -f "$out/btm.txt"
 
 if [ -x /opt/homebrew/bin/brew ]; then

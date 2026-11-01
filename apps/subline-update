@@ -6,15 +6,9 @@
 #   nix run .#subline-update -- --local [DIR] lock 은 두고 작업 트리(기본 ~/git/subline)로 짓는다. 커밋하지 않는다
 #   nix run .#subline-update -- --no-restart  새 빌드는 다음 로그인부터
 #
-# 설치는 subline 의 tools/session/install.sh 가 한다(그 레포의 docs/install.md):
-# nixos-rebuild switch 를 하고 살아 있는 세션을 새 바이너리로 제자리에서 다시 시작한다.
-# 앱은 닫혔다가 배치 복원으로 다시 뜬다. 그 스크립트를 lock 이 고정한 소스에서 부르므로
-# 스크립트와 깔리는 빌드가 늘 같은 커밋이다(--local 이면 그 트리의 스크립트). 로그인 화면도
-# 다음에 뜰 때 새 빌드다.
-#
-# 설치가 실패하면 lock 을 되돌린다 — 남겨 두면 다음 build-switch 가 깨진 subline 을 짓는다.
-# 전환은 됐는데 세션 다시 시작만 실패했으면(install.sh 의 끝 상태 3) 깔린 것이 새 것이므로
-# lock 은 커밋한다. build-switch 와 달리 이 기계의 nixosConfigurations.<hostname> 만 짓는다.
+# 설치는 lock 이 고정한 소스의 tools/session/install.sh 가 한다(그 레포의 docs/install.md). 그래서 스크립트와 빌드가 늘 같은 커밋이다.
+# 설치가 실패하면 lock 을 되돌린다(남기면 다음 build-switch 가 깨진 subline 을 짓는다). 세션 재시작만 실패했으면
+# (install.sh 의 끝 상태 3) 깔린 것이 새 것이므로 lock 은 커밋한다.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; NC='\033[0m'
 

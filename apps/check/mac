@@ -6,23 +6,7 @@
 #   ./apps/check/mac --record     통과하면 docs/os-support.md 에 한 행 + 스냅숏
 #   nix run .#check
 #
-# ── 왜 따로 있나 ─────────────────────────────────────────────────────────
-# macOS 쪽 설정은 빌드도 switch 도 성공한 채로 조용히 안 먹을 수 있다. defaults
-# key 가 이름을 바꾸거나, LaunchAgent 가 crash-loop 을 돌거나, LaunchServices 가
-# 옛 핸들러를 캐시하고 있거나. 전부 종료 코드 0 이다
-# (docs/postmortems/2026-08-04-macos-rift-sketchybar.md). 그래서 결과를 직접 읽어
-# 선언과 비교한다. 메이저 macOS 업그레이드 전후가 주 용도다 — 절차는
-# docs/03-operating-on-macos.md 의 업그레이드 절.
-#
-# ── 기대값은 체크아웃이 아니라 /run/current-system 에서 ─────────────────
-# activate 스크립트의 `defaults write` 줄, 세대에 든 launchd plist, etc 트리를
-# 그대로 읽는다. nix-darwin 이 실제로 쓴 것과 같은 출처라 도메인 매핑표 같은
-# 두 번째 사본이 없다. 체크아웃을 `nix eval` 하지 않는 이유는 둘이다:
-#   - 묻는 것이 "활성화한 것이 지금도 먹고 있나"다. 체크아웃을 기준으로 하면
-#     아직 switch 하지 않은 변경이 전부 회귀처럼 보인다.
-#   - OS 업그레이드 직후 nix 가 망가져 있어도(/etc/zshrc 가 되돌려진 경우 등) 돈다.
-# 체크아웃과 세대가 어긋나는지는 마지막 절에서 따로 알린다.
-#
+# 기대값은 체크아웃이 아니라 /run/current-system 에서 읽는다. 전체 그림: docs/03-operating-on-macos.md
 # `sh -e` 가 아닌 이유는 doctor 와 같다: 명령이 실패하는 것 자체가 결과다.
 
 here="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -33,9 +17,7 @@ if [ "$(uname)" != Darwin ]; then
   exit 1
 fi
 
-# --host 파싱과 $target 은 build-switch 와 같은 규칙으로 고른다. build-lib.sh 는
-# 체크아웃 안을 cwd 로 가정하므로 먼저 옮겨 둔다.
-# --record 는 build-lib.sh 가 모르는 인자라 먼저 걸러 낸다.
+# build-lib.sh 는 cwd 가 체크아웃 안이라고 가정하므로 먼저 옮기고, 그것이 모르는 --record 는 먼저 걸러 낸다.
 record=0
 for a do
   shift
@@ -55,7 +37,6 @@ tab="$(printf '\t')"
 printf "\n${YELLOW}macOS${NC}  %s (%s)\n" "$(sw_vers -productVersion)" "$(sw_vers -buildVersion)"
 printf "${YELLOW}세대${NC}   %s\n" "$(readlink "$sys" 2>/dev/null || echo '(없음)')"
 
-# ── Nix ──────────────────────────────────────────────────────────────────
 section "Nix"
 if mount | grep -q ' on /nix '; then
   ok "/nix 볼륨이 마운트되어 있다"
@@ -72,13 +53,8 @@ else
   hint "sudo launchctl kickstart -k system/org.nixos.nix-daemon"
 fi
 
-# 셸·시스템·데몬이 같은 nix 인가. nix.package(modules/shared/nix-implementation.nix)
-# 가 정하는 것은 데몬과 $sys/sw/bin/nix 이고, 셸이 집는 것은 PATH 가 정한다. 설치기의
-# 기본 프로필이 PATH 앞에 오면 셸만 설치할 때 깐 판(다른 구현체일 수도)이 되는데,
-# 어떤 명령도 실패하지 않아서 여기서만 드러난다.
-#
-# 셸은 지금 이 스크립트의 PATH 가 아니라 새 로그인·대화형 셸로 본다. 문제가 되는 줄은
-# rc 파일에 있고, 이 스크립트를 띄운 셸은 고치기 전의 PATH 를 들고 있을 수 있다.
+# 셸·시스템·데몬이 같은 nix 인가. 설치기 프로필이 PATH 앞에 오면 셸만 다른 판이 되는데 어떤 명령도 실패하지 않는다.
+# 셸은 새 로그인 셸로 본다: 이 스크립트를 띄운 셸은 rc 를 고치기 전의 PATH 를 들고 있을 수 있다.
 want="$("$nix" --version 2>/dev/null | head -1)"
 daemon_v="$(sed -n 's/^Version: //p' "$tmp/store" 2>/dev/null)"
 login="$(dscl . -read "/Users/$(id -un)" UserShell 2>/dev/null | awk '{ print $2 }')"
@@ -134,7 +110,6 @@ while read -r _ _ _ u _ want; do
   fi
 done < "$tmp/shell"
 
-# ── launchd ──────────────────────────────────────────────────────────────
 section "launchd"
 # KeepAlive 인 job 은 떠 있어야 하고, 아닌 job(로그인에 한 번 띄우고 끝나는
 # `open -a` 류)은 마지막 종료가 0 이어야 한다. crash-loop 은 "running" 과 "안 떠
@@ -179,10 +154,8 @@ for p in "$sys"/user/Library/LaunchAgents/*.plist; do
   [ -e "$p" ] && check_job "gui/$uid" "$p"
 done
 
-# Background App Activity 는 서비스 이름을 첫 ProgramArguments 의 basename 으로 보인다.
-# modules/darwin/launchd-names.nix 가 그걸 서비스 이름의 래퍼로 바꾸므로, 여기서 /bin/sh 가
-# 보이면 그 모듈이 빠졌거나 nix-darwin 의 감싸는 방식이 바뀐 것이다 — 동작은 멀쩡하고
-# 목록에 "sh" 만 늘어난다.
+# Background App Activity 는 첫 ProgramArguments 의 basename 을 서비스 이름으로 보인다. /bin/sh 가 보이면
+# modules/darwin/launchd-names.nix 가 빠졌거나 nix-darwin 의 감싸는 방식이 바뀐 것이다(동작은 멀쩡하고 목록에 "sh" 만 는다).
 shs=""
 for p in "$sys"/Library/LaunchDaemons/*.plist "$sys"/user/Library/LaunchAgents/*.plist; do
   [ -e "$p" ] || continue
@@ -194,15 +167,9 @@ if [ -n "$shs" ]; then
   hint "modules/darwin/launchd-names.nix 가 import 되어 있는지 (hosts/darwin/common.nix)"
 fi
 
-# ── defaults ─────────────────────────────────────────────────────────────
 section "defaults"
-# activate 안의 nix-darwin 이 쓰는 모양:
-#   ... defaults write <도메인> <키> '<?xml ...
-#   <plist version="1.0">
-#   <integer>2</integer>
-#   </plist>'
-# 값 줄을 `defaults read-type` 이 쓰는 타입 이름과 함께 한 행으로 뽑는다.
-# -dict-add 는 모양이 달라서 아래에서 따로 본다.
+# activate 안에서 nix-darwin 은 `defaults write <도메인> <키> '<?xml ...<integer>2</integer></plist>'` 꼴로 쓴다.
+# 값 줄을 `defaults read-type` 의 타입 이름과 함께 한 행으로 뽑는다. -dict-add 는 아래에서 따로 본다.
 awk -v OFS="$tab" '
   /defaults write / {
     pend = 0
@@ -276,7 +243,6 @@ while IFS= read -r line; do
   fi
 done < "$tmp/dictadd"
 
-# ── 기본 앱 ──────────────────────────────────────────────────────────────
 # modules/darwin/default-apps.nix 가 넘기는 uti=bundle 인자를 activate 에서 읽고,
 # plist 가 아니라 LaunchServices 의 해석 결과와 비교한다(handlers.swift).
 grep -o 'set-default-handlers.py [^|]*' "$act" | head -1 | tr ' ' '\n' | grep '=' \
@@ -307,7 +273,6 @@ if [ -s "$tmp/want.tsv" ]; then
   fi
 fi
 
-# ── rift-grid ─────────────────────────────────────────────────────────────────
 # 창 목록이 돌아오면 rift-grid 가 떠 있고 손쉬운 사용 권한도 살아 있다는 뜻이다.
 # TCC 는 직접 읽을 수 없으므로 이게 권한을 확인하는 유일한 방법이다.
 if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift-grid.plist" ]; then
@@ -325,7 +290,6 @@ if [ -e "$sys/user/Library/LaunchAgents/org.nixos.rift-grid.plist" ]; then
   fi
 fi
 
-# ── Homebrew ─────────────────────────────────────────────────────────────
 brewfile="$(grep -o "brew bundle --file='[^']*'" "$act" | head -1 | sed "s/.*='//; s/'\$//")"
 if [ -n "$brewfile" ]; then
   section "Homebrew"
@@ -359,9 +323,7 @@ if [ -n "$brewfile" ]; then
 
 fi
 
-# ── kanata ───────────────────────────────────────────────────────────────
-# Caps Lock 레이어(modules/darwin/kanata.nix). 데몬이 떠 있는지는 위 launchd 절이
-# 본다. 여기는 데몬이 떠 있어도 레이어가 조용히 안 먹는 경우들이다.
+# 데몬이 떠 있어도 Caps Lock 레이어(modules/darwin/kanata.nix)가 조용히 안 먹는 경우들. 데몬 자체는 launchd 절이 본다.
 if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
   section "kanata"
   # 확장이 꺼지면 kanata 는 떠 있는데 키가 kanata 를 거치지 않고 그대로 나간다.
@@ -401,7 +363,6 @@ if [ -e "$sys/Library/LaunchDaemons/org.nixos.kanata.plist" ]; then
   fi
 fi
 
-# ── 체크아웃 ─────────────────────────────────────────────────────────────
 section "체크아웃"
 if want="$("$nix" eval --raw "$repo#darwinConfigurations.$target.system.outPath" 2>/dev/null)"; then
   if [ "$want" = "$(readlink "$sys")" ]; then
@@ -415,12 +376,8 @@ else
   warn ".#$target 을 평가하지 못해 세대와 비교하지 않았다"
 fi
 
-# ── 기록 ─────────────────────────────────────────────────────────────────
-# 레포가 public 이라 공개하는 것은 "이 날짜에 이 OS·기종·커밋에서 통과했다" 한 행
-# 뿐이다. 무엇이 어땠는지의 세부는 스냅숏으로 local/ 에 남는다(gitignore).
-#
-# 행이 뜻을 가지려면 커밋이 곧 활성화된 설정이어야 한다. 그래서 세대가 체크아웃과
-# 같고 작업 트리가 깨끗할 때만 쓴다 — 아니면 적힌 커밋이 실제로 검사한 것과 다르다.
+# 공개하는 것은 "이 날짜에 이 OS·기종·커밋에서 통과했다" 한 행뿐이고 세부는 local/ 의 스냅숏에 남는다.
+# 세대가 체크아웃과 같고 작업 트리가 깨끗할 때만 쓴다. 아니면 적힌 커밋이 실제로 검사한 것과 다르다.
 if [ "$record" = 1 ]; then
   section "기록"
   support="$repo/docs/os-support.md"

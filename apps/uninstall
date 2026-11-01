@@ -9,19 +9,9 @@
 #
 # `nix run .#uninstall` 이 아니라 /bin/sh 로 경로를 직접 부른다. 지우는 대상이 nix 자신이다.
 #
-# ── 순서가 이 모양인 이유 ────────────────────────────────────────────────
-# 1. --purge 의 단계가 먼저다. brew 는 nix-homebrew 가 스토어에서 링크한 것이라
-#    Nix 를 지우고 나면 `brew uninstall` 을 부를 수 없다.
-# 2. darwin-uninstaller 는 Nix 를 지우기 전에, 그리고 맨 처음에 빌드해 둔다. 로그인
-#    셸을 /bin/zsh 로 돌리고 /etc 의 *.before-nix-darwin 을 되살리고 nix-darwin 의
-#    launchd 서비스를 내린다. 이걸 건너뛰고 /nix 를 지우면 로그인 셸이 없는 경로를
-#    가리켜 새 터미널이 바로 닫힌다.
-# 3. Nix 본체가 마지막이다. /nix 볼륨을 쓰는 프로세스가 하나라도 있으면 언마운트에서
-#    멈춘다 — 그래서 이 스크립트는 스토어의 셸 아래에서는 --run 을 거절한다.
-#
-# 기본 --run 이 kanata 바이너리 · 드라이버 · 서명 신원 · nix 밖 빌드를 남기는 것은 일부러다.
-# TCC 허가와 드라이버 승인은 이것들에 묶여 있어서, 남겨 두면 다시 깐 뒤 사람이 할
-# 단계(apps/check/pending)가 없다.
+# 순서: --purge 단계(brew 는 스토어에서 링크돼 Nix 뒤에는 못 부른다) → darwin-uninstaller(맨 처음에 빌드해 둔다. 건너뛰면
+# 로그인 셸이 없는 경로를 가리켜 새 터미널이 바로 닫힌다) → Nix 본체(/nix 를 쓰는 프로세스가 있으면 언마운트에서 멈춘다).
+# 기본 --run 이 kanata·드라이버·서명 신원·nix 밖 빌드를 남기는 것은 TCC 허가와 드라이버 승인이 거기 묶여 있어서다.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
 
@@ -60,7 +50,6 @@ step() {
 }
 has() { [ -e "$1" ] || [ -L "$1" ] && echo 1 || echo 0; }
 
-# ── 미리 보기 ────────────────────────────────────────────────────────────
 login="$(dscl . -read "/Users/$user" UserShell 2>/dev/null | awk '{ print $2 }')"
 parent="$(ps -o comm= -p "$PPID" 2>/dev/null)"
 installer=none
@@ -126,21 +115,15 @@ fi
 
 # ── nix-darwin → home-manager → Nix ──────────────────────────────────────
 printf "${YELLOW}Nix${NC}\n"
-# /usr/local/libexec/nix-darwin 은 이 레포의 launchd 래퍼다(modules/darwin/launchd-names.nix).
-# darwin-uninstaller 는 그 모듈을 모르므로 여기서 같이 지운다.
-#
-# 사용자 에이전트는 먼저 사용자 권한으로 내린다. darwin-uninstaller 는 root 로 돌아서
-# ~/Library/LaunchAgents 의 plist 파일만 지우고 gui 도메인에 올라 있는 job 은 그대로 둔다
-# (2026-10-31 실측: wal-watch·rift-grid 가 남았다). nix 의 bash 로 도는 wal-watch 가 남으면
-# 마지막 단계에서 /nix 를 언마운트하지 못한다.
+# /usr/local/libexec/nix-darwin(modules/darwin/launchd-names.nix 의 래퍼)은 darwin-uninstaller 가 모르므로 같이 지운다.
+# 사용자 에이전트는 먼저 사용자 권한으로 내린다: root 인 darwin-uninstaller 는 plist 만 지우고 gui 도메인의 job 은 남겨
+# (2026-10-31 실측: wal-watch·rift-grid), nix 의 bash 로 도는 wal-watch 가 /nix 언마운트를 막는다.
 step "nix-darwin 을 걷는다 (로그인 셸 → /bin/zsh, /etc 복원, launchd 서비스 · sudoers · pam · 래퍼 제거)" \
   "$(has /run/current-system)" \
   "for p in \"\$HOME\"/Library/LaunchAgents/org.nixos.*.plist; do [ -e \"\$p\" ] && launchctl bootout gui/\$(id -u) \"\$p\"; done; sudo \"$uninst\"; sudo rm -rf /usr/local/libexec/nix-darwin"
 
-# home-manager 의 링크는 nix-darwin 제거가 건드리지 않는다. 스토어의 home-manager-files 를
-# 가리키는 링크만 지우고, 그 자리에 첫 활성화 때 옮겨 둔 <이름>.backup 이 있으면 되돌린다
-# (backupFileExtension = "backup", modules/darwin/home-manager.nix). 링크가 아니었던 파일의
-# .backup 은 손대지 않는다 — 사용자가 만든 것일 수 있다.
+# home-manager 의 링크는 nix-darwin 제거가 건드리지 않는다. home-manager-files 를 가리키는 링크만 지우고 <이름>.backup
+# (backupFileExtension, modules/darwin/home-manager.nix)을 되돌린다. 링크가 아니었던 파일의 .backup 은 사용자 것일 수 있어 둔다.
 hm_find='find "$HOME" -maxdepth 4 \( -path "$HOME/Library" -o -path "$HOME/git" -o -path "$HOME/.Trash" \) -prune -o -type l -lname "/nix/store/*-home-manager-files/*" -print'
 hm_links="$(eval "$hm_find" 2>/dev/null | head -1)"
 step "home-manager 가 만든 링크를 지우고 그 자리의 .backup 을 되돌린다" "$([ -n "$hm_links" ] && echo 1 || echo 0)" \

@@ -5,19 +5,9 @@
 #   ./apps/doctor          전부 본다
 #   nix run .#doctor       첫 switch 뒤에는 이렇게도 된다
 #
-# ── 왜 따로 있나 ─────────────────────────────────────────────────────────
-# 여기서 보는 것들은 전부 **Nix 평가가 볼 수 없는 사실**이다. 순수 평가는
-# /etc/passwd 도, `hostname` 도, 이 디렉토리가 git 에 들어 있는지도 모른다.
-# 그래서 어긋나도 빌드는 멀쩡히 성공하고, 증상은 한참 뒤에 엉뚱한 모양으로
-# 나온다 — 계정이 두 개가 된다든지, `build-switch` 가 영영 `--host` 를
-# 요구한다든지, 만들어 둔 호스트 디렉토리가 없는 것처럼 취급된다든지.
-#
-# `sh -e` 가 아닌 이유: 여기서는 명령이 실패하는 것 자체가 결과다.
-#
-# 신원 파일은 `nix-instantiate` 로 읽는다. flake 평가(`nix eval .#...`)가 아니라
-# 파일 하나를 그대로 평가하는 것이라 flakes 가 꺼져 있어도, 네트워크가 없어도,
-# input 을 하나도 안 받아 와도 즉시 답이 나온다 — 첫 switch 전에 돌아야 하는
-# 스크립트라 그 조건이 중요하다.
+# 여기서 보는 것은 순수 평가가 볼 수 없는 사실(/etc/passwd, hostname, git 추적 여부)이라 어긋나도 빌드는 성공한다.
+# `sh -e` 가 아닌 이유: 명령이 실패하는 것 자체가 결과다.
+# 신원 파일은 flake 평가가 아니라 nix-instantiate 로 읽는다: flakes·네트워크·input 없이 첫 switch 전에도 즉시 답이 나온다.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
 
@@ -27,9 +17,7 @@ warn() { printf "  ${YELLOW}⚠${NC} %s\n" "$1"; warns=$((warns+1)); }
 bad()  { printf "  ${RED}✗${NC} %s\n" "$1"; bads=$((bads+1)); }
 hint() { printf "      ${DIM}%s${NC}\n" "$1"; }
 
-# ── 체크아웃 찾기 ────────────────────────────────────────────────────────
-# `nix run` 아래서는 $0 가 /nix/store 를 가리키므로 거기서부터 거슬러 올라가는
-# 건 소용이 없다. rice-save 와 같은 방식으로 cwd 의 git 최상위를 먼저 본다.
+# ── 체크아웃 찾기. `nix run` 아래서는 $0 가 /nix/store 라서 cwd 의 git 최상위를 먼저 본다(rice-save 와 같다).
 repo="${NIXOS_CONFIG_REPO:-}"
 [ -n "$repo" ] || repo="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ -z "$repo" ] || [ ! -e "$repo/flake.nix" ]; then
@@ -95,8 +83,7 @@ if [ -n "$hostdir" ]; then
   fi
 fi
 
-# ── 3. flake 가 볼 수 없는 파일 ──────────────────────────────────────────
-# 이게 조용한 실패의 대표다. 파일은 분명히 있는데 flake 는 없는 것으로 친다.
+# ── 3. flake 가 볼 수 없는 파일. 조용한 실패의 대표다: 파일은 있는데 git 에 없으면 flake 는 없는 것으로 친다.
 untracked="$(git -C "$repo" ls-files --others --exclude-standard -- hosts users 2>/dev/null)"
 if [ -n "$untracked" ]; then
   bad "hosts/ · users/ 아래에 git 이 추적하지 않는 파일이 있다"

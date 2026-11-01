@@ -162,10 +162,34 @@ Profile/MDM(공식, 잠금 가능). 핵심: `defaults`는 Apple이 "안정 API"�
 - `./apps/check/mac` (`nix run .#check`) — 활성화된 세대가 실제로 먹고 있는지 단언한다.
   `/etc` 링크, nix-daemon, launchd job(crash-loop 포함), `defaults` 값과 타입,
   LaunchServices 핸들러의 실제 해석 결과, rift-grid 의 창 목록(손쉬운 사용 권한), kanata 의
-  DriverKit 확장과 서명, Brewfile. 무엇을 어떻게 보는지는 스크립트 머리말.
+  DriverKit 확장과 서명, Brewfile. 무엇을 기준으로 보는지는 아래.
 - `./apps/check/snapshot` (`nix run .#check-snapshot`) — 선언 밖의 변화까지 보도록 상태를
   텍스트로 떠 두고 `diff` 로 비교한다. 체크아웃의 `local/snapshot/` 에 쌓이고, `local/` 은
   gitignore 되어 있다(계정명·경로·앱 목록이 그대로 들어 있어서).
+
+#### check 가 무엇을 기준으로 보나
+
+macOS 쪽 설정은 빌드도 switch 도 성공한 채로 조용히 안 먹을 수 있다: defaults key 가 이름을 바꾸거나,
+LaunchAgent 가 crash-loop 을 돌거나, LaunchServices 가 옛 핸들러를 캐시하고 있거나. 전부 종료 코드 0 이다
+([postmortem](postmortems/2026-08-04-macos-rift-sketchybar.md)). 그래서 `apps/check/mac` 은 결과를 직접 읽어
+선언과 비교한다.
+
+**기대값은 체크아웃이 아니라 `/run/current-system` 에서 읽는다.** activate 스크립트의 `defaults write` 줄,
+세대에 든 launchd plist, etc 트리를 그대로 읽으므로 nix-darwin 이 실제로 쓴 것과 같은 출처이고, 도메인
+매핑표 같은 두 번째 사본이 없다. 체크아웃을 `nix eval` 하지 않는 이유는 둘이다:
+
+- 묻는 것이 "활성화한 것이 지금도 먹고 있나"다. 체크아웃을 기준으로 하면 아직 switch 하지 않은 변경이 전부
+  회귀처럼 보인다.
+- OS 업그레이드 직후 nix 가 망가져 있어도(/etc/zshrc 가 되돌려진 경우 등) 돈다.
+
+체크아웃과 세대가 어긋나는지는 마지막 절에서 따로 알린다. `--record` 는 세대가 체크아웃과 같고 작업 트리가
+깨끗할 때만 [os-support.md](os-support.md) 에 한 행을 쓴다(아니면 적힌 커밋이 실제로 검사한 것과 다르다).
+레포가 public 이라 공개하는 것은 그 한 행뿐이고 세부는 `local/` 의 스냅숏(gitignore)에 남는다.
+
+`apps/check/snapshot` 은 이 레포가 쓰는 defaults 도메인 전부(activate 에서 읽는다)에 더해, 업그레이드가 자주
+건드리는 입력 소스(com.apple.HIToolbox)·단축키(com.apple.symbolichotkeys)·기본 앱(LaunchServices) 도메인을
+통째로 덤프한다. 그래서 선언하지 않은 이웃 key 의 변화도 diff 에 나온다. 로그인·백그라운드 항목
+(`sfltool dumpbtm`)은 root 가 필요해 암호 없는 sudo 가 될 때만 뜬다.
 
 순서:
 
@@ -248,11 +272,24 @@ home-manager.backupFileExtension = "backup";   # 기존 파일을 <name>.backup 
 
 **6. rift-grid 가 안 뜬다 — rift-grid 는 build-switch 끝에서 따로 빌드된다.** 창 관리자는 rift 포크
 rift-grid(공개 레포 `joonhoekim/rift-grid`)이고, TCC 허가를 재빌드에 견디게 하려고 nix 가 아니라
-기계마다 빌드·서명한다(`apps/rift-grid` 머리말). build-switch 는 활성화 뒤 `apps/rift-grid --auto`
-를 부른다: 서명 신원이 없으면 `apps/mac-signing-cert` 로 만들고(키체인 인증 창이 한 번 뜰 수 있다),
-`~/git/compositor/rift-grid` 에 클론 → 빌드 → 서명 → `~/.local/bin`. 소스가 지난번에 깐 커밋
-그대로면 아무것도 안 한다. cargo 가 아직 없으면(mise 가 rust 를 깔기 전) 경고만 하고 넘어가니,
-그때는 build-switch 를 한 번 더 돌린다. 손으로 부르려면:
+기계마다 빌드·서명한다. nix 가 빌드한 바이너리는 임의 서명이라 TCC 요구사항이 cdhash 이고, 포크를
+고칠 때마다 손쉬운 사용·화면 기록 허가를 다시 줘야 하며 macOS 는 다시 묻지도 않는다. 그래서
+`apps/rift-grid` 가 `$RIFT_GRID_SRC`(기본 `~/git/compositor/rift-grid`, 없으면 공개 레포의 grid 브랜치를
+클론)에서 빌드해 `apps/mac-signing-cert` 의 신원으로 서명한다. 산출물이 기계마다 따로라는 점도
+mac-signing-cert 와 같다.
+
+build-switch 는 활성화 뒤 `apps/rift-grid --auto` 를 부른다. 손으로 부를 때와 다른 점:
+
+- 서명 신원이 없으면 멈추지 않고 `apps/mac-signing-cert` 로 만든다(키체인 인증 창은 기계당 처음 한 번).
+- cargo 가 아직 없으면(mise 가 rust 를 깔기 전) 경고만 하고 넘어가니, 그때는 build-switch 를 한 번 더 돌린다.
+- 받아 온 소스가 지난번에 깐 커밋 그대로면 빌드도 재시작도 안 한다(매 build-switch 마다 창 관리자가
+  깜빡이지 않게). 변경이 있는 트리는 커밋으로 비교할 수 없으니 매번 빌드한다.
+
+설치 자리는 `~/.local/bin/rift-grid`, `~/.local/bin/rift-grid-cli`. launchd 에이전트(hosts/darwin/common.nix 의
+rift-grid, [macos-internals.md](macos-internals.md#rift-grid-로그인-에이전트와-displays-have-separate-spaces))가
+이 경로를 띄우고, 셸과 rift-grid 키바인딩은 PATH 로 rift-grid-cli 에 닿는다. brew 의 원본 rift 는 쓰지 않는다
+— 설정(rice/rift-grid/config.toml)이 grid_focus 같은 포크 전용 명령을 쓰므로 원본은 그 설정을 읽지 못한다.
+손으로 부르려면:
 
 ```bash
 nix run .#rift-grid             # 커밋이 같아도 다시 빌드하고 rift-grid 를 다시 띄운다
@@ -333,7 +370,7 @@ nix run .#reclaim             # 대화형 — 대상별로 재서 표로 보여�
 nix run .#reclaim -- --list   # 측정만. 아무것도 지우지 않는다
 # "System Data"가 커 보이는 주원인은 보통 업데이트 잔재가 아니라 /nix/store 다
 # (설정 > 저장 공간이 스토어를 그 칸으로 집계한다). 범용 클리너는 쓰지 말 것 —
-# 스토어 트리를 orphaned/broken symlink 로 읽는다. apps/reclaim 머리말 참고.
+# 스토어 트리를 orphaned/broken symlink 로 읽는다. disk-space.md 의 apps/reclaim 절 참고.
 # turbo · cargo · docker 처럼 프로젝트마다 쌓이는 빌드 산출물 → disk-space.md
 
 # ── 적용 후 반영 ──

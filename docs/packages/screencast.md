@@ -45,7 +45,7 @@ NixOS(Hyprland)에서는 `wf-recorder`(nixpkgs, Linux 전용)나 OBS를 쓴다. 
 ## 2. 연출은 스크립트로 몬다
 
 키를 합성하지 말고 **같은 액션을 CLI로 부른다**(`rift-grid-cli execute layout grid-cell right`
-같은 식). [`apps/demo`](../../apps/demo) 머리말과 같은 이유다. 합성 키 이벤트는 접근성
+같은 식). [`apps/demo`](../demo.md#키를-누르는-게-아니라-액션을-부른다)와 같은 이유다. 합성 키 이벤트는 접근성
 권한이 필요하고, Alt 같은 수정 키가 HID 상태에 눌린 채 남는 사고가 난다.
 
 ```sh
@@ -80,7 +80,32 @@ apps/screencast --example > demo.cast   # spec 틀
 apps/screencast demo.cast --gif         # demo.mp4, demo.gif
 ```
 
-spec 형식은 스크립트 머리말에 있다. 하는 일은 다음과 같다.
+spec 은 한 줄에 하나, `#` 뒤는 주석. 경로는 spec 파일이 있는 디렉토리 기준이다.
+
+```
+input    raw.mov              녹화본 (필수)
+trim     2.2 21.0             쓸 구간, 초. 없으면 전부
+width    1512                 내보낼 너비. 높이는 비율대로 (기본 1512)
+fps      60                   (기본 60)
+hold     1.0                  본편 앞에 첫 장면을 이만큼 멈춰 둔다 — 첫 자막이 카드의 크로스페이드에 묻히지 않게
+font     /path/to/font.ttf    (기본: macOS 는 SF, 그 밖은 fc-match sans)
+backdrop wallpaper.png        카드 배경. 없으면 본편의 첫/끝 장면을 흐려 쓴다
+intro    2.8 | 제목 | 한 줄 | 한 줄    앞 카드: 길이 | 제목 | 줄들 (줄은 0~2개)
+outro    2.4 | 제목 | 한 줄            뒤 카드
+caption  1.2 3.5 ⌥L  focus right      자막: 시작 끝 문장
+```
+
+caption 의 시각은 trim 한 구간의 시각이다(hold 는 스크립트가 더한다). 맨 처음 자막은 멈춘 장면 동안 이미
+떠 있다. 자막 시각은 녹화를 몬 스크립트의 명령 시각에서 가져오는 게 가장 정확하다. 그게 없으면 장면 전환을
+뽑아 맞춘다:
+
+```
+ffmpeg -i out.mp4 -vf "select='gt(scene,0.04)',showinfo" -f null - 2>&1 | grep -o 'pts_time:[0-9.]*'
+```
+
+창을 실제로 움직이며 그 자리에서 자막을 띄우는 짝은 `apps/demo`([demo.md](../demo.md))다.
+
+하는 일은 다음과 같다.
 
 1. **본편:** `trim` 구간을 자르고 `width`로 줄인다. 2배 해상도 원본을 1배로 줄이면
    용량이 크게 준다. `hold`만큼 첫 장면을 멈춰 붙인다. `caption`마다 `drawtext`로

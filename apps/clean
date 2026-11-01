@@ -1,7 +1,5 @@
 #!/bin/sh -e
-#
-# Garbage-collect old generations to reclaim disk space.
-# Pass an age to override the default, e.g. `clean 14d` or `clean 0`.
+# Garbage-collect old generations. An age overrides the default 7d, e.g. `clean 14d` or `clean 0`.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 

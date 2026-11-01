@@ -97,12 +97,34 @@ macOS 가 클릭을 요구해서 레포가 대신할 수 없다. activation 은 
   실행에서야 Accessibility 를 요구한다. 그래서 2 는 처음부터 둘 다 켠다.
 - Driver Extensions 경로는 `systemextensionsctl list` 가 스스로 출력하는 안내와 같다.
 - `apps/check/pending --open` 이 남은 단계의 화면을 차례로 띄우고, 토글이 켜질 때까지 기다렸다가
-  다음으로 넘어간다. 쓰는 URL 과 각각을 확인한 방법은 그 스크립트 머리말에 있다(macOS 27.0.1 에서
-  화면을 찍어 확인). Login Items & Extensions 는 페이지 맨 위로 열리므로 Extensions 까지는 스크롤한다.
+  다음으로 넘어간다(아래 "pending 이 쓰는 URL 과 판정"). Login Items & Extensions 는 페이지 맨 위로
+  열리므로 Extensions 까지는 스크롤한다.
 
 1 이 2 보다 먼저다. 드라이버가 없으면 kanata 는 권한이 있어도 키를 내보낼 곳이 없다.
 kanata·rift-grid 는 이 기계의 서명 신원(`apps/mac-signing-cert`)으로 서명되므로 허가는
-기계당 한 번이다 — 판이 바뀌어도 다시 묻지 않는다.
+기계당 한 번이다 — 판이 바뀌어도 다시 묻지 않는다. kanata 배선 전체는
+[macos-internals.md](macos-internals.md#kanata-배선-modulesdarwinkanatanix).
+
+#### pending 이 쓰는 URL 과 판정 (`apps/check/pending`)
+
+`--open` 이 여는 URL 은 macOS 27.0.1 에서 `open` 한 뒤 화면을 찍어 확인한 것만 둔다(2026-10-31):
+
+| URL | 열리는 화면 |
+|---|---|
+| `…preference.security?Privacy_ListenEvent` | Input Monitoring |
+| `…preference.security?Privacy_Accessibility` | Device Control and Data Access |
+| `…preference.security?Privacy_ScreenCapture` | Screen & System Audio Recording |
+| `…LoginItems-Settings.extension?ExtensionItems` | Login Items 의 맨 위. Extensions 까지 내려가지 않으므로 거기서 스크롤한다 |
+
+화면 이름의 출처는 `/System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex` 의
+`Localizable.loctable` 이다. 식별자는 판마다 바뀔 수 있다. 엉뚱한 화면이 뜨면 그 바이너리를
+`strings | grep '^Privacy_'` 로 다시 보고, 같은 방법(열고 화면 확인)으로 확인한 뒤 고친다.
+
+kanata 상태 판정(kanata 1.12, macOS 27 실측): kanata 는 권한이 없어도 "starting" → "entering the event
+loop" 를 지나 약 2 초 떠 있다가 오류로 끝나고, KeepAlive 가 10 초마다 다시 띄운다. 그래서 launchd 의
+state = running 만으로는 승인됐다고 보지 않고, 이번 실행이 5 초 넘게 오류 없이 떠 있어야 ok 다(아니면
+--open 이 아무것도 승인되지 않은 채 끝난다). --open 은 3 초마다 상태를 다시 읽고, 토글이 켜지면 다음
+화면으로 넘어가며, Ctrl-C 로 그만둔다.
 
 ### 8. 로그아웃 · 다시 로그인
 
@@ -120,7 +142,7 @@ Nix 절의 "nix 한 벌: 셸·시스템·데몬 모두 …" 가 셋이 같은 �
 ### 다른 설치기로 깔았을 때
 
 Lix·Determinate 설치기로 깔아도 nix-darwin 이 데몬을 `nix.package`(CppNix)로 바꾸고, 셸도
-`/run/current-system/sw/bin/nix` 를 집는다(`modules/shared/shell-init.nix` 머리말). 남는 차이는
+`/run/current-system/sw/bin/nix` 를 집는다([nix-implementation.md](nix-implementation.md#셸이-설치기의-nix-daemonsh-를-source-하지-않는-이유)). 남는 차이는
 설치기 쪽뿐이다: 기본 프로필에 그 설치기의 nix 가 있고, 제거가 그 설치기의 `uninstall` 로
 간다.
 

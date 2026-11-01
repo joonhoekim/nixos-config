@@ -1,12 +1,6 @@
 #!/bin/sh -e
-#
-# Build this machine's configuration WITHOUT activating it — a safe way to
-# verify the flake evaluates and builds before `build-switch`.
-#   macOS  -> darwinConfigurations.<hostname 또는 arch>.system
-#   NixOS  -> nixosConfigurations.<hostname>.config.system.build.toplevel
-# 타겟은 build-lib.sh 가 고른다. --host NAME 으로 덮어쓴다.
+# Build this machine's configuration WITHOUT activating it (target: build-lib.sh, --host NAME).
 
-# --host 파싱, NIXPKGS_ALLOW_UNFREE, $arch. build-switch 와 같은 프롤로그다.
 . "$(dirname "$0")/build-lib.sh"
 
 if [ "$(uname)" = "Darwin" ]; then

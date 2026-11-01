@@ -4,24 +4,11 @@
 #
 #   ./apps/setup
 #
-# 만드는 것:
-#   users/<이름>.nix                          없으면 (계약: users/README.md)
-#   hosts/nixos/<hostname>/default.nix        + hardware-configuration.nix
-#   hosts/darwin/<hostname>/default.nix       (macOS. 하드웨어 스캔은 없다)
-#   …그리고 둘 다 `git add` 한다.
+# users/<이름>.nix(없으면, 계약: users/README.md)와 hosts/<플랫폼>/<hostname>/ 를 만들고 `git add` 한다.
 #
-# ── `nix run .#setup` 이 아니라 `./apps/setup` 인 이유 ───────────────────
-# flakes 를 켜는 것이 이 레포 자신이다(hosts/nixos/common.nix). 갓 설치한
-# NixOS 에서는 experimental-features 가 꺼져 있어서 `nix run` 이 안 된다.
-# 이 스크립트는 그 상태에서 돌아야 하므로 sh + coreutils + git 과
-# nixos-generate-config 말고는 아무것도 전제하지 않는다 — fzf 도 gum 도 jq 도
-# 안 쓰고, 그래서 화면이 `read` 로만 되어 있다(apps/rollback 과 같은 모양).
-#
-# ── 왜 물어보는 것이 이것들인가 ──────────────────────────────────────────
-# 전부 **Nix 평가가 볼 수 없는 사실**이다. 순수 평가는 /etc/passwd 도
-# `hostname` 도 못 본다. 그래서 어긋나도 빌드는 성공하고, 증상은 한참 뒤에
-# 나온다 — 계정이 두 개가 되거나, build-switch 가 영영 `--host` 를 요구하거나.
-# 그 둘을 여기서 확인 단계로 끌어올린다. 사후 점검은 ./apps/doctor 가 한다.
+# `nix run` 이 아닌 이유: flakes 를 켜는 것이 이 레포라 갓 설치한 NixOS 에서는 안 된다. 그래서 sh·coreutils·git·
+# nixos-generate-config 말고는 전제하지 않는다(fzf·gum·jq 없이 `read` 만).
+# 묻는 것은 Nix 평가가 볼 수 없는 사실(계정, hostname)이다. 어긋나도 빌드는 성공하므로 여기서 확인받는다. 사후 점검은 apps/doctor.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
 
@@ -93,8 +80,7 @@ else
 fi
 
 # ── 3. hostname ──────────────────────────────────────────────────────────
-# 설치 직후 기본값이 그대로 남는 흔한 사고를 여기서 잡는다. 디렉토리 이름이
-# 곧 hostname 이 되므로(flake.nix), 여기서 정한 것이 그대로 굳는다.
+# 디렉토리 이름이 곧 hostname 이 되므로(flake.nix) 설치 직후의 기본값이 그대로 굳지 않게 여기서 잡는다.
 if [ "$here" = "nixos" ] || [ -z "$here" ]; then
   printf "  ${YELLOW}⚠${NC} hostname 이 '%s' 다 — nixos-generate-config 의 기본값이다.\n" "${here:-비어 있음}"
   note "의도한 게 아니라면 이 기계를 부를 이름을 정하는 게 좋다."
@@ -126,9 +112,8 @@ if [ -e "$hostdir" ]; then
 fi
 
 # ── 4. stateVersion (NixOS) ──────────────────────────────────────────────
-# 채널이 아니라 **상태 호환성**을 고정하는 값이라, 이 기계가 처음 설치된
-# 릴리스여야 한다. /etc/os-release 가 그 답을 들고 있다 — 다만 이미 이 레포로
-# 한 번 switch 한 기계에서는 flake 의 nixpkgs 버전이 찍히므로 기본값을 믿지 말 것.
+# 채널이 아니라 상태 호환성을 고정하는 값이라 처음 설치된 릴리스여야 한다. /etc/os-release 가 그 답이지만,
+# 이 레포로 한 번 switch 한 기계에서는 flake 의 nixpkgs 판이 찍히므로 기본값을 믿지 말 것.
 statever=""
 if [ "$plat" = nixos ] && [ ! -e "$hostdir/default.nix" ]; then
   guess="$(. /etc/os-release 2>/dev/null; printf '%s' "${VERSION_ID:-}" | cut -d. -f1,2)"
@@ -173,9 +158,7 @@ EOF
   printf "  ${GREEN}+${NC} users/%s.nix\n" "$name"
 fi
 
-# hosts/<플랫폼>/<hostname>/ 아래에 쓰므로 레포 최상위까지 세 단계다 —
-# 플랫폼과 무관하다. 공용 Mac 설정(hosts/darwin/identity.nix)만 두 단계이고,
-# 그건 이 스크립트가 만들지 않는다.
+# hosts/<플랫폼>/<hostname>/ 에서 레포 최상위까지는 플랫폼과 무관하게 세 단계다(hosts/darwin/identity.nix 만 두 단계이고 여기서 만들지 않는다).
 cat > "$hostdir/identity.nix" <<EOF
 # 이 기계를 쓰는 사람. 계약은 users/README.md.
 import ../../../users/$name.nix

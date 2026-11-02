@@ -63,6 +63,8 @@ in
     rift-grid = {
       command = "/Users/${user}/.local/bin/rift-grid";
       path = [ "/Users/${user}/.local/bin" config.environment.systemPath ];
+      # Unset, tracing's EnvFilter keeps only errors: an app it gave up attaching to leaves no line in the log.
+      environment.RUST_LOG = "warn";
       serviceConfig = {
         RunAtLoad = true;
         # Plain KeepAlive would restart-loop until apps/rift-grid builds the binary; PathState waits for it.

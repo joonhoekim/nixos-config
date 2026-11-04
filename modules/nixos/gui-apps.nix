@@ -26,6 +26,10 @@ let
 
     # Linux 짝이 없는 cask(stats, iina)는 macOS 에만 있다.
     inherit zed-editor dbeaver-bin redisinsight bruno onlyoffice-desktopeditors;
+
+    # Mac 에서 이 기계로 들어오는 원격 데스크톱(docs/tailscale.md). `rustdesk` 는 이름만 같은 예전 Sciter UI 빌드라 cache.nixos.org 에 없어 로컬에서 십 분 넘게 짓는다.
+    # 이 이름이 목록에 있으면 rustdesk.nix 가 제어받는 쪽 서비스도 켠다.
+    rustdesk = rustdesk-flutter;
   };
 in
 {

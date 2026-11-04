@@ -16,6 +16,7 @@
     ../../modules/nixos/dms
     ../../modules/nixos/wireguard.nix
     ../../modules/nixos/tailscale.nix
+    ../../modules/nixos/rustdesk.nix
     ../../modules/shared
   ];
 

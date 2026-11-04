@@ -30,6 +30,8 @@ let
     # Mac 에서 이 기계로 들어오는 원격 데스크톱(docs/tailscale.md). `rustdesk` 는 이름만 같은 예전 Sciter UI 빌드라 cache.nixos.org 에 없어 로컬에서 십 분 넘게 짓는다.
     # 이 이름이 목록에 있으면 rustdesk.nix 가 제어받는 쪽 서비스도 켠다.
     rustdesk = rustdesk-flutter;
+    # RDP·VNC 클라이언트. Windows 로 나가는 원격 접속은 RustDesk 가 아니라 이것과 Windows 의 원격 데스크톱으로 한다.
+    inherit remmina;
   };
 in
 {

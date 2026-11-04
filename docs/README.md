@@ -63,6 +63,10 @@ Nix의 동작 원리, 이 저장소의 구조, flake, macOS 설정 관리의 범
 저장소라 기계마다 `/etc/wireguard/wg0.conf`에 손으로 둡니다. 그 경계와, 유닛 밖에서
 `wg-quick`을 치면 왜 다음 switch가 깨지는지를 적었습니다.
 
+[`tailscale.md`](tailscale.md)는 **절차서**입니다 — NixOS 기계를 tailnet 에 붙이는 첫 로그인과,
+그 위에서 Windows·Mac·NixOS 사이를 원격으로 오가는 법입니다. 방향마다 무엇을 쓰는지(Remmina,
+RustDesk)와, NixOS 가 받는 쪽일 때만 RustDesk 의 root 서비스가 필요한 이유를 적었습니다.
+
 [`disk-space.md`](disk-space.md)는 **운영 노트**입니다 — 디스크가 차는 자리와 지우는 법입니다.
 공통 부분 아래에 macOS·NixOS 절을 나눴습니다. macOS의 앱 캐시처럼 경로가 고정된 것은
 `apps/reclaim`이 맡고, 이 문서는 그 바깥을 다룹니다:

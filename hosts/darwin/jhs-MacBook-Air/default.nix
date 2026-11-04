@@ -16,6 +16,7 @@
     "firefox@developer-edition"
     "onlyoffice"
     "dbeaver-community"
+    "rustdesk"
   ];
 
   # 목록에서 뺀 brew cask·formula 가 activation 때 지워진다. 앱이 남긴 ~/Library 데이터는 남는다(zap 이 아님).

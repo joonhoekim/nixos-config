@@ -39,6 +39,8 @@ let
 
     # Utility Tools
     "stats"              # 로그인 실행은 hosts/darwin/common.nix 의 LaunchAgent
+    # NixOS 기계에 원격으로 들어가는 쪽. 받는 쪽은 modules/nixos/rustdesk.nix, 쓰는 법은 docs/tailscale.md
+    "rustdesk"
     # "syncthing"
     # "1password"
     # "rectangle"

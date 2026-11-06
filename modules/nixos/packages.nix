@@ -18,6 +18,8 @@ shared.core
 
   # Media and design tools
   fontconfig
+  # subline 캡처 모드의 영상. PATH 에 없으면 사진만 찍는다.
+  wf-recorder
 
   # Audio tools
   pavucontrol

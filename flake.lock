@@ -180,11 +180,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793960337,
-        "narHash": "sha256-+SFnDnVmIIYbScWMQI8xVWQdXV+mG6pDP0kICd2md10=",
+        "lastModified": 1794037664,
+        "narHash": "sha256-hDBPaerWm881MzxEwUJLrnr5KnRxmm4lMZSeoZIo45M=",
         "ref": "refs/heads/main",
-        "rev": "dbc8715f79f9dd91b139aabb7ca76ac129a59bfc",
-        "revCount": 214,
+        "rev": "337c8d40adae36ac49037cf4c5bfa890de95d303",
+        "revCount": 219,
         "type": "git",
         "url": "https://github.com/joonhoekim/subline-terminal"
       },

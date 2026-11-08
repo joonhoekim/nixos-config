@@ -1,5 +1,6 @@
 ;; Caps Lock 레이어 — Windows·macOS 공용. 정본은 modules/nixos/keyboard.nix 와 pointer/pointerd.py 다.
 ;; 배치·검증·설치: ./README.md, 수치와 OS 차이의 근거: docs/kanata.md
+;; 리눅스(Debian·NixOS)는 같은 배치를 ./nav.kbd 로 따로 건다. 배치를 고치면 두 파일을 같이 고친다.
 
 ;; 오른쪽 Alt 는 잡지 않는다 — 한/영은 Windows 한국어 자판 배열이 E038 을 VK_HANGUL 로 번역한다.
 ;; 잡으면 `ralt kana` 는 왼쪽 Alt 가 나가고, 통과시키면 llhook.rs 가 "Clearing kanata states: RAlt" 를

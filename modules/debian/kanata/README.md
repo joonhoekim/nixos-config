@@ -1,9 +1,10 @@
 # kanata — Debian(태블릿 tb323fu) 의 Caps Lock 레이어
 
 NixOS 의 keyd 레이어(`modules/nixos/keyboard.nix` + `modules/nixos/pointer/`)를
-[kanata](https://github.com/jtroo/kanata) 로 이 태블릿에 건다. 키 배치와 수치는
-Windows 판([`../../windows/kanata`](../../windows/kanata/README.md))과 같고, 다른 점은
-[`kanata.kbd`](kanata.kbd) 의 `defcfg` 주석에 있다.
+[kanata](https://github.com/jtroo/kanata) 로 이 태블릿에 건다. 레이어 본체는 Windows 와
+함께 쓰는 [`../../shared/kanata/nav.kbd`](../../shared/kanata/nav.kbd) 이고,
+[`kanata.kbd`](kanata.kbd) 는 이 기기에만 해당하는 `defcfg` 와 기본 레이어를 두고
+그것을 include 한다. 다른 점은 거기 주석에 있다.
 
 Linux 의 kanata 는 uinput 으로 포인터를 직접 움직이므로 NixOS 처럼 `pointerd` 를
 따로 띄우지 않는다. subline 은 kanata 의 가상 키보드(`kanata`)를 이름으로 알아보고

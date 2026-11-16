@@ -13,6 +13,11 @@
   hardware.surface-pro-9.enable = true;
   # 커널 패치를 바꿀 때마다 전체를 다시 컴파일하지 않게 한다(바뀐 오브젝트만). 캐시는 10 GiB 까지 찬다.
   hardware.surface-pro-9.kernel.ccacheDir = "/var/cache/ccache";
+  # 기기 층 커널에서는 두 커널 인자가 필요 없다: 패치 0014 가 PSR1 을 고르고(i915.enable_psr 는 커널을 오염시킨다),
+  # 0x1800 대역은 펌웨어가 예약한다. 실측은 surface-pro-9-linux docs/nixos.md 의 옵션 표. 화면이 깜빡이거나
+  # 덮개·USB-C 조작 때 GPE 가 쌓이면 해당 줄을 지운다.
+  hardware.surface-pro-9.kernelParams.psr = false;
+  hardware.surface-pro-9.kernelParams.hpiosize = false;
 
   # /boot 가 윈도우와 같이 쓰는 260 MiB ESP 다(윈도우 약 35 MiB). systemd-boot 는 새 세대의 커널·initrd 를
   # 먼저 쓰고 나서 옛것을 지우므로 한도 + 1 벌이 들어가야 한다. 넘치면 switch 가 "No space left" 로 실패한다.

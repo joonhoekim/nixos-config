@@ -39,6 +39,12 @@
       url = "git+https://github.com/joonhoekim/subline-terminal";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Surface Pro 9 기기 층(hosts/nixos/surface-pro-9). 받는 사정은 subline 과 같다.
+    # 모듈은 이 flake 의 pkgs 로 빌드하므로 follows 로 nixpkgs 를 두 벌 잠그지 않는다.
+    surface-pro-9-linux = {
+      url = "git+https://github.com/joonhoekim/surface-pro-9-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # 홈브루 탭 input 은 inputs.<이름> 으로 닿으므로 input 을 늘릴 때 고칠 자리는 위 목록 하나다.

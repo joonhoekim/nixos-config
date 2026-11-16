@@ -219,11 +219,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794841845,
-        "narHash": "sha256-Q/UotBx4zExrD4eRoeRusTcbR/FiN72/QgGWC4ElEFs=",
+        "lastModified": 1794862641,
+        "narHash": "sha256-rr5CkLZOVYIzgwRPW8u5PYNUDwyXs6FWXYEotszoBlU=",
         "ref": "refs/heads/main",
-        "rev": "235e852a33c9cf429cd34be12ee95b917149f1eb",
-        "revCount": 37,
+        "rev": "40c6198e1fc532c9f9683c835324fae6d6a7d84d",
+        "revCount": 39,
         "type": "git",
         "url": "https://github.com/joonhoekim/surface-pro-9-linux"
       },

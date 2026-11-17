@@ -13,6 +13,8 @@
   hardware.surface-pro-9.enable = true;
   # 커널 패치를 바꿀 때마다 전체를 다시 컴파일하지 않게 한다(바뀐 오브젝트만). 캐시는 10 GiB 까지 찬다.
   hardware.surface-pro-9.kernel.ccacheDir = "/var/cache/ccache";
+  # 기기 도우미(sp9-helperd, sp9-ctl): 프로필별 전력 제한, 충전 정책, 키보드 백라이트, 진단.
+  hardware.surface-pro-9.helper.enable = true;
   # 기기 층 커널에서는 두 커널 인자가 필요 없다: 패치 0014 가 PSR1 을 고르고(i915.enable_psr 는 커널을 오염시킨다),
   # 0x1800 대역은 펌웨어가 예약한다. 실측은 surface-pro-9-linux docs/nixos.md 의 옵션 표. 화면이 깜빡이거나
   # 덮개·USB-C 조작 때 GPE 가 쌓이면 해당 줄을 지운다.

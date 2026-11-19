@@ -179,11 +179,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794910303,
-        "narHash": "sha256-6TIcmcvfjnG+OJKDH97AMsFajVtkzGkUHMC2gsuEVOM=",
+        "lastModified": 1795086927,
+        "narHash": "sha256-neAXcMyP0xXfYV1L8zXzp4MPSe4wFzryn+sUOSbLAr8=",
         "ref": "refs/heads/main",
-        "rev": "30181f79fd47057aa895c56f47f9f84413f587c4",
-        "revCount": 1093,
+        "rev": "a35290c3d8de75d0dbcbc82522389622dedb1afb",
+        "revCount": 1117,
         "type": "git",
         "url": "https://github.com/joonhoekim/subline"
       },
@@ -199,11 +199,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794895644,
-        "narHash": "sha256-GWX3OlXqRNfhhDboq8aRWGISJGL/UcVqHuJcR2m1Adk=",
+        "lastModified": 1795087932,
+        "narHash": "sha256-eA675pSy6gouVpNsu63YNmW3U9s+8AjGc+ixS8Cs/4A=",
         "ref": "refs/heads/main",
-        "rev": "e5ed04115cfd0687eed71a34e4d0cab138a889ce",
-        "revCount": 241,
+        "rev": "25f6242f65e0be8713987e7aea70539984dc1a00",
+        "revCount": 242,
         "type": "git",
         "url": "https://github.com/joonhoekim/subline-terminal"
       },

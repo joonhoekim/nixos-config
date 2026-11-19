@@ -168,6 +168,7 @@
         "nixpkgs": "nixpkgs",
         "subline": "subline",
         "subline-terminal": "subline-terminal",
+        "subline-voice": "subline-voice",
         "surface-pro-9-linux": "surface-pro-9-linux"
       }
     },
@@ -209,6 +210,26 @@
       "original": {
         "type": "git",
         "url": "https://github.com/joonhoekim/subline-terminal"
+      }
+    },
+    "subline-voice": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794985095,
+        "narHash": "sha256-L+/0VF5KupUTzs5xsg/5yzF1cHlyqL3acuLFXrtUi3w=",
+        "ref": "refs/heads/main",
+        "rev": "f10dbda218c9f82baefdbcb5a08029e851fd1d0d",
+        "revCount": 45,
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline-voice"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://github.com/joonhoekim/subline-voice"
       }
     },
     "surface-pro-9-linux": {

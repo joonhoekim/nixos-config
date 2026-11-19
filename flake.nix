@@ -34,6 +34,11 @@
       url = "git+https://github.com/joonhoekim/subline";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # nautice 의 로컬 음성 subline-tts(modules/nixos/nautice.nix). 받는 사정은 subline 과 같다.
+    subline-voice = {
+      url = "git+https://github.com/joonhoekim/subline-voice";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # 받는 사정은 subline 과 같다. macOS 는 nix 가 아니라 apps/subline-terminal 이 빌드·서명한다(docs/subline-terminal.md).
     subline-terminal = {
       url = "git+https://github.com/joonhoekim/subline-terminal";

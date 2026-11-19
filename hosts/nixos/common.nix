@@ -1,4 +1,4 @@
-{ config, pkgs, lib, user, identity, home-manager, subline, ... }:
+{ config, pkgs, lib, user, identity, home-manager, subline-voice, ... }:
 
 # 전체 그림: docs/02-this-repo.md, 이 파일의 설계 배경: docs/nixos-common.md
 
@@ -26,9 +26,9 @@
     # Rename rather than refuse: home-manager aborts the whole activation (and the
     # rebuild) when a target already exists as a real file, and $HOME stays writable.
     backupFileExtension = "hm-bak";
-    # Separate arg scope from system specialArgs. `subline` feeds subline-tts
+    # Separate arg scope from system specialArgs. `subline-voice` feeds subline-tts
     # (modules/nixos/nautice.nix).
-    extraSpecialArgs = { inherit user identity subline; bundles = config.local.packages.bundles; };
+    extraSpecialArgs = { inherit user identity subline-voice; bundles = config.local.packages.bundles; };
     users.${user} = import ../../modules/nixos/home-manager.nix;
   };
 

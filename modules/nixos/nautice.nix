@@ -1,11 +1,11 @@
-{ pkgs, subline, ... }:
+{ pkgs, subline-voice, ... }:
 
 # nautice(알림 CLI)의 음성 엔진만 둔다. 본체는 자주 바뀌어 ~/.local/bin 에 깔고 `nautice update` 로 올린다.
 # 명령을 변수에 바로 적지 않고 스크립트로 감싼다 — HM 은 sessionVariables 를 이스케이프 없이 export 해서
 # $(awk …) 가 로그인 때 풀리고, 명령이 매번 실패해 espeak-ng 로 조용히 떨어진다(modules/lib/shell.nix).
 let
-  # 오프라인 Supertonic 3(subline 의 crates/voice, CPU). mn56 에서 4초짜리 문장이 시작부터 약 1.2 s(세션 로드 0.5 s).
-  subline-tts = subline.packages.${pkgs.stdenv.hostPlatform.system}.subline-tts;
+  # 오프라인 Supertonic 3(subline-voice 의 crates/tts, CPU). mn56 에서 4초짜리 문장이 시작부터 약 1.2 s(세션 로드 0.5 s).
+  subline-tts = subline-voice.packages.${pkgs.stdenv.hostPlatform.system}.subline-tts;
 
   edge-tts = pkgs.writeShellScript "nautice-edge-tts" ''
     set -o pipefail

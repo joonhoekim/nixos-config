@@ -49,6 +49,12 @@ core 가 이미 끌어왔으면 그만큼은 세지 않은 값이다. 크기는 
 | mpv · resources · mission-center · ghostty | 각 0.3~0.4 |
 | zathura | 0.05 |
 
+| 펜 앱 (NixOS, surface-pro-9 에서 2026-11-19 측정) | +GiB |
+|---|---:|
+| saber · rnote · styluslabs-write | 각 0.3 |
+| lorien | 0.06 |
+| xournalpp | 0.03 |
+
 vscode · google-chrome · onlyoffice · redisinsight 는 unfree 라 캐시에 없어서 크기를
 모른다. 상류가 내놓은 바이너리를 풀기만 하므로 기계가 빌드하지는 않는다.
 

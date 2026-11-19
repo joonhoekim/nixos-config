@@ -24,6 +24,10 @@ let
     # 그림
     inherit krita gimp inkscape;
 
+    # 펜 필기·화이트보드. openboard 는 nixpkgs efe6f07 에서 빌드가 깨져 뺐다:
+    # UBFFmpegVideoEncoder.cpp 가 AVCodec::sample_fmts 를 읽는데, ffmpeg_7·8·9 어느 것으로 override 해도 같은 오류다.
+    inherit rnote xournalpp saber styluslabs-write lorien;
+
     # Linux 짝이 없는 cask(stats, iina)는 macOS 에만 있다.
     inherit zed-editor dbeaver-bin redisinsight bruno onlyoffice-desktopeditors;
 

@@ -115,6 +115,12 @@ in
     # 이 둘이 없으면 Thunar 는 뜨지만 휴지통·외장 디스크·네트워크 경로(gvfs)와 썸네일(tumbler)이 조용히 빠진다.
     services.gvfs.enable = lib.mkDefault true;
     services.tumbler.enable = lib.mkDefault true;
+
+    # 폴더를 여는 기본 앱(subline 설정의 앱 → Files 와 같은 키). /etc/xdg/mimeapps.list 에 들어가고
+    # ~/.config/mimeapps.list 가 그 위에 덮인다 — 설정 앱이 쓰는 곳이 거기라 앱에서 바꾼 값이 이긴다.
+    # home-manager xdg.mimeApps 로 두지 않는 이유: 그 파일이 읽기 전용 링크가 되고, GIO 가 바꿔치기로
+    # 써도 다음 리빌드가 되돌려 설정 앱의 선택이 조용히 사라진다.
+    xdg.mime.defaultApplications."inode/directory" = "thunar.desktop";
     # thunar-archive-plugin 은 압축 작업을 이 앱에 넘긴다. 없으면 "압축 풀기" 메뉴가 안 뜬다.
     environment.systemPackages = [ pkgs.file-roller ];
 

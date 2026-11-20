@@ -54,5 +54,25 @@ in
     # UDP(멀티캐스트 발견)로 연다. 닫혀 있으면 이 기계가 상대 목록에 안 뜨고 보내기도 조용히 실패한다.
     # Mac 짝은 ../darwin/casks.nix 의 core 에 있는 localsend cask.
     programs.localsend.enable = true;
+
+    # 파일·링크를 여는 기본 앱. /etc/xdg/mimeapps.list 의 시스템 기본값이라 ~/.config/mimeapps.list
+    # (subline 설정 → 앱, `gio mime`, 각 앱의 "기본으로" 버튼이 쓰는 곳)가 키마다 이긴다. 그래서 거기서 바꾼
+    # 값은 리빌드에도 남고, 여기를 바꿔도 사용자가 이미 고른 키에는 안 보인다. 앱이 없는 호스트에서는 GIO 가
+    # 이 줄을 건너뛰고 다음 후보로 간다. 폴더(inode/directory)는 ./thunar.nix.
+    xdg.mime.defaultApplications =
+      let
+        browser = "google-chrome.desktop";
+        image = "org.gnome.Loupe.desktop";
+      in
+      {
+        "text/html" = browser;
+        "x-scheme-handler/http" = browser;
+        "x-scheme-handler/https" = browser;
+        "x-scheme-handler/about" = browser;
+        "x-scheme-handler/unknown" = browser;
+        "text/plain" = "code.desktop";
+        "application/pdf" = "onlyoffice-desktopeditors.desktop";
+      }
+      // lib.genAttrs [ "image/png" "image/jpeg" "image/gif" "image/webp" "image/bmp" "image/tiff" "image/svg+xml" "image/avif" ] (_: image);
   };
 }

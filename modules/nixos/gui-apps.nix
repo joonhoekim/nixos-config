@@ -45,6 +45,14 @@ in
     description = "core 외에 이 NixOS 호스트에 깔 GUI 앱의 이름.";
   };
 
-  config.home-manager.users.${user}.home.packages =
-    builtins.attrValues core ++ map (n: optional.${n}) config.local.guiApps;
+  config = {
+    home-manager.users.${user}.home.packages =
+      builtins.attrValues core ++ map (n: optional.${n}) config.local.guiApps;
+
+    # 기기 사이 파일 주고받기. home.packages 가 아니라 nixpkgs 모듈로 켜는 것은 방화벽 때문이다:
+    # nixos/modules/programs/localsend.nix 의 openFirewall(기본 켜짐)이 53317 을 TCP(파일 받는 HTTP)와
+    # UDP(멀티캐스트 발견)로 연다. 닫혀 있으면 이 기계가 상대 목록에 안 뜨고 보내기도 조용히 실패한다.
+    # Mac 짝은 ../darwin/casks.nix 의 core 에 있는 localsend cask.
+    programs.localsend.enable = true;
+  };
 }

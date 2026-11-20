@@ -5,6 +5,8 @@
 let
   core = [
     "visual-studio-code"
+    # 기기 사이 파일 주고받기. NixOS 짝과 포트(53317)는 ../nixos/gui-apps.nix
+    "localsend"
   ];
 
   optional = [

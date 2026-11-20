@@ -66,20 +66,21 @@ let
     '';
 
   # appearsOn: directories 는 폴더를 고른 때와 폴더 빈 곳을 우클릭한 때(그 폴더가 %f) 둘 다다.
+  # 메뉴 이름은 영어로 둔다. 한글 글꼴이 없는 환경에서는 두부(□)로 깨진다.
   allFiles = [ "directories" "audio-files" "image-files" "other-files" "text-files" "video-files" ];
   actions = [
-    { id = "terminal-here"; name = "터미널에서 열기"; icon = "utilities-terminal";
+    { id = "terminal-here"; name = "Open Terminal Here"; icon = "utilities-terminal";
       command = "${terminalHere} %f"; range = "1"; appearsOn = [ "directories" ]; }
-    { id = "claude-here"; name = "여기서 Claude 열기"; icon = "utilities-terminal";
+    { id = "claude-here"; name = "Open Claude Here"; icon = "utilities-terminal";
       command = "${claudeHere} %f"; range = "1"; appearsOn = [ "directories" ]; }
-    { id = "vscode"; name = "VS Code 로 열기"; icon = "vscode";
+    { id = "vscode"; name = "Open with VS Code"; icon = "vscode";
       command = "code %F"; appearsOn = allFiles; }
-    { id = "wallpaper"; name = "배경화면으로 지정"; icon = "preferences-desktop-wallpaper";
+    { id = "wallpaper"; name = "Set as Wallpaper"; icon = "preferences-desktop-wallpaper";
       command = "${setWallpaper} %f"; range = "1";
       patterns = "*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.PNG;*.JPG;*.JPEG;*.WEBP;*.BMP"; appearsOn = [ "image-files" ]; }
-    { id = "copy-path"; name = "경로 복사"; icon = "edit-copy";
+    { id = "copy-path"; name = "Copy Path"; icon = "edit-copy";
       command = "${copyPath} %F"; appearsOn = allFiles; }
-    { id = "localsend"; name = "LocalSend 로 보내기"; icon = "localsend";
+    { id = "localsend"; name = "Send with LocalSend"; icon = "localsend";
       # 이미 떠 있으면 그 창으로 넘겨 보내기 목록에 넣는다(localsend app/lib/config/init.dart 의 notifyRunningInstance).
       command = "localsend_app %F"; appearsOn = allFiles; }
   ];

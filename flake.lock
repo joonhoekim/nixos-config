@@ -169,7 +169,8 @@
         "subline": "subline",
         "subline-terminal": "subline-terminal",
         "subline-voice": "subline-voice",
-        "surface-pro-9-linux": "surface-pro-9-linux"
+        "surface-pro-9-linux": "surface-pro-9-linux",
+        "tb323fu-linux": "tb323fu-linux"
       }
     },
     "subline": {
@@ -251,6 +252,26 @@
       "original": {
         "type": "git",
         "url": "https://github.com/joonhoekim/surface-pro-9-linux"
+      }
+    },
+    "tb323fu-linux": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795626883,
+        "narHash": "sha256-3Z0Zfzja1M9gm9oksrZHsOVwySMwJFi+R+XP7fYL4SQ=",
+        "owner": "joonhoekim",
+        "repo": "tb323fu-linux",
+        "rev": "2954bc8fb53a0e23897b4867a2d31452f55cdfba",
+        "type": "github"
+      },
+      "original": {
+        "owner": "joonhoekim",
+        "repo": "tb323fu-linux",
+        "type": "github"
       }
     }
   },

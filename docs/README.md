@@ -89,7 +89,8 @@ turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는
 왜 그 모양인지·확인한 사실·실측값은 이 문서들로 뺐습니다. 코드 쪽 주석이 해당 문서를 가리킵니다.
 
 호스트는 [`hosts/evo-t1.md`](hosts/evo-t1.md)·[`hosts/mn56.md`](hosts/mn56.md)·[`galaxy-chromebook-1.md`](galaxy-chromebook-1.md)가
-기계마다 하드웨어 사실과 그 호스트 파일의 근거를 적고, [`nixos-common.md`](nixos-common.md)가 모든 NixOS 호스트의
+기계마다 하드웨어 사실과 그 호스트 파일의 근거를 적고(태블릿 [`hosts/baldur.md`](hosts/baldur.md)는 레포 밖
+`/etc/nixos` wrapper 로 빌드하는 법을 적습니다), [`nixos-common.md`](nixos-common.md)가 모든 NixOS 호스트의
 공통 설정(로그인 화면, nixPath, dbus, zram)을, [`hardware-vendors.md`](hardware-vendors.md)가 Intel·AMD 공통 층을 다룹니다.
 
 NixOS 세션은 [`subline.md`](subline.md) 하나입니다. 라이싱 쪽은 시드 규칙 [`rice-seeding.md`](rice-seeding.md), 스크립트

@@ -6,7 +6,7 @@
 if [ "$(uname)" = "Darwin" ]; then
   attr=".#darwinConfigurations.${target}.system"
 else
-  attr=".#nixosConfigurations.${target}.config.system.build.toplevel"
+  attr="${flake}#nixosConfigurations.${target}.config.system.build.toplevel"
 fi
 
 printf "${YELLOW}Building %s...${NC}\n" "$attr"

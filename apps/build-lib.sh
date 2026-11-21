@@ -1,4 +1,4 @@
-# build 와 build-switch 가 source 하는 프롤로그. 끝나면 $target·$arch·$passthru 가 서고 "$@" 는 비어 있다
+# build 와 build-switch 가 source 하는 프롤로그. 끝나면 $target·$arch·$flake·$passthru 가 서고 "$@" 는 비어 있다
 # (sourced 파일의 shift 는 부르는 쪽 인자를 먹는다). `nix run` 아래서 $0 옆에 있다는 전제는 rice/lib.sh 와 같다.
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
@@ -54,4 +54,13 @@ else
     printf "${DIM}→ --host NAME 으로 고르거나, 이 기계가 처음이면 ./apps/setup 을 돌린다.${NC}\n" >&2
     exit 1
   fi
+fi
+
+# 기기에만 있는 파일(펌웨어·키)을 git 밖에 두는 호스트는 /etc/nixos 의 wrapper flake 가 이 레포를 input 으로
+# 받아 덧붙인다(docs/hosts/baldur.md). 이 레포만 빌드하면 그 파일들이 빠진 시스템이 조용히 선다.
+flake="."
+if [ "$(uname)" != "Darwin" ] && [ -f /etc/nixos/flake.nix ] \
+   && grep -q "nixosConfigurations\.${target}[ =]" /etc/nixos/flake.nix; then
+  flake="/etc/nixos"
+  passthru="$passthru --override-input nixos-config $repo"
 fi

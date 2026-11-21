@@ -50,6 +50,11 @@
       url = "git+https://github.com/joonhoekim/surface-pro-9-linux";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Lenovo TB323FU 기기 층(hosts/nixos/baldur): 커널 스텁·DSP·센서·헬퍼. 공개 레포다.
+    tb323fu-linux = {
+      url = "github:joonhoekim/tb323fu-linux";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # 홈브루 탭 input 은 inputs.<이름> 으로 닿으므로 input 을 늘릴 때 고칠 자리는 위 목록 하나다.

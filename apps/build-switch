@@ -24,8 +24,8 @@ if [ "$(uname)" = "Darwin" ]; then
   # 사람이 할 단계(드라이버 승인·TCC)가 남았을 때만 출력한다.
   "$(dirname "$0")/check/pending" || true
 else
-  printf "${YELLOW}Building nixosConfigurations.%s...${NC}\n" "$target"
-  nix --extra-experimental-features 'nix-command flakes' build ".#nixosConfigurations.${target}.config.system.build.toplevel" $passthru
+  printf "${YELLOW}Building %s#nixosConfigurations.%s...${NC}\n" "$flake" "$target"
+  nix --extra-experimental-features 'nix-command flakes' build "${flake}#nixosConfigurations.${target}.config.system.build.toplevel" $passthru
   system="$(readlink -f ./result)"
   unlink ./result 2>/dev/null || true
   printf "${YELLOW}Activating (sudo)...${NC}\n"

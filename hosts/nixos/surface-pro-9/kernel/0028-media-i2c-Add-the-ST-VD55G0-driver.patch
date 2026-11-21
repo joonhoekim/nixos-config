@@ -12,6 +12,8 @@ changes: the INT3472 registers the second rail as dovdd, and the reset
 GPIO is requested on the ACPI path without a firmware endpoint too.
 The model ID and revision are logged at probe.
 
+
+Link: https://github.com/linux-surface/kernel/pull/164
 Signed-off-by: Joonhoe Kim <26rote@gmail.com>
 ---
  drivers/media/i2c/Kconfig          |   11 +

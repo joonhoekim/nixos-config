@@ -192,7 +192,8 @@
             identity = identityOf dir;
           in
           nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
+            # 아키텍처는 system 인자가 아니라 호스트의 nixpkgs.hostPlatform 이 정한다
+            # (보통 hardware-configuration.nix 가 적는다).
             specialArgs = inputs // { inherit identity; user = identity.name; };
             modules = [
               dir

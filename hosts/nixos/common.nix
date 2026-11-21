@@ -38,7 +38,8 @@
       };
       efi.canTouchEfiVariables = true;
     };
-    kernelPackages = pkgs.linuxPackages_latest;
+    # 자기 커널을 쓰는 호스트(baldur)가 덮어쓴다.
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
   };
 
   time.timeZone = "Asia/Seoul";

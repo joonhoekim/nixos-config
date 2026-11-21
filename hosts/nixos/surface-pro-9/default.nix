@@ -24,6 +24,17 @@
   hardware.surface-pro-9.kernelParams.psr = false;
   hardware.surface-pro-9.kernelParams.hpiosize = false;
 
+  # IR 카메라(ST VD55G0): ipu-bridge 항목과 ST 드라이버. 둘은 함께 넣는다(하나만 있으면 앞뒤 카메라 노드가
+  # 안 생길 수 있다). 출처·상태는 surface-pro-9-lab kernel/PROVENANCE.md 0027·0028, docs/ir-camera.md.
+  boot.kernelPatches = [
+    { name = "ipu-bridge-vd55g0"; patch = ./kernel/0027-media-ipu-bridge-Add-the-ST-VD55G0-SMO55F0.patch; }
+    {
+      name = "vd55g0";
+      patch = ./kernel/0028-media-i2c-Add-the-ST-VD55G0-driver.patch;
+      structuredExtraConfig = { VIDEO_VD55G0 = lib.kernel.module; };
+    }
+  ];
+
   # /boot 가 윈도우와 같이 쓰는 260 MiB ESP 다(윈도우 약 35 MiB). systemd-boot 는 새 세대의 커널·initrd 를
   # 먼저 쓰고 나서 옛것을 지우므로 한도 + 1 벌이 들어가야 한다. 넘치면 switch 가 "No space left" 로 실패한다.
   boot.loader.systemd-boot.configurationLimit = lib.mkForce 2;

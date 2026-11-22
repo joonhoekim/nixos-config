@@ -24,19 +24,7 @@
   hardware.surface-pro-9.kernelParams.psr = false;
   hardware.surface-pro-9.kernelParams.hpiosize = false;
 
-  # IR 카메라(ST VD55G0): ipu-bridge 항목, ST 드라이버, SP9 IR 조명, IPU6 8비트·패킹 수신. 앞의 둘은 함께 넣는다(하나만 있으면 앞뒤 카메라 노드가
-  # 안 생길 수 있다). 출처·상태는 surface-pro-9-lab kernel/PROVENANCE.md 0027·0028, docs/ir-camera.md.
-  boot.kernelPatches = [
-    { name = "ipu-bridge-vd55g0"; patch = ./kernel/0027-media-ipu-bridge-Add-the-ST-VD55G0-SMO55F0.patch; }
-    {
-      name = "vd55g0";
-      patch = ./kernel/0028-media-i2c-Add-the-ST-VD55G0-driver.patch;
-      structuredExtraConfig = { VIDEO_VD55G0 = lib.kernel.module; };
-    }
-    { name = "vd55g0-sp9"; patch = ./kernel/0029-media-i2c-vd55g0-Light-the-Surface-Pro-9-IR-illumina.patch; }
-    { name = "ipu6-soc-pin"; patch = ./kernel/0030-media-intel-ipu6-Capture-packed-and-8-bit-formats-th.patch; }
-    { name = "vd55g0-8bit"; patch = ./kernel/0031-media-i2c-vd55g0-Offer-8-bit-output-on-ACPI-systems-.patch; }
-  ];
+  # IR 카메라(ST VD55G0) 패치 0027~0031과 VIDEO_VD55G0=m 은 surface-pro-9-linux 입력의 커널에 들어 있다.
 
   # 얼굴 인식(howdy) 시험용: 프로그램과 설정만 둔다. PAM에는 넣지 않는다(sudo·잠금 화면은 그대로).
   # IR 카메라는 IPU6 원시 노드라 OpenCV가 직접 못 연다: v4l2loopback /dev/video50에

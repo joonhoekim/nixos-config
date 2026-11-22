@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joonhoe Kim <26rote@gmail.com>
+Date: Sun, 22 Nov 2026 11:25:13 +0900
+Subject: [PATCH] media: i2c: vd55g0: Offer 8-bit output on ACPI systems again
+
+The truncated 8-bit frames on the Surface Pro 9 came from the IPU6 input
+system's MIPI pin path, which the previous patch replaces. 8-bit output
+now arrives intact (0 errors in 212 frames), so offer all codes again.
+The default stays Y10.
+
+Signed-off-by: Joonhoe Kim <26rote@gmail.com>
+---
+ drivers/media/i2c/vd55g0.c | 29 +++++------------------------
+ 1 file changed, 5 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/media/i2c/vd55g0.c b/drivers/media/i2c/vd55g0.c
+index afd8183ca..5d63a7f8b 100644
+--- a/drivers/media/i2c/vd55g0.c
++++ b/drivers/media/i2c/vd55g0.c
+@@ -371,17 +371,6 @@ static u8 get_bpp_by_code(__u32 code)
+ 	return 8;
+ }
+ 
+-/*
+- * The IPU6 truncates most 8-bit frames from this sensor (CSI-2 "Transfer
+- * FIFO overflow"); 10-bit frames arrive intact. Without a device tree, only
+- * offer the 10-bit codes.
+- */
+-static bool vd55g0_code_usable(struct vd55g0_dev *sensor, unsigned int index)
+-{
+-	return sensor->i2c_client->dev.of_node ||
+-	       vd55g0_supported_codes[index].bpp != 8;
+-}
+-
+ /*
+  * The illuminator stops lighting once the exposure exceeds about 65 % of
+  * the frame (measured on the Surface Pro 9): keep the exposure below 60 %
+@@ -870,8 +859,7 @@ static int vd55g0_try_fmt_internal(struct v4l2_subdev *sd,
+ 	unsigned int index;
+ 
+ 	for (index = 0; index < ARRAY_SIZE(vd55g0_supported_codes); index++) {
+-		if (vd55g0_supported_codes[index].code == fmt->code &&
+-		    vd55g0_code_usable(sensor, index))
++		if (vd55g0_supported_codes[index].code == fmt->code)
+ 			break;
+ 	}
+ 	if (index == ARRAY_SIZE(vd55g0_supported_codes))
+@@ -1376,19 +1364,12 @@ static int vd55g0_enum_mbus_code(struct v4l2_subdev *sd,
+ 				 struct v4l2_subdev_mbus_code_enum *code)
+ #endif
+ {
+-	struct vd55g0_dev *sensor = to_vd55g0_dev(sd);
+-	unsigned int i, n = 0;
++	if (code->index >= ARRAY_SIZE(vd55g0_supported_codes))
++		return -EINVAL;
+ 
+-	for (i = 0; i < ARRAY_SIZE(vd55g0_supported_codes); i++) {
+-		if (!vd55g0_code_usable(sensor, i))
+-			continue;
+-		if (n++ == code->index) {
+-			code->code = vd55g0_supported_codes[i].code;
+-			return 0;
+-		}
+-	}
++	code->code = vd55g0_supported_codes[code->index].code;
+ 
+-	return -EINVAL;
++	return 0;
+ }
+ 
+ #if KERNEL_VERSION(5, 14, 0) > LINUX_VERSION_CODE

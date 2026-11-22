@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joonhoe Kim <26rote@gmail.com>
+Date: Sun, 22 Nov 2026 10:20:45 +0900
+Subject: [PATCH] media: intel/ipu6: Capture packed and 8-bit formats through
+ the SoC raw pin
+
+Formats stored at their own bit depth (8-bit, packed 10-bit) are captured
+through the MIPI pin with long packet headers discarded. On the Microsoft
+Surface Pro 9 most of those frames arrive truncated on both camera ports
+("Transfer FIFO overflow", firmware error STR2MMIO): packed 10-bit from
+the OV5693 109 of 110, from the VD55G0 197 of 211, 8-bit from the VD55G0
+205 of 212. Through the SoC raw pin with the normal store mode, as the
+unpacked formats already are, all of them arrive intact (0 errors), and
+the unpacked formats, libcamera and PipeWire capture of all three cameras
+are unchanged.
+
+Signed-off-by: Joonhoe Kim <26rote@gmail.com>
+---
+ drivers/media/pci/intel/ipu6/ipu6-isys-video.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/pci/intel/ipu6/ipu6-isys-video.c b/drivers/media/pci/intel/ipu6/ipu6-isys-video.c
+index 3ac48d207..9fd484425 100644
+--- a/drivers/media/pci/intel/ipu6/ipu6-isys-video.c
++++ b/drivers/media/pci/intel/ipu6/ipu6-isys-video.c
+@@ -481,9 +481,15 @@ static int ipu6_isys_fw_pin_cfg(struct ipu6_isys_video *av,
+ 	input_pin->mapped_dt = 0x40; /* invalid mipi data type */
+ 	input_pin->mipi_decompression = 0;
+ 	input_pin->capture_mode = IPU6_FW_ISYS_CAPTURE_MODE_REGULAR;
+-	input_pin->mipi_store_mode = pfmt->bpp == pfmt->bpp_packed ?
+-		IPU6_FW_ISYS_MIPI_STORE_MODE_DISCARD_LONG_HEADER :
+-		IPU6_FW_ISYS_MIPI_STORE_MODE_NORMAL;
++	/*
++	 * The MIPI pin with long packet headers discarded, which upstream picks
++	 * for formats stored at their own bit depth (8-bit, packed 10-bit),
++	 * truncates most frames on the Surface Pro 9 (both camera ports,
++	 * "Transfer FIFO overflow", firmware error STR2MMIO). The SoC raw pin
++	 * with the normal store mode delivers them intact, as it does the
++	 * unpacked formats.
++	 */
++	input_pin->mipi_store_mode = IPU6_FW_ISYS_MIPI_STORE_MODE_NORMAL;
+ 	input_pin->crop_first_and_last_lines = v4l2_crop.top & 1;
+ 
+ 	output_pins = cfg->nof_output_pins++;
+@@ -496,10 +502,7 @@ static int ipu6_isys_fw_pin_cfg(struct ipu6_isys_video *av,
+ 	output_pin->output_res.height = ipu6_isys_get_frame_height(av);
+ 
+ 	output_pin->stride = ipu6_isys_get_bytes_per_line(av);
+-	if (pfmt->bpp != pfmt->bpp_packed)
+-		output_pin->pt = IPU6_FW_ISYS_PIN_TYPE_RAW_SOC;
+-	else
+-		output_pin->pt = IPU6_FW_ISYS_PIN_TYPE_MIPI;
++	output_pin->pt = IPU6_FW_ISYS_PIN_TYPE_RAW_SOC;
+ 	output_pin->ft = pfmt->css_pixelformat;
+ 	output_pin->send_irq = 1;
+ 	memset(output_pin->ts_offsets, 0, sizeof(output_pin->ts_offsets));

@@ -1,4 +1,4 @@
-{ lib, user, surface-pro-9-linux, ... }:
+{ config, lib, user, surface-pro-9-linux, ... }:
 
 # Microsoft Surface Pro 9 (Intel i5-1235U, 16 GB). 윈도우와 듀얼부트.
 # 기기 층(커널·iptsd·스피커 DSP)은 surface-pro-9-linux 레포의 nixosModules.default 가 낸다.
@@ -24,7 +24,7 @@
   hardware.surface-pro-9.kernelParams.psr = false;
   hardware.surface-pro-9.kernelParams.hpiosize = false;
 
-  # IR 카메라(ST VD55G0): ipu-bridge 항목, ST 드라이버, SP9 IR 조명·10비트 출력. 앞의 둘은 함께 넣는다(하나만 있으면 앞뒤 카메라 노드가
+  # IR 카메라(ST VD55G0): ipu-bridge 항목, ST 드라이버, SP9 IR 조명, IPU6 8비트·패킹 수신. 앞의 둘은 함께 넣는다(하나만 있으면 앞뒤 카메라 노드가
   # 안 생길 수 있다). 출처·상태는 surface-pro-9-lab kernel/PROVENANCE.md 0027·0028, docs/ir-camera.md.
   boot.kernelPatches = [
     { name = "ipu-bridge-vd55g0"; patch = ./kernel/0027-media-ipu-bridge-Add-the-ST-VD55G0-SMO55F0.patch; }
@@ -34,7 +34,31 @@
       structuredExtraConfig = { VIDEO_VD55G0 = lib.kernel.module; };
     }
     { name = "vd55g0-sp9"; patch = ./kernel/0029-media-i2c-vd55g0-Light-the-Surface-Pro-9-IR-illumina.patch; }
+    { name = "ipu6-soc-pin"; patch = ./kernel/0030-media-intel-ipu6-Capture-packed-and-8-bit-formats-th.patch; }
+    { name = "vd55g0-8bit"; patch = ./kernel/0031-media-i2c-vd55g0-Offer-8-bit-output-on-ACPI-systems-.patch; }
   ];
+
+  # 얼굴 인식(howdy) 시험용: 프로그램과 설정만 둔다. PAM에는 넣지 않는다(sudo·잠금 화면은 그대로).
+  # IR 카메라는 IPU6 원시 노드라 OpenCV가 직접 못 연다: v4l2loopback /dev/video50에
+  # PipeWire의 IR 노드를 흘려 넣고 howdy는 그 장치를 읽는다.
+  services.howdy = {
+    enable = true;
+    settings = {
+      core = { detection_notice = false; timeout_notice = true; no_confirmation = false;
+        suppress_unknown = false; abort_if_ssh = true; abort_if_lid_closed = true; disabled = false;
+        use_cnn = false; workaround = "off"; };
+      video = { certainty = 3.5; timeout = 4; device_path = "/dev/video50"; warn_no_device = true;
+        max_height = 320; frame_width = -1; frame_height = -1; dark_threshold = 90;
+        recording_plugin = "opencv"; device_format = "v4l2"; force_mjpeg = false; exposure = -1;
+        device_fps = -1; rotate = 0; };
+      snapshots = { save_failed = false; save_successful = false; };
+      rubberstamps = { enabled = false; stamp_rules = "nod		5s		failsafe     min_distance=12"; };
+      debug = { end_report = false; verbose_stamps = false; gtk_stdout = false; };
+    };
+  };
+  security.pam.howdy.enable = false;
+  boot.extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
+  boot.extraModprobeConfig = "options v4l2loopback video_nr=50 card_label=IR-loopback exclusive_caps=1";
 
   # /boot 가 윈도우와 같이 쓰는 260 MiB ESP 다(윈도우 약 35 MiB). systemd-boot 는 새 세대의 커널·initrd 를
   # 먼저 쓰고 나서 옛것을 지우므로 한도 + 1 벌이 들어가야 한다. 넘치면 switch 가 "No space left" 로 실패한다.

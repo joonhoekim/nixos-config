@@ -85,6 +85,11 @@
     # Own timer rather than auto-optimise-store, which runs inline and slows every build.
     optimise.automatic = true;
 
+    # Builds take the CPU and disk only when nothing else wants them, so the desktop
+    # stays responsive. Only builds through the daemon; a cargo or make in a shell is not one.
+    daemonCPUSchedPolicy = "idle";
+    daemonIOSchedClass = "idle";
+
     # package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
     extraOptions = ''
       experimental-features = nix-command flakes

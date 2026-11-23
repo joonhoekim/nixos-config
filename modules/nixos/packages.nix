@@ -75,4 +75,12 @@ shared.core
   stress-ng
   pulsemixer
 
+  # Profiling / tracing (hyperfine·samply 는 ../shared/packages.nix)
+  # linuxPackages.perf 는 이제 최상위 perf 의 별칭이라 boot.kernelPackages 와 묶이지 않는다.
+  perf
+  strace
+  ltrace
+  heaptrack
+  valgrind
+
 ]

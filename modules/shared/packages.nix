@@ -85,6 +85,7 @@ with pkgs; {
     glow
     navi
     hyperfine
+    samply         # sampling profiler; Linux 에서는 perf_event_paranoid 가 허락하는 만큼만 본다
     tokei
     watchexec
     entr

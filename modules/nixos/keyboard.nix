@@ -45,7 +45,10 @@ in
     enable = true;
 
     keyboards.default = {
-      ids = [ "*" ];
+      # 5355:0001 은 subline-check 의 uinput 장치다(~/git/subline crates/check/src/uinput.rs). keyd 는 맞는 키보드를
+      # 모두 grab 하고 제 가상 키보드로 seat0 에 다시 내므로, 빼지 않으면 DRM 검사의 격리 키보드가 시험 대상이 아니라
+      # 지금 세션에 친다(시험은 키가 오지 않아 실패한다).
+      ids = [ "*" "-5355:0001" ];
 
       settings.main = {
         rightalt = "hangeul"; # keyd's name for KEY_HANGEUL (122)

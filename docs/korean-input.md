@@ -1,8 +1,8 @@
 # 한국어 입력 (NixOS)
 
-`modules/nixos/korean.nix` 는 NixOS 쪽 로케일, 한글 입력기, 리눅스 전용 폰트를 맡는다. 입력기는 fcitx5(리눅스의 입력기
-프레임워크)와 그 hangul 엔진이고, 한/영 키는 kanata(evdev 에서 키를 리맵하는 데몬)가 만든다. 공통 폰트는
-[fonts.md](fonts.md).
+`modules/nixos/korean.nix` 는 NixOS 쪽 로케일과 리눅스 전용 폰트를 맡는다. 입력기 패키지는 없다: 한글은 subline 의
+내장 입력기가 조합하고(`keyboard.input_method`, 기본값 `auto` 는 외부 입력기가 없으면 내장을 쓴다), 한/영 키는
+kanata(evdev 에서 키를 리맵하는 데몬)가 만든다. 공통 폰트는 [fonts.md](fonts.md).
 
 ## 로케일
 
@@ -20,19 +20,11 @@ Right Alt → Hangul 리맵은 `modules/nixos/kanata.nix` 의 kanata 가 한다(
 ```
 kanata `ralt hngl` (deflocalkeys-linux hngl 122)  ->  evdev KEY_HANGEUL (122)
   -> xkb <HNGL>, keycode 130 (evdev + 8)
-  -> keysym `Hangul`, symbols/pc 의 유일한 섹션 pc105 에 있어 맨 `us` 를 포함한 모든 레이아웃이 가진다
-  -> fcitx5 Hotkey/TriggerKeys -> keyboard-us <-> hangul 토글
+  -> keysym `Hangul` (`xkbcli compile-keymap --layout us | grep HNGL` 로 확인)
+  -> subline 내장 입력기가 영문 <-> 한글을 토글
 ```
 
-확인: 첫 홉은 kanata 의 가상 키보드 장치에 `sudo evtest`, 마지막은 fcitx5 키 로그다.
-
-```
-gdbus call --session --dest org.fcitx.Fcitx5 --object-path /controller \
-  --method org.fcitx.Fcitx.Controller1.SetLogRule "keytrace=5"
-journalctl --user -fu 'app-org.fcitx.Fcitx5@autostart.service'
-```
-
-닿으면 `KeyEvent: Key(Hangul ...) keycode: 130`. 끄려면 SetLogRule 에 ""(매우 시끄럽다).
+확인: 첫 홉은 kanata 의 가상 키보드 장치에 `sudo evtest`, 둘째·셋째는 `wev` 가 보여 주는 keycode 와 keysym 이다.
 
 ## NIXOS_OZONE_WL
 
@@ -50,47 +42,6 @@ nixpkgs 는 Electron/Chromium 의 Wayland IME 플래그를 이 세션 변수 뒤
 - 확인함: VS Code 한글 입력은 변수 전후 모두 된다.
 - 안 해 봄: 어느 text-input 버전을 협상하는지, 누락에 영향이 있는지. 누락은 xterm.js 번들의 스케줄링 버그로 전부
   설명된다(고친 곳 overlays/vscode-xterm-hangul.nix — [overlays.md](overlays.md#vscode-xterm-hangul--패치가-안전한-이유와-깨질-때)).
-
-## fcitx5 프로필은 시드다
-
-fcitx5 는 ~/.config/fcitx5/* 를 /etc/xdg/fcitx5/* 보다 먼저 읽고 시작할 때 profile 을 직접 쓴다. 사용자 사본이 있는
-머신은 rebuild 뒤 ~/.config/fcitx5/{profile,config} 를 한 번 지워야 선언이 먹는다. ignoreUserConfig 로 무조건 먹게 할
-수 있지만 fcitx5 가 아무것도(설정 GUI 것 포함) 저장 못 하게 되어 안 쓴다.
-
-- DefaultIM 은 토글이 켜는 IM 이지 시작 상태가 아니다 — ActiveByDefault 가 false 라 입력란은 Items/0(영어)로 열린다.
-- 애드온: fcitx5-gtk(GTK3/4 IM 모듈), qt6Packages.fcitx5-qt(Qt6), fcitx5-configtool(GUI).
-- Items/1 hangul 의 Layout = "us" 는 한글 IM 에서도 US 물리 배열이라는 뜻이다.
-
-## 그룹은 정확히 둘
-
-그룹에 keyboard-kr 을 셋째로 넣지 않는다. keyboard-kr 은 엔진이 아니라 xkb 레이아웃이고 `kr` 은 키 몇 개가 더 있는 US
-QWERTY 라 라틴을 똑같이 친다(한글은 hangul 엔진에서). 트리거 키에 첫째와 똑같아 보이는 셋째 상태만 생긴다(아래
-EnumerateWithTriggerKeys 와 겹치면 한/영이 반쯤 고장 난 것처럼 군다).
-
-## EnumerateWithTriggerKeys
-
-/etc/xdg/fcitx5/config 로 쓰인다(이 파일이 없으면 모든 핫키가 컴파일된 기본값). Instance::trigger()
-(src/lib/fcitx/instance.cpp):
-
-```
-if (!enumerateWithTriggerKeys() || (firstTrigger_ && isActive()) ||
-    (enumerateSkipFirst() && inputMethodList().size() <= 2))
-  toggle(ic);
-else
-  enumerate(ic, true);
-```
-
-기본값(true)이면 enumerate() 로 빠져 그룹을 순환한다. 세 항목 그룹이면 keyboard-us → hangul → keyboard-kr 이고 둘이
-라틴이다. false 면 무조건 toggle().
-
-**값은 문자열 "False" 다.** nixpkgs 모듈이 맨 `lib.generators.toINI {}` 로 렌더해 Nix bool 을 `false` 로 쓰는데 fcitx5
-는 "True"/"False" 만(대소문자 구분) 받고 그 밖은 컴파일된 기본값으로 떨어진다(unmarshallOption(bool),
-src/lib/fcitx-config/marshallfunction.cpp). bool 로 쓰면 "맞는 설정인데 아무 일도 안 함"이 된다. hangul 애드온 블록의
-따옴표도 같은 이유다.
-
-**TriggerKeys 를 고정한다** — 상류 기본값 변경이 한/영을 조용히 가져가지 않게. Hangul 은 kanata 가 Right Alt 로 내는
-키의 keysym, Control+space 는 Hangul 경로 자체를 디버깅할 때의 탈출구다(화면 키보드에서도 이걸 쓴다). 기본 목록의
-Zenkaku_Hankaku 는 이 머신에서 아무것도 안 내서 뺐다.
 
 ## 폰트
 

@@ -164,6 +164,6 @@ xterm.js 는 VS Code 통합 터미널의 터미널 에뮬레이터 라이브러�
 
 **Linux 전용.** modules/shared/default.nix 가 이 디렉터리를 macOS 에도 넘기는데(hosts/darwin 이 modules/shared 를
 import), 거기서 VS Code 는 .app 번들이라 경로가 없어 substituteInPlace 가 darwin 빌드를 깬다. 버그 자체도
-Linux/Wayland/fcitx5 의 것이다.
+Linux/Wayland 의 입력기 경로(text-input)에서 나는 것이다.
 
 **지우는 조건:** PR #6090 이 들어가고 그 xterm.js 가 VS Code 에 실리면 유지하지 말고 지운다.

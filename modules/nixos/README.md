@@ -12,7 +12,7 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 ├── home-manager.nix     # 유저 레벨 설정 (shared/home-manager.nix + GTK 테마 패키지 + mise 활성화)
 ├── intel.nix            # Intel CPU/iGPU 공통 레이어 (Intel 호스트에서 import)
 ├── kanata.nix           # kanata 키 리맵 (한/영, Caps Lock 홀드 레이어)
-├── korean.nix           # 로케일, fcitx5-hangul IME, CJK 폰트
+├── korean.nix           # 로케일, CJK 폰트
 ├── libvirt.nix          # Windows 게스트용 libvirt (import 하는 호스트에서만)
 ├── nautice.nix          # nautice 의 로컬 음성 (home-manager 쪽)
 ├── nginx.nix            # 로컬 리버스 프록시 (import 하는 호스트에서만)
@@ -47,16 +47,11 @@ GTK 앱에 알리고, Nix 는 그 테마 패키지만 깐다(`home-manager.nix`)
 - **로케일** — UI는 `en_US.UTF-8`, 날짜/통화/주소 등 지역 포맷만 `ko_KR.UTF-8`
 - **한/영 전환** — 오른쪽 Alt → `KEY_HANGEUL` 리맵. 실제 설정은 [`kanata.nix`](kanata.nix)에
   있다(아래 참고)
-- **IME** — fcitx5 + fcitx5-hangul(두벌식), `waylandFrontend = true`(Wayland
-  text-input-v3). GTK 앱은 `fcitx5-gtk`, Qt 앱은
-  `qt6Packages.fcitx5-qt`가 담당한다
+- **IME** — 따로 깔지 않는다. subline 내장 입력기가 한글을 조합해 Wayland text-input 으로 앱에 넘긴다
 - **Chromium 계열** — Ozone Wayland 브라우저는 `--enable-wayland-ime` 플래그가 없으면
   한글이 안 들어간다. 예시는
   [`hosts/nixos/galaxy-chromebook-1/home.nix`](../../hosts/nixos/galaxy-chromebook-1/home.nix)
 - **폰트** — Noto CJK / Nanum / D2Coding / Pretendard + fontconfig 폴백
-
-> fcitx5는 `~/.config/fcitx5/*`를 `/etc/xdg/fcitx5/*`보다 먼저 읽는다. 선언적 프로필이
-> 안 먹으면 유저 로컬 설정이 남아 있는 것이니 지우고 다시 로그인한다.
 
 ## 키보드 리맵
 
@@ -70,7 +65,7 @@ GTK 앱에 알리고, Nix 는 그 테마 패키지만 깐다(`home-manager.nix`)
 Windows·macOS 는 같은 배치를 `../shared/kanata/kanata.kbd` 로 건다 — 배치를 고치면 두 파일을
 같이 고친다. 수치의 근거는 [`docs/kanata.md`](../../docs/kanata.md).
 
-- **오른쪽 Alt → `KEY_HANGEUL`** — fcitx5-hangul이 이걸 받아 한/영을 토글한다
+- **오른쪽 Alt → `KEY_HANGEUL`** — subline 내장 입력기가 이 키의 keysym(Hangul)으로 한/영을 토글한다
 - **Caps Lock 홀드 → 손 하나씩 나눠 쓰는 레이어** — 오른손은 윈도우 머신들이 쓰는
   [TouchCursor](https://github.com/martin-stone/touchcursor)와 같은 커서 배치(`ijkl` 역T
   화살표), 왼손은 마우스. 탭하면 평범한 Caps Lock 토글

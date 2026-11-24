@@ -96,7 +96,7 @@ NixOS 세션은 [`subline.md`](subline.md) 하나입니다. 라이싱 쪽은 시
 [`rice-scripts.md`](rice-scripts.md)(저장/복원)와 [`rice-tools.md`](rice-tools.md)(기준선·스위처 공통부·터미널 룩),
 터미널 셰이더 [`ghostty-shaders.md`](ghostty-shaders.md)로 나뉩니다.
 
-그 밖에 NixOS 모듈로는 [`korean-input.md`](korean-input.md)(로케일·fcitx5·한/영 키 경로), [`nginx.md`](nginx.md),
+그 밖에 NixOS 모듈로는 [`korean-input.md`](korean-input.md)(로케일·한/영 키 경로), [`nginx.md`](nginx.md),
 [`windows-guest.md`](windows-guest.md)(libvirt), [`nautice-tts.md`](nautice-tts.md)가 있고, 양쪽 공통으로
 [`fonts.md`](fonts.md), [`kanata.md`](kanata.md)(Caps 레이어의 수치와 OS 차이), [`overlays.md`](overlays.md)(오버레이마다
 고치는 것과 지우는 조건)가 있습니다. macOS 쪽 배선(기본 앱 핸들러, 로그인 항목, kanata, launchd 이름, rift-grid 에이전트)은

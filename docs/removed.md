@@ -150,3 +150,13 @@ brew uninstall --cask iterm2 postman
 brew uninstall rift                 # upstream rift formula 가 남아 있으면
 rm -rf ~/.config/aerospace
 ```
+
+### fcitx5
+
+| | |
+|---|---|
+| 대상 | `modules/nixos/korean.nix` 의 `i18n.inputMethod`(fcitx5, fcitx5-hangul, GTK·Qt 모듈, 설정 도구와 시드 프로필) |
+| 대체 | subline 내장 입력기 — `keyboard.input_method`(`auto` 는 외부 입력기가 없으면 내장을 쓴다) |
+
+되살릴 때 볼 것: fcitx5 는 `~/.config/fcitx5/*` 를 `/etc/xdg/fcitx5/*` 보다 먼저 읽으므로 선언은 시드일 뿐이었고,
+bool 값은 문자열 `"True"`/`"False"` 로 써야 먹었다(toINI 의 `false` 는 조용히 기본값이 된다).

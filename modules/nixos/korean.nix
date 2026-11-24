@@ -1,5 +1,5 @@
-# 한국어 로케일·입력기(fcitx5 + Hangul)·CJK 폰트. 한/영 리맵은 ./kanata.nix.
-# 전체 그림(한/영 키가 거치는 세 키코드 이름공간, 확인 명령): docs/korean-input.md
+# 한국어 로케일·CJK 폰트. 입력기는 여기 없다: 한글은 subline 내장 입력기가 조합하고(keyboard.input_method,
+# 외부 입력기가 없으면 auto 가 builtin 을 고른다), 한/영 키는 ./kanata.nix 가 낸다. 전체 그림: docs/korean-input.md
 { pkgs, ... }:
 
 {
@@ -22,77 +22,6 @@
   # 한글 누락을 고친 것은 아니다(그건 overlays/vscode-xterm-hangul.nix) — 경위: docs/postmortems/2026-08-05-vscode-terminal-hangul.md
   # 세션 변수라 rebuild 가 아니라 로그아웃해야 먹는다.
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
-
-  i18n.inputMethod = {
-    enable = true;
-    type = "fcitx5";
-    fcitx5 = {
-      waylandFrontend = true; # Wayland text-input-v3 (GTK apps)
-      addons = with pkgs; [
-        fcitx5-hangul
-        fcitx5-gtk
-        qt6Packages.fcitx5-qt
-        qt6Packages.fcitx5-configtool
-      ];
-      # fcitx5 는 ~/.config/fcitx5/* 를 먼저 읽고 시작할 때 profile 을 직접 쓴다. 그래서 이건 시드다 —
-      # 사용자 사본이 있는 머신은 rebuild 뒤 ~/.config/fcitx5/{profile,config} 를 한 번 지워야 먹는다.
-      settings = {
-        inputMethod = {
-          "Groups/0" = {
-            Name = "Default";
-            "Default Layout" = "us";
-            # 토글이 켜는 IM. 시작 상태가 아니다(ActiveByDefault 가 false 라 입력란은 영어로 열린다).
-            DefaultIM = "hangul";
-          };
-          "Groups/0/Items/0" = {
-            Name = "keyboard-us";
-            Layout = "";
-          };
-          "Groups/0/Items/1" = {
-            Name = "hangul";
-            Layout = "us"; # use US physical layout while in Hangul IM
-          };
-          # 정확히 둘이어야 한다 — 셋째가 있으면 아래 EnumerateWithTriggerKeys 의 enumerate 로 빠진다.
-          GroupOrder."0" = "Default";
-        };
-
-        # /etc/xdg/fcitx5/config. EnumerateWithTriggerKeys 를 끄면 trigger() 가 무조건 toggle() 한다
-        # (src/lib/fcitx/instance.cpp 의 Instance::trigger). 켜 두면 그룹을 순환한다.
-        globalOptions = {
-          # 문자열 "False" 여야 한다. toINI 는 bool 을 `false` 로 쓰는데 fcitx5 는 "True"/"False" 만 받고
-          # 그 밖은 조용히 기본값으로 돌린다(marshallfunction.cpp 의 unmarshallOption(bool)). 아래 hangul 도 같다.
-          Hotkey.EnumerateWithTriggerKeys = "False";
-
-          # 상류 기본값이 바뀌어도 한/영이 안 사라지게 고정한다. Hangul 은 kanata 가 Right Alt 로 내는 키(KEY_HANGEUL)의 keysym,
-          # Control+space 는 Hangul 경로를 디버깅할 때의 탈출구다.
-          "Hotkey/TriggerKeys" = {
-            "0" = "Hangul";
-            "1" = "Control+space";
-          };
-        };
-        addons = {
-          hangul = {
-            globalSection = {
-              Keyboard = "Dubeolsik"; # 두벌식
-              AutoReorder = "True";
-              WordCommit = "False";
-              HanjaMode = "False";
-            };
-            sections = {
-              HanjaModeToggleKey = {
-                "0" = "Hangul_Hanja";
-                "1" = "F9";
-              };
-              PrevPage."0" = "Up";
-              NextPage."0" = "Down";
-              PrevCandidate."0" = "Shift+Tab";
-              NextCandidate."0" = "Tab";
-            };
-          };
-        };
-      };
-    };
-  };
 
   # 공통 한글 폰트는 modules/shared/fonts.nix. OnlyOffice 는 fontconfig 를 안 써서
   # 오피스에서도 쓸 폰트면 overlays/onlyoffice-fonts.nix 도 같이 고친다.

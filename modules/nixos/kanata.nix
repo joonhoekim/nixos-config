@@ -34,8 +34,8 @@
       # The base layer must come before nav.kbd: the first layer defined is
       # the one kanata starts in.
       #
-      # Right Alt goes out as KEY_HANGEUL (122) for fcitx5-hangul, which binds
-      # the Hangul keysym (./korean.nix, Hotkey/TriggerKeys). kanata has no
+      # Right Alt goes out as KEY_HANGEUL (122): xkb turns it into the Hangul
+      # keysym, which subline's built-in input method toggles on. kanata has no
       # Linux name for 122 — `kana` is KEY_KATAKANAHIRAGANA there (kanata
       # parser/src/keys/mod.rs) — so it is named here by code.
       config = ''

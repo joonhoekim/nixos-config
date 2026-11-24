@@ -7,6 +7,9 @@ let
     inherit vscode;
     # apps/rice/wall --yazi 가 직접 띄운다. 빼면 그 키바인드가 아무 창도 없이 끝난다.
     inherit ghostty;
+    # 그림 파일의 기본 앱(아래 xdg.mime). 빼면 그 키가 다음 후보(브라우저)로 넘어간다.
+    inherit loupe;
+    inherit gnome-calculator;
   };
 
   optional = with pkgs; {
@@ -16,6 +19,16 @@ let
     # 보기
     inherit mpv;
     inherit zathura;
+
+    # 카메라. PipeWire 카메라 노드를 직접 연다 — surface-pro-9 의 IPU6 센서는 libcamera→PipeWire 로만
+    # 나와서 v4l2 장치를 여는 앱(cheese, guvcview)에는 카메라가 안 보인다.
+    inherit snapshot;
+    # 위치는 geoclue 에서 받는다. 이 이름이 목록에 있으면 아래에서 그 데몬도 켠다.
+    inherit gnome-maps;
+    inherit simple-scan;
+
+    # 디스크 포맷·이미지 굽기, 키링에 든 암호 보기·지우기.
+    inherit gnome-disk-utility seahorse;
 
     # 프로세스는 btop 등 CLI 가 낫다. 이 둘은 GPU·디스크·네트워크를 시간축으로 보고 터미널 없이 닿는 자리다.
     inherit mission-center;           # 780M 사용률도 읽는다
@@ -54,6 +67,8 @@ in
     # UDP(멀티캐스트 발견)로 연다. 닫혀 있으면 이 기계가 상대 목록에 안 뜨고 보내기도 조용히 실패한다.
     # Mac 짝은 ../darwin/casks.nix 의 core 에 있는 localsend cask.
     programs.localsend.enable = true;
+
+    services.geoclue2.enable = builtins.elem "gnome-maps" config.local.guiApps;
 
     # 파일·링크를 여는 기본 앱. /etc/xdg/mimeapps.list 의 시스템 기본값이라 ~/.config/mimeapps.list
     # (subline 설정 → 앱, `gio mime`, 각 앱의 "기본으로" 버튼이 쓰는 곳)가 키마다 이긴다. 그래서 거기서 바꾼

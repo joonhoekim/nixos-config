@@ -5,6 +5,7 @@
 {
   imports = [
     home-manager.nixosModules.home-manager
+    ../../modules/nixos/desktop.nix
     ../../modules/nixos/korean.nix
     ../../modules/nixos/gui-apps.nix
     ../../modules/nixos/keyboard.nix

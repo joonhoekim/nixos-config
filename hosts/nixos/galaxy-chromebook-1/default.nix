@@ -24,6 +24,7 @@
     "mpv"
     "zathura"
     "resources"
+    "snapshot"
   ];
 
   # No nav layer: it hangs off held Caps Lock, and that key here is the Chromebook

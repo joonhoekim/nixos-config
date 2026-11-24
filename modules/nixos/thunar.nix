@@ -30,7 +30,7 @@ let
 
   # 세션마다 배경을 쥔 쪽이 다르다. subline 은 ~/.config/subline/config.toml 의 [background] image 를
   # 1초마다 다시 읽고(subline crates/compositor/src/settings.rs), 그 파일은 설정 앱도 쓰므로 tomlkit 으로
-  # 그 키만 바꾸고 나머지 서식은 둔다. niri·Hyprland 는 DMS(apps/rice/wall 과 같은 호출), GNOME 은 gsettings.
+  # 그 키만 바꾸고 나머지 서식은 둔다. niri·Hyprland 는 DMS(apps/rice/wall 과 같은 호출).
   setWallpaper = pkgs.writers.writePython3 "thunar-set-wallpaper"
     { libraries = [ pkgs.python3Packages.tomlkit ]; flakeIgnore = [ "E501" ]; }
     ''
@@ -57,10 +57,6 @@ let
           with open(tmp, "w") as f:
               f.write(tomlkit.dumps(doc))
           os.replace(tmp, conf)
-      elif "gnome" in desktop:
-          uri = "file://" + path
-          for key in ("picture-uri", "picture-uri-dark"):
-              subprocess.run(["gsettings", "set", "org.gnome.desktop.background", key, uri], check=True)
       else:
           subprocess.run(["dms", "ipc", "call", "wallpaper", "set", path], check=True)
     '';

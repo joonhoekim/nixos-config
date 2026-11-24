@@ -114,7 +114,7 @@
     # Xwayland + xkb config, even on Wayland sessions.
     xserver = {
       enable = true;
-      # Layout only; remaps go through keyd. niri and GNOME ignore xkb.options,
+      # Layout only; remaps go through keyd. Wayland compositors ignore xkb.options,
       # so an xkb remap would reach X11 apps only.
       xkb.layout = "us";
     };
@@ -138,10 +138,6 @@
     # Must be one of sessionData.sessionNames (assertion in
     # services/display-managers/default.nix); modules/nixos/subline sets "subline".
     displayManager.defaultSession = lib.mkDefault "niri";
-
-    # Fallback session, and the only thing pulling in gnome-keyring and seahorse —
-    # dropping this line silently removes both.
-    desktopManager.gnome.enable = true;
 
     libinput.enable = true;
 

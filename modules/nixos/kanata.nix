@@ -1,31 +1,9 @@
-# Caps Lock layer and Right Alt -> Hangul via kanata — the replacement for
-# ./keyboard.nix (keyd) plus ./pointer (pointerd).
+# Caps Lock 레이어와 Right Alt → 한/영을 kanata 로 건다. 레이어 본체는 ../shared/kanata/nav.kbd 이고
+# (Windows·Debian 과 같은 파일), 여기는 NixOS 에만 해당하는 기본 레이어와 defcfg 만 둔다.
+# xkb 옵션이 아닌 이유: 포인터 이동(REL_X/REL_Y)까지 한 설정에서 내려면 evdev 에서 잡아야 한다.
 #
-# NOT IMPORTED YET. hosts/nixos/common.nix still imports keyd + pointerd; this
-# file is staged until it has been built and tried on a NixOS machine. To
-# switch, in common.nix replace the ./keyboard.nix and ./pointer imports with
-# this file, then on the machine check what kanata grabbed (below).
-#
-# Why kanata over keyd: keyd cannot emit REL_X/REL_Y, so the mouse half of the
-# layer had to leave keyd as spare F-key sentinels and be turned into motion
-# by a second process (./pointer/pointerd.py) — with the F-key/xkb-symbol
-# collisions and stuck-key timeouts that split brings (see ./keyboard.nix).
-# kanata moves the pointer itself from its own uinput device, so the whole
-# layer is one config, and the same one Windows and the Debian tablet run.
-#
-# The layer itself lives in ../shared/kanata/nav.kbd; this file adds only
-# what is NixOS-specific: the base layer and Right Alt.
-#
-# Device selection is kanata's autodetect: anything with a key in 1-115
-# (kanata src/oskbd/linux.rs has_keyboard_keys). That also catches volume-key
-# and headphone-jack devices, and grabbing one swallows its non-key events
-# (switches like SW_HEADPHONE_INSERT) silently. Check per machine with
-#     journalctl -u kanata-default -b | grep -E 'registering|excluded'
-# and add any such device to `linux-dev-names-exclude` in extraDefCfg, as
-# ../debian/kanata/kanata.kbd does.
-#
-# The nixpkgs module runs `kanata --check` on the generated config at build
-# time, so a syntax error fails the rebuild rather than the service.
+# nixpkgs 모듈이 빌드 때 `kanata --check` 를 돌리므로 문법 오류는 서비스가 아니라 리빌드에서 걸린다.
+# 비상 탈출: 왼쪽 Ctrl + Space + Esc 를 함께 누르면 kanata 가 끝난다(내장, 설정과 무관).
 { ... }:
 
 {
@@ -36,8 +14,21 @@
       # Without this, keys no layer maps (x, z, …) bypass kanata's state
       # machine, so tap-hold-press on Caps cannot see them as the other key
       # that commits the hold.
+      #
+      # 장치는 kanata 가 고른다: 키 1–115 중 하나라도 있으면 키보드로 본다(kanata src/oskbd/linux.rs
+      # has_keyboard_keys). 볼륨 키를 가진 장치도 걸리는데, 잡히면 kanata 는 키 이벤트만 다시 내보내서
+      # 그 장치의 스위치 이벤트(덮개, 태블릿 모드, SW_HEADPHONE_INSERT)가 조용히 사라진다. 그런 장치는
+      # 이름(/proc/bus/input/devices 의 N:)으로 뺀다. 새 기계에서는
+      #     journalctl -u kanata-default -b | grep -E 'registering|excluded'
+      # subline-check 의 격리 키보드(~/git/subline crates/check/src/uinput.rs)를 잡으면 그 키가 kanata 의
+      # 가상 키보드로 지금 세션에 들어가고 시험은 키를 못 받아 실패한다.
       extraDefCfg = ''
         process-unmapped-keys yes
+        linux-dev-names-exclude (
+          "subline-check isolated keyboard"
+          "subline-check isolated usb keyboard"
+          "gpio-keys"
+        )
       '';
 
       # The base layer must come before nav.kbd: the first layer defined is

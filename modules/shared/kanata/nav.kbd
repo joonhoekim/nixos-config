@@ -14,9 +14,6 @@
 ;;
 ;; 기기 쪽 기본 레이어는 여기의 @caps @sl @sr 을 쓴다. 기본 레이어가 먼저
 ;; 정의돼야 시작 레이어가 되므로 기기 쪽 파일은 기본 레이어 뒤에서 include 한다.
-;;
-;; 배치와 수치는 keyd 판(modules/nixos/keyboard.nix, modules/nixos/pointer/
-;; pointerd.py)에서 옮긴 것이다.
 
 (defsrc)
 
@@ -48,7 +45,7 @@
 
   ;; tap-hold-press: 다른 키가 눌리는 순간 홀드로 확정된다. Caps+i 를 빠르게
   ;; 굴려도 i 가 글자로 새지 않는다. 다른 키 없이 200ms 를 넘겨 떼면 아무 일도
-  ;; 하지 않는다 (keyd 의 overload 는 이때도 Caps Lock 을 토글한다).
+  ;; 하지 않는다.
   caps (tap-hold-press 200 200 caps (layer-while-held nav))
 )
 

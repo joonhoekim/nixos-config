@@ -49,7 +49,7 @@ shared.core
   dnsutils
   bandwhich
 
-  # Input / display / session diagnostics (keyd 리맵이나 Wayland·Xwayland 차이를 볼 때)
+  # Input / display / session diagnostics (kanata 리맵이나 Wayland·Xwayland 차이를 볼 때)
   wev
   xev
   evtest

@@ -1,4 +1,4 @@
-# 한국어 로케일·입력기(fcitx5 + Hangul)·CJK 폰트. 한/영 리맵은 ./keyboard.nix.
+# 한국어 로케일·입력기(fcitx5 + Hangul)·CJK 폰트. 한/영 리맵은 ./kanata.nix.
 # 전체 그림(한/영 키가 거치는 세 키코드 이름공간, 확인 명령): docs/korean-input.md
 { pkgs, ... }:
 
@@ -63,7 +63,7 @@
           # 그 밖은 조용히 기본값으로 돌린다(marshallfunction.cpp 의 unmarshallOption(bool)). 아래 hangul 도 같다.
           Hotkey.EnumerateWithTriggerKeys = "False";
 
-          # 상류 기본값이 바뀌어도 한/영이 안 사라지게 고정한다. Hangul 은 keyd 가 Right Alt 로 내는 keysym,
+          # 상류 기본값이 바뀌어도 한/영이 안 사라지게 고정한다. Hangul 은 kanata 가 Right Alt 로 내는 키(KEY_HANGEUL)의 keysym,
           # Control+space 는 Hangul 경로를 디버깅할 때의 탈출구다.
           "Hotkey/TriggerKeys" = {
             "0" = "Hangul";

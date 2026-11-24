@@ -8,8 +8,7 @@
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/korean.nix
     ../../modules/nixos/gui-apps.nix
-    ../../modules/nixos/keyboard.nix
-    ../../modules/nixos/pointer
+    ../../modules/nixos/kanata.nix
     ../../modules/nixos/subline
     ../../modules/nixos/subline-terminal.nix
     ../../modules/nixos/niri
@@ -43,8 +42,6 @@
       efi.canTouchEfiVariables = true;
     };
     kernelPackages = pkgs.linuxPackages_latest;
-    # keyd needs uinput (modules/nixos/keyboard.nix).
-    kernelModules = [ "uinput" ];
   };
 
   time.timeZone = "Asia/Seoul";
@@ -114,7 +111,7 @@
     # Xwayland + xkb config, even on Wayland sessions.
     xserver = {
       enable = true;
-      # Layout only; remaps go through keyd. Wayland compositors ignore xkb.options,
+      # Layout only; remaps go through kanata (modules/nixos/kanata.nix). Wayland compositors ignore xkb.options,
       # so an xkb remap would reach X11 apps only.
       xkb.layout = "us";
     };

@@ -17,7 +17,21 @@
   services.udisks2.enable = true;
 
   # CUPS 가 네트워크 프린터를 찾는 mDNS. 프린터 추가·삭제 GUI 는 system-config-printer.
-  services.avahi.enable = true;
+  # nssmdns4 는 nsswitch 의 hosts 에 mdns4_minimal 을 넣어 `.local` 이름을 avahi 로 풀게 한다. 없으면 찾은 프린터가
+  # ipp://<이름>.local 로 등록되는데 그 이름이 안 풀려, 목록에는 뜨고 인쇄만 실패한다.
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+  };
+  # mdns4_minimal 은 유니캐스트 DNS 가 `local` 의 SOA 를 답하면 스스로 물러난다(nss-mdns README 의 SOA 휴리스틱).
+  # 없는 이름에 광고 서버 주소를 답하는 통신사 DNS 가 그런 서버라, 그 망에서는 `.local` 이 전부 그 주소로 풀린다.
+  # 그래서 NetworkManager 가 띄우는 로컬 dnsmasq 를 앞에 두고 `.local` 을 상류로 보내지 않게 한다.
+  # mdns4 + /etc/mdns.allow 로 검사를 건너뛰지 않는 이유: mdns4 는 모든 IP 의 역방향 조회를 가로채
+  # `getent hosts 8.8.8.8` 이 5초 뒤 이름 없이 끝난다(실측).
+  networking.networkmanager.dns = "dnsmasq";
+  environment.etc."NetworkManager/dnsmasq.d/no-unicast-local.conf".text = ''
+    local=/local/
+  '';
   programs.system-config-printer.enable = true;
 
   # CUPS 는 여기 선언한 패키지에서만 PPD 와 필터를 찾는다. 프린터가 드라이버 목록에 없으면 추가 화면에

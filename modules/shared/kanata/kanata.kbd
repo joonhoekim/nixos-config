@@ -1,4 +1,4 @@
-;; Caps Lock 레이어 — Windows·macOS 공용. 정본은 modules/nixos/keyboard.nix 와 pointer/pointerd.py 다.
+;; Caps Lock 레이어 — Windows·macOS 공용.
 ;; 배치·검증·설치: ./README.md, 수치와 OS 차이의 근거: docs/kanata.md
 ;; 리눅스(Debian·NixOS)는 같은 배치를 ./nav.kbd 로 따로 건다. 배치를 고치면 두 파일을 같이 고친다.
 
@@ -68,7 +68,7 @@
   we (fork @wh↓ @wh→ (lsft rsft))
 
   ;; 다른 키가 눌리는 순간 홀드로 확정돼 Caps+i 를 빨리 굴려도 i 가 안 샌다. 200ms 넘겨 혼자 떼면 아무 일도
-  ;; 없다(keyd 의 overload 는 이때도 Caps Lock 을 토글한다).
+  ;; 없다.
   caps (tap-hold-press 200 200 caps (layer-while-held nav))
 
   ;; fn 도 그대로 전달해서 fn+←(Home) 같은 macOS fn 조합과 🌐 단축키가 남는다. Windows 에는 fn 이 안 온다.

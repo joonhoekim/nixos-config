@@ -5,7 +5,7 @@
 let
   core = with pkgs; {
     inherit vscode;
-    # apps/rice/wall --yazi 가 직접 띄운다. 빼면 그 키바인드가 아무 창도 없이 끝난다.
+    # 설정은 ../shared/ghostty 가 심는다(macOS 와 같은 파일).
     inherit ghostty;
     # 그림 파일의 기본 앱(아래 xdg.mime). 빼면 그 키가 다음 후보(브라우저)로 넘어간다.
     inherit loupe;

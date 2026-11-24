@@ -11,9 +11,6 @@
     ../../modules/nixos/kanata.nix
     ../../modules/nixos/subline
     ../../modules/nixos/subline-terminal.nix
-    ../../modules/nixos/niri
-    ../../modules/nixos/hyprland
-    ../../modules/nixos/dms
     ../../modules/nixos/wireguard.nix
     ../../modules/nixos/tailscale.nix
     ../../modules/nixos/rustdesk.nix
@@ -131,10 +128,6 @@
         "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions"
       ]);
     };
-
-    # Must be one of sessionData.sessionNames (assertion in
-    # services/display-managers/default.nix); modules/nixos/subline sets "subline".
-    displayManager.defaultSession = lib.mkDefault "niri";
 
     libinput.enable = true;
 

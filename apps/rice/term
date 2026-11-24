@@ -1,7 +1,7 @@
 #!/bin/sh -e
 # Switch the ghostty look, live.
 # 룩 = rices/<name>.conf 를 rice.conf 로 복사. config 끝의 `config-file = ?rice.conf` 가 본체보다 나중에 읽혀 조각이 이긴다.
-# 프로필(rice-switch)과는 다른 축이라 셰이더만 정한다. 전체 그림: docs/rice-tools.md
+# 색은 테마 파일이 정하고 룩은 셰이더만 정한다. 전체 그림: docs/rice-tools.md
 
 GREEN='\033[1;32m'; YELLOW='\033[1;33m'; RED='\033[1;31m'; DIM='\033[2m'; NC='\033[0m'
 

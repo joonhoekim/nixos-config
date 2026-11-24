@@ -28,37 +28,31 @@ let
     printf '%s\n' "$@" | ${pkgs.coreutils}/bin/head -c -1 | ${pkgs.wl-clipboard}/bin/wl-copy
   '';
 
-  # 세션마다 배경을 쥔 쪽이 다르다. subline 은 ~/.config/subline/config.toml 의 [background] image 를
-  # 1초마다 다시 읽고(subline crates/compositor/src/settings.rs), 그 파일은 설정 앱도 쓰므로 tomlkit 으로
-  # 그 키만 바꾸고 나머지 서식은 둔다. niri·Hyprland 는 DMS(apps/rice/wall 과 같은 호출).
+  # subline 은 ~/.config/subline/config.toml 의 [background] image 를 1초마다 다시 읽는다
+  # (subline crates/compositor/src/settings.rs). 그 파일은 설정 앱도 쓰므로 tomlkit 으로 그 키만 바꾸고
+  # 나머지 서식은 둔다.
   setWallpaper = pkgs.writers.writePython3 "thunar-set-wallpaper"
     { libraries = [ pkgs.python3Packages.tomlkit ]; flakeIgnore = [ "E501" ]; }
     ''
       import os
-      import subprocess
       import sys
       import tomlkit
 
       path = os.path.abspath(sys.argv[1])
-      desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
-
-      if "subline" in desktop:
-          conf = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "subline", "config.toml")
-          try:
-              with open(conf) as f:
-                  doc = tomlkit.parse(f.read())
-          except FileNotFoundError:
-              doc = tomlkit.document()
-          if "background" not in doc:
-              doc["background"] = tomlkit.table()
-          doc["background"]["image"] = path
-          # 같은 디렉터리에 쓰고 바꿔치기한다. 반쯤 쓴 파일을 subline 이 읽으면 설정 전체가 기본값으로 돌아간다.
-          tmp = conf + ".tmp"
-          with open(tmp, "w") as f:
-              f.write(tomlkit.dumps(doc))
-          os.replace(tmp, conf)
-      else:
-          subprocess.run(["dms", "ipc", "call", "wallpaper", "set", path], check=True)
+      conf = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "subline", "config.toml")
+      try:
+          with open(conf) as f:
+              doc = tomlkit.parse(f.read())
+      except FileNotFoundError:
+          doc = tomlkit.document()
+      if "background" not in doc:
+          doc["background"] = tomlkit.table()
+      doc["background"]["image"] = path
+      # 같은 디렉터리에 쓰고 바꿔치기한다. 반쯤 쓴 파일을 subline 이 읽으면 설정 전체가 기본값으로 돌아간다.
+      tmp = conf + ".tmp"
+      with open(tmp, "w") as f:
+          f.write(tomlkit.dumps(doc))
+      os.replace(tmp, conf)
     '';
 
   # appearsOn: directories 는 폴더를 고른 때와 폴더 빈 곳을 우클릭한 때(그 폴더가 %f) 둘 다다.

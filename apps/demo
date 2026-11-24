@@ -1,13 +1,13 @@
 #!/bin/sh -e
 #
-# 창 관리자를 실제로 쓰는 모습을 자동으로 재연한다.
+# 창 관리자(macOS 의 rift-grid)를 실제로 쓰는 모습을 자동으로 재연한다.
 #
 #   apps/demo                  시나리오 목록
 #   apps/demo incident         그 시나리오를 지금 화면에서 시연
 #   apps/demo incident --fast  두 배 빠르게 (--slow 는 그 반대)
 #
 # 자막의 키(docs/keymap.md)를 누르는 대신 그 키가 설정에서 부르는 액션을 직접 부른다(키 합성은 macOS 접근성 권한이 필요하다).
-# 그래서 modules/darwin/rice/rift-grid/config.toml 의 [keys] 나 modules/nixos/hyprland/rice/hyprland.lua 가 바뀌면 여기도 고친다.
+# 그래서 modules/darwin/rice/rift-grid/config.toml 의 [keys] 가 바뀌면 여기도 고친다.
 # 빈 워크스페이스에서만 돌고, 정리는 창을 닫지 않고 $SENTINEL 을 지워 창 안 루프가 스스로 끝나게 한다. 전체 그림: docs/demo.md
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -137,20 +137,16 @@ esac
 REPO="$(cd "$(dirname "$SELF")/.." && pwd)"
 SPEED=1
 
-case "$(uname)" in
-Darwin) WM=rift-grid ;;
-*) WM=hypr ;;
-esac
+# 창 띄우기·포커스·워크스페이스 전부를 rift-grid-cli 로 몬다.
+if [ "$(uname)" != "Darwin" ]; then
+	printf "${RED}이 시연은 macOS 의 rift-grid 세션용이다.${NC}\n"
+	exit 1
+fi
 
 usage() {
 	printf "${BOLD}시연할 시나리오${NC}\n\n"
-	if [ "$WM" = rift-grid ]; then
-		printf "  ${GREEN}incident${NC}   스테이징에서 500 이 난 30초 — 창을 벌리고, 합치고, 옆 워크스페이스로 던진다\n"
-		printf "  ${GREEN}layouts${NC}    같은 창 넷을 네 가지 레이아웃 모드에 넣어 본다\n"
-	else
-		printf "  ${GREEN}incident${NC}   스테이징에서 500 이 난 30초 — 창을 벌리고, 합치고, 옆 워크스페이스로 던진다\n"
-		printf "  ${GREEN}shell${NC}      같은 창들 위로 DMS 를 불러 본다 — 치트시트·오버뷰·알림·스포트라이트\n"
-	fi
+	printf "  ${GREEN}incident${NC}   스테이징에서 500 이 난 30초 — 창을 벌리고, 합치고, 옆 워크스페이스로 던진다\n"
+	printf "  ${GREEN}layouts${NC}    같은 창 넷을 네 가지 레이아웃 모드에 넣어 본다\n"
 	printf "\n"
 	printf "  ${DIM}apps/demo incident [--fast|--slow]${NC}\n\n"
 	printf "${DIM}나란히 비어 있는 워크스페이스 둘을 빌려 쓰고, 끝나면 열었던 창을 전부 걷어내고\n"
@@ -181,8 +177,7 @@ done
 
 _ok=no
 [ "$SCENARIO" = incident ] && _ok=yes
-[ "$WM" = rift-grid ] && [ "$SCENARIO" = layouts ] && _ok=yes
-[ "$WM" = hypr ] && [ "$SCENARIO" = shell ] && _ok=yes
+[ "$SCENARIO" = layouts ] && _ok=yes
 [ "$_ok" = yes ] || {
 	printf "${RED}여기서는 그런 시나리오가 없다: %s${NC}\n\n" "$SCENARIO"
 	usage
@@ -194,71 +189,27 @@ command -v jq >/dev/null 2>&1 || {
 	exit 1
 }
 
-if [ "$WM" = rift-grid ]; then
-	command -v rift-grid-cli >/dev/null 2>&1 || {
-		printf "${RED}rift-grid-cli 가 없다.${NC} 이 시연은 macOS 의 rift-grid 세션용이다.\n"
-		exit 1
-	}
-	rift-grid-cli query workspaces >/dev/null 2>&1 || {
-		printf "${RED}rift-grid 가 응답하지 않는다.${NC} 창 관리자가 떠 있어야 시연할 수 있다.\n"
-		exit 1
-	}
-	WEZTERM="/Applications/WezTerm.app/Contents/MacOS/wezterm"
-	[ -x "$WEZTERM" ] || {
-		printf "${RED}WezTerm.app 이 없다.${NC} 시연 창을 띄우는 데 쓴다 — 이유는 spawn() 주석에.\n"
-		exit 1
-	}
-else
-	# ssh 로 들어와 부르면 이 셋이 비어 hyprctl 은 "no instance", ghostty 는 "no wayland compositor" 로 죽는다.
-	[ -n "${XDG_RUNTIME_DIR:-}" ] || XDG_RUNTIME_DIR="/run/user/$(id -u)"
-	export XDG_RUNTIME_DIR
-	[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || {
-		HYPRLAND_INSTANCE_SIGNATURE="$(ls -t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1)"
-		export HYPRLAND_INSTANCE_SIGNATURE
-	}
-	[ -n "${WAYLAND_DISPLAY:-}" ] || {
-		WAYLAND_DISPLAY="$(basename "$(ls "$XDG_RUNTIME_DIR"/wayland-[0-9] 2>/dev/null | head -1)" 2>/dev/null)"
-		export WAYLAND_DISPLAY
-	}
-	command -v hyprctl >/dev/null 2>&1 || {
-		printf "${RED}hyprctl 이 없다.${NC} 이 시연은 하이프랜드 세션용이다.\n"
-		exit 1
-	}
-	hyprctl version >/dev/null 2>&1 || {
-		printf "${RED}하이프랜드가 응답하지 않는다.${NC} (HYPRLAND_INSTANCE_SIGNATURE=%s)\n" \
-			"${HYPRLAND_INSTANCE_SIGNATURE:-없음}"
-		exit 1
-	}
-	command -v ghostty >/dev/null 2>&1 || {
-		printf "${RED}ghostty 가 없다.${NC} 시연 창은 전부 ghostty 다.\n"
-		exit 1
-	}
-	# hyprpicker(hyprshot -z)나 slurp 이 남아 키보드 포커스를 쥐고 있으면 `focus` 가 ok 를 돌려주면서
-	# 활성 창이 없는 채라, 시연의 모든 액션이 대상을 못 찾는다.
-	if hyprctl layers -j 2>/dev/null | grep -qE '"(hyprpicker|selection)"'; then
-		printf "${RED}화면을 잡고 있는 레이어가 있다.${NC} (hyprpicker / slurp)\n"
-		printf "${DIM}스크린샷 도구가 남긴 것이다. 정리하고 다시 불러라:${NC}\n"
-		printf "${DIM}  pkill hyprpicker; pkill slurp${NC}\n"
-		exit 1
-	fi
-fi
+command -v rift-grid-cli >/dev/null 2>&1 || {
+	printf "${RED}rift-grid-cli 가 없다.${NC} 이 시연은 macOS 의 rift-grid 세션용이다.\n"
+	exit 1
+}
+rift-grid-cli query workspaces >/dev/null 2>&1 || {
+	printf "${RED}rift-grid 가 응답하지 않는다.${NC} 창 관리자가 떠 있어야 시연할 수 있다.\n"
+	exit 1
+}
+WEZTERM="/Applications/WezTerm.app/Contents/MacOS/wezterm"
+[ -x "$WEZTERM" ] || {
+	printf "${RED}WezTerm.app 이 없다.${NC} 시연 창을 띄우는 데 쓴다 — 이유는 spawn() 주석에.\n"
+	exit 1
+}
 
 # 창이 하나라도 있는 워크스페이스는 고르지 않는다. 둘이 연달아 비어야 하는 건 Mod+Shift+O 가 창을 옆으로 던지기 때문이다.
-# rift-grid 는 0 부터 세는 고정 아홉 칸(디스플레이마다), 하이프랜드는 1 부터이고 창이 없으면 존재하지 않아 1..9 의 여집합에서 찾는다.
-# WS_LABEL 은 사람에게 보일 번호(둘 다 1 부터)다.
-if [ "$WM" = rift-grid ]; then
-	STATE="$(rift-grid-cli query workspaces)"
-	HOME_WS="$(printf '%s' "$STATE" | jq -r '.[] | select(.is_active) | .index')"
-	DEMO_WS="$(printf '%s' "$STATE" | jq -r '
-		[.[] | select(.window_count == 0) | .index] as $free
-		| [$free[] | select(. + 1 as $n | $free | index($n))] | first // empty')"
-else
-	HOME_WS="$(hyprctl activeworkspace -j | jq -r '.id')"
-	DEMO_WS="$(hyprctl workspaces -j | jq -r '
-		[.[] | select(.windows > 0) | .id] as $busy
-		| [range(1; 9) | select(([., . + 1] | map(IN($busy[]))) == [false, false])]
-		| first // empty')"
-fi
+# rift-grid 는 0 부터 세는 고정 아홉 칸(디스플레이마다)이고, WS_LABEL 은 사람에게 보일 번호(1 부터)다.
+STATE="$(rift-grid-cli query workspaces)"
+HOME_WS="$(printf '%s' "$STATE" | jq -r '.[] | select(.is_active) | .index')"
+DEMO_WS="$(printf '%s' "$STATE" | jq -r '
+	[.[] | select(.window_count == 0) | .index] as $free
+	| [$free[] | select(. + 1 as $n | $free | index($n))] | first // empty')"
 
 [ -n "$DEMO_WS" ] || {
 	printf "${RED}빌릴 자리가 없다.${NC} 시연은 나란히 비어 있는 워크스페이스 두 개가 필요하다.\n"
@@ -266,13 +217,8 @@ fi
 	exit 1
 }
 NEXT_WS=$((DEMO_WS + 1))
-if [ "$WM" = rift-grid ]; then
-	WS_LABEL=$((DEMO_WS + 1))
-	HOME_LABEL=$((HOME_WS + 1))
-else
-	WS_LABEL="$DEMO_WS"
-	HOME_LABEL="$HOME_WS"
-fi
+WS_LABEL=$((DEMO_WS + 1))
+HOME_LABEL=$((HOME_WS + 1))
 
 WORK="$(mktemp -d /tmp/wm-demo.XXXXXX)"
 SENTINEL="$WORK/alive"
@@ -287,11 +233,7 @@ cleanup() {
 	rm -f "$SENTINEL"
 	# 창 안 루프는 0.1 초마다 sentinel 을 본다. 창 관리자에게 창을 닫으라고 하지 않는다.
 	sleep 0.6
-	if [ "$WM" = rift-grid ]; then
-		rift-grid-cli execute workspace switch "$HOME_WS" >/dev/null 2>&1 || true
-	else
-		hyprctl dispatch "hl.dsp.focus({ workspace = $HOME_WS })" >/dev/null 2>&1 || true
-	fi
+	rift-grid-cli execute workspace switch "$HOME_WS" >/dev/null 2>&1 || true
 	rm -rf "$WORK"
 	printf "\n${DIM}시연 끝. 워크스페이스 %s 로 돌아왔다.${NC}\n" "$HOME_LABEL"
 }
@@ -321,81 +263,42 @@ say() {
 	beat 18
 }
 
-# ── 백엔드: 창 관리자별로 갈리는 것은 act·spawn·wfocus 셋뿐이다. 셋 다 실패해도 멈추지 않는다
+# ── 백엔드: 시나리오가 rift-grid 를 건드리는 길은 act·spawn·wfocus 셋뿐이다. 셋 다 실패해도 멈추지 않는다
 # (창을 띄워 놓은 채 죽는 쪽이 한 스텝 못 도는 것보다 나쁘다).
 
-if [ "$WM" = rift-grid ]; then
+act() { rift-grid-cli execute "$@" >/dev/null 2>&1 || true; }
 
-	act() { rift-grid-cli execute "$@" >/dev/null 2>&1 || true; }
+# spawn <역할> <가로> <세로> <폰트> [기준창]. 기준창에 먼저 포커스를 준다: 스크롤링 레이아웃은 새 창을 활성 컬럼 옆에
+# 끼우는데 say() 가 자막에 포커스를 두므로, 안 그러면 순서가 뒤집혀 consume 이 오른쪽 이웃을 못 찾고 조용히 헛돈다.
+# macOS 에서 wezterm 인 이유: ghostty 는 `open -na Ghostty.app --args -e` 로만 띄울 수 있고 명령마다 실행 확인 창이 뜬다(docs/demo.md).
+spawn() {
+	[ -n "${5:-}" ] && wfocus "$5"
+	_before="$(rift-grid-cli query windows | jq -c '[.[].id]')"
+	"$WEZTERM" \
+		--config "font_size=$4" \
+		--config "initial_cols=$2" \
+		--config "initial_rows=$3" \
+		--config "enable_tab_bar=false" \
+		start --always-new-process -- \
+		"$SELF" --pane "$1" "$SENTINEL" "$CAPTION" "$REPO" >/dev/null 2>&1 &
+	SPAWNED=""
+	_n=0
+	while [ "$_n" -lt 80 ]; do
+		SPAWNED="$(rift-grid-cli query windows |
+			jq -c --argjson old "$_before" 'map(.id) - $old | first // empty')"
+		[ -n "$SPAWNED" ] && break
+		sleep 0.15
+		_n=$((_n + 1))
+	done
+	beat 4
+}
 
-	# spawn <역할> <가로> <세로> <폰트> [기준창]. 기준창에 먼저 포커스를 준다: 스크롤링 레이아웃은 새 창을 활성 컬럼 옆에
-	# 끼우는데 say() 가 자막에 포커스를 두므로, 안 그러면 순서가 뒤집혀 consume 이 오른쪽 이웃을 못 찾고 조용히 헛돈다.
-	# macOS 에서 wezterm 인 이유: ghostty 는 `open -na Ghostty.app --args -e` 로만 띄울 수 있고 명령마다 실행 확인 창이 뜬다(docs/demo.md).
-	spawn() {
-		[ -n "${5:-}" ] && wfocus "$5"
-		_before="$(rift-grid-cli query windows | jq -c '[.[].id]')"
-		"$WEZTERM" \
-			--config "font_size=$4" \
-			--config "initial_cols=$2" \
-			--config "initial_rows=$3" \
-			--config "enable_tab_bar=false" \
-			start --always-new-process -- \
-			"$SELF" --pane "$1" "$SENTINEL" "$CAPTION" "$REPO" >/dev/null 2>&1 &
-		SPAWNED=""
-		_n=0
-		while [ "$_n" -lt 80 ]; do
-			SPAWNED="$(rift-grid-cli query windows |
-				jq -c --argjson old "$_before" 'map(.id) - $old | first // empty')"
-			[ -n "$SPAWNED" ] && break
-			sleep 0.15
-			_n=$((_n + 1))
-		done
-		beat 4
-	}
+wfocus() {
+	[ -n "$1" ] || return 0
+	act window focus --window-id "$1"
+	beat 3
+}
 
-	wfocus() {
-		[ -n "$1" ] || return 0
-		act window focus --window-id "$1"
-		beat 3
-	}
-
-else
-
-	# 하이프랜드의 액션은 hl.bind 에 적는 lua 표현식 그대로 `hyprctl dispatch` 에 넘긴다(docs/hyprland-binds.md 의 "확인하는 법").
-	# 그래서 아래 문자열은 hyprland.lua 와 글자까지 같다.
-	act() { hyprctl dispatch "$1" >/dev/null 2>&1 || true; }
-
-	spawn() {
-		[ -n "${5:-}" ] && wfocus "$5"
-		_before="$(hyprctl clients -j | jq -c '[.[].address]')"
-		# resize-overlay 는 창이 리사이즈될 때마다 한가운데에 "205 x 48" 을
-		# 띄운다. 타일러는 창을 쉴 새 없이 리사이즈하므로 시연 내내 떠 있다.
-		ghostty \
-			--font-size="$4" \
-			--window-width="$2" \
-			--window-height="$3" \
-			--resize-overlay=never \
-			-e "$SELF" --pane "$1" "$SENTINEL" "$CAPTION" "$REPO" >/dev/null 2>&1 &
-		SPAWNED=""
-		_n=0
-		while [ "$_n" -lt 80 ]; do
-			SPAWNED="$(hyprctl clients -j |
-				jq -r --argjson old "$_before" '[.[].address] - $old | first // empty')"
-			[ -n "$SPAWNED" ] && break
-			sleep 0.15
-			_n=$((_n + 1))
-		done
-		beat 4
-	}
-
-	# `focus` 는 방향 키워드가 아니라 셀렉터를 받는다 (hyprland-binds.md).
-	wfocus() {
-		[ -n "$1" ] || return 0
-		act "hl.dsp.focus({ window = \"address:$1\" })"
-		beat 3
-	}
-
-fi
 
 # 방향 탐색이 아니라 창 id 로 포커스한다. 컬럼이 합쳐지고 갈라져 "왼쪽"이 스텝마다 달라지고, 방향 탐색이
 # 자막 창을 집으면 다음 액션(예: Mod+Shift+O)이 자막에 걸린다.
@@ -567,202 +470,9 @@ rift_layouts() {
 	beat 8
 }
 
-hypr_incident() {
-	TOTAL=13
-
-	say "Super + $WS_LABEL" "빈 워크스페이스로 간다" \
-		"시연은 남의 배치를 건드리지 않는다." \
-		"창이 하나도 없는 자리만 빌려 쓴다."
-	act "hl.dsp.focus({ workspace = $DEMO_WS })"
-	beat 6
-
-	spawn narrator 62 9 15
-	NARRATOR="$SPAWNED"
-	focus_spawned
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	beat 6
-
-	say "Super + Enter" "로그부터 연다" \
-		"스테이징 api 가 500 을 뱉기 시작했다." \
-		"창 하나 = 컬럼 하나. 띠의 오른쪽으로 쌓인다."
-	spawn logs 92 30 11 "$NARRATOR"
-	W_LOGS="$SPAWNED"
-	beat 10
-
-	say "Super + Enter" "코드를 옆에 붙인다" \
-		"스크롤링 레이아웃이라 화면은 무한한 가로 띠고," \
-		"지금 보이는 건 그중 일부다. niri 와 같은 모양이다."
-	spawn editor 88 34 11 "$W_LOGS"
-	W_EDITOR="$SPAWNED"
-	beat 10
-
-	say "Super + J / Mod + L" "포커스는 IJKL 로 왼쪽·오른쪽" \
-		"화살표도 같은 자리에 걸려 있다." \
-		"클릭해야 포커스가 간다 — follow_mouse = 0."
-	wfocus "$W_LOGS"
-	beat 8
-	wfocus "$W_EDITOR"
-	beat 8
-	wfocus "$W_LOGS"
-	beat 6
-
-	say "Super + =" "로그 컬럼을 넓힌다" \
-		"colresize 가 컬럼 폭을 0.1 씩 걷는다." \
-		"Super+R 은 설정에 적어 둔 폭 프리셋을 순환한다."
-	wfocus "$W_LOGS"
-	act "hl.dsp.layout(\"colresize +0.1\")"
-	beat 6
-	act "hl.dsp.layout(\"colresize +0.1\")"
-	beat 10
-
-	say "Super + -" "다시 좁힌다" \
-		"둘 다 보이는 폭으로 돌려놓는다."
-	wfocus "$W_LOGS"
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	beat 5
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	beat 8
-
-	# 하이프랜드에는 상태를 보고 뒤집히는 액션이 없다(hyprland.lua 의 Mod+Ctrl+E 는 형제 수를 세어 consume/promote 를 고르는 함수).
-	# 시연은 어느 쪽인지 알므로 둘을 직접 부른다.
-	say "Super + Ctrl + E" "둘을 한 컬럼에 쌓는다" \
-		"consume — 오른쪽 이웃의 맨 위 창을 이 컬럼으로 끌어온다." \
-		"로그와 코드가 한 컬럼, 위아래로."
-	wfocus "$W_LOGS"
-	act "hl.dsp.layout(\"consume\")"
-	beat 14
-
-	say "Super + Enter" "테스트 러너를 새 컬럼에" \
-		"쌓아 둔 컬럼은 그대로 두고 오른쪽에 하나 더."
-	spawn tests 84 26 11 "$W_LOGS"
-	W_TESTS="$SPAWNED"
-	beat 12
-
-	# expel 이 아니라 promote 다. expel 은 포커스가 어디 있든 컬럼 **맨 아래**
-	# 창을 뱉는다 — 골라서 빼내는 건 promote 뿐이다(docs/hyprland-binds.md).
-	say "Super + Ctrl + E" "다시 누르면 도로 빼낸다" \
-		"promote — 활성 창만 컬럼에서 빼내 제 컬럼으로." \
-		"같은 키가 컬럼 상태를 보고 뒤집힌다."
-	wfocus "$W_EDITOR"
-	beat 5
-	act "hl.dsp.layout(\"promote\")"
-	beat 12
-
-	say "Super + F" "이 창만 크게 — 갭은 살려 둔다" \
-		"maximized. Mod+Shift+F 는 갭까지 덮는" \
-		"진짜 전체화면이라 따로 있다."
-	wfocus "$W_TESTS"
-	act "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })"
-	beat 14
-	act "hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\" })"
-	beat 8
-
-	# follow 하지 않는 이유는 rift-grid 쪽과 같다.
-	say "Super + Shift + O" "이 창을 다음 워크스페이스로" \
-		"Shift 는 어디서나 '창을 데리고 간다' 는 뜻이다." \
-		"테스트 창이 여기서 빠져 옆자리로 넘어간다."
-	wfocus "$W_TESTS"
-	act "hl.dsp.window.move({ workspace = $NEXT_WS })"
-	beat 16
-
-	say "Super + O → Super + Tab" "가 보면 거기 있다" \
-		"옆 워크스페이스로 넘어갔다가 직전 자리로 돌아온다." \
-		"철자는 previous 하나뿐이다 — prev 는 조용히 아무 일도 안 한다."
-	act "hl.dsp.focus({ workspace = \"e+1\" })"
-	beat 14
-	act "hl.dsp.focus({ workspace = \"previous\" })"
-	beat 12
-
-	say "Ctrl + C 해도 같다" "정리" \
-		"열었던 창은 전부 스스로 나간다." \
-		"원래 있던 워크스페이스로 돌아간다."
-	beat 12
-}
-
-# DMS 오버레이는 레이어라 워크스페이스에 속하지 않는다. 배경 창 몇을 깔고 그 위로 셸을 부른다.
-# toggle 대신 open/close 짝을 부른다: toggle 은 시작 상태에 기대서, 누가 켜 둔 오버레이가 있으면 이후가 한 칸씩 어긋난다.
-# 열어 둔 채 넘어가지 않는다. 스포트라이트처럼 키보드를 통째로 잡는 것이 있어 그 뒤가 전부 막힌다.
-hypr_shell() {
-	TOTAL=7
-	_dms() { dms ipc call $1 >/dev/null 2>&1 || true; }
-
-	# 치트시트만 layer-shell 이 아니라 quickshell 의 보통 창이라 타일링된다. 컬럼이 셋이면 넷째로 들어가 화면 밖에 열린다.
-	# 열고 나서 그 창으로 포커스를 옮기면 띠가 그쪽으로 스크롤해 온다.
-	_dms_window() {
-		_b="$(hyprctl clients -j | jq -c '[.[].address]')"
-		_dms "$1"
-		beat 8
-		_w="$(hyprctl clients -j |
-			jq -r --argjson old "$_b" '[.[].address] - $old | first // empty')"
-		wfocus "$_w"
-	}
-
-	say "Super + $WS_LABEL" "빈 워크스페이스로 간다" \
-		"셸을 부를 배경으로 창 몇을 깔아 둔다."
-	act "hl.dsp.focus({ workspace = $DEMO_WS })"
-	beat 6
-
-	spawn narrator 62 9 15
-	NARRATOR="$SPAWNED"
-	focus_spawned
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	act "hl.dsp.layout(\"colresize -0.1\")"
-	spawn logs 92 30 11 "$NARRATOR"
-	spawn editor 88 34 11 "$SPAWNED"
-	beat 8
-
-	say "Super + H" "치트시트 — 살아 있는 키맵" \
-		"DMS 가 컴포지터에게 직접 물어서 그린다." \
-		"문서를 옮겨 적은 게 아니라서 설정과 어긋날 수 없다." \
-		"이것만 레이어가 아니라 창이라 컬럼 하나를 차지한다." \
-		"macOS 에는 이 셸이 없어 같은 키가 keymap.md 를 연다."
-	_dms_window "keybinds open hyprland"
-	beat 26
-	_dms "keybinds close"
-	beat 6
-
-	say "Super + E" "오버뷰" \
-		"워크스페이스 전부와 그 안의 창을 한눈에."
-	_dms "hypr openOverview"
-	beat 28
-	_dms "hypr closeOverview"
-	beat 6
-
-	say "Super + N" "알림 센터" \
-		"창이 아니라 레이어라 타일 배치는 그대로 있다."
-	_dms "notifications open"
-	beat 24
-	_dms "notifications close"
-	beat 6
-
-	say "Super + S" "컨트롤 센터" \
-		"소리·와이파이·블루투스·배터리." \
-		"macOS 의 그것과 같은 자리를 차지한다."
-	_dms "control-center open"
-	beat 24
-	_dms "control-center hide"
-	beat 6
-
-	say "Super + Space" "스포트라이트" \
-		"런처. Super+D 의 fuzzel 과 따로 있다 —" \
-		"이쪽은 셸이 그리고, 그쪽은 독립 프로그램이다."
-	_dms "spotlight open"
-	beat 24
-	_dms "spotlight close"
-	beat 6
-
-	say "Super + Escape" "파워메뉴는 부르지 않는다" \
-		"로그아웃·잠금의 유일한 입구라서다." \
-		"자동 시연이 건드릴 물건은 아니다."
-	beat 14
-}
-
 printf "\n${BOLD}%s${NC} ${DIM}— 워크스페이스 %s 를 빌려 쓴다${NC}\n\n" "$SCENARIO" "$WS_LABEL"
 
-case "$WM/$SCENARIO" in
-rift-grid/incident) rift_incident ;;
-rift-grid/layouts) rift_layouts ;;
-hypr/incident) hypr_incident ;;
-hypr/shell) hypr_shell ;;
+case "$SCENARIO" in
+incident) rift_incident ;;
+layouts) rift_layouts ;;
 esac

@@ -1,5 +1,5 @@
 {
-  description = "macOS + NixOS configuration — three window managers, one keymap, ricing as ordinary files";
+  description = "macOS + NixOS configuration — one keymap, ricing as ordinary files";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -155,9 +155,7 @@
         name = "rice-${n}";
         value = mkApp "rice-${n}" "rice/${n}" system;
       }) [
-        "save" "restore" "switch" "wall" "fuzzel"
-        "term" "crt" "chain" "studio" "menu"
-        "knobs" "decor" "layout" "colors"
+        "save" "restore" "term" "colors"
       ])
       # 점검 스크립트는 플랫폼마다 파일이 갈려서 실행 시점이 아니라 여기서 고른다.
       // (let

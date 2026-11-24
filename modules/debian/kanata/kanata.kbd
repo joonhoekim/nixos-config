@@ -11,7 +11,7 @@
 
 ;; 오른쪽 Alt 는 RAlt 그대로 내보낸다. subline 의 keyboard.xkb_options 기본값
 ;; `korean:ralt_hangul` 이 그것을 Hangul 키심으로 바꾸고, subline 내장 한글이 그
-;; 키심을 본다(subline crates/compositor/src/osk.rs). keyd 판처럼 KEY_HANGEUL(122)
+;; 키심을 본다(subline crates/compositor/src/osk.rs). NixOS 판(modules/nixos/kanata.nix)처럼 KEY_HANGEUL(122)
 ;; 을 내보내면 안 된다: `us` 배열에는 <HNGL> 에 키심이 없어서(Hangul 은
 ;; /usr/share/X11/xkb/symbols/kr 에만 있다) 한/영이 조용히 아무 일도 안 한다.
 (defcfg

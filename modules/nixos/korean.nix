@@ -3,8 +3,8 @@
 { pkgs, ... }:
 
 {
-  # LC_TIME 만 en_DK: 영어 이름에 ISO 8601(%Y-%m-%d, %T, am_pm 없음). ko_KR 이면 Qt 가 요일·12시간제를
-  # 여기서 가져가 DMS 바 시계에 토 / 오후 가 섞인다.
+  # LC_TIME 만 en_DK: 영어 이름에 ISO 8601(%Y-%m-%d, %T, am_pm 없음). ko_KR 이면 요일·12시간제가
+  # 한국어로 나와 영어 UI 의 시계에 토 / 오후 가 섞인다.
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "ko_KR.UTF-8";
@@ -27,7 +27,7 @@
     enable = true;
     type = "fcitx5";
     fcitx5 = {
-      waylandFrontend = true; # Wayland text-input-v3 (GNOME/Mutter, GTK apps)
+      waylandFrontend = true; # Wayland text-input-v3 (GTK apps)
       addons = with pkgs; [
         fcitx5-hangul
         fcitx5-gtk

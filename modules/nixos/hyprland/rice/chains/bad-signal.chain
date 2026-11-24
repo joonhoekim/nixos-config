@@ -1,5 +1,0 @@
-# bad-signal — 신호가 튀는 화면을 종이에 인쇄한다. 15탭.
-#
-# paper 가 5탭이라 한 장 더 얹으려면 한 탭짜리여야 한다(지금은 term/glow 뿐).
-cyberpunk/glitch
-print/paper

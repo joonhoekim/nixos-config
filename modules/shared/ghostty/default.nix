@@ -8,8 +8,8 @@
 
     rice_sync ${./config}  "$HOME/.config/ghostty/config"
 
-    # matugen 이 없을 때(macOS, 리눅스 첫 로그인)의 팔레트. 없는 테마는 config 전체를 무효로 만들고
-    # apps/rice/term 이 룩 전환을 되돌린다. matugen 이 쓴 뒤로는 기준선에서 벗어나 rice_sync 가 안 덮는다.
+    # config 의 `theme = dankcolors` 가 가리키는 팔레트. 없는 테마는 config 전체를 무효로 만들고
+    # apps/rice/term 이 룩 전환을 되돌린다.
     rice_sync ${./themes}  "$HOME/.config/ghostty/themes"
 
     # rice.conf 는 파생물이라 시드하지 않는다 — `?` 덕에 없는 게 정상이다.

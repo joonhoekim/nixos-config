@@ -1,2 +1,0 @@
--- matugen 이 테마가 바뀔 때마다 통째로 다시 쓴다(손으로 고치면 날아간다). 빈 시드는 첫 require 용이다.
--- 색을 직접 잡으려면 hyprland.lua 의 require 목록에서 "colors" 를 빼고 general.col 을 거기 적는다.

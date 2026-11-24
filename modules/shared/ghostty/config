@@ -1,6 +1,6 @@
 # 시드일 뿐이다. 고치는 자리는 ~/.config/ghostty/config, 레포로 되받기는 apps/rice/save.
 
-# DMS/matugen 이 쓰는 팔레트. 없는 테마를 가리키면 config 가 통째로 무효라 레포가 폴백을 시드한다.
+# 레포가 시드하는 팔레트(themes/dankcolors). 없는 테마를 가리키면 config 가 통째로 무효다.
 theme = dankcolors
 
 # p10k 의 파워라인 글리프가 프롬프트 한 폰트에서 나오도록 Nerd Font.

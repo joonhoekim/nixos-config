@@ -1,6 +1,6 @@
 # 기준선: 라이싱 파일이 마지막으로 동기화된 내용. 레포·라이브와 견줘 누가 고쳤는지 가린다.
 # save·restore 와 rice-seed-helpers.nix 가 같이 source 한다. 판정 규칙이 두 벌이면 한쪽만 고친 날 조용히 어긋난다.
-# 전체 그림(세 상태 판정표, 자리, 거르개): docs/rice-tools.md
+# 전체 그림(세 상태 판정표, 자리): docs/rice-tools.md
 
 rice_baseline_root() {
 	printf '%s/rice/baseline' "${XDG_STATE_HOME:-$HOME/.local/state}"

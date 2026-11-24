@@ -20,8 +20,7 @@ with pkgs; [
   noto-fonts-cjk-sans-static # -static: the default is VF-only (wght 100) and OnlyOffice draws it Thin
   pretendard            # UI/document sans (proportional; not for the terminal)
 
-  # DMS bundles these itself (share/quickshell/dms/assets/fonts via Qt FontLoader, bypassing fontconfig),
-  # so `fc-match Inter` failing is not a fallback. Installed for GTK, the terminal and DMS's greeter.
+  # UI sans for GTK apps, icon glyphs, and the terminal's ligature font.
   inter
   material-symbols
   nerd-fonts.fira-code

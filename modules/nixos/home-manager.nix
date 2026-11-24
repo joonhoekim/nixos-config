@@ -12,7 +12,8 @@ in
     username = "${user}";
     homeDirectory = "/home/${user}";
     packages = (pkgs.callPackage ./packages.nix { inherit bundles; }) ++ [
-      # GTK 설정 파일은 DMS 가 쓴다(gtk.enable 을 안 쓰는 이유: docs/niri.md). 여기는 DMS 가 가리킬 테마만 깐다.
+      # subline 이 gsettings 로 고르는 테마(crates/compositor/src/accent.rs). GTK 3 에는 color-scheme 이 없어
+      # 다크 모드가 Adwaita-dark 라는 테마 이름으로 간다 — 이 패키지가 없으면 GTK 3 앱만 밝게 남는다.
       pkgs.adwaita-icon-theme
       pkgs.gnome-themes-extra  # Adwaita-dark
     ];
@@ -23,9 +24,6 @@ in
     activation.miseInstall = import ../shared/mise-install.nix { inherit pkgs lib config; };
     activation.claudeAttribution = import ../shared/claude-attribution.nix { inherit pkgs lib; };
   };
-
-  # gtk.enable 은 두지 않는다. DMS 가 같은 파일을 고쳐(scripts/gtk.sh, SettingsData.qml) 심링크를 실파일로
-  # 바꾸고, 그 뒤 rebuild 가 "would be clobbered" 로 멈춘다. GTK 는 DMS 가 소유한다.
 
   programs = shared-programs;
 }

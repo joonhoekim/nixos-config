@@ -1,8 +1,6 @@
-# ~/.config/ghostty/themes/dankcolors 의 초기값. 리눅스에서는 matugen 이 통째로 덮어쓴다.
-# 생성기가 없는 macOS·첫 로그인용이다 — 이 파일이 없으면 `theme = dankcolors` 가 설정 에러라 config 전체가
-# 무효다. 덮어써지는 파일이라 apps/rice/save 로 안 되받으니 레포의 이 파일을 고친다.
+# ~/.config/ghostty/themes/dankcolors 의 초기값. 이 파일이 없으면 `theme = dankcolors` 가 설정 에러라
+# config 전체가 무효다.
 
-# 배경·전경·선택은 fuzzel 폴백과 같은 값이다.
 background = #161616
 foreground = #d8d8d8
 cursor-color = #d8d8d8

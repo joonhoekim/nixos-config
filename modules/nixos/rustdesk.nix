@@ -17,7 +17,7 @@ in
     # nixpkgs 에는 클라이언트 쪽 모듈이 없다(services.rustdesk-server 는 중계 서버다). 상류 res/rustdesk.service 를 옮긴 것.
     # 이게 떠 있어야 Wayland 에서 입력이 들어간다: 서버 프로세스가 있으면 RustDesk 는 화면을 ScreenCast 포털로 받고
     # 입력은 uinput 으로 넣는다(libs/scrap/src/wayland/pipewire.rs 의 is_server_running). 없으면 RemoteDesktop 포털로
-    # 가는데 subline·niri·Hyprland 의 포털에는 그게 없어, 화면은 보이고 마우스·키보드는 조용히 안 먹는다.
+    # 가는데 subline 의 포털에는 그게 없어, 화면은 보이고 마우스·키보드는 조용히 안 먹는다.
     systemd.services.rustdesk = {
       description = "RustDesk service (incoming connections)";
       # wantedBy 가 없어 부팅 때 뜨지 않는다. 받을 때만 앱의 서비스 시작 버튼이나 `sudo systemctl start rustdesk` 로 켠다.

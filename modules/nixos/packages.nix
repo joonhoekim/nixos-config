@@ -56,7 +56,7 @@ shared.core
   wayland-utils
   mesa-demos
   vulkan-tools
-  # 외장 모니터 DDC/CI. apps/ddc-probe 가 부르고, 권한은 programs.dms-shell 이 켜는 hardware.i2c 에서 온다.
+  # 외장 모니터 DDC/CI. apps/ddc-probe 가 부르고, 권한은 ./desktop.nix 의 hardware.i2c 에서 온다.
   ddcutil
 
   # Hardware / power inspection (vendor-neutral; 벤더별 도구는 ./intel.nix · ./amd.nix)

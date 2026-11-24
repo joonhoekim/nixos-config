@@ -20,6 +20,18 @@
   services.avahi.enable = true;
   programs.system-config-printer.enable = true;
 
+  # CUPS 는 여기 선언한 패키지에서만 PPD 와 필터를 찾는다. 프린터가 드라이버 목록에 없으면 추가 화면에
+  # 그 모델이 안 뜨거나 "driverless" 로만 잡힌다. 오른쪽은 시스템 클로저에 이미 있는 것을 뺀 크기다
+  # (surface-pro-9, nixpkgs efe6f07 실측). 합쳐서 약 227 MiB.
+  services.printing.drivers = with pkgs; [
+    brlaser       # Brother 레이저 (MFC-1910W 포함)   0.1 MiB
+    splix         # Samsung, Xerox 레이저             13 MiB
+    gutenprint    # Canon, Epson 등 잉크젯 다수        35 MiB
+    epson-escpr   # Epson 잉크젯                      39 MiB
+    foo2zjs       # 저가 레이저 여러 종                 67 MiB
+    hplip         # HP                                73 MiB
+  ];
+
   # 접근성 버스. 없으면 GTK 앱마다 "Couldn't connect to accessibility bus" 를 찍고 시작이 늦어진다.
   services.gnome.at-spi2-core.enable = true;
 

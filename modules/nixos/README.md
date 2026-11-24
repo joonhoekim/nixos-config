@@ -6,49 +6,49 @@ NixOS 호스트에서만 쓰는 설정. 크로스 플랫폼 설정은 [`../share
 
 ```
 .
-├── amd.nix            # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
-├── dms/               # 두 세션이 같이 쓰는 DMS 플러그인 (RiceSwitcher)
-├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + dconf 다크 모드 + mise 활성화)
-├── hyprland/          # Hyprland 세션 (uwsm) + 같은 셸, 라이싱 시드·셰이더·스튜디오
-├── intel.nix          # Intel CPU/iGPU 공통 레이어 (Intel 호스트에서 import)
-├── keyboard.nix       # keyd 키 리맵 (한/영, Caps Lock 홀드 레이어)
-├── keyboard.nix.vim   # ↑의 vim 배치 버전 (보관용, import 안 됨)
-├── korean.nix         # 로케일, fcitx5-hangul IME, CJK 폰트
-├── nginx.nix          # 로컬 리버스 프록시 (import 하는 호스트에서만)
-├── niri/              # niri 세션 + DankMaterialShell, 라이싱 시드
-├── packages.nix       # NixOS 전용 패키지 (shared/packages.nix + Linux 전용/GUI 앱)
-├── pointer/           # ↑ 레이어의 마우스 절반 (keyd가 못 하는 포인터 이동)
-└── subline/           # subline 세션 (기본) + subline 로그인 화면; 패키지·배선은 그 레포의 모듈, 올리기는 `nix run .#subline-update`
+├── amd.nix              # AMD Ryzen/Radeon 공통 레이어 (AMD 호스트에서 import)
+├── desktop.nix          # 세션 밖의 데스크톱 기반 (키링, 블루투스, upower, udisks2, avahi, gsettings 스키마)
+├── gui-apps.nix         # GUI 앱 (core 는 늘, 나머지는 호스트의 local.guiApps) 과 기본 앱(mime)
+├── home-manager.nix     # 유저 레벨 설정 (shared/home-manager.nix + GTK 테마 패키지 + mise 활성화)
+├── intel.nix            # Intel CPU/iGPU 공통 레이어 (Intel 호스트에서 import)
+├── kanata.nix           # kanata 키 리맵 (한/영, Caps Lock 홀드 레이어)
+├── korean.nix           # 로케일, fcitx5-hangul IME, CJK 폰트
+├── libvirt.nix          # Windows 게스트용 libvirt (import 하는 호스트에서만)
+├── nautice.nix          # nautice 의 로컬 음성 (home-manager 쪽)
+├── nginx.nix            # 로컬 리버스 프록시 (import 하는 호스트에서만)
+├── packages.nix         # NixOS 전용 패키지 (shared/packages.nix + Linux 전용 도구)
+├── rustdesk.nix         # 제어받는 쪽 RustDesk 서비스
+├── subline/             # subline 세션 + 로그인 화면; 패키지·배선은 그 레포의 모듈, 올리기는 `nix run .#subline-update`
+├── subline-terminal.nix # subline-terminal 패키지
+├── tailscale.nix        # tailnet
+├── thunar.nix           # Thunar 파일 관리자와 우클릭 액션
+└── wireguard.nix        # WireGuard 도구
 ```
 
-시스템 레벨 설정(부팅, 데스크톱, 서비스, 유저 계정)은 이 디렉토리가 아니라
+시스템 레벨 설정(부팅, 서비스, 유저 계정)은 이 디렉토리가 아니라
 [`../../hosts/nixos/common.nix`](../../hosts/nixos/common.nix)에 있다.
 
 ## 데스크톱 환경
 
 로그인은 greetd 이고 화면은 subline 이 그린다(`subline --greeter`; 끄면 tuigreet 로
-돌아간다 — [`subline/`](subline)). 세션은 넷이다 — [`subline/`](subline)(기본),
-[`niri/`](niri), [`hyprland/`](hyprland)(uwsm), 그리고 폴백인 **GNOME / Wayland**.
-subline 은 자기 셸(스트립·독·OSK·알림·잠금)을 들고 있고, niri 와 Hyprland 는 같은 셸
-(DankMaterialShell)을 공유한다. 셸을 어느 세션에 붙이는지는 각 모듈이 systemd
-`wantedBy`로 정한다. `services.xserver.enable`이 켜져 있지만 이건 Xwayland와 xkb 설정을
+돌아간다 — [`subline/`](subline)). 세션은 subline 하나이고, 자기 셸(스트립·독·OSK·알림·잠금)을
+들고 있다. `services.xserver.enable`이 켜져 있지만 이건 Xwayland와 xkb 설정을
 위한 것이지 X11 세션을 쓰기 위한 게 아니다.
 
-GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않는다. 다크 모드만
-`home-manager.nix`에서 dconf(`org/gnome/desktop/interface`)로 잡는다. GTK 설정
-파일(settings.ini, gtk.css)은 이 레포가 쓰지 않는다 — DankMaterialShell이 같은
-파일을 자기가 쓰면서 경합했던 이력이 있어 그쪽에 넘겼고, 테마 패키지만 Nix가
-깐다(`home-manager.nix`의 gtk 관련 주석 참고).
+데스크톱 환경 모듈을 켜지 않으므로 그런 모듈이 기본으로 켜 주는 기반은
+[`desktop.nix`](desktop.nix)가 직접 켠다. 한 줄을 빼면 빌드는 통과하고 그 기능만 조용히
+사라진다(각 줄의 주석에 누가 쓰는지 적혀 있다). 다크 모드와 강조색은 subline 이 gsettings 로
+GTK 앱에 알리고, Nix 는 그 테마 패키지만 깐다(`home-manager.nix`).
 
 ## 한글 입력
 
 `korean.nix`가 담당한다:
 
 - **로케일** — UI는 `en_US.UTF-8`, 날짜/통화/주소 등 지역 포맷만 `ko_KR.UTF-8`
-- **한/영 전환** — 오른쪽 Alt → `hangeul` 리맵. 실제 설정은 [`keyboard.nix`](keyboard.nix)에
+- **한/영 전환** — 오른쪽 Alt → `KEY_HANGEUL` 리맵. 실제 설정은 [`kanata.nix`](kanata.nix)에
   있다(아래 참고)
 - **IME** — fcitx5 + fcitx5-hangul(두벌식), `waylandFrontend = true`(Wayland
-  text-input-v3). GTK 앱은 `fcitx5-gtk`, GNOME 위에서 도는 Qt 앱은
+  text-input-v3). GTK 앱은 `fcitx5-gtk`, Qt 앱은
   `qt6Packages.fcitx5-qt`가 담당한다
 - **Chromium 계열** — Ozone Wayland 브라우저는 `--enable-wayland-ime` 플래그가 없으면
   한글이 안 들어간다. 예시는
@@ -60,13 +60,17 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 
 ## 키보드 리맵
 
-전부 [`keyboard.nix`](keyboard.nix)의 `keyd`가 담당한다. keyd는 evdev 레벨(xkb *아래*)에서
-동작하므로 niri / GNOME / Xwayland / TTY 어디서나 똑같이 먹는다. **`services.xserver.xkb.options`는
-쓰지 않는다** — niri는 자기 설정(`niri/rice/config.kdl`)에서, mutter는 dconf에서 각자
-키맵을 만들기 때문에 xkb 옵션은 X11 앱에만 닿는다. `boot.kernelModules`의 `uinput`이
-필요하다(`hosts/nixos/common.nix`에서 로드).
+전부 [`kanata.nix`](kanata.nix)의 kanata 가 담당한다. kanata 는 evdev 레벨(xkb *아래*)에서
+동작하므로 subline / Xwayland / TTY 어디서나 똑같이 먹는다. **`services.xserver.xkb.options`는
+쓰지 않는다** — Wayland 컴포지터는 자기 설정에서 키맵을 만들기 때문에 xkb 옵션은 X11 앱에만
+닿는다. uinput 은 nixpkgs 의 kanata 모듈이 켠다.
 
-- **오른쪽 Alt → `hangeul`** — fcitx5-hangul이 이걸 받아 한/영을 토글한다
+레이어 본체는 [`../shared/kanata/nav.kbd`](../shared/kanata/nav.kbd)이고 Debian 태블릿과 같이
+쓴다. `kanata.nix` 는 NixOS 에만 해당하는 것(기본 레이어, Right Alt, 잡지 않을 장치)만 둔다.
+Windows·macOS 는 같은 배치를 `../shared/kanata/kanata.kbd` 로 건다 — 배치를 고치면 두 파일을
+같이 고친다. 수치의 근거는 [`docs/kanata.md`](../../docs/kanata.md).
+
+- **오른쪽 Alt → `KEY_HANGEUL`** — fcitx5-hangul이 이걸 받아 한/영을 토글한다
 - **Caps Lock 홀드 → 손 하나씩 나눠 쓰는 레이어** — 오른손은 윈도우 머신들이 쓰는
   [TouchCursor](https://github.com/martin-stone/touchcursor)와 같은 커서 배치(`ijkl` 역T
   화살표), 왼손은 마우스. 탭하면 평범한 Caps Lock 토글
@@ -81,74 +85,29 @@ GNOME 셸 자체의 확장/단축키/패널은 선언적으로 관리하지 않�
 | `/` | 찾기 (`C-f`) | | `8` `9` `0` | 왼쪽 / 가운데 / 오른쪽 버튼 |
 
 클릭이 두 벌이다. `f`/`r`은 조향하는 손 안에 있어서 마우스 전체가 한 손으로 끝나고,
-`8`/`9`/`0`은 반대 손이 놀고 있을 때 쓴다(가운데 버튼은 이쪽에만 있다). `f`와 `8`은 같은
-센티넬로 나가므로 데몬은 둘이 있다는 걸 모른다.
-
-왼손에는 원래 vim에서 빌려온 `w`/`e`/`b`(단어 이동)와 `g`/`G`(문서 처음·끝)가 있었고,
-마우스에 자리를 내주면서 없앴다. 포인터 쪽 구현은 [아래](#포인터-pointer) 참고.
+`8`/`9`/`0`은 반대 손이 놀고 있을 때 쓴다(가운데 버튼은 이쪽에만 있다).
 
 - **오른손 바인딩이 전부 unshifted**라 Shift는 통째로 선택 확장에 남는다 —
-  `Caps+Shift+j` = 왼쪽으로 선택, `Caps+Shift+o` = 줄 끝까지 선택. vim 레이어는
-  `$ { } G N`에서 Shift가 커맨드 자체였기 때문에 이게 구조적으로 불가능했다.
-  왼손에서만 Shift가 의미를 갖고(저속·가로 스크롤), 그건 keyd가 아니라 데몬이 해석한다
-- 매핑되지 않은 키는 홀드 중에도 **그냥 그 글자**가 입력된다(`[nav]`는 modifier 레이어가
-  아니라 평범한 레이어다)
+  `Caps+Shift+j` = 왼쪽으로 선택, `Caps+Shift+o` = 줄 끝까지 선택.
+  왼손에서만 Shift가 의미를 갖는다(저속·가로 스크롤)
+- 매핑되지 않은 키는 홀드 중에도 **그냥 그 글자**가 입력된다(`process-unmapped-keys yes`)
 - **트리거는 항상 Caps Lock** — 윈도우 TouchCursor에서 기본값(스페이스)에서 바꾸는 유일한
-  설정이 이거라 여기서도 맞춘다. 덤으로 방어 로직이 통째로 사라진다: 스페이스 트리거는
-  타이핑 한복판에 있어서 idle 타임아웃(`overloadi`)과 "삼킨 공백을 먼저 뱉기"
-  (`macro(space <key>)`)가 필요한데, Caps Lock은 어차피 안 쓰는 키라 둘 다 필요 없다
-- **galaxy-chromebook-1에는 레이어가 없다** — 그 섀시엔 Caps Lock 키 자체가 없다(그 자리가
-  런처/검색 키, 즉 모디파이어다). 스페이스 트리거로는 가능하지만 그러면 방어 로직이
-  따라붙고, 그 기기는 타이핑보다 웹 브라우징용이라 포기했다. 설정도 따로 없다
-  ([호스트 파일](../../hosts/nixos/galaxy-chromebook-1/default.nix)의 주석 한 덩어리가 전부)
+  설정이 이거라 여기서도 맞춘다. 스페이스 트리거는 타이핑 한복판에 있어서 타이밍 가드가
+  필요한데, Caps Lock은 어차피 안 쓰는 키라 필요 없다
+- **포인터는 kanata 가 직접 움직인다** — 자기 uinput 장치로 상대 이동·휠·버튼을 낸다. 700 px/s
+  등속이고 Shift 를 누르면 100 px/s 다. 움직이는 도중에 Shift 를 눌러도 그 자리에서 느려진다
+- **잡지 않을 장치** — kanata 는 키 1–115 중 하나라도 가진 장치를 전부 잡는다. 볼륨 키를 가진
+  장치(gpio-keys)를 잡으면 그 장치의 스위치 이벤트가 조용히 사라지므로 이름으로 뺀다.
+  새 기계에서는 `journalctl -u kanata-default -b | grep -E 'registering|excluded'` 로 확인한다
+- **galaxy-chromebook-1 은 kanata 를 끈다** — 그 섀시엔 Caps Lock 키 자체가 없고(그 자리가
+  런처/검색 키), kanata 가 키보드를 잡으면 libinput 의 태블릿 모드 키보드 억제가 안 먹는다.
+  한/영은 subline 의 xkb 옵션이 낸다
+  ([호스트 파일](../../hosts/nixos/galaxy-chromebook-1/default.nix)의 주석,
+  [docs](../../docs/galaxy-chromebook-1.md))
 
-### 포인터 (pointer)
-
-**keyd는 포인터를 움직이지 못한다.** 아는 키 이름 319개 중 마우스는 `leftmouse` /
-`middlemouse` / `rightmouse`와 `scroll{up,down,left,right}`이 전부고, REL_X/REL_Y를 내보내는
-액션이 없다. 그래서 `keyboard.nix`의 왼손은 **비어 있는 F키 센티넬**로만 나가고
-([`pointer/`](pointer/))의 데몬이 그걸 포인터로 바꾼다.
-
-| 센티넬 | 키 | | 센티넬 | 키 |
-|---|---|-|---|---|
-| `F13`~`F16` | `w` `a` `s` `d` | | `F19` | `f`, `8` (왼쪽 클릭) |
-| `F17` `F18` | `q` `e` | | `F24` | `r`, `0` (오른쪽 클릭) |
-| | | | `F22` | `9` (가운데 클릭) |
-
-- **읽기** — keyd의 출력 장치(`keyd virtual keyboard`)를 grab 없이 구독한다. 센티넬은 앱에도
-  같이 도달하는데, **높은 F키는 보이는 것만큼 비어 있지 않다.** 기본 `us` 키맵이 F13~F18에
-  `XF86Tools`/`XF86Launch5-9`, F20에 `XF86AudioMicMute`, F21~F23에 터치패드 토글을 얹고,
-  평범한 심볼로 남는 건 **F19와 F24뿐**이다. 초안에서 가운데 버튼이 F20에 앉는 바람에 클릭할
-  때마다 마이크가 음소거됐다 — niri가 `XF86AudioMicMute`를 잡고 있다
-  ([`niri/rice/config.kdl`](niri/rice/config.kdl)). 그래서 평범한 둘은 제일 많이 쓰는 두 버튼에
-  주고, F20/F21/F23은 아예 피했다. 옮기기 전에 확인:
-  `xkbcli compile-keymap --layout us | grep FK`
-- **쓰기** — 자기 uinput 포인터 하나. 이동·휠·버튼이 **같은 장치**로 나가야 "`8`을 잡은 채
-  `wasd`로 드래그"가 한 덩어리로 도착한다
-- **Shift를 데몬이 직접 본다** — keyd `[nav+shift]` 조합 레이어로 하면 안 된다. keyd는 키가
-  *내려가는 순간* 바인딩을 확정하므로, 이미 눌려 있는 `w`를 나중에 느리게 만들 수 없다.
-  오버슈트를 Shift로 잡는 게 저속 모드의 존재 이유라서 이 차이가 결정적이다
-- **가속은 없다** — 700 px/s 등속, Shift를 누르면 100 px/s. 램프(200 → 1800 px/s)를 넣었다가
-  뺐다: macOS·Windows 쪽 kanata 설정(`modules/shared/kanata/kanata.kbd`)이 등속이니 유지하면 같은 레이어가
-  머신마다 다르게 굴고, 정작 써보니 그 값을 치를 만큼 편하지도 않았다. 대각선은 벡터를
-  정규화해서 `w+d`가 √2배 빨라지지 않는다
-- **멈춤 방지** — 올라오지 않는 센티넬은 이동 15초 / 버튼 60초에 강제로 놓는다. root로 도는
-  합성 포인터라 무한 이동이나 눌린 채 남은 버튼이 곧바로 시스템을 못 쓰게 만든다
-
-속도 상수는 [`pointer/pointerd.py`](pointer/pointerd.py) 상단에 모여 있다. 숫자를 바꿔볼
-때는 리빌드 대신 유닛을 세우고 파일을 직접 실행하면 된다(파일 헤더에 명령 있음).
-상태는 `systemctl status pointerd`, 로그는 `journalctl -u pointerd`.
-
-### vim 레이어 (보관)
-
-[`keyboard.nix.vim`](keyboard.nix.vim)에 vim 배치 버전이 import되지 않은 채로 남아 있다.
-`keyboard.nix` 자리에 넣으면 그대로 동작한다. 왜 접었는지, 그리고 OS 레벨 레이어가 vim의
-천장에 닿을 수 없는 이유(모드/문법이 없어서 `d2w` 같은 조합이 성립하지 않는다)는
-[`docs/keymap.md`](../../docs/keymap.md#보관한-vim-레이어-keyboardnixvim)에 적어뒀다.
-
-리빌드하면 keyd 유닛이 자동으로 재시작된다(nixpkgs 모듈이 `/etc/keyd/*.conf`를
-`restartTriggers`에 걸어둔다). 문법 검증은 `keyd check /etc/keyd/default.conf`,
-실제로 뭐가 나가는지 보려면 `sudo keyd monitor`.
+nixpkgs 모듈이 빌드 때 `kanata --check` 를 돌리므로 문법 오류는 리빌드에서 걸린다. 상태는
+`systemctl status kanata-default`, 로그는 `journalctl -u kanata-default`. 비상 탈출은 왼쪽
+Ctrl + Space + Esc(kanata 가 끝난다).
 
 ## 호스트 추가하기
 

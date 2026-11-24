@@ -79,5 +79,5 @@ macOS 의 cask 는 nix 밖이라 이 도구로 잴 수 없다.
 | jhs-MacBook-Air | media mobile toys | 브라우저 셋, onlyoffice, dbeaver |
 | galaxy-chromebook-1 | media mobile | 브라우저 셋, onlyoffice, dbeaver, mpv, zathura, resources |
 
-모든 기계에 깔리는 GUI core 는 macOS 에서 VS Code, NixOS 에서 VS Code 와 ghostty
-(`apps/rice/wall --yazi` 가 띄운다)다. 호스트별 현황은 `nix run .#inventory`.
+모든 기계에 깔리는 GUI core 는 macOS 에서 VS Code, NixOS 에서 VS Code, ghostty, loupe,
+gnome-calculator 다(`modules/nixos/gui-apps.nix`). 호스트별 현황은 `nix run .#inventory`.

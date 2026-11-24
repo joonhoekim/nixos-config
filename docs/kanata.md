@@ -5,8 +5,8 @@ kanata 는 키 입력을 가로채 레이어·탭홀드·포인터 이동을 거
 차이의 근거를 적는다.
 
 - 배치·검증·설치: `modules/shared/kanata/README.md`
-- 정본: `modules/nixos/keyboard.nix`(keyd)와 `modules/nixos/pointer/pointerd.py`. 키 배치와 수치는 거기서 옮긴다 —
-  [keymap.md](keymap.md).
+- 리눅스(NixOS·Debian)는 같은 배치를 `modules/shared/kanata/nav.kbd` 로 건다(`modules/nixos/kanata.nix`). 키 배치:
+  `modules/shared/kanata/README.md`.
 - macOS 배선(드라이버, 서명, launchd): [macos-internals.md](macos-internals.md#kanata-배선-modulesdarwinkanatanix)
 
 OS 마다 다른 것은 `(platform ...)` 블록의 별칭 몇 개뿐이다. `kanata --check` 는 지금 OS 의 platform 블록만 읽는다.
@@ -44,8 +44,7 @@ kanata 의 틱은 1ms. `(movemouse-* 간격 거리)` 는 "간격 ms 마다 거�
   않는다. 10ms 마다 15pt = 1500 pt/s 는 실사용에서 고른 값이다(Karabiner 의 3000 보다 조금 빠르게 느껴지고, 그쪽이 더 쓰기
   좋다).
 - **Shift 저속**: `movemouse-speed 14` 로 거리에 14% 를 곱한다(Windows 1px/10ms = 100 px/s). 배율은 이동을 한 번 보낼 때마다
-  다시 계산되므로(`src/kanata/mod.rs` `handle_move_mouse`) 움직이는 도중에 Shift 를 눌러도 그 자리에서 느려진다 — pointerd
-  가 Shift 를 직접 읽는 것과 같은 동작. Shift 는 [nav] 가 아니라 기본 레이어에 건다: Caps 보다 먼저 눌렀을 때도 저속이 걸려야
+  다시 계산되므로(`src/kanata/mod.rs` `handle_move_mouse`) 움직이는 도중에 Shift 를 눌러도 그 자리에서 느려진다. Shift 는 [nav] 가 아니라 기본 레이어에 건다: Caps 보다 먼저 눌렀을 때도 저속이 걸려야
   하고, [nav] 밖에서는 움직이는 포인터가 없으니 배율은 아무 일도 안 한다.
 
 ## 휠
@@ -76,4 +75,4 @@ Windows 에서는 키보드 펌웨어가 Fn 을 처리하고 fn 이 kanata 까�
 ## Caps 의 tap-hold-press
 
 다른 키가 눌리는 순간 홀드로 확정된다. Caps+i 를 빠르게 굴려도 i 가 글자로 새지 않는다. 다른 키 없이 200ms 를 넘겨 떼면
-아무 일도 하지 않는다(keyd 의 overload 는 이때도 Caps Lock 을 토글한다).
+아무 일도 하지 않는다.

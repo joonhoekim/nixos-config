@@ -2,10 +2,9 @@
 
 이 디렉터리는 **NixOS 와 macOS 가 같이 쓴다.** `./default.nix` 가 양쪽
 home-manager 에서 import 되어 같은 파일을 `~/.config/ghostty/` 에 심고,
-`apps/rice/term` 도 두 플랫폼에서 돈다. 그래서 `modules/nixos/niri/rice/` 가
-아니라 `modules/shared/` 에 있다 — 니리는 리눅스 전용이지만 터미널 룩은 아니다.
+`apps/rice/term` 도 두 플랫폼에서 돈다. 그래서 `modules/shared/` 에 있다.
 
-macOS 에서 다른 점은 세 가지다. [아래](#macos-에서-다른-점)에 정리했다.
+macOS 에서 다른 점은 두 가지다. [아래](#macos-에서-다른-점)에 정리했다.
 
 `config` 는 어느 룩에서나 같은 것(폰트, 팔레트)을 정하고, 바뀌는 것은
 `rices/<name>.conf` 조각 하나로 뺐다. `apps/rice/term <name>` 이 고른 조각을
@@ -31,7 +30,7 @@ config-file = ?rice.conf
 그대로 뜬다. 그리고 ghostty 는 `config-file` 을 **자기를 담은 파일보다 나중에**
 읽으므로, 줄 위치와 무관하게 조각이 본체를 이긴다.
 
-셰이더 경로는 조각 기준 상대경로다(`shaders/crt.glsl`). fuzzel 처럼 절대경로를
+셰이더 경로는 조각 기준 상대경로다(`shaders/crt.glsl`). 절대경로를
 박아 넣을 필요가 없어서, 레포 파일이 머신 이름을 모르고도 그대로 나간다.
 
 ## 지켜야 할 규칙
@@ -39,11 +38,10 @@ config-file = ?rice.conf
 **모든 조각이 같은 키 집합을 다룬다** — `custom-shader`,
 `custom-shader-animation`, `background-opacity`, `window-padding-x/y`. 조각은
 앞 조각을 지우지 않고 덮어쓰기만 하므로, 어느 하나에만 있는 키가 생기면
-A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다. `../../nixos/niri/rice/profiles/README.md`
-와 같은 이유, 같은 규칙이다.
+A→B→A 로 돌아왔을 때 원래 값으로 안 돌아온다.
 
-**색은 조각에서 건드리지 않는다.** `theme = dankcolors` 는 DMS/matugen 이 쓰는
-파일이라 프로필을 알아서 따라온다. 조각에 색을 박으면 그게 끊긴다.
+**색은 조각에서 건드리지 않는다.** 색은 `theme = dankcolors`(`themes/dankcolors`) 한 곳이
+정한다. 조각에 색을 박으면 룩을 바꿀 때마다 팔레트가 따라 바뀐다.
 
 ## 현재 조각
 
@@ -115,7 +113,7 @@ apps/rice/restore ghostty --check   # 무엇이 덮이는지만
 apps/rice/restore ghostty           # 확인을 받고 덮는다
 ```
 
-macOS 에서는 `ghostty` 가 유일한 대상이다. 나머지는 니리 세션 것이라 그쪽에는
+리눅스에서는 `ghostty` 가 유일한 대상이다. 나머지는 macOS 것이라 리눅스에는
 덮을 자리가 없고, 인자 없이 불러도 알아서 이것만 고른다.
 
 ## 새 룩 만들기
@@ -147,7 +145,7 @@ ghostty +show-config --default --docs | grep -B120 '^custom-shader = '
 로그에만 남는다. 최악의 경우 창이 새까매진다. `apps/rice/term` 은 존재하지 않는
 셰이더 경로까지는 잡아 주지만 컴파일까지는 못 본다.
 
-그 상태에서도 다른 터미널이나 fuzzel(`Mod+D`)에서 `apps/rice/term off` 를 돌리면
+그 상태에서도 다른 터미널(subline-terminal)에서 `apps/rice/term off` 를 돌리면
 돌아온다. 그마저 안 되면 `~/.config/ghostty/rice.conf` 를 지우면 된다 — `?` 덕에
 없는 게 정상 상태다.
 
@@ -158,15 +156,14 @@ ghostty +show-config --default --docs | grep -B120 '^custom-shader = '
 `$XDG_CONFIG_HOME/ghostty` 다(macOS 에서 그 변수가 비어 있으면 `~/.config`).
 그래서 조각·셰이더·스위처를 한 벌만 두고 쓴다.
 
-다른 건 주변부 셋이다:
+다른 건 주변부 둘이다:
 
 | | 리눅스 | macOS |
 |---|---|---|
 | 리로드 | `rice-term` 이 D-Bus 로 시킨다 | 세션 버스가 없어서 **단축키로 직접** (`cmd+shift+,`) |
 | 투명도 | 리로드로 바뀐다 | `background-opacity` 는 **ghostty 를 완전히 다시 띄워야** 바뀐다(문서 명시). 룩마다 값이 달라서, 셰이더만 갈리고 투명도는 그대로인 상태가 잠깐 보인다 |
-| 색 | DMS/matugen 이 `themes/dankcolors` 를 써 준다 | 그 생성기가 없어서 **레포가 시드한 폴백 팔레트**(`themes/dankcolors`)가 그 자리에 그대로 남는다. 벽지를 따라가지는 않는다 |
 
-`rice-term` 은 이 셋을 알고 있다: `gdbus` 가 없으면 단축키를 안내하고, macOS 면
+`rice-term` 은 이 둘을 알고 있다: `gdbus` 가 없으면 단축키를 안내하고, macOS 면
 투명도 제약을 같이 알려 준다. 목록도 `find -printf`(GNU 확장) 대신 글롭으로 만들어
 BSD 도구에서 돈다.
 

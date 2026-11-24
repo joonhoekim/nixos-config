@@ -1,29 +1,30 @@
 # 한국어 입력 (NixOS)
 
 `modules/nixos/korean.nix` 는 NixOS 쪽 로케일, 한글 입력기, 리눅스 전용 폰트를 맡는다. 입력기는 fcitx5(리눅스의 입력기
-프레임워크)와 그 hangul 엔진이고, 한/영 키는 keyd(커널 아래에서 키를 리맵하는 데몬)가 만든다. 공통 폰트는
+프레임워크)와 그 hangul 엔진이고, 한/영 키는 kanata(evdev 에서 키를 리맵하는 데몬)가 만든다. 공통 폰트는
 [fonts.md](fonts.md).
 
 ## 로케일
 
 UI 는 en_US, 지역 포맷은 ko_KR. LC_TIME 만 en_DK.UTF-8 이다. ko_KR 이면 날짜를 그리는 모든 것이 한국어가 된다 —
-`date` 가 "2026. 08. 01. (토)", DMS 바 시계가 영어 라벨 옆에 토 / 오후(Qt 는 요일 이름과 12/24시간 선택을 이 범주에서
-가져간다). en_DK 는 영어 로케일(Sat, August)이면서 LC_TIME 이 ISO 8601 이다 — d_fmt "%Y-%m-%d", t_fmt "%T", am_pm 비어
+`date` 가 "2026. 08. 01. (토)", 시계가 영어 라벨 옆에 토 / 오후(요일 이름과 12/24시간 선택이 이 범주에서
+온다). en_DK 는 영어 로케일(Sat, August)이면서 LC_TIME 이 ISO 8601 이다 — d_fmt "%Y-%m-%d", t_fmt "%T", am_pm 비어
 있음. i18n.supportedLocales 는 defaultLocale 과 이 값들의 합집합이 기본이다.
 
 ## 한/영 키가 지나는 길
 
-Right Alt → Hangul 리맵은 `modules/nixos/keyboard.nix` 의 keyd 가 한다(머신당 설정 하나, 같은 설정이 Caps 레이어도
-건다 — [keymap.md](keymap.md)). 세 키코드 이름공간을 건너며 이름이 매번 다르다:
+Right Alt → Hangul 리맵은 `modules/nixos/kanata.nix` 의 kanata 가 한다(머신당 설정 하나, 같은 설정이 Caps 레이어도
+건다 — [keymap.md](keymap.md)). galaxy-chromebook-1 만 kanata 를 끄고 subline 의 xkb 옵션 `korean:ralt_hangul` 로
+같은 keysym 을 낸다([galaxy-chromebook-1](galaxy-chromebook-1.md)). 세 키코드 이름공간을 건너며 이름이 매번 다르다:
 
 ```
-keyd `rightalt = hangeul`  ->  evdev KEY_HANGEUL (122)
+kanata `ralt hngl` (deflocalkeys-linux hngl 122)  ->  evdev KEY_HANGEUL (122)
   -> xkb <HNGL>, keycode 130 (evdev + 8)
   -> keysym `Hangul`, symbols/pc 의 유일한 섹션 pc105 에 있어 맨 `us` 를 포함한 모든 레이아웃이 가진다
   -> fcitx5 Hotkey/TriggerKeys -> keyboard-us <-> hangul 토글
 ```
 
-확인: 첫 홉은 *keyd virtual keyboard* 장치에 `sudo evtest`, 마지막은 fcitx5 키 로그다.
+확인: 첫 홉은 kanata 의 가상 키보드 장치에 `sudo evtest`, 마지막은 fcitx5 키 로그다.
 
 ```
 gdbus call --session --dest org.fcitx.Fcitx5 --object-path /controller \
@@ -37,7 +38,7 @@ journalctl --user -fu 'app-org.fcitx.Fcitx5@autostart.service'
 
 nixpkgs 는 Electron/Chromium 의 Wayland IME 플래그를 이 세션 변수 뒤에 둔다:
 `${NIXOS_OZONE_WL:+${WAYLAND_DISPLAY:+--ozone-platform-hint=auto --enable-features=WaylandWindowDecorations --enable-wayland-ime=true --wayland-text-input-version=3}}`.
-변수가 없으면 VS Code 는 네이티브 Wayland 창(hyprctl clients: xwayland false)인데 이 플래그는 하나도 없다. 변수를 켜는
+변수가 없으면 VS Code 는 네이티브 Wayland 창인데 이 플래그는 하나도 없다. 변수를 켜는
 것이 Wayland 세션에서 nixpkgs 가 의도한 설정이다. Brave 는 hosts/nixos/galaxy-chromebook-1/home.nix 에서 같은 플래그를
 손으로 든다(brave-flags.conf 는 중복이지만 무해하고 터치 UI 플래그 때문에 남는다). 세션 변수라 바꾸면 로그아웃이 필요하다.
 
@@ -49,9 +50,6 @@ nixpkgs 는 Electron/Chromium 의 Wayland IME 플래그를 이 세션 변수 뒤
 - 확인함: VS Code 한글 입력은 변수 전후 모두 된다.
 - 안 해 봄: 어느 text-input 버전을 협상하는지, 누락에 영향이 있는지. 누락은 xterm.js 번들의 스케줄링 버그로 전부
   설명된다(고친 곳 overlays/vscode-xterm-hangul.nix — [overlays.md](overlays.md#vscode-xterm-hangul--패치가-안전한-이유와-깨질-때)).
-
-하이프랜드는 text-input v1 과 v3 를 둘 다 준다: `wayland-info | grep text_input` → `zwp_text_input_manager_v1`
-(version 1, name 20), `zwp_text_input_manager_v3`(version 1, name 21).
 
 ## fcitx5 프로필은 시드다
 
@@ -90,8 +88,8 @@ else
 src/lib/fcitx-config/marshallfunction.cpp). bool 로 쓰면 "맞는 설정인데 아무 일도 안 함"이 된다. hangul 애드온 블록의
 따옴표도 같은 이유다.
 
-**TriggerKeys 를 고정한다** — 상류 기본값 변경이 한/영을 조용히 가져가지 않게. Hangul 은 keyd 가 Right Alt 로 내는
-keysym, Control+space 는 Hangul 경로 자체를 디버깅할 때의 탈출구다(화면 키보드에서도 이걸 쓴다). 기본 목록의
+**TriggerKeys 를 고정한다** — 상류 기본값 변경이 한/영을 조용히 가져가지 않게. Hangul 은 kanata 가 Right Alt 로 내는
+키의 keysym, Control+space 는 Hangul 경로 자체를 디버깅할 때의 탈출구다(화면 키보드에서도 이걸 쓴다). 기본 목록의
 Zenkaku_Hankaku 는 이 머신에서 아무것도 안 내서 뺐다.
 
 ## 폰트

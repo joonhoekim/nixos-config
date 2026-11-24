@@ -28,54 +28,28 @@ Account name, git identity and authorized keys live in one file,
 host picks whose it is in `hosts/<platform>/<name>/identity.nix`. Those two are
 the only files a fork edits, so `git pull` never conflicts.
 
-Both hosts offer three sessions at the greetd/tuigreet greeter: **niri**
-(scrollable tiling, the default), **Hyprland** (uwsm-managed), and **GNOME on
-Wayland** (the fallback). The first two run the same Quickshell desktop shell,
-DankMaterialShell; see [modules/nixos/niri](modules/nixos/niri) and
-[modules/nixos/hyprland](modules/nixos/hyprland). Hyprland is there for the one
-thing niri cannot do: an output-wide shader (`decoration:screen_shader`) —
-`Mod+Shift+C` cycles the list (off · saved chains · per-branch shaders), and
-`apps/rice/crt` does the same from a shell (`--reload` re-reads the `.frag`,
-which is how you tune its values). Picking, stacking and tuning has a GUI —
-the ricing studio (`apps/rice/studio`), with `apps/rice/knobs` and
-`apps/rice/decor` as its shell backends. The same window switches the Hyprland
-**layout**: scrolling (niri's model, the default) and dwindle (BSP) each live
-in one file under `modules/nixos/hyprland/rice/layouts/` together with the
-keybinds that only make sense in that layout, and `apps/rice/layout` swaps
-them live without a config reload. The choice is a one-line file per machine
-(`~/.config/rice/layout`); the repo default stays scrolling.
+The desktop is a single session on top of greetd: **subline**, a touch-first
+compositor ([modules/nixos/subline](modules/nixos/subline)) that also draws the
+login screen, the shell and the on-screen keyboard. No desktop-environment
+module is enabled, so the plumbing such a module would turn on (keyring,
+bluetooth, upower, udisks2, …) is declared directly in
+[modules/nixos/desktop.nix](modules/nixos/desktop.nix), and the everyday apps
+(camera, image viewer, …) live in
+[modules/nixos/gui-apps.nix](modules/nixos/gui-apps.nix).
 
-niri's and DMS's *settings* are not managed by Nix. They are ordinary writable
-files under `~/.config`, so niri hot-reloads on save and the DMS settings GUI
-works normally. [modules/nixos/niri/rice](modules/nixos/niri/rice) is a backup
-and a seed for a fresh machine (copied in only when the file is missing);
-`apps/rice/save` snapshots the live config back into it. `apps/rice/restore` goes
-the other way, for when you edited the repo first or pulled someone else's
-commit — a rebuild will not do it, since the seed only copies when the file is
-missing.
+Ricing files (the terminal look, the macOS window-manager config) are not
+managed by Nix. They are ordinary writable files under `~/.config`, so apps
+hot-reload them on save. The repo copy is a backup and a seed for a fresh
+machine; `apps/rice/save` snapshots the live config back into it. A rebuild
+pushes repo changes into files you have not touched, and `apps/rice/restore`
+overwrites the ones you have ([docs/rice-seeding.md](docs/rice-seeding.md)).
 
-Looks are split into profiles and switching applies instantly — no restart, no
-rebuild:
+Switching the terminal look applies instantly — no restart, no rebuild:
 
 ```sh
-apps/rice/switch              # current profile + list      (Mod+Shift+P = next)
-apps/rice/switch frosted      # amoled | frosted | matugen
-apps/rice/wall mountain       # recursive search of ~/Pictures/Wallpapers  (Mod+Shift+W)
-apps/rice/wall --pick         # pick through fuzzel, fast                  (Mod+Ctrl+W)
-apps/rice/wall --yazi         # pick through yazi, with image previews      (Mod+Alt+W)
+apps/rice/term                # current terminal look + list
+apps/rice/term crt            # off | glow | crt
 ```
-
-The launcher (fuzzel) and the terminal (ghostty) have no per-profile piece.
-The terminal reads the palette DMS generates for it; `apps/rice/fuzzel` derives
-fuzzel's colors from that same palette, taking opacity and radius from whatever
-profile is active.
-
-A profile is two pieces (`niri.kdl` / `dms.json`). Only the
-DMS piece is an overlay rather than a whole-file swap — `settings.json` also
-holds machine state that has nothing to do with the look, and replacing it
-wholesale would take that with it. The `matugen` profile derives its palette
-from the wallpaper and pushes it to the shell, niri's borders and the terminal
-in one go.
 
 ## Bootstrap — macOS (first run on a new machine)
 
@@ -275,14 +249,11 @@ nix run .#setup               # attach a new machine to the repo (interactive). 
                               #   the first build use ./apps/setup — flakes are still off
 nix run .#doctor              # check this machine against this checkout (changes nothing)
 
-nix run .#demo                # replay real window-manager usage on an empty workspace
-nix run .#rice-menu           # backend for the DMS launcher plugin (axes as JSON)
-nix run .#rice-fuzzel         # regenerate fuzzel colors from the DMS palette
+nix run .#demo                # macOS only — replay real window-manager usage on an empty workspace
 nix run .#rice-colors         # macOS only — pywal palette push
 nix run .#mac-signing-cert    # macOS only — pin the code-signing identity (docs/03)
 ```
 
-The ricing family (rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
-rice-knobs · rice-decor · rice-layout · rice-chain · rice-save · rice-restore) is covered in
+The ricing family (rice-term · rice-save · rice-restore) is covered in
 the ricing section above and in each script's header. The full list lives in
 `flake.nix` (`mkApps`).

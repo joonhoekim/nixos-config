@@ -12,7 +12,7 @@ NixOS 기계들을 tailnet 에 붙이고, 그 위에서 다른 기계의 화면�
 
 NixOS 가 받는 쪽만 RustDesk 를 쓴다. 매일 쓰는 subline 세션에서 원격 입력을 넣을 수 있는 길이
 지금은 RustDesk 의 uinput 경로뿐이기 때문이다. wayvnc 는 `zwlr_virtual_pointer_manager_v1` 이
-필요한데, niri 에는 있고 subline 에는 없다. subline 이 이걸 갖추면 받는 쪽을 tailnet 주소만 듣는
+필요한데 subline 에는 없다. subline 이 이걸 갖추면 받는 쪽을 tailnet 주소만 듣는
 wayvnc 로 바꾸고 RustDesk 를 걷어낼 수 있다. 그러면 root 서비스와 공용 중계 서버가 필요 없다.
 
 ## 무엇이 저장소에 있고 무엇이 없나
@@ -71,14 +71,8 @@ sudo systemctl stop rustdesk
 
 Wayland 에서는 이 서비스가 있어야 입력이 들어간다. 서버 프로세스가 떠 있으면 RustDesk 는
 화면을 xdg-desktop-portal 의 **ScreenCast** 로 받고, 입력은 자기 uinput 장치로 넣는다. 서버가
-없으면 **RemoteDesktop** 포털을 쓰는데, 이 포털을 가진 세션은 GNOME 뿐이다.
-
-| 세션 | ScreenCast | 서비스 없이 (RemoteDesktop) | 서비스로 (uinput) |
-|---|---|---|---|
-| subline | xdg-desktop-portal-wlr | 없음 | 가능 |
-| niri | xdg-desktop-portal-gnome | 없음 | 가능 |
-| Hyprland | xdg-desktop-portal-hyprland | 없음 | 가능 |
-| GNOME | mutter | 있음 | 가능 |
+없으면 **RemoteDesktop** 포털을 쓰는데, subline 의 포털(xdg-desktop-portal-wlr)에는 그게 없다. 그래서 서비스 없이는
+화면만 보이고 입력이 안 들어간다.
 
 알려진 제약:
 

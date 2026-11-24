@@ -6,12 +6,11 @@ Wacom 스타일러스와 터치스크린, 4K AMOLED 패널. 이 문서는 그 �
 ## 개요
 
 - 전체 개발을 돌릴 성능이 아니라서 디스크를 많이 쓰는 개발 묶음과 그림·개발용 GUI 를 뺀다. core 의 CLI 와
-  GUI(VS Code, ghostty)는 항상 깔린다. 무게는 [`packages/footprint.md`](packages/footprint.md), 지금 고른 것은
+  GUI(VS Code, ghostty 등)는 항상 깔린다. 무게는 [`packages/footprint.md`](packages/footprint.md), 지금 고른 것은
   `nix run .#inventory`.
 - stateVersion(시스템·home 모두)은 실제로 설치한 릴리스 25.11 에 묶는다. stateVersion 은 상태 데이터 레이아웃을
   묶을 뿐 nixpkgs 채널이 아니라서, flake 는 여전히 nixos-unstable 을 따라가고 패키지는 계속 움직인다.
   `common.nix` 의 26.11 은 새로 설치하는 호스트를 위한 `mkDefault` 다.
-- 파일 나눔: `hardware.nix` 는 "이 하드웨어가 이래서 이 줄이 있다", `touch.nix` 는 "이 하드웨어로 무엇을 하겠다".
 - EFI: 이 기계의 NVRAM 에는 죽은 "Linux Boot Manager" 항목이 BootOrder 에서 살아 있는 항목보다 앞에 쌓일 수 있고,
   그러면 펌웨어가 `Booting from 'Linux Boot Manager' failed: Not Found` 를 찍은 뒤에야 넘어간다. `bootctl status` 는
   장치 경로를 풀 수 있는 항목만 보여서 바로 그 항목을 숨긴다. `efibootmgr -v` 로 보고 `efibootmgr -b <ID> -B` 로
@@ -20,16 +19,16 @@ Wacom 스타일러스와 터치스크린, 4K AMOLED 패널. 이 문서는 그 �
 
 ## 내비게이션 레이어가 없는 이유
 
-`modules/nixos/keyboard.nix` 의 레이어는 Caps Lock 을 누르고 있는 데 걸린다([키맵](keymap.md)). 이 섀시에는 Caps
+kanata 의 레이어(`modules/shared/kanata/nav.kbd`)는 Caps Lock 을 누르고 있는 데 걸린다([키맵](keymap.md)). 이 섀시에는 Caps
 Lock 키가 없고 그 자리는 Chromebook 런처/검색 키인데, 그건 modifier 라 레이어를 실을 수 없다. Space 에 걸 수는
 있지만 타이핑을 방해하지 않으려면 타이밍 가드가 붙어야 하고, 이 기계는 타이핑보다 브라우징을 훨씬 많이 한다.
-그래서 이 호스트에는 설정할 것도 없다.
+그래서 이 호스트에는 레이어가 없다.
 
 ## 4K eDP 패널을 FHD 로 쓰기
 
 eDP 는 노트북 내장 패널용 DisplayPort 이고, EDID 는 패널이 "나는 이 모드들을 받는다"고 알리는 정보 블록이다.
 Samsung AMOLED(ATNA33TP04-0)의 EDID 는 detailed timing 을 하나(3840x2160@60)만 광고한다. 그래서 DRM 은 모드 하나만
-내놓고, niri 는 고를 것이 없으며, DMS 의 해상도 드롭다운은 비어 있다. 컴포지터 scale 은 UI 만 키우고 프레임버퍼는
+내놓고, 컴포지터는 고를 것이 없다. 컴포지터 scale 은 UI 만 키우고 프레임버퍼는
 4K 그대로라 소용이 없고, UHD 620 은 4K 합성을 버거워한다.
 
 세 조각이 함께 일한다.
@@ -133,149 +132,28 @@ services.udev.extraRules = ''
   (thermald, iHD VAAPI 드라이버, intel_gpu_top/cpupower, intel_pstate 메모)은 `modules/nixos/intel.nix`
   ([벤더 공통 층](hardware-vendors.md))에 있고 `default.nix` 가 import 한다.
 - thermald 는 이 기계가 팬리스라 어느 호스트보다 중요하지만 섀시 고유는 아니라서 `intel.nix` 에 있다.
-- IIO 센서(가속도계, 자이로, 조도, cros_ec_sensorhub 의 lid-angle)는 GNOME 의 자동 회전·자동 밝기·태블릿 모드
+- IIO 센서(가속도계, 자이로, 조도, cros_ec_sensorhub 의 lid-angle)는 subline 의 자동 회전과 태블릿 모드
   스위치에 필요하다.
-- `services.xserver.wacom` 은 X11 의 xf86-input-wacom 드라이버다. Wayland 에서 GNOME/Mutter 는 펜을 libinput+evdev
+- `services.xserver.wacom` 은 X11 의 xf86-input-wacom 드라이버다. Wayland 컴포지터는 펜을 libinput+evdev
   로 읽으므로 Xwayland 에만 의미가 있다. `services.xserver.dpi = 192` 도 컴포지터 scale 을 무시하는 Xwayland 앱용이고,
-  Wayland 세션은 GNOME 의 모니터별 스케일을 쓴다.
+  Wayland 세션은 컴포지터의 모니터별 스케일을 쓴다.
 - `home.nix` 의 Brave 플래그 중 `--top-chrome-touch-ui` 는 이 터치 기계 전용이다.
 
 ## 터치 자세: 화면 키보드, 자동 회전, 태블릿 모드
 
-저장소에서 터치스크린이 있는 기계는 이것뿐이다. 컴포지터 쪽 설정은 그래도
-`modules/nixos/hyprland/rice/hyprland.lua` 에 있다 — 라이싱 파일이라 호스트별로 가를 수단이 없고, 터치 장치가 없는
-기계에서는 무해하게 죽는 줄들이다([hyprland.lua 의 입력 절](hyprland.md#입력)).
+셋 다 subline 이 한다. 이 호스트가 더하는 것은 센서(`hardware.sensor.iio`, `hardware.nix`)와 아래 kanata 설정뿐이다.
 
-`touch.nix` 가 까는 CLI 넷과 DankBar 조각(`local.dms.touchControls`, [DMS 플러그인](dms-plugins.md#touchcontrols)):
+- 자동 회전: subline 이 iio-sensor-proxy(`net.hadess.SensorProxy`)에서 방향을 받아 출력과 터치 입력을 같이 돌린다.
+- 화면 키보드: subline 자체 OSK. 한글도 그 자판이 낸다.
+- 태블릿 모드: subline 이 SW_TABLET_MODE 스위치를 읽는다.
 
-| 명령 | 하는 일 | 상태를 아는 법 |
-|---|---|---|
-| `osk on\|off\|toggle\|status` | 화면 키보드 wvkbd 를 보이고 감춘다(USR2 켜기, USR1 끄기, SIGRTMIN 토글) | 컴포지터에게 묻는다 |
-| `autorotate on\|off\|toggle\|status` | 자동 회전(USR2/USR1, 토글 신호 없음) | 데몬이 쓴 `$XDG_RUNTIME_DIR/hypr-autorotate.state` |
-| `tablet-mode enter\|leave\|status\|is-on` | 접고 펴는 한 번에 키보드·터치패드·회전·자판을 같이 움직인다 | 키보드 inhibit 값 |
-| `touch-state` | 세 토글의 상태를 JSON 하나로 | 위 셋을 부른다 |
-
-### osk: 서비스는 늘 떠 있고 신호만 보낸다
-
-wvkbd(Wayland 화면 키보드)는 시작할 때 54 개 레이아웃을 컴파일하므로 띄웠다 죽였다 하면 손가락으로 쓰기엔 느리다.
-wvkbd 에게 상태를 물을 방법은 없어서 `status` 는 컴포지터에게 묻는다. 자판이 보이면 `wvkbd` 네임스페이스의 레이어가
-올라와 있고 감추면 통째로 사라진다(`hyprctl layers -j`, 실측). 자판은 Mod+B, 태블릿 모드 훅, 자판 안의 hide
-키로도 움직이므로 어딘가 적어 둔 값은 금방 낡는다. 신호는 pkill 이 아니라 `systemctl --user kill
---kill-whom=main` 으로 보낸다(유닛 cgroup 안으로만 가서 이름이 겹치는 남의 프로세스를 때리지 않는다). SIGRTMIN 도
-이름으로 받는다(실측).
-
-### 한글
-
-wvkbd 는 레이아웃을 컴파일 타임에 박는다. 패키징된 묶음은 mobintl 뿐이고(deskintl 은 nixpkgs 에 없다) 한글 자판은
-없다. 없어도 된다 — wvkbd 는 virtual-keyboard-v1 로 **키코드**를 쏘고 fcitx5 는 그 위에서 텍스트를 받으므로 물리
-키보드와 구분하지 않는다. 두벌식 변환은 `modules/nixos/korean.nix` 의 hangul 엔진이 한다([한국어 입력](korean-input.md)).
-화면에서 한/영은 **Ctrl+space** 다 — 그쪽 Hotkey/TriggerKeys 의 두 번째 항목이고, 첫 번째(Hangul keysym)는 이 자판에
-키가 없다.
-
-### 왜 wvkbd --auto 를 안 쓰는가
-
-`--auto` 는 텍스트 필드에 포커스가 가면 저절로 뜨게 하는 옵션으로, 터치 기계에서 제일 갖고 싶은 동작이다. 그런데 그
-기능은 `zwp_input_method_v2` 로 구현돼 있고, 그 자리는 fcitx5 가 이미 잡고 있다(`korean.nix` 의
-`waylandFrontend = true`). 한 시트에 input method 는 하나다.
-
-```
-wayland-info | grep input_method
-#  interface: 'zwp_input_method_manager_v2', version: 1, name: 28
-```
-
-둘이 다투면 지는 쪽이 조용히 진다. 한글 입력은 이 기계에서 제일 비싼 축이라
-([postmortem](postmortems/2026-08-05-vscode-terminal-hangul.md)) 그걸 걸고 자동 표시를 사지 않는다. 여기서 쓰는
-virtual-keyboard-v1 경로는 덧붙이기만 해서 fcitx5 와 겹치지 않는다. 자동 표시는 태블릿 모드 훅이 대신한다 — 화면을
-접으면 뜬다.
-
-### 자판이 창을 밀지 않는다
-
-wvkbd 는 overlay 레이어에 exclusive zone 없이 뜬다(`hyprctl layers` 로 확인: `namespace: wvkbd`, `Layer level 3
-(overlay)`). 자판이 창 위를 덮을 뿐 밀어 올리지 않아서 화면 아래쪽 입력란은 가려진다. 상류가 그렇게 만든 것이고
-옵션으로 못 바꾼다.
-
-### wvkbd 서비스
-
-- `partOf`/`after` 는 `graphical-session.target` — 로그아웃 때 같이 내려간다(dms.service 와 같은 모양).
-- `wantedBy` 는 타깃이 아니라 컴포지터 유닛(`niri.service`, `wayland-wm@hyprland.desktop.service`). 타깃에 걸면
-  GNOME 세션에서도 뜨는데, 그쪽은 자기 화면 키보드가 있다.
-- `-L 260 -H 340`: -L 은 가로 모드 높이, -H 는 세로 모드 높이. 1920x1080 에서 260 은 화면의 24% 로 네 줄 자판이
-  손가락에 맞는 최소치쯤이고, 세로(1080x1920)는 같은 비율이 훨씬 큰 픽셀이라 340 을 따로 준다.
-
-### 태블릿 모드에서 키보드를 우리가 끄는 이유
+### kanata 를 끄는 이유
 
 libinput 은 SW_TABLET_MODE 스위치가 서면 내장 키보드와 터치패드를 알아서 끈다(libinput 문서 Switches) — 360도로
-접히는 2-in-1 에서는 자판이 등 뒤로 가기 때문이다. 이 기계에서는 키보드에 안 먹는다. keyd 가 /dev/input/event0 을
-EVIOCGRAB 으로 잡고(`lsof` 로 확인된다) 자기 uinput 장치로 다시 내보내기 때문이다. libinput 이 보는 것은
-`keyd-virtual-keyboard` 인데, 가상 장치라 억제 대상이 아니다. 억제되는 `at-translated-set-2-keyboard` 는 이미 keyd 가
-잡고 있어서 원래 아무 이벤트도 안 흘린다. 결과는 "접었는데 등 뒤 자판이 그대로 살아 있다" 다.
+접히는 2-in-1 에서는 자판이 등 뒤로 가기 때문이다. kanata 가 돌면 이게 키보드에 안 먹는다. kanata 가 물리 키보드를
+EVIOCGRAB 으로 잡고 자기 uinput 장치로 다시 내보내는데, libinput 이 보는 그 가상 키보드는 억제 대상이 아니다. 결과는
+"접었는데 등 뒤 자판이 그대로 살아 있다" 다.
 
-그래서 keyd 보다 아래인 커널 inhibit 로 끊는다. 물리 장치가 막히면 keyd 가 읽을 것이 없어지고 그 위의 가상 키보드도
-조용해진다. `tablet-mode` 를 부르는 것은 사람이 아니라 하이프랜드의 스위치 바인드다(`rice/hyprland.lua` 의 태블릿
-모드 절).
-
-- `enter` 는 터치패드의 지금 inhibit 값을 적어 두고 끄며, `leave` 는 그 값으로 복원한다. 팬텀 터치 때문에 손으로 건
-  `touchpad off` 를 접었다 펴는 것만으로 풀지 않기 위해서다.
-- `enter` 는 자판도 띄운다. 접힌 상태에서는 Mod+B 를 누를 손이 없고, 감추는 것은 자판 안의 hide 키로 된다.
-- `is-on` 은 스위치(`/dev/input/event6`)가 아니라 키보드가 막혀 있는지로 판정한다. 스위치는 root 가 있어야 읽히고,
-  손으로 `tablet-mode enter` 를 부른 경우엔 스위치가 서 있지 않아 그쪽을 믿으면 UI 가 실제와 어긋난다.
-
-### autorotate
-
-기본은 꺼짐이고 켜는 것은 태블릿 모드 훅이다. 노트북 자세에서 켜 두면 책상에서 타이핑하다 화면이 돌아간다. 상태
-파일 경로(`%t/hypr-autorotate.state`, %t = $XDG_RUNTIME_DIR)는 데몬과 CLI 가 따로 적고 있어서 한쪽만 고치면 status
-가 영원히 "unknown" 이 된다.
-
-### touch-state 와 DMS 플러그인
-
-DMS 플러그인은 `touch-state` 만 부른다. QML 쪽에 상태 읽는 법을 적지 않는 것은 RiceSwitcher 가 `apps/rice/menu`
-에게 목록을 통째로 받아 오는 것과 같은 방향이다 — 판정이 늘거나 바뀌어도 QML 은 그대로다. 조각은 위 CLI 를 손가락으로
-부르는 유일한 길이라 CLI 를 까는 `touch.nix` 에서 켠다.
-
-## autorotate.py 설계
-
-`touch.nix` 가 systemd user service(`hypr-autorotate`)로 띄우고, `autorotate` CLI 가 신호로 켜고 끈다. 방향은
-iio-sensor-proxy(IIO 센서를 D-Bus 로 노출하는 데몬)에게서 받는다.
-
-### 왜 iio-hyprland 가 아닌가
-
-nixpkgs 에 있고 하는 일도 정확히 이것인데 이 설정에서는 한 줄도 안 먹는다. 그쪽은 전부 `hyprctl keyword` 로 말하고,
-하이프랜드 0.56 은 Lua 설정에서 그걸 거부한다.
-
-```
-$ hyprctl keyword input:touchdevice:transform 0
-keyword can't work with non-legacy parsers. Use eval.
-```
-
-거부하면서 **종료 코드는 0** 이라 그쪽 데몬은 실패한 줄 모르고 계속 돈다. 증상은 "서비스는 active 인데 화면이 안
-돈다" 하나뿐이다. 그래서 같은 일을 `hyprctl eval` 로 다시 쓴다.
-
-### 왜 가속도계를 직접 안 읽는가
-
-/sys/bus/iio 에 accel-display / accel-base 가 그대로 있어서 raw 값으로 각도를 풀 수도 있다. 안 하는 이유는 마운트
-행렬이다 — 센서가 패널에 어느 방향으로 붙었는지는 펌웨어가 알려주는 값이고, iio-sensor-proxy 가 그걸 읽어 방향
-문자열까지 풀어 준다. 직접 풀면 그 보정을 다시 구현해야 하고, 틀렸을 때 증상은 "90도씩 어긋나게 돈다" 라 눈으로
-맞출 때까지 모른다.
-
-### 클레임은 커넥션에 묶인다
-
-ClaimAccelerometer 는 부른 **DBus 커넥션**이 살아 있는 동안만 유효하다. 셸에서 `busctl call` 로 부르면 그 프로세스가
-끝나는 순간 풀리고, iio-sensor-proxy 는 (전력 때문에) 센서 폴링을 멈춘다. 그래서 이 파일은 파이썬 데몬이다
-(`pygobject3` 의 GDBus). 클레임을 안 하면 AccelerometerOrientation 은 마지막 값에 머물고 PropertiesChanged 도 안 온다.
-
-### 신호
-
-파이썬의 signal 핸들러는 다음 바이트코드가 돌아야 실행되는데, 이 프로세스는 대부분 GLib 의 poll 안에 있으므로
-신호가 몇 초씩 늦거나 다음 DBus 이벤트까지 안 온다. 그래서 `GLibUnix.signal_add` 로 받는다. 그 함수가 받는 신호는
-SIGHUP/INT/TERM/USR1/USR2/WINCH 로 정해져 있고, 그 밖의 것을 주면 assertion 을 찍고 핸들러를 안 건다 — 서비스는
-도는데 그 신호만 조용히 사라진다. `osk` 가 토글에 쓰는 SIGRTMIN 을 여기선 못 쓰는 이유이고, `autorotate toggle` 은
-상태 파일을 읽어 USR1/USR2 중 하나를 보낸다.
-
-### 회전 적용
-
-하이프랜드는 출력이 돌아갈 때 매핑된 입력을 따라 돌리지 **않는다**(sway 와 다른 점). 모니터만 돌리면 화면은 세로인데
-터치는 가로로 남아 찍은 자리에서 90도 떨어진 곳이 눌린다. 그래서 모니터·touchdevice·tablet 셋을 `hyprctl eval` 한
-번에 보낸다. transform 0/1/2/3 은 Normal/90/180/270 이고 wlroots 계열이 다 같은 뜻으로 쓴다. "undefined"(평평하게
-눕혀 센서가 판단 못 함)일 때는 마지막 방향을 둔다. 방향마다 저널에 한 줄씩 남기므로, 화면이 엉뚱하게 돌면
-`journalctl --user -fu hypr-autorotate` 가 어느 문자열에 어느 각도를 줬는지 보여주고 고칠 자리는 `TRANSFORM` 표
-한 곳이다.
+그래서 이 호스트는 `services.kanata.enable = false` 다(`default.nix`). 잃는 것은 없다. Caps 레이어는 걸 키가 없고(위
+「내비게이션 레이어가 없는 이유」), Right Alt 한/영은 subline 의 xkb 옵션 기본값 `korean:ralt_hangul` 이 같은 Hangul
+keysym 을 낸다([한국어 입력](korean-input.md)).

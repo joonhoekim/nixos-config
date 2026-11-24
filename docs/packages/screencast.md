@@ -27,8 +27,7 @@ screencapture -x -v -V 22 -D 2 raw.mov   # 22초, 두 번째 디스플레이, �
 - 녹화하는 터미널에 화면 기록 권한이 있어야 한다(시스템 설정 > 개인정보 보호 및
   보안 > 화면 및 시스템 오디오 녹음).
 
-NixOS(Hyprland)에서는 `wf-recorder`(nixpkgs, Linux 전용)나 OBS를 쓴다. 이 레포에는
-아직 선언되지 않았다.
+NixOS 에서는 subline 캡처 모드가 `wf-recorder` 로 녹화한다(`modules/nixos/packages.nix`).
 
 ### 화면을 깨끗하게
 

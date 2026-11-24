@@ -2,9 +2,9 @@
 
 [`kanata.kbd`](kanata.kbd) 하나를 Windows 와 macOS 가 같이 쓴다. **Caps Lock 을 홀드**하는
 동안 오른손은 커서 이동([TouchCursor](https://github.com/martin-stone/touchcursor) 배치),
-왼손은 마우스다. NixOS 는 아직 keyd + 전용 데몬으로 같은 배치를 건다
-([`modules/nixos/keyboard.nix`](../../nixos/keyboard.nix),
-[`modules/nixos/pointer/`](../../nixos/pointer/)) — 키 배치와 수치는 그쪽이 정본이다.
+왼손은 마우스다. 리눅스(NixOS·Debian)는 같은 배치를 [`nav.kbd`](nav.kbd) 로 건다
+([`modules/nixos/kanata.nix`](../../nixos/kanata.nix),
+[`modules/debian/kanata/`](../../debian/kanata/)). 배치를 고치면 두 파일을 같이 고친다.
 
 ## 레이어
 
@@ -27,8 +27,8 @@
   왼쪽으로 선택, `Caps+⇧o` 는 줄 끝까지 선택.
 - Shift 저속은 이동 중에 눌러도 그 자리에서 걸린다(설정 파일의 `sl`/`sr` 주석).
 - 매핑하지 않은 키는 홀드 중에도 제 글자가 나온다.
-- 이 레이어는 단발 키만 보낸다. `d2w` 같은 조합이 안 되는 이유는
-  [`modules/nixos/keyboard.nix.vim`](../../nixos/keyboard.nix.vim) 머리말.
+- 이 레이어는 단발 키만 보낸다. `d2w` 같은 vim 식 조합은 안 된다 — OS 에는 모드가 없어 키 입력을 문법으로
+  파싱할 주체가 없다.
 
 macOS 포인터 속도는 실사용으로 맞췄고, 휠 양·방향은 아직 실측 전 초기값이다. 맞추는 자리는 `kanata.kbd` 의
 `(platform (macos) ...)` 블록.

@@ -20,7 +20,7 @@ apps/ddc-probe 1 --feature 0A  임의의 VCP 코드 하나를 직접 시험
 
 눈으로 봐도 안 변하면 다음은 이 레포가 아니라 **모니터 OSD** 다. HDR·DCR·다이내믹 명암·에코 중 하나가 켜져 있으면 수동
 밝기가 잠긴다. evo-t1 에 물린 HCS 40LGD5K 에서 확인한 사실: OSD 의 HDR 이 Auto 면 패널이 수동 밝기(0x10)를 무시한다.
-DDC 자체는 정상이고, OS 쪽은 HDR 을 켜지 않으므로(하이프랜드는 colorManagementPreset srgb) OS 에서는 보이지 않는다
+DDC 자체는 정상이고, OS 쪽은 HDR 을 켜지 않으므로 OS 에서는 보이지 않는다
 ([evo-t1](hosts/evo-t1.md#dp-1-모니터-밝기ddcci)).
 
 ## 모니터의 응답은 그 자체로 근거가 못 된다

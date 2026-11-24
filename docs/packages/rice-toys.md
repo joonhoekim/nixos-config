@@ -28,7 +28,7 @@
 | 플랫폼 | 누가 |
 |---|---|
 | macOS | `pywal16` (`modules/darwin/rice/default.nix`) |
-| NixOS | `matugen` + DMS (`modules/nixos/dms`, `modules/nixos/niri`) |
+| NixOS | subline 의 강조색(설정 앱, `~/.config/subline/config.toml`) |
 
 색 생성기가 둘이 되면 "색이 이상한데 어느 쪽이 정본이지"를 매번 다시 따져야 한다.
 그 값이 도구 하나를 더 얻는 것보다 비싸다.

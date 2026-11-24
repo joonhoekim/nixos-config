@@ -1,7 +1,6 @@
-# 지운 것, 지울 것
+# 지운 것
 
-레포에서 걷어낸 설정과 되살릴 때 필요한 커밋, 그리고 지우기로 정했지만 아직 지우지
-않은 것을 적는다. 뺀 코드는 `removed/` 같은 폴더로 옮기지 않고 지운다(git 이 보관한다).
+레포에서 걷어낸 설정과 되살릴 때 필요한 커밋을 적는다. 뺀 코드는 `removed/` 같은 폴더로 옮기지 않고 지운다(git 이 보관한다).
 한 대상은 한 커밋으로 지웠으므로 그 커밋 하나만 되돌리면 된다.
 
 되살리는 방법은 두 가지다.
@@ -17,27 +16,38 @@ git checkout <sha>~1 -- <경로>...          # 특정 파일만 지우기 직전
 SHA 는 `cleanup` 브랜치를 main 에 fast-forward 로 합친다는 전제의 값이다. rebase·
 squash 로 합치면 바뀌므로 이 표도 다시 적는다.
 
-## 지울 예정
-
-정해졌지만 아직 지우지 않은 것. 고칠 일이 생기면 최소한으로만 고친다(새 기능을 얹지 않는다).
-
-### NixOS의 대체 데스크톱: hyprland · niri · dms · rice
-
-- 경로: `modules/nixos/hyprland`, `modules/nixos/niri`, `modules/nixos/dms`, `apps/rice`
-  (macOS 의 `modules/darwin/rice` 는 아니다).
-- 왜: subline 이 기본 세션이고, 이 넷이 레포 줄 수의 큰 덩어리다.
-- 언제: 셰이더처럼 옆에 두고 참고할 것을 다 본 뒤.
-- 같이 손볼 곳:
-  - `hosts/nixos/common.nix`: 세 import, `defaultSession` 의 기본값 `"niri"`,
-    greeter 세션 목록 주석. GNOME 은 남긴다(gnome-keyring·seahorse 를 끌어오는 유일한 것).
-  - `flake.nix`: `rice-*` 앱 목록.
-  - `hosts/nixos/galaxy-chromebook-1/touch.nix`(hyprland 를 부른다), `hardware.nix` 의 DMS 주석,
-    `hosts/nixos/evo-t1/default.nix` 의 hyprland.lua 주석.
-  - `apps/demo`(하이프랜드 시연), `apps/doctor`·`apps/build-lib.sh` 의 rice 언급.
-  - 문서: `docs/keymap.md`, `docs/hyprland-binds.md`, `docs/packages/rice-toys.md`, README 들.
-    포스트모템은 사건 기록이라 그대로 둔다.
-
 ## 지운 것
+
+### NixOS 의 다른 세션: GNOME · niri · Hyprland · DMS 와 그 라이싱 도구
+
+| | |
+|---|---|
+| 커밋 | `b1721b2` refactor(desktop): GNOME 세션을 지운다 |
+| | `af86646` refactor(desktop): niri·Hyprland·DMS 세션과 그 라이싱 도구를 지운다 |
+| 대상 | `services.desktopManager.gnome`, `modules/nixos/{niri,hyprland,dms}`, `apps/rice/{switch,wall,fuzzel,crt,chain,knobs,decor,layout,menu,studio}`, `apps/demo` 의 하이프랜드 갈래, `hosts/nixos/galaxy-chromebook-1/{touch.nix,autorotate.py}`, 옵션 `local.subline.enable`·`local.niri`·`local.hyprland`·`local.dms` |
+| 대체 | subline (`modules/nixos/subline`) — 세션, 로그인 화면, 셸, 화면 키보드, 회전 |
+| 앞선 커밋 | `087d5eb` — GNOME 모듈이 켜 주던 기반(`modules/nixos/desktop.nix`)과 남길 앱(`modules/nixos/gui-apps.nix`) |
+
+되살릴 때 볼 것:
+
+- GNOME 만 되살리면 `modules/nixos/desktop.nix` 와 겹치는 줄은 그대로 둬도 된다(같은 값이다).
+- niri·Hyprland 의 라이싱 파일은 라이브(`~/.config/niri`, `~/.config/hypr`, `~/.config/DankMaterialShell`)가 원본이었다.
+  기계에 남아 있는 그 디렉터리가 레포보다 새것일 수 있다.
+- galaxy-chromebook-1 은 `services.kanata.enable = false` 다. `touch.nix` 를 되살리면 태블릿 모드에서 키보드를 끄는
+  방식(커널 inhibit)이 kanata/keyd 의 grab 을 전제로 했다는 점을 같이 본다.
+- 문서도 같은 정리에서 지웠다: `docs/{hyprland,hyprland-binds,hyprland-shaders,niri,dms-plugins,rice-studio}.md`.
+  포스트모템은 사건 기록이라 그대로 있다.
+
+### keyd 와 pointerd
+
+| | |
+|---|---|
+| 커밋 | `8e4fdb5` refactor(keyboard): keyd 와 pointerd 를 kanata 로 바꾼다 |
+| 대상 | `modules/nixos/keyboard.nix`(keyd), `modules/nixos/pointer/`(pointerd), 보관본 `modules/nixos/keyboard.nix.vim` |
+| 대체 | kanata — `modules/nixos/kanata.nix` + `modules/shared/kanata/nav.kbd` |
+
+keyd 는 포인터를 못 움직여서 레이어의 마우스 쪽이 F키 센티넬과 별도 데몬(pointerd)으로 갈라져 있었다. kanata 는 한
+설정에서 둘 다 낸다. `keyboard.nix.vim` 은 import 되지 않던 Caps 홀드 vim 레이어 보관본이다.
 
 ### Karabiner-Elements 설정
 

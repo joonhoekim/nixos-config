@@ -1,22 +1,13 @@
-# 키맵 — 세 창 관리자를 한 손으로
+# 키맵 — rift-grid (macOS)
 
-하이프랜드(NixOS) · 니리(NixOS) · rift-grid(macOS)가 같은 키를 쓴다. 이 문서가 그
-정본이고, 세 설정 파일은 이걸 각자의 문법으로 옮긴 것이다.
+macOS 의 창 관리자 rift-grid 의 키 배치. 설정 파일은 `modules/darwin/rice/rift-grid/config.toml` 이고, 이 문서는 그
+`[keys]` 를 사람이 읽는 표로 옮긴 것이다. NixOS 의 창 관리자는 subline 이고 그 키는 subline 이 정한다(설정 앱의 키
+페이지, `~/git/subline`).
 
-| 무엇 | 어디 |
-|---|---|
-| 하이프랜드 | `modules/nixos/hyprland/rice/hyprland.lua` |
-| 니리 | `modules/nixos/niri/rice/config.kdl` |
-| rift-grid | `modules/darwin/rice/rift-grid/config.toml` |
+**rift-grid 는 subline 의 ijkl 프리셋을 따른다.** rift-grid 의 워크스페이스가 subline 과 같은 격자라서, 격자를 다루는
+키도 subline 과 같게 두었다. 두 기계를 오가도 손이 같은 자리를 누른다.
 
-**rift-grid 열은 subline 의 ijkl 프리셋을 따른다.** rift-grid 의 워크스페이스가 subline 과 같은
-격자라서, 격자를 다루는 키도 subline 과 같게 두었다. 하이프랜드·니리와 subline 이
-다른 자리에서는 rift-grid 가 subline 쪽이다. 표에서 `≠` 로 표시하고, 무엇이 다른지는
-[rift-grid 는 subline 의 ijkl 프리셋을 따른다](#rift-는-subline-의-ijkl-프리셋을-따른다)에
-모았다.
-
-하이프랜드에서 **무엇을** 부를 수 있는지(디스패처 이름, 인자 모양, 검증한 것과
-안 한 것)는 별개 문서다 — [hyprland-binds.md](hyprland-binds.md).
+Caps Lock 레이어(커서·포인터)는 창 관리자와 별개다 — `modules/shared/kanata/README.md`.
 
 ## 규칙 셋
 
@@ -26,13 +17,9 @@ Mod + Shift  창을 데리고 간다
 Mod + Ctrl   모니터를 넘는다, WM 에게 말한다
 ```
 
-`Shift = 창을 데리고`가 **방향·워크스페이스 앞뒤·워크스페이스 번호**에 예외 없이
-걸린다. 외울 것은 이 한 줄이고 나머지는 따라온다. rift-grid 는 예외가 하나 있다 —
-subline 을 따라 창을 격자 N 으로 보내는 키가 `Mod+Ctrl+숫자`다.
+예외가 하나 있다 — subline 을 따라 창을 격자 N 으로 보내는 키가 `Mod+Ctrl+숫자`다.
 
-`Mod`는 리눅스에서 **Super**, macOS에서 **Alt**다. macOS가 Cmd를 시스템용으로
-가져가기 때문에 선택지가 없었다. 손가락이 이미 번역해서 치는 부분이라 실제 비용은
-낮다 — 어긋나면 아픈 건 그 아래층이다.
+`Mod`는 macOS에서 **Alt**다(subline 에서는 Super). macOS가 Cmd를 시스템용으로 가져가기 때문에 선택지가 없었다.
 
 ## 방향은 IJKL
 
@@ -50,74 +37,64 @@ hjkl이 아니다. hjkl은 한 줄에 늘어선 네 개일 뿐 **모양이 없�
 
 ## 표
 
-`•` = 그 WM에 있음, `—` = 없음(이유는 아래), `≠` = rift-grid 에서는 다른 동작(subline 프리셋)
-
 ### 티어 1 — `Mod` : 간다, 연다
 
-| 키 | 무엇 | hypr | niri | rift-grid |
-|---|---|:--:|:--:|:--:|
-| `Mod+I` `Mod+K` `↑` `↓` | 포커스 위 / 아래 | • | • | • |
-| `Mod+J` `Mod+L` `←` `→` | 포커스 왼 / 오른 | • | • | • |
-| `Mod+U` `Mod+O` | 워크스페이스 뒤로 / 앞으로 | • | • | ≠ |
-| `Mod+1`..`9` | 워크스페이스 N | • | • | ≠ |
-| `Mod+Tab` | 직전 워크스페이스 | • | • | ≠ |
-| `Mod+Return` | 터미널 (subline-terminal, 세션 목록부터) | • | • | • |
-| `Mod+D` | 런처 (fuzzel) | • | • | — |
-| `Mod+E` | 오버뷰 | • | • | ≠ |
-| `Mod+H` | 치트시트 | • | • | ≠ |
-| `Mod+Q` | 창 닫기 | • | • | • |
-| `Mod+F` | 최대화 — **갭 유지** | • | • | • |
-| `Mod+C` | 가운데로 | • | • | • |
-| `Mod+=` `Mod+-` | 폭 넓게 / 좁게 | • | • | • |
-| `Mod+R` | 폭 프리셋 순환 | • | • | ~ |
-| `Mod+Space` | 스포트라이트 (DMS) | • | • | — |
-| `Mod+V` `Mod+N` `Mod+S` | 클립보드 / 알림 / 컨트롤센터 | • | • | — |
-| `Mod+Escape` | 파워메뉴 — **로그아웃·잠금의 유일한 입구** | • | • | — |
+| 키 | 무엇 |
+|---|---|
+| `Mod+I` `Mod+K` `↑` `↓` | 포커스 위 / 아래 |
+| `Mod+J` `Mod+L` `←` `→` | 포커스 왼 / 오른 |
+| `Mod+1`..`9` | 격자 N |
+| `Mod+Tab` | 직전에 포커스가 있던 창 (어느 칸·격자에 있든, 다시 누르면 돌아온다. subline 의 Alt+Tab, 창 줄은 없다) |
+| `Mod+Return` | 터미널 (subline-terminal, 세션 목록부터) |
+| `Mod+O` | 오버뷰 (rift-grid 의 격자 오버뷰) |
+| `Mod+E` | 파일 관리자 (`open ~`, Finder) |
+| `Mod+H` | 격자의 가운데 칸 |
+| `Mod+Q` | 창 닫기 |
+| `Mod+F` | 최대화 — **갭 유지** |
+| `Mod+C` | 가운데로 |
+| `Mod+=` `Mod+-` | 폭 넓게 / 좁게 |
+| `Mod+R` | monocle (폭 프리셋 순환 자리) |
+| `Mod+,` | rift-grid 설정 창 (`rift-grid-cli settings`) |
+| `Mod+Shift+/` | 치트시트 (이 문서를 연다) |
+| `Mod+Shift+S` | 영역 스크린샷을 클립보드로 (`screencapture -i -c`) |
 
 ### 티어 2 — `Mod+Shift` : 창을 데리고 간다
 
-| 키 | 무엇 | hypr | niri | rift-grid |
-|---|---|:--:|:--:|:--:|
-| `Mod+Shift+IKJL` + 화살표 | 창 이동 (4방향) | • | • | • |
-| `Mod+Shift+U` `Mod+Shift+O` | 창을 뒤/앞 워크스페이스로 | • | • | — |
-| `Mod+Shift+1`..`9` | 창을 워크스페이스 N으로 | • | • | — |
-| `Mod+Shift+F` | 전체화면 — **갭까지 덮음** | • | • | • |
-| `Mod+Shift+Space` | 플로팅 토글 | • | • | • |
+| 키 | 무엇 |
+|---|---|
+| `Mod+Shift+IKJL` + 화살표 | 창 이동 (4방향) |
+| `Mod+Shift+F` | 전체화면 — **갭까지 덮음** |
+| `Mod+Shift+Space` | 플로팅 토글 |
 
 ### 티어 3 — `Mod+Ctrl` : 모니터를 넘는다, WM에게 말한다
 
-| 키 | 무엇 | hypr | niri | rift-grid |
-|---|---|:--:|:--:|:--:|
-| `Mod+Ctrl+IKJL` + 화살표 | 창을 옆 모니터로 | • | • | • |
-| `Mod+Ctrl+E` | 이웃과 합치기 / 떼기 | • | • | • |
-| `Mod+Ctrl+R` | 설정 다시 읽기 | — | — | • |
-| `Mod+Ctrl+1`..`9` | 창을 격자 N으로 | — | — | • |
-| `Mod+Ctrl+Shift+1`..`4` | 레이아웃 모드 | — | — | • |
+| 키 | 무엇 |
+|---|---|
+| `Mod+Ctrl+IKJL` + 화살표 | 창을 옆 모니터로 |
+| `Mod+Ctrl+E` | 이웃과 합치기 / 떼기 |
+| `Mod+Ctrl+R` | 설정 다시 읽기 |
+| `Mod+Ctrl+1`..`9` | 창을 격자 N 으로 보내고 나는 남는다 |
+| `Mod+Ctrl+Shift+1`..`4` | 레이아웃 모드 |
 
-치트시트는 리눅스에서 `Mod+H`, rift-grid 에서 `Mod+Shift+/`(subline 의 `Mod+?`)이고,
-나오는 것도 다르다. 리눅스는 DMS가 컴포지터에게 물어서 오버레이로 그린다(`dms ipc
-call keybinds toggle hyprland`) — **살아 있는 설정**이라 이 문서와 어긋날 수 없다.
-macOS에는 그 셸이 없어서 **이 문서를 연다.** 그러니까 rift에서 `Mod+Shift+/` 를
-누르면 지금 읽고 있는 이 파일이 에디터에 뜬다.
+### 그 밖
 
-그 대가는 이 문서가 낡으면 macOS 치트시트도 같이 낡는다는 것이다. rift에 키를
-더하면 아래 표도 같이 고쳐야 한다. 같은 것을 rift에게 직접 물어보려면:
+| 키 | 무엇 |
+|---|---|
+| `Mod+Z` | 이 space 를 rift-grid 관리에서 빼기 |
+| `Mod+/` | 방향 토글 |
+| `Mod+Shift+,` | 스택 토글 |
+| `Mod+Ctrl+Space` | 플로팅 창으로 포커스 |
+| `Mod+Cmd+IJKL` | 격자의 옆 칸으로 (칸 단위) |
+
+`Mod+Shift+/` 는 **이 문서를 에디터에 연다.** 그 대가는 이 문서가 낡으면 치트시트도 같이 낡는다는 것이다. rift-grid
+에 키를 더하면 위 표도 같이 고쳐야 한다. 같은 것을 rift-grid 에게 직접 물어보려면:
 
 ```sh
 rift-grid-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] == "default") | .[1][] | "\(.[0])\t\(.[1])"'
 ```
 
-하이프랜드는 레이아웃을 갈아끼울 수 있고(`apps/rice/layout`, 스튜디오의 「배치」탭),
-컬럼이라는 개념이 있어야 뜻이 서는 키들 — `Mod+J/L`, `Mod+C`, `Mod+=/-`, `Mod+R`,
-`Mod+Shift+J/L`, `Mod+Ctrl+E` — 는 레이아웃 파일이 건다
-(`modules/nixos/hyprland/rice/layouts/`). 위 표는 기본인 scrolling 기준이고, dwindle
-에서는 같은 자리에 트리 조작(togglesplit · movetoroot · 그룹)이 걸린다. 그 파일의
-주석이 어느 키가 어떻게 바뀌는지 적고 있다.
-
-`Mod+Ctrl+E` 는 지금 컬럼 상태를 보고 뒤집힌다 — 혼자면 옆 창을 데려와 한 컬럼에
-쌓고, 이미 쌓여 있으면 활성 창만 빼내 제 컬럼으로 돌려놓는다. 합치는 방향은 셋 다
-오른쪽이다. rift-grid 와 니리는 이걸 액션 하나로 갖고 있고, 하이프랜드에만 없어서
-`consume`/`promote` 를 상태로 갈라 부르는 함수를 뒀다.
+`Mod+Ctrl+E` 는 지금 컬럼 상태를 보고 뒤집힌다 — 혼자면 옆 창을 데려와 한 컬럼에 쌓고, 이미 쌓여 있으면 활성 창만
+빼내 제 컬럼으로 돌려놓는다(`consume_or_expel_window`). 합치는 방향은 오른쪽이다.
 
 **rift-grid 의 워크스페이스는 3×3 격자다**(rift 포크, subline 과 같은 모델). 격자 하나에
 칸이 왼쪽 위부터 줄마다 1..9 로 있고, 격자는 디스플레이마다 아홉 개라 `Mod+1`..`9`
@@ -126,56 +103,9 @@ rift-grid-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] ==
 없다. 칸 단위로만 옮기려면 아래 `Mod+Cmd+IJKL`. 로그인하면 격자 1의 가운데 칸(5)에서
 시작하고, `Mod+H` 가 그 가운데 칸으로 돌아온다.
 
-### rift-grid 는 subline 의 ijkl 프리셋을 따른다
-
-위 표에서 `≠` 인 자리와 rift-grid 에만 새로 생긴 키다. 하이프랜드·니리는 그대로다.
-
-| 키 | rift-grid 에서 | 하이프랜드·니리에서 |
-|---|---|---|
-| `Mod+O` | 오버뷰 (rift-grid 의 격자 오버뷰) | 워크스페이스 앞으로 |
-| `Mod+E` | 파일 관리자 (`open ~`, Finder) | 오버뷰 |
-| `Mod+H` | 격자의 가운데 칸 | 치트시트 |
-| `Mod+U` | 비어 있음 | 워크스페이스 뒤로 |
-| `Mod+Tab` | 직전에 포커스가 있던 창 (어느 칸·격자에 있든, 다시 누르면 돌아온다. subline 의 Alt+Tab, 창 줄은 없다) | 직전 워크스페이스 |
-| `Mod+1`..`9` | 격자 N | 워크스페이스 N |
-| `Mod+Shift+/` | 치트시트 (이 문서를 연다) | — |
-| `Mod+,` | rift-grid 설정 창 (`rift-grid-cli settings`) | — |
-| `Mod+Shift+S` | 영역 스크린샷을 클립보드로 (`screencapture -i -c`) | — |
-| `Mod+Ctrl+1`..`9` | 창을 격자 N 으로 보내고 나는 남는다 | — |
-
-이 때문에 rift-grid 에서 자리를 옮긴 키가 셋 있다. 오버뷰는 `Mod+E` 에서 `Mod+O` 로,
-스택 토글은 `Mod+,` 에서 `Mod+Shift+,` 로, 레이아웃 모드는 `Mod+Ctrl+1`..`4` 에서
-`Mod+Ctrl+Shift+1`..`4` 로 갔다. `Mod+Cmd+H`(가운데 칸)는 `Mod+H` 가 같은 일을 해서
-없앴다.
-
-### 티어 밖 — 한쪽에만 있는 것
-
-각 플랫폼 고유 기능이라 맞추려 하지 않았다. **다른 쪽에서 비어 있는 키만 골라
-썼으므로 서로 모순되지 않는다.**
-
-| 키 | 무엇 | 어디 |
-|---|---|---|
-| `Mod+Z` | 이 space 를 rift-grid 관리에서 빼기 | rift-grid |
-| `Mod+/` | 방향 토글 | rift-grid |
-| `Mod+Shift+,` | 스택 토글 | rift-grid |
-| `Mod+Ctrl+Space` | 플로팅 창으로 포커스 | rift-grid |
-| `Mod+Cmd+IJKL` | 격자의 옆 칸으로 (칸 단위) | rift-grid |
-| `Print` `Ctrl+Print` `Alt+Print` | 영역 / 화면 / 창 스크린샷 | 리눅스 |
-| `Mod+Shift+P` `Mod+Shift+W` `Mod+Ctrl+W` `Mod+Alt+W` | 리싱 스크립트 | 리눅스 |
-| `Mod+Shift+R` | 리싱 메뉴 | 리눅스 |
-| `Mod+Shift+C` | CRT 셰이더 순환 (끔 → crt → crt-motion) | hypr |
-| 미디어·밝기 키 | | 리눅스 |
-| `Mod+마우스 좌/우 드래그` | 창 옮기기 / 크기 | hypr |
-
 ## 마우스로는 포커스가 가지 않는다
 
-세 곳 모두 **클릭해야 포커스가 간다.**
-
-| | 설정 |
-|---|---|
-| 하이프랜드 | `input.follow_mouse = 0` |
-| 니리 | `input` 에서 `focus-follows-mouse` 제거 |
-| rift-grid | `focus_follows_mouse = false` |
+**클릭해야 포커스가 간다**(`focus_follows_mouse = false`).
 
 호버 포커스와 키보드 타일러는 **누가 주도권을 갖는지에 대해 답이 다르다.**
 포인터는 마지막으로 놓아둔 자리에 그대로 있으면서도 포커스에 대한 권리를 계속
@@ -183,85 +113,10 @@ rift-grid-cli execute config get | jq -r '.binding_mode_specs[] | select(.[0] ==
 들어갈 수 있고, 배경 창 위에서 스크롤하면 포커스를 통째로 빼앗긴다. 클릭을 요구하면
 포커스가 포인터가 암시하는 것이 아니라 **내가 말하는 것**이 된다.
 
-**반대 방향은 rift-grid 에서 켜 두었다**(`mouse_follows_focus = true`). 키보드로 포커스를
+**반대 방향은 켜 두었다**(`mouse_follows_focus = true`). 키보드로 포커스를
 옮기면 커서가 그 창으로 끌려간다 — 그래서 위 설정이 싸게 먹힌다. 마우스를 잡는
-순간 이미 맞는 창 위에 있다. 하이프랜드·니리에는 같은 설정이 없다.
+순간 이미 맞는 창 위에 있다.
 
-## 버린 것과, 그 이유
+## 검증
 
-| 버린 것 | 대신 | 왜 |
-|---|---|---|
-| `Mod+L` 잠금 | `Mod+Escape` 파워메뉴 | IJKL이 오른쪽을 L로 가져갔다. 파워메뉴에는 잘못 눌렀을 때 되돌릴 기회까지 있다 |
-| `Mod+,` DMS 설정 | 런처에서 이름으로 | 처음에는 rift가 이 자리를 스택 토글로 썼다. 지금 rift-grid 에서는 subline 처럼 설정 창이다 |
-| `Mod+Shift+E` 세션 종료 | 파워메뉴 | `Mod+E`(오버뷰)와 `Mod+Shift+F` 사이다. 오타 한 번이면 세션이 통째로 날아간다 |
-| `Mod+Home/End` 첫/끝 컬럼 | — | 하이프랜드에 이 동작 자체가 없다 |
-| `Mod+Shift+/` 치트시트 | `Mod+H` | 한 동작에 한 철자. 리눅스 이야기다 — rift-grid 는 subline 을 따라 `Mod+H` 가 가운데 칸이라 치트시트가 `Mod+Shift+/` 에 있다 |
-| rift-grid `Alt+Ctrl+*` 창 이동 | `Alt+Shift+*` | 같은 동작에 철자가 둘이었고, 그 값으로 Ctrl 티어 전체를 잃고 있었다 |
-| rift-grid `join_window` ×4 + `unjoin` | `Mod+Ctrl+E` 하나 | `consume_or_expel_window` 가 둘 다 한다 |
-| rift-grid `Alt+M` monocle | `Mod+R` | 다른 둘의 폭 프리셋 자리와 같은 키로 |
-
-## 보관한 vim 레이어 (keyboard.nix.vim)
-
-`modules/nixos/keyboard.nix.vim` 은 import 되지 않은 채 남겨 둔 Caps 홀드 vim/neovim 레이어다. macOS 용
-Karabiner-Elements 설정에서 옮긴 것이고, `keyboard.nix` 자리에 넣으면 그대로 동작한다. 지금 쓰는 레이어는
-`keyboard.nix`(TouchCursor 배치)다.
-
-vim 레이어의 논거는 neovim, yazi, lazygit, tmux copy-mode, less, vimium 과 공유하는 어휘가 복리로 쌓이고 사적인
-매핑표가 아니라는 것이다. 맞는 말이지만, 편집 시간을 VS Code, 커서 이동 시간을 브라우저에서 보내는 이 머신을
-결정하지는 않는다. TouchCursor 가 그 시간의 모양이고, 설정 파일을 import 할 수 없는 윈도우 머신도 그걸 돈다.
-
-OS 레벨 vim 레이어의 한계 둘:
-
-1. **OS 에는 모드가 없어서 문법도 없다.** vim 의 힘은 `hjkl` 이 아니라 합성 — operator × count × motion/text-object
-   (`d2w`, `ci"`, `>ip`). 전부 키 입력 언어를 파싱하는 애플리케이션이 필요하다. keyd 는 단일 키 이벤트만 내서 어휘만
-   빌리고 천장은 못 빌린다. 실제 천장은 ~30 키짜리 평평한 표(TouchCursor 와 같은 천장)다. 올리려면 애플리케이션에
-   vim 지원을 더한다(vimium, zsh `bindkey -v`, yazi).
-2. **Shift 는 OS 의 선택 modifier 인데 vim 은 Shift 를 명령에 쓴다.** [nav+shift] 의 바인딩(`$ { } G N X`)은 커서만
-   옮기고 선택을 못 늘린다 — 합성 레이어가 `$` 가 Shift-End 를 내지 않게 Shift 를 떼야 해서다. unshifted 쪽(`hjkl`,
-   `w e b`, `0`)은 선택된다. 구조적 문제이고, TouchCursor 는 모든 바인딩이 unshifted 라 없다.
-
-이 레이어에는 vim 이 정의한 키만 둔다. OS 수준에 vim 대응물이 없는 동작(PageUp/PageDown, redo)을 vim 에서 다른 뜻인
-키(`i`·`m`, `U`)에 얹으면 레이어의 존재 이유가 흐려진다. `n = "C-g"` 는 GTK/Firefox/Chromium 의 찾기 다음(일부
-앱은 F3).
-
-## 검증 기록
-
-이 키맵은 **macOS에서 작성됐고**, rift는 거기서 전부 눌러 확인했다 — 설정을 다시
-읽힌 뒤 `rift-grid-cli execute config get` 으로 키가 전부 등록된 것까지 봤다(당시 67개).
-2026-10-15 subline 의 ijkl 프리셋에 맞춘 뒤에도 다시 읽혀 72개가 등록된 것을 봤다. 리눅스 쪽 셋은 그럴 수가 없어 `⚠` 로 남겨 뒀었고,
-**2026-08-06 갤럭시 크롬북에서 하이프랜드 0.56.1 실기로 확인했다.** 셋 다 쓰인
-대로 동작한다.
-
-세 번 다 **똑같은 함정**에 걸렸다. 틀린 문법과 "지금은 대상이 없음"이 같은 에러를
-돌려준다. 다음에 이 표를 다시 검증할 사람을 위해 적어 둔다.
-
-| 확인한 것 | 처음 나온 답 | 실제 |
-|---|---|---|
-| `monitor = "l"/"r"/"u"/"d"` | `Invalid monitor / monitor doesn't exist` | 맞다. 옆에 모니터가 **없을 때**도 같은 메시지다 |
-| `workspace = "previous"` | `Bad workspace` | 맞다. 직전 워크스페이스가 **아직 없을 때**도 같은 메시지다 |
-| niri `focus-workspace-previous` | 기본 설정에 없음 | 있다. `niri msg action --help` 에 나오고 `niri validate` 통과 |
-
-**모니터 방향은 모니터를 두 대 붙이고 확인할 것.** 한 대뿐이면 네 방향이 전부
-실패하니 아무것도 증명되지 않는다. 헤드리스로 대신하려면 **위치부터 봐야 한다** —
-`hyprctl output create headless` 는 기존 모니터 안쪽에 얹히는 수가 있고, 겹친
-배치에서는 어느 방향으로도 "옆"이 아니라 결과가 한 대일 때와 똑같다. 그리고
-`hyprctl keyword` 로는 못 옮긴다(lua 설정에서는 `eval` 뿐). 실물 두 대가 제일 싸다.
-
-**직전 워크스페이스는 한 번 옮겼다 온 뒤에 확인할 것.**
-
-```sh
-hyprctl dispatch 'hl.dsp.focus({ workspace = 5 })'
-hyprctl dispatch 'hl.dsp.focus({ workspace = "previous" })'   # ok, 그리고 실제로 돌아온다
-```
-
-철자는 `previous` 하나뿐이다. `prev` 는 `ok` 를 돌려주면서 아무 일도 안 하고
-(하이프랜드에서 `ok` 는 동작했다는 뜻이 아니다 — hyprland-binds.md 함정 2),
-`previous_per_monitor` 는 `Bad workspace` 다.
-
-## 손이 기억을 갈아엎는 동안
-
-**`K` 가 "위"에서 "아래"로 뒤집혔다.** hjkl에서 K는 위였고 IJKL에서는 아래다. 잘못
-눌러도 에러가 나지 않고 조용히 엉뚱한 창으로 가기 때문에, 이게 이 개편에서 유일하게
-아픈 자리다.
-
-전환 첫 주는 화살표를 쓰는 편이 낫다. 모든 티어에 같이 걸어 둔 이유가 그것이다.
+설정을 다시 읽힌 뒤 `rift-grid-cli execute config get` 으로 키가 전부 등록됐는지 본다(2026-10-15 기준 72개).

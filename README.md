@@ -24,82 +24,27 @@ macOS는 두 층이다. `hosts/darwin/`은 **공용** 설정이고 **아키텍�
 `hosts/<플랫폼>/<이름>/identity.nix`에서 고른다. 포크해서 쓸 때 고치는 파일이 이 둘뿐이라
 `git pull`이 충돌하지 않는다.
 
-데스크톱 환경은 greetd 위에 네 세션이다 — **subline**(기본. 터치 우선 컴포지터,
-[modules/nixos/subline](modules/nixos/subline), 로그인 화면도 subline 이 그린다),
-**niri**(스크롤 타일링), **Hyprland**(uwsm 세션), **GNOME / Wayland**(폴백).
-subline 은 개발 중이라 나머지가 돌아갈 길이고, 로그인 화면이 세션 목록을 보여 주며
-마지막 선택을 기억한다. niri 와 Hyprland 는 같은 Quickshell 셸(DankMaterialShell)을
-쓴다 — [modules/nixos/niri](modules/nixos/niri),
-[modules/nixos/hyprland](modules/nixos/hyprland) 참고. Hyprland가 따로 있는 건
-니리에 화면 전체 셰이더 훅이 없기 때문이다(`decoration:screen_shader`).
+데스크톱 환경은 greetd 위의 **subline** 세션 하나다 — 터치 우선 컴포지터이고
+([modules/nixos/subline](modules/nixos/subline)), 로그인 화면·셸·화면 키보드도 subline 이
+그린다. 데스크톱 환경 모듈을 켜지 않으므로 키링·블루투스 같은 기반은
+[modules/nixos/desktop.nix](modules/nixos/desktop.nix)가 직접 켜고, 카메라·그림 보기 같은
+기본 앱은 [modules/nixos/gui-apps.nix](modules/nixos/gui-apps.nix)에 있다.
 
-niri와 DMS의 *설정*은 Nix가 관리하지 않는다. `~/.config`의 평범한 쓰기 가능한
-파일이라 저장하면 niri가 바로 리로드하고, DMS 설정 GUI도 정상 동작한다. 레포의
-[modules/nixos/niri/rice](modules/nixos/niri/rice)는 백업 겸 새 머신용 시드이며
-(없을 때만 복사된다), 살아있는 설정을 되받아 저장하는 건 `apps/rice/save`다.
+라이싱 파일(터미널 룩, macOS 의 창 관리자 설정)은 Nix가 관리하지 않는다. `~/.config`의
+평범한 쓰기 가능한 파일이라 저장하면 앱이 바로 다시 읽는다. 레포 사본은 백업 겸 새 머신용
+시드이며, 살아있는 설정을 되받아 저장하는 건 `apps/rice/save`다.
 반대 방향 — 레포를 먼저 고쳤거나 다른 머신의 커밋을 가져왔을 때 그것을 라이브에
-얹는 것 — 은 `apps/rice/restore`다. 리빌드로는 안 된다(시드는 없을 때만 복사한다).
+얹는 것 — 은 손 안 댄 파일이면 리빌드가 하고, 손댄 파일을 레포 것으로 덮는 건
+`apps/rice/restore`다([docs/rice-seeding.md](docs/rice-seeding.md)).
 
-룩은 프로필로 나눠 두었고 전환은 즉시 반영된다 — 재시작도 리빌드도 없다:
+터미널 룩 전환은 즉시 반영된다 — 재시작도 리빌드도 없다:
 
 ```sh
-apps/rice/switch              # 현재 프로필 + 목록          (Mod+Shift+P = 다음 것)
-apps/rice/switch frosted      # amoled | frosted | matugen
-apps/rice/wall mountain       # ~/Pictures/Wallpapers 재귀 검색  (Mod+Shift+W)
-apps/rice/wall --pick         # fuzzel 로 고르기 (빠름)          (Mod+Ctrl+W)
-apps/rice/wall --yazi         # yazi 로 미리보기 보며 고르기      (Mod+Alt+W)
-
 apps/rice/term                # 현재 터미널 룩 + 목록
 apps/rice/term crt            # off | glow | crt (브라운관 셰이더)
 ```
 
-터미널 룩은 **프로필과 별개 축**이다. 색은 어차피 프로필을 따라오므로(아래) 엮을
-이유가 없고, 그래서 프로필을 바꿔도 셰이더는 그대로 남는다. 자세한 건
-[modules/shared/ghostty/README.md](modules/shared/ghostty/README.md).
-
-같은 브라운관을 **화면 전체**에 거는 건 Hyprland 세션에서만 된다 — `Mod+Shift+C`가
-목록(끔 · 체인 · 갈래별 셰이더)을 순환한다. 흐르는 셰이더는 VFR을 꺼야 해서
-배터리를 먹으니, 값어치는 각자 판단이다
-([modules/nixos/hyprland/rice/shaders](modules/nixos/hyprland/rice/shaders)).
-
-```sh
-apps/rice/crt                 # 현재 것과 목록
-apps/rice/crt crt/crt         # 한 장 걸기 (--next 는 키바인드와 같은 순환)
-apps/rice/crt water/still print/paper   # 즉석 체인 — 순서대로 겹친다
-apps/rice/crt --reload        # .frag 값을 고쳐 가며 맞출 때
-apps/rice/crt off             # 탈출구
-```
-
-고르고 겹치고 값을 맞추는 GUI는 **라이싱 스튜디오**다(`apps/rice/studio`, DankBar의
-팔레트 조각으로도 뜬다). 셰이더 손잡이는 `apps/rice/knobs`, 하이프랜드 장식
-값(투명도·흐리게·그림자)은 `apps/rice/decor`가 뒤판이고, 체인 합성은
-`apps/rice/chain`이 한다 — 각 스크립트 머리말이 곧 문서다.
-
-하이프랜드 **배치**(레이아웃)도 같은 창의 탭이다. scrolling(니리 모델, 기본)과
-dwindle(BSP)이 `modules/nixos/hyprland/rice/layouts/` 에 파일 하나씩 있고, 레이아웃
-전용 키바인드까지 그 파일이 들고 있어서 갈아끼우면 키도 함께 간다 — 리로드 없이,
-걸어 둔 셰이더도 그대로. 어느 것을 쓰는지는 `~/.config/rice/layout` 한 줄이라
-머신마다 다르게 두고 레포 기본값은 scrolling 으로 남긴다.
-
-```sh
-apps/rice/layout              # 현재 것과 목록
-apps/rice/layout dwindle      # 갈아끼운다 (런처의 「배치」축과 같다)
-apps/rice/layout --reload     # layouts/*.lua 의 키를 손으로 고친 뒤
-```
-
-셰이더를 거는 길은 `hyprctl eval` 뿐이다 — 이 세션은 `hyprland.lua`로 설정하는데
-lua 파서에서는 `hyprctl keyword`가 통째로 거절당한다. 키바인드와 이 스크립트는
-둘 다 "지금 걸려 있는 것"을 컴포지터에게 물어서 다음을 고르므로, 어느 쪽으로 바꿔도
-서로 어긋나지 않는다.
-
-런처(fuzzel)와 터미널(ghostty)은 프로필에 조각이 없다. 터미널은 DMS가 만들어
-주는 팔레트를 직접 읽고, fuzzel은 `apps/rice/fuzzel`이 그 팔레트에서 색을 만들어
-넣는다 — 투명도와 곡률은 활성 프로필의 값을 그대로 쓴다.
-
-한 프로필은 두 조각(`niri.kdl` / `dms.json`)이고, DMS 쪽만
-전체 교체가 아니라 오버레이 병합이다 — `settings.json`에는 룩과 무관한 머신
-상태가 섞여 있어서 통째로 갈면 그것까지 날아간다. `matugen` 프로필은 월페이퍼에서
-색을 뽑아 셸·니리 보더·터미널 팔레트를 한 번에 맞춘다.
+자세한 건 [modules/shared/ghostty/README.md](modules/shared/ghostty/README.md).
 
 ## 부트스트랩 — macOS (새 머신 최초 1회)
 
@@ -293,14 +238,11 @@ nix run .#doctor              # 이 기계와 이 체크아웃이 어긋났는�
 nix run .#check               # macOS 전용 — 활성화한 설정이 실제로 먹고 있는지 본다
 nix run .#check-snapshot      # macOS 전용 — 상태를 떠 두고 `-- diff` 로 비교 (docs/03 §2)
 
-nix run .#demo                # 창 관리자 실사용을 빈 워크스페이스에서 자동 재연
-nix run .#rice-menu           # DMS 런처 플러그인의 뒤판 (축 목록을 JSON으로)
-nix run .#rice-fuzzel         # fuzzel 색을 DMS 팔레트에 맞춘다
+nix run .#demo                # macOS 전용 — 창 관리자 실사용을 빈 워크스페이스에서 자동 재연
 nix run .#rice-colors         # macOS 전용 — 벽지에서 팔레트를 뽑아 밀어 넣는다
 nix run .#mac-signing-cert    # macOS 전용 — 코드 서명 신원 고정 (docs/03)
 nix run .#rift-grid           # macOS 전용 — rift 포크를 빌드해 ~/.local/bin 에 깔고 서명
 ```
 
-라이싱 계열(rice-switch · rice-term · rice-wall · rice-crt · rice-studio ·
-rice-knobs · rice-decor · rice-layout · rice-chain · rice-save · rice-restore)은 위 라이싱 절과
+라이싱 계열(rice-term · rice-save · rice-restore)은 위 라이싱 절과
 각 스크립트 머리말 참고. 전체 목록은 `flake.nix`의 `mkApps`다.

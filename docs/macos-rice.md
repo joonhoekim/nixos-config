@@ -68,11 +68,11 @@ pywal 은 색을 `~/.cache/wal/` 에 쓰기만 하고 끝난다(훅이 없다). 
 `~/.cache/wal/rift-grid-border-colors` 와 견줘 알아보고 덮지 않는다. 다시 벽지를 따르게 하려면 그 파일을 지우거나 설정의
 색을 그 값으로 되돌린다.
 
-NixOS 에서는 안 쓴다. 거기서 같은 일은 DMS + matugen 이 하고, 벽지를 바꾸면(`apps/rice/wall`) 셸·니리 보더·터미널이 따라온다.
+NixOS 에서는 안 쓴다. 거기서 색은 subline 의 강조색 설정이 정한다.
 
 ## 키맵의 계보
 
-niri 세션(`modules/nixos/niri/rice/config.kdl`) → AeroSpace → rift → rift-grid 순으로 옮겨 왔고, 지금 기준은
+niri 세션의 키맵 → AeroSpace → rift → rift-grid 순으로 옮겨 왔고, 지금 기준은
 subline 의 "ijkl" 프리셋이다(`docs/keymap.md`). Alt(⌥)가 niri 의 Mod 자리다.
 
 AeroSpace 에서 옮길 때 빠진 것:
@@ -98,8 +98,7 @@ AeroSpace 에서 옮길 때 빠진 것:
 
 ## 키맵 치트시트를 오버레이로 만들지 않았다
 
-리눅스에서는 DMS 가 돌고 있는 컴포지터에 바인딩을 물어 오버레이를 그린다. macOS 에서
-만들어 봤다가 버렸다. 설정은 `rift-grid-cli execute config get` 으로 쉽게 읽히지만, 그 창을 rift-grid
+macOS 에서 오버레이를 만들어 봤다가 버렸다. 설정은 `rift-grid-cli execute config get` 으로 쉽게 읽히지만, 그 창을 rift-grid
 규칙으로 골라낼 수가 없다 — Ghostty 는 AXTitle 을 내놓지 않고, `rift-grid-cli query windows`
 의 id 는 금방 사라져서 밖에서 추적하려면 폴링과 재시도가 필요하다. 그래서 Alt+Shift+/ 는
 `docs/keymap.md` 를 연다.

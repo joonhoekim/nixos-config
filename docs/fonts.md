@@ -31,7 +31,5 @@ JetBrainsMono, 한글은 D2Coding 이 된다.
 
 ## UI / 라이싱
 
-DankMaterialShell 은 Inter·FiraCode Nerd Font·Material Symbols 를 `share/quickshell/dms/assets/fonts` 에 번들하고 Qt
-FontLoader 로 읽어 fontconfig 을 우회한다. 그래서 `fc-match Inter` 실패가 셸이 폴백 중이라는 뜻은 아니다. 그래도 까는 건
-GTK 앱·터미널, 그리고 사용자 세션 전에 돌아 번들 대신 fontconfig 을 읽는 DMS greeter 모드가 같은 얼굴을 쓰게 하려는
-것이다. caskaydia-cove·geist 는 라이싱 중 프로필 폰트를 리빌드 없이 설정만으로 바꿀 수 있게 둔 대안이다.
+Inter·FiraCode Nerd Font·Material Symbols 는 GTK 앱과 터미널이 같은 얼굴을 쓰게 하려고 깐다. caskaydia-cove·geist 는
+라이싱 중 폰트를 리빌드 없이 설정만으로 바꿀 수 있게 둔 대안이다.

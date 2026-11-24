@@ -101,15 +101,13 @@ DDC/CI 는 모니터 케이블의 I2C 선으로 밝기·입력 같은 값을 읽
 
 **구조.** 외장 패널이니 `/sys/class/backlight` 가 없는 게 맞고, 경로는 DP AUX 채널 위의 I2C 다.
 `/dev/i2c-10`("AUX USBC1/DDI TC1/PHY TC1", 이 커넥터의 AUX 선)이 DDC 주소 0x37 에서 응답하고, 패널은 Mstar
-컨트롤러에서 MCCS 2.1 을 보고하며, capabilities 문자열에 VCP 0x10 이 있다. DMS 가 알아서 찾는다:
-`dms ipc call brightness list` 에 `ddc:i2c-10 (ddc)` 로 나온다. dms 바이너리에 DDC 백엔드가 들어 있어 셸이
-밝기를 조절하는 데 ddcutil 은 필요 없다(디버깅 도구로는 여전히 ddcutil 이고, `modules/nixos/packages.nix` 가
-넣는다). 권한도 손댈 게 없다. `programs.dms-shell` 이 `hardware.i2c` 를 켜고, 그 udev 규칙이 `/dev/i2c-*` 에
-uaccess 태그를 붙여 seat 사용자가 ACL 을 받는다. i2c 그룹에 넣을 필요가 없다.
+컨트롤러에서 MCCS 2.1 을 보고하며, capabilities 문자열에 VCP 0x10 이 있다. 읽고 쓰는 도구는 ddcutil 이고
+`modules/nixos/packages.nix` 가 넣는다. 권한도 손댈 게 없다. `modules/nixos/desktop.nix` 가 `hardware.i2c` 를 켜고,
+그 udev 규칙이 `/dev/i2c-*` 에 uaccess 태그를 붙여 seat 사용자가 ACL 을 받는다. i2c 그룹에 넣을 필요가 없다.
 
 **밝기가 안 먹을 때 먼저 볼 것.** 모니터 OSD 에서 HDR 이 Auto 면 이 패널은 수동 밝기를 무시한다. 그때도 DDC
 는 정상이라 쓰기는 받아들여지고 다시 읽어도 값이 맞는데, 백라이트만 안 움직인다. 이 기계는 HDR 을 켜지
-않으므로(Hyprland 는 colorManagementPreset srgb) OS 쪽에서는 이 상태가 보이지 않는다. 그래서 이 저장소를
+않으므로 OS 쪽에서는 이 상태가 보이지 않는다. 그래서 이 저장소를
 의심하기 전에 OSD 의 HDR / DCR / dynamic contrast / eco 부터 본다.
 
 **되읽기는 증거가 아니다.** `setvcp 10 60` 다음 `getvcp 10` 이 60 을 돌려줘도, 모니터가 값을 저장했다는
@@ -118,9 +116,6 @@ uaccess 태그를 붙여 seat 사용자가 ACL 을 받는다. i2c 그룹에 넣�
 답하면서 같은 응답 안에서 현재값이 자기가 보고한 최대값보다 크다. 쓰기는 DDCRC_VERIFY 로 거부한다.
 그래서 판정은 눈으로 하는 [`apps/ddc-probe`](../ddc-probe.md)로 한다. DDC 에 관한 주장(이 문서 포함)은
 ddc-probe 로 확인한 뒤에 믿는다.
-
-밝기 키바인드는 DMS 를 `increment(step, device)` 두 인자로 불러야 한다. 하나만 넘기면 조용히 거절된다
-([hyprland.lua 절](../hyprland.md#키바인드)).
 
 ## DP-1 모니터: USB 허브가 USB 2.0 인 이유
 
@@ -228,10 +223,8 @@ r8169 가 맡는다. 펌웨어도 설정도 필요 없다. 링크가 불안정�
 이력이 있어서 `r8169.aspm=0` 이나 그 포트의 ASPM 끄기가 첫 시도다. igc 와는 대응이 다르다.
 
 **Thunderbolt 4** — 00:0d.2 뒤의 domain0. "thunderbolt" 는 이미 `boot.initrd.availableKernelModules` 에
-있으므로(스캔이 넣었다) TB 포트로 부팅해야 하는 장치도 부팅할 수 있다. 장치 인가는 boltd 가 맡는데, 이
-저장소에서 boltd 를 직접 켜는 곳은 없다. common.nix 의 `services.desktopManager.gnome` 이
-`services.hardware.bolt` 를 켜는 것이다. common.nix 에서 GNOME 을 빼면 bolt 를 직접 켜야 하고, 안 그러면 TB
-장치를 인가할 수 없다. OCuLink 는 그냥 PCIe 라 OS 쪽에 스위치가 없다.
+있으므로(스캔이 넣었다) TB 포트로 부팅해야 하는 장치도 부팅할 수 있다. 장치 인가는 boltd 가 맡고,
+`modules/nixos/desktop.nix` 가 모든 호스트에서 켠다(`services.hardware.bolt`). OCuLink 는 그냥 PCIe 라 OS 쪽에 스위치가 없다.
 
 ## 저장장치: 두 드라이브 중 NixOS 것은 하나
 

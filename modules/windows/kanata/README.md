@@ -1,7 +1,7 @@
 # kanata — Windows 의 Caps Lock 레이어
 
-[kanata](https://github.com/jtroo/kanata) 로 NixOS(`modules/nixos/keyboard.nix` +
-`modules/nixos/pointer/`)와 같은 레이어를 Windows 에 건다. 설정 파일
+[kanata](https://github.com/jtroo/kanata) 로 NixOS(`modules/nixos/kanata.nix`)와
+같은 레이어를 Windows 에 건다. 설정 파일
 [`modules/shared/kanata/kanata.kbd`](../../shared/kanata/kanata.kbd) 는 macOS 와 같이
 쓰고, OS 마다 다른 것은 그 안의 `(platform ...)` 블록에 있다. 레이어 설명은
 [`modules/shared/kanata/README.md`](../../shared/kanata/README.md).

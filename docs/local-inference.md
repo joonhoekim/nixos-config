@@ -61,8 +61,8 @@ NixOS에는 `/lib64/ld-linux-x86-64.so.2`가 없어 AppImage가 직접 실행되
 `modules/nixos/packages.nix`의 `appimage-run`을 통해야 한다. 자세한 이유는
 [별도 문서](appimage-on-nixos.md).
 
-**Hyprland용 추가 설정은 필요 없다.** Electron이 알아서 네이티브 Wayland로 붙는다
-(`hyprctl clients`에서 `xwayland: false` 확인). `--ozone-platform=wayland`를 줄 필요가 없다.
+**Wayland용 추가 설정은 필요 없다.** Electron이 알아서 네이티브 Wayland로 붙는다.
+`--ozone-platform=wayland`를 줄 필요가 없다.
 
 첫 실행은 느리다 — 746 M 압축 해제 + 1.8 G 런타임 다운로드가 창 뜨기 전에 끝나야 한다.
 캐시가 찬 뒤로는 5초 안에 뜬다. **멈춘 게 아니라 느린 것이니 Ctrl+C 하지 말 것.**

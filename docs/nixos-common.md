@@ -25,34 +25,34 @@ NIX_PATH 는 `<nixpkgs>` 같은 꺾쇠 경로를 푸는 검색 경로다(옛 `ni
 
 ## 로그인 화면(greetd)과 세션
 
-greetd 는 로그인 화면(그리터)을 띄우는 작은 데몬이고 GDM 을 대신한다. 로그인 화면 뒤에서 gnome-shell·
-gnome-session 같은 GNOME 스택이 돌지 않는다.
+greetd 는 로그인 화면(그리터)을 띄우는 작은 데몬이다. 세션은 subline 하나다.
 
 - 실제 그리터는 subline 의 것이다(`modules/nixos/subline`, `subline --greeter`, [subline](subline.md)).
   `common.nix` 에 적힌 tuigreet(텍스트 그리터)는 **대체용**이라 `mkDefault` 로 둔다. `local.subline.greeter` 가 켜져
   있는 동안 subline 모듈이 command 와 `useTextGreeter` 를 덮어쓰고, 끄면 다른 변경 없이 tuigreet 가 돌아온다.
-- 두 그리터 모두 GDM 이 쓰던 `sessionData.desktops` 를 읽으므로 세션 항목이 다 보인다. `gnome.desktop` 은
-  `desktopManager.gnome.enable`, `niri.desktop` 은 `programs.niri.enable`, `hyprland{,-uwsm}.desktop` 은
-  `programs.hyprland.enable`(패키지가 둘 다 주고 uwsm 쪽을 쓴다 — [hyprland](hyprland.md)), `subline.desktop` 은
-  `programs.subline.enable` 에서 온다.
+- 두 그리터 모두 `sessionData.desktops` 를 읽는다. `subline.desktop` 은 `programs.subline.enable` 에서 온다.
 - `useTextGreeter` 는 유닛의 stdio 를 /dev/tty1 로 돌려(TTYReset, VHangup, VTDisallocate) 커널·부팅 메시지가 TUI
   위에 찍히지 않게 한다. 텍스트 그리터 전용이고, DRM 컴포지터를 그리터로 쓸 때는 꺼야 한다.
 - tuigreet 의 `--remember` 는 마지막 사용자 이름을, `--remember-session` 은 마지막으로 띄운 세션을 채운다.
 
 `displayManager.defaultSession` 은 `services/display-managers/default.nix` 의 assertion 이
-`sessionData.sessionNames`("gnome" | "niri" | "hyprland" | "hyprland-uwsm" | "subline") 중 하나이기를 요구한다.
-subline 이 깔리면 `modules/nixos/subline` 이 "subline" 으로, 아니면 "niri" 로 떨어진다. 다만 두 그리터 모두 이
-값을 읽지 않는다. 두 번째 로그인부터는 tuigreet 의 `--remember-session` 과 subline 이 기억한 마지막 선택이 정한다.
+`sessionData.sessionNames` 중 하나이기를 요구하고, `modules/nixos/subline` 이 "subline" 으로 정한다.
 
 ### 키링
 
 greetd 의 PAM 서비스는 `auth substack login` + `session include login` 이라 /etc/pam.d/login 을 통째로 물려받고,
-그 스택에 이미 pam_gnome_keyring 의 auth·session 규칙이 있다. 그래서 GDM 없이도 gnome-keyring 이 로그인 때 풀린다.
+그 스택에 이미 pam_gnome_keyring 의 auth·session 규칙이 있다. 그래서 gnome-keyring 이 로그인 때 풀린다.
 `security.pam.services.greetd.enableGnomeKeyring` 은 여기서 아무 일도 안 한다. greetd 서비스는
 `useDefaultRules = false` 이고, 생성되는 키링 규칙이 바로 그 블록에 들어 있다.
 
-GNOME 세션은 기본이 아니지만 남겨 둔다. niri/Quickshell 갱신이 데스크톱을 깨뜨릴 때의 대체 세션이고, 저장소에서
-gnome-keyring 과 seahorse 를 끌어오는 유일한 줄이다.
+gnome-keyring 자체는 `modules/nixos/desktop.nix` 가 켠다(`services.gnome.gnome-keyring.enable`). SSH 에이전트
+(gcr-ssh-agent)도 그 값을 기본으로 따라 켜진다. 키링 GUI 인 seahorse 는 `modules/nixos/gui-apps.nix` 의 선택 앱이다.
+
+## 데스크톱 기반 (modules/nixos/desktop.nix)
+
+데스크톱 환경 모듈(GNOME 등)을 켜지 않으므로, 그런 모듈이 `mkDefault` 로 켜 주는 것들을 `modules/nixos/desktop.nix` 가
+직접 켠다: 키링, 블루투스, upower, udisks2, avahi, at-spi, Thunderbolt 인가(bolt), i2c, Adwaita 글꼴, gsettings 스키마 경로. 한 줄을 빼면
+빌드는 통과하고 해당 기능만 조용히 사라지므로, 각 줄의 주석에 누가 그것을 쓰는지 적어 두었다.
 
 ## smartd 경보가 데스크톱까지 오는 길
 

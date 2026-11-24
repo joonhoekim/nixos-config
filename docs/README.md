@@ -14,15 +14,9 @@ Nix의 동작 원리, 이 저장소의 구조, flake, macOS 설정 관리의 범
 확인한 사실, 남은 가설, 가려내는 실험, 조치 후보 순이고, 고치면 포스트모템이나 코드 주석으로
 옮기고 지웁니다. 그래서 비어 있을 때가 많습니다.
 
-[`keymap.md`](keymap.md)는 학습 노트가 아니라 **정본**입니다 — 하이프랜드·니리·rift가
-공유하는 키 배치를 한 곳에 모았습니다. 세 설정 파일은 이걸 각자의 문법으로 옮긴
-것이고, 배치를 바꾸려면 여기부터 고쳐야 합니다. 세 창 관리자를 오가며 쓰기 때문에
-근육기억이 갈리는 것이 가장 큰 비용이고, 정본이 둘이 되면 반드시 한쪽만 낡습니다.
-
-[`hyprland-binds.md`](hyprland-binds.md)는 그 아래층입니다 — 배치가 아니라
-**하이프랜드에서 무엇을 부를 수 있는가**입니다. 쓸 수 있는 디스패처·레이아웃 메시지
-목록을 돌고 있는 컴포지터에서 직접 뽑아 적었고, 조용히 실패하는 함정들을 함께
-담았습니다.
+[`keymap.md`](keymap.md)는 macOS 창 관리자 rift-grid 의 키 배치입니다. rift-grid 는 NixOS 의
+subline 과 같은 ijkl 프리셋을 따르므로 두 기계에서 손이 같은 자리를 누릅니다. rift-grid 의
+치트시트 키가 이 문서를 열기 때문에, 키를 더하면 여기도 같이 고쳐야 합니다.
 
 [`clean-install.md`](clean-install.md)와 macOS 짝인 [`clean-install-macos.md`](clean-install-macos.md)는 **절차서**입니다 — 빈 기기에 이 설정을 얹어
 부팅시키기까지, Secure Boot를 끄는 데서 시작해 첫 로그인에서 끝납니다. 학습 노트가
@@ -98,11 +92,9 @@ turbo·cargo·docker 빌드 캐시처럼 **자동 정리 없이 계속 자라는
 기계마다 하드웨어 사실과 그 호스트 파일의 근거를 적고, [`nixos-common.md`](nixos-common.md)가 모든 NixOS 호스트의
 공통 설정(로그인 화면, nixPath, dbus, zram)을, [`hardware-vendors.md`](hardware-vendors.md)가 Intel·AMD 공통 층을 다룹니다.
 
-NixOS 세션은 [`hyprland.md`](hyprland.md)(세션 배선과 hyprland.lua·배치 파일)와 그 화면 셰이더별 설계
-[`hyprland-shaders.md`](hyprland-shaders.md), [`niri.md`](niri.md), [`subline.md`](subline.md), DMS 플러그인
-[`dms-plugins.md`](dms-plugins.md)입니다. 라이싱 쪽은 시드 규칙 [`rice-seeding.md`](rice-seeding.md), 스크립트
-[`rice-scripts.md`](rice-scripts.md)(셰이더 체인·손잡이·저장/복원)와 [`rice-tools.md`](rice-tools.md)(스위처·기준선·장식·배치·메뉴),
-창 [`rice-studio.md`](rice-studio.md), 터미널 셰이더 [`ghostty-shaders.md`](ghostty-shaders.md)로 나뉩니다.
+NixOS 세션은 [`subline.md`](subline.md) 하나입니다. 라이싱 쪽은 시드 규칙 [`rice-seeding.md`](rice-seeding.md), 스크립트
+[`rice-scripts.md`](rice-scripts.md)(저장/복원)와 [`rice-tools.md`](rice-tools.md)(기준선·스위처 공통부·터미널 룩),
+터미널 셰이더 [`ghostty-shaders.md`](ghostty-shaders.md)로 나뉩니다.
 
 그 밖에 NixOS 모듈로는 [`korean-input.md`](korean-input.md)(로케일·fcitx5·한/영 키 경로), [`nginx.md`](nginx.md),
 [`windows-guest.md`](windows-guest.md)(libvirt), [`nautice-tts.md`](nautice-tts.md)가 있고, 양쪽 공통으로

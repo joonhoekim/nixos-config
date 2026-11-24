@@ -3,10 +3,9 @@
 ghostty 는 이 저장소의 기본 터미널이고, `custom-shader` 로 셰이더토이 규약(mainImage / iChannel0 / iResolution)의 GLSL
 셰이더를 터미널 화면에 덮을 수 있다. 셰이더는 `modules/shared/ghostty/shaders/` 에 있고 NixOS·macOS 가 같이 쓴다. 룩을
 고르는 방법과 조각 표는 `modules/shared/ghostty/README.md`, 전환 스크립트는 `apps/rice/term`
-([rice-tools.md](rice-tools.md#터미널-룩--appsriceterm)). 하이프랜드 화면 셰이더 crt/crt.frag 는 이 crt.glsl 에서
-옮긴 것이다([hyprland-shaders.md](hyprland-shaders.md#crtcrtfrag)).
+([rice-tools.md](rice-tools.md#터미널-룩--appsriceterm)).
 
-값은 전부 `#define` 에 모여 있고 `// @a..b` 꼬리는 `apps/rice/knobs` 가 읽는 손잡이 범위다.
+값은 전부 `#define` 에 모여 있고 `// @a..b` 꼬리는 손으로 고칠 때 참고할 범위다.
 
 ## crt.glsl 이 원본(space_dots)과 다른 곳
 

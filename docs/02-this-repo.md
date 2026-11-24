@@ -115,13 +115,13 @@ mkApp = name: path: system: {
 };
 mkApps = system:
   genAttrs [ "build" "build-switch" "rollback" "clean" ... ] (name: mkApp name name system)
-  // (rice-<n> → apps/rice/<n>)          # rice-save, rice-switch, ...
+  // (rice-<n> → apps/rice/<n>)          # rice-save, rice-term, ...
   // { check = ...; }                    # 플랫폼별 apps/check/{mac,nixos}
   // { check-snapshot = ...; };          # 전체는 flake.nix
 ```
 
-앱 이름은 `nix run .#<이름>`과 스토어 경로에 그대로 쓰이므로 평평하고(`rice-switch`),
-파일 경로는 디렉터리를 가질 수 있다(`apps/rice/switch`). 흐름: `nix run .#build-switch` →
+앱 이름은 `nix run .#<이름>`과 스토어 경로에 그대로 쓰이므로 평평하고(`rice-save`),
+파일 경로는 디렉터리를 가질 수 있다(`apps/rice/save`). 흐름: `nix run .#build-switch` →
 writeScriptBin 래퍼 → `apps/build-switch` → `uname`으로 OS 판별 → macOS면
 `darwinConfigurations.<arch>`, NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화.
 새 app은 스크립트를 두고 `mkApps`에 넣으면 노출된다. `rice/lib.sh`·`build-lib.sh`처럼
@@ -135,8 +135,8 @@ sourced 되는 조각은 목록에 넣지 않는다.
 | `build` | 빌드만 (활성화 X) | 평가·빌드 검증용 |
 | `rollback` | 이전 세대로 복구 | 세대 번호 입력(공백=직전). 양 OS |
 | `clean` | 구 세대 GC | `nix-collect-garbage --delete-older-than 7d` (인자로 기간 변경) |
-| `rice-*` | 라이싱 도구 일습 | 프로필·터미널·월페이퍼·화면 셰이더 전환과 저장/복원. 각 스크립트 머리말과 [README](../README.md)의 라이싱 절 참고 |
-| `demo` | 창 관리자 실사용 재연 | 빈 워크스페이스에서 키맵대로 창을 움직여 보여준다. 시나리오 목록은 `apps/demo` |
+| `rice-*` | 라이싱 도구 | 터미널 룩 전환(`term`), 저장/복원(`save`·`restore`), macOS 테두리 색(`colors`). [rice-tools.md](rice-tools.md), [rice-scripts.md](rice-scripts.md) |
+| `demo` | 창 관리자 실사용 재연 | macOS(rift-grid) 전용. 빈 워크스페이스에서 키맵대로 창을 움직여 보여준다. 시나리오 목록은 `apps/demo` |
 | `screencast` | 녹화본을 데모 영상으로 | spec 파일대로 자르고 자막과 앞뒤 카드를 얹어 mp4·gif로 낸다. 흐름과 함정은 `docs/packages/screencast.md` |
 | `mac-signing-cert` | 코드 서명 신원 고정 | macOS 전용 (docs/03 참고) |
 | `rift-grid` | rift 포크 빌드·설치·서명 | macOS 전용. build-switch 가 `--auto` 로 부른다(소스가 그대로면 건너뜀). `--status` |

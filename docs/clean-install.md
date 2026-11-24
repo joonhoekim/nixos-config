@@ -359,8 +359,7 @@ nixos-install --root /mnt --flake .#<hostname>
 - `--root`의 기본값이 이미 `/mnt`라 생략해도 되지만, 명시하는 편이 낫다.
 - 마지막에 **root 비밀번호를 묻는다.** 건너뛰려면 `--no-root-password`.
 
-빌드가 한참 돈다. 이 레포는 GNOME + niri + Hyprland + DMS를 전부 깔기 때문에 받을 게
-많다. 다만 전부 pinned nixpkgs에서 오므로 캐시를 타고, 로컬 컴파일은 거의 없다
+빌드가 한참 돈다. 다만 전부 pinned nixpkgs에서 오므로 캐시를 타고, 로컬 컴파일은 거의 없다
 (`galaxy-chromebook-1`만 예외 — 그 호스트는 커널 패치가 있어서 커널을 직접 빌드한다).
 
 끝나면 언마운트하고 재부팅:
@@ -411,8 +410,7 @@ stat -c '%U:%G' ~/nixos-config ~/nixos-config/flake.nix
 
 ### 세션
 
-tuigreet에서 세션을 고른다 — niri(기본), Hyprland(uwsm), GNOME(폴백). `--remember-session`
-때문에 **두 번째 로그인부터는 마지막에 쓴 세션으로 자동으로 간다.**
+세션은 subline 하나이고 로그인 화면도 subline 이 그린다([subline.md](subline.md)).
 
 ### GitHub 로그인
 

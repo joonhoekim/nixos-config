@@ -4,8 +4,7 @@
 읽기 전용 파일이 아니라 `~/.config` 의 쓰기 가능한 보통 파일이고, 레포는 그 시드를 들고 있다. 시드를 언제 심고 언제 손을
 떼는지는 `modules/shared/rice-seed-helpers.nix` 의 셸 함수 둘이 정한다.
 
-쓰는 모듈: `modules/nixos/niri`(니리·fuzzel·GTK), `modules/nixos/hyprland`(hyprland.lua·셰이더·스튜디오),
-`modules/nixos/dms`(플러그인), `modules/shared/ghostty`(터미널), `modules/darwin/rice`(rift-grid·wezterm 등).
+쓰는 모듈: `modules/shared/ghostty`(터미널, 양 플랫폼), `modules/darwin/rice`(rift-grid·wezterm 등).
 home.activation 스크립트에 펼쳐 쓴다:
 
 ```nix
@@ -17,8 +16,8 @@ home.activation 스크립트에 펼쳐 쓴다:
 
 ## 왜 스토어 심링크가 아닌가
 
-스토어 심볼릭 링크는 읽기 전용이라 니리 같은 컴포지터가 핫리로드할 편집 자체를 할 수 없고, DMS 설정 GUI 는 원자적
-교체(임시 파일 + rename)로 쓰기 때문에 링크가 첫 저장에 평범한 파일로 바뀐다. 그래서 레포는 원본이 아니라 한쪽 끝이고,
+스토어 심볼릭 링크는 읽기 전용이라 앱이 핫리로드할 편집 자체를 할 수 없고, 원자적 교체(임시 파일 + rename)로 쓰는
+프로그램은 링크를 첫 저장에 평범한 파일로 바꾼다. 그래서 레포는 원본이 아니라 한쪽 끝이고,
 라이브에서 레포로 되받는 건 `apps/rice/save`, 레포에서 라이브로 미는 건 `apps/rice/restore` 다
 ([rice-scripts.md](rice-scripts.md)).
 

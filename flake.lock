@@ -261,11 +261,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795626883,
-        "narHash": "sha256-3Z0Zfzja1M9gm9oksrZHsOVwySMwJFi+R+XP7fYL4SQ=",
+        "lastModified": 1795700608,
+        "narHash": "sha256-XHCTOIE4UaQHg36eQ6LNVBxeSO9C5JonjVYEvbVUwms=",
         "owner": "joonhoekim",
         "repo": "tb323fu-linux",
-        "rev": "2954bc8fb53a0e23897b4867a2d31452f55cdfba",
+        "rev": "c89c7517bf7cb5dc745b82365dada7bd0460e468",
         "type": "github"
       },
       "original": {

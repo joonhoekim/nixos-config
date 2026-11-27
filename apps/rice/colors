@@ -115,29 +115,29 @@ inactive_hex="${inactive_hex:-${color8#\#}}"
 active="0xff${active_hex}"
 inactive="0xff${inactive_hex}"
 
-# [settings.ui.borders] 의 두 줄만 바꾸고 mv 로 바꿔 넣는다 — 감시 중인 rift-grid 가 반쯤 쓴 파일을 안 읽는다.
+# [settings.grid.focus] 의 두 줄만 바꾸고 mv 로 바꿔 넣는다 — 감시 중인 rift-grid 가 반쯤 쓴 파일을 안 읽는다.
 # 쓴 값을 $state 에 적어 두고, 설정 색이 그와 다르면 손으로 고른 것으로 보고 건너뛴다($state 를 지우면 다시 따른다).
 riftcfg="$HOME/.config/rift-grid/config.toml"
 state="$cache/rift-grid-border-colors"
 border_colors() {
 	awk '
-		/^\[/ { in_borders = ($0 == "[settings.ui.borders]") }
-		in_borders && /^(active|inactive)_color[ \t]*=/ {
+		/^\[/ { in_borders = ($0 == "[settings.grid.focus]") }
+		in_borders && /^(border|unfocused)_color[ \t]*=/ {
 			value = $0; sub(/^[^=]*=[ \t]*/, "", value); gsub(/"/, "", value); printf "%s ", value
 		}
 	' "$riftcfg"
 }
-if [ ! -f "$riftcfg" ] || ! grep -q '^\[settings\.ui\.borders\]' "$riftcfg"; then
-	printf "  ${DIM}rift-grid 설정에 [settings.ui.borders] 가 없다 — 테두리 색은 그대로${NC}\n"
+if [ ! -f "$riftcfg" ] || ! grep -q '^\[settings\.grid\.focus\]' "$riftcfg"; then
+	printf "  ${DIM}rift-grid 설정에 [settings.grid.focus] 가 없다 — 테두리 색은 그대로${NC}\n"
 elif [ -f "$state" ] && [ "$(border_colors)" != "$(cat "$state")" ]; then
 	printf "  ${DIM}rift-grid 테두리 색은 손으로 고른 것이라 그대로 둔다 (%s 를 지우면 다시 따른다)${NC}\n" "$state"
 else
 	tmp="$(mktemp "$riftcfg.XXXXXX")"
 	chmod 644 "$tmp"
 	awk -v active="$active" -v inactive="$inactive" '
-		/^\[/ { in_borders = ($0 == "[settings.ui.borders]") }
-		in_borders && /^active_color[ \t]*=/ { print "active_color = \"" active "\""; next }
-		in_borders && /^inactive_color[ \t]*=/ { print "inactive_color = \"" inactive "\""; next }
+		/^\[/ { in_borders = ($0 == "[settings.grid.focus]") }
+		in_borders && /^border_color[ \t]*=/ { print "border_color = \"" active "\""; next }
+		in_borders && /^unfocused_color[ \t]*=/ { print "unfocused_color = \"" inactive "\""; next }
 		{ print }
 	' "$riftcfg" >"$tmp" && mv "$tmp" "$riftcfg"
 	border_colors >"$state"

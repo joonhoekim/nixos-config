@@ -73,7 +73,7 @@ enabled = true
 show_empty = false
 # All workspaces, so it answers "where else is there something", not only "where am I".
 mode = "all"
-# workspace_names is "1".."9", so `name` is the digit you press — `index` would be off by one (0..8).
+# Cells are named by grid and cell ("2·5"), so `name` is what the keys say — `index` would be off by one.
 active_label = "name"
 display_style = "label"
 
@@ -84,27 +84,35 @@ enabled = true
 # rift-grid can only reach the overview (Alt+O) with this enabled.
 enabled = true
 fade_enabled = true
+
+[settings.grid]
+# Every grid's cells, odd numbers up to 9, as subline's [grid]. Rows and columns take effect on a restart.
+rows = 3
+columns = 3
+# Each display starts where it was, not on grid 1's center ("default").
+start = "last"
+
+[settings.grid.overview]
 # Sharp previews, for more memory while the overview is open.
 full_resolution = true
-grid_fit = false
-grid_follow = "center"
-grid_gap = 0.01
-grid_zoom = 0.75
+fit = false
+follow = "center"
+gap = 0.01
+zoom = 0.75
 
-
-[settings.ui.borders]
+[settings.grid.focus]
 # apps/rice/colors rewrites the two colour lines on a palette change, unless they were picked by hand.
-# Colours are 0xAARRGGBB or #RRGGBB[AA]; an empty inactive_color leaves the other windows bare.
-enabled = true
-width = 2.0
-radius = 16.0
-active_color = "0xff990006"
-inactive_color = ""
+# Colours are 0xAARRGGBB or #RRGGBB[AA]; an empty unfocused_color leaves the other windows bare.
+border = true
+border_width = 2.0
+border_radius = 16.0
+border_color = "0xff990006"
+unfocused_color = ""
 glow = true
 glow_radius = 12.0
 animation_ms = 180.0
 
-[settings.ui.grid_motion]
+[settings.grid.moves]
 zoom = 0.15
 easing = "snappy"
 duration_ms = 250.0
@@ -114,7 +122,7 @@ zoom_in_time = 0.3
 full_resolution = true
 
 [settings.gestures]
-# With grid_columns set, [settings.grid_gestures] takes three and four fingers first, so these only lend its swipes
+# With a grid, [settings.grid.gestures] takes the three- and four-finger swipes it has an action for first, so these only lend them their
 # distance, tolerance and haptics. `consume_dock_swipe` stops macOS from *also* switching its own Spaces.
 enabled = true
 consume_dock_swipe = true
@@ -123,23 +131,26 @@ fingers = 3
 haptics_enabled = true
 haptic_pattern = "level_change"
 
-[settings.grid_gestures]
-# rift-grid defaults: 3 fingers → neighbouring cell, 4 left/right → grids, 4 up/down → into/out of the Overview
-# (macOS keeps 4 down while it is closed, for App Exposé). `enabled = false` gives them all back.
-enabled = true
-cell_fingers = 3
-grid_fingers = 4
-overview = true
+[settings.grid.gestures.three]
+# What each swipe does, as subline's [gestures] table; the content follows the fingers (left shows the cell to the right).
+# "none" leaves a swipe to macOS. The opposite of the swipe bound to "overview" steps back out of it.
+left = "go_to_cell_right"
+right = "go_to_cell_left"
+up = "go_to_cell_down"
+down = "go_to_cell_up"
+
+[settings.grid.gestures.four]
+# Down stays macOS's App Exposé while the Overview is closed.
+left = "next_grid"
+right = "previous_grid"
+up = "overview"
+down = "none"
 
 [virtual_workspaces]
 enabled = true
-# Nine 3x3 grids (Alt+1..9), each on one display at a time: 81 workspaces per display, so default_workspace_count is unused.
-# Login starts on grid 1's center cell (index 4). Model: docs/grids.md in the rift-grid repo.
+# The grids ([settings.grid] rows, columns; Alt+1..9) are each on one display at a time: 9 x rows x columns workspaces per display, so default_workspace_count is unused.
+# Model: docs/grids.md in the rift-grid repo.
 default_workspace_count = 9
-grid_columns = 3
-default_workspace = 4
-# Cell names, repeated in every grid after its number ("2·5").
-workspace_names = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 auto_assign_windows = true
 preserve_focus_per_workspace = true
 workspace_auto_back_and_forth = false
@@ -162,38 +173,38 @@ move2 = "Alt + Ctrl"
 [keys]
 # Follows subline's "ijkl" preset (Alt = Mod); where it disagrees with docs/keymap.md's hyprland/niri columns, the preset wins.
 # ── Tier 1 — Alt: go there, open it ──────────────────────────────────────
-# grid_focus crosses into the neighbouring cell at a cell's edge, so it also walks workspaces (no back/forward pair).
-"Alt + I" = { grid_focus = "up" }
-"Alt + K" = { grid_focus = "down" }
-"Alt + J" = { grid_focus = "left" }
-"Alt + L" = { grid_focus = "right" }
-"Alt + Up" = { grid_focus = "up" }
-"Alt + Down" = { grid_focus = "down" }
-"Alt + Left" = { grid_focus = "left" }
-"Alt + Right" = { grid_focus = "right" }
+# focus crosses into the neighbouring cell at a cell's edge, so it also walks workspaces (no back/forward pair).
+"Alt + I" = { focus = "up" }
+"Alt + K" = { focus = "down" }
+"Alt + J" = { focus = "left" }
+"Alt + L" = { focus = "right" }
+"Alt + Up" = { focus = "up" }
+"Alt + Down" = { focus = "down" }
+"Alt + Left" = { focus = "left" }
+"Alt + Right" = { focus = "right" }
 
 # Whole cells at a time — subline's three-finger swipe.
-"Alt + Cmd + I" = { grid_cell = "up" }
-"Alt + Cmd + K" = { grid_cell = "down" }
-"Alt + Cmd + J" = { grid_cell = "left" }
-"Alt + Cmd + L" = { grid_cell = "right" }
+"Alt + Cmd + I" = { go_to_cell = "up" }
+"Alt + Cmd + K" = { go_to_cell = "down" }
+"Alt + Cmd + J" = { go_to_cell = "left" }
+"Alt + Cmd + L" = { go_to_cell = "right" }
 
 # Center cell, where login starts — subline's Mod+H.
-"Alt + H" = "grid_center"
+"Alt + H" = "focus_default_cell"
 
 # Previous window wherever it is; again goes back — subline's Alt+Tab without its switcher row.
 "Alt + Tab" = "focus_recent_window"
 
 # A grid comes back at the cell it was left on.
-"Alt + 1" = { switch_to_grid = 1 }
-"Alt + 2" = { switch_to_grid = 2 }
-"Alt + 3" = { switch_to_grid = 3 }
-"Alt + 4" = { switch_to_grid = 4 }
-"Alt + 5" = { switch_to_grid = 5 }
-"Alt + 6" = { switch_to_grid = 6 }
-"Alt + 7" = { switch_to_grid = 7 }
-"Alt + 8" = { switch_to_grid = 8 }
-"Alt + 9" = { switch_to_grid = 9 }
+"Alt + 1" = { grid = 1 }
+"Alt + 2" = { grid = 2 }
+"Alt + 3" = { grid = 3 }
+"Alt + 4" = { grid = 4 }
+"Alt + 5" = { grid = 5 }
+"Alt + 6" = { grid = 6 }
+"Alt + 7" = { grid = 7 }
+"Alt + 8" = { grid = 8 }
+"Alt + 9" = { grid = 9 }
 
 # `open -n` so LaunchServices starts it: Regular at once (rift-grid admits it) and not rift-grid's child, so
 # restarting rift-grid keeps the terminals. Each new process hands its window to the app already up.
@@ -226,14 +237,14 @@ move2 = "Alt + Ctrl"
 
 # ── Tier 2 — Alt+Shift: take the window with you ─────────────────────────
 # The window crosses into the next cell at the edge, so this also moves it between workspaces.
-"move + I" = { grid_move = "up" }
-"move + K" = { grid_move = "down" }
-"move + J" = { grid_move = "left" }
-"move + L" = { grid_move = "right" }
-"move + Up" = { grid_move = "up" }
-"move + Down" = { grid_move = "down" }
-"move + Left" = { grid_move = "left" }
-"move + Right" = { grid_move = "right" }
+"move + I" = { move_tile = "up" }
+"move + K" = { move_tile = "down" }
+"move + J" = { move_tile = "left" }
+"move + L" = { move_tile = "right" }
+"move + Up" = { move_tile = "up" }
+"move + Down" = { move_tile = "down" }
+"move + Left" = { move_tile = "left" }
+"move + Right" = { move_tile = "right" }
 
 "move + F" = "toggle_fullscreen"
 "move + Space" = "toggle_window_floating"
@@ -244,25 +255,34 @@ move2 = "Alt + Ctrl"
 "Alt + Shift + Comma" = "toggle_stack"
 
 # ── Tier 3 — Alt+Ctrl: cross a monitor or a grid, or reach the WM ────────
-"move2 + I" = { move_window_to_display = { selector = "up" } }
-"move2 + K" = { move_window_to_display = { selector = "down" } }
-"move2 + J" = { move_window_to_display = { selector = "left" } }
-"move2 + L" = { move_window_to_display = { selector = "right" } }
-"move2 + Up" = { move_window_to_display = { selector = "up" } }
-"move2 + Down" = { move_window_to_display = { selector = "down" } }
-"move2 + Left" = { move_window_to_display = { selector = "left" } }
-"move2 + Right" = { move_window_to_display = { selector = "right" } }
+# Ctrl looks at the display that way; Shift on top carries the window there, as subline's Mod+Ctrl(+Shift).
+"move2 + I" = { focus_display = "up" }
+"move2 + K" = { focus_display = "down" }
+"move2 + J" = { focus_display = "left" }
+"move2 + L" = { focus_display = "right" }
+"move2 + Up" = { focus_display = "up" }
+"move2 + Down" = { focus_display = "down" }
+"move2 + Left" = { focus_display = "left" }
+"move2 + Right" = { focus_display = "right" }
+"Alt + Ctrl + Shift + I" = { move_window_to_display = { selector = "up" } }
+"Alt + Ctrl + Shift + K" = { move_window_to_display = { selector = "down" } }
+"Alt + Ctrl + Shift + J" = { move_window_to_display = { selector = "left" } }
+"Alt + Ctrl + Shift + L" = { move_window_to_display = { selector = "right" } }
+"Alt + Ctrl + Shift + Up" = { move_window_to_display = { selector = "up" } }
+"Alt + Ctrl + Shift + Down" = { move_window_to_display = { selector = "down" } }
+"Alt + Ctrl + Shift + Left" = { move_window_to_display = { selector = "left" } }
+"Alt + Ctrl + Shift + Right" = { move_window_to_display = { selector = "right" } }
 
 # Focus stays, unless grid N is on screen on another display — then it follows the window.
-"move2 + 1" = { move_window_to_grid = 1 }
-"move2 + 2" = { move_window_to_grid = 2 }
-"move2 + 3" = { move_window_to_grid = 3 }
-"move2 + 4" = { move_window_to_grid = 4 }
-"move2 + 5" = { move_window_to_grid = 5 }
-"move2 + 6" = { move_window_to_grid = 6 }
-"move2 + 7" = { move_window_to_grid = 7 }
-"move2 + 8" = { move_window_to_grid = 8 }
-"move2 + 9" = { move_window_to_grid = 9 }
+"move2 + 1" = { send_to_grid = 1 }
+"move2 + 2" = { send_to_grid = 2 }
+"move2 + 3" = { send_to_grid = 3 }
+"move2 + 4" = { send_to_grid = 4 }
+"move2 + 5" = { send_to_grid = 5 }
+"move2 + 6" = { send_to_grid = 6 }
+"move2 + 7" = { send_to_grid = 7 }
+"move2 + 8" = { send_to_grid = 8 }
+"move2 + 9" = { send_to_grid = 9 }
 
 "move2 + R" = "reload_config"
 

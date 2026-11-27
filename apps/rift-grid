@@ -7,7 +7,7 @@
 #   apps/rift-grid --auto       build-switch 가 매번 부르는 꼴. 아래 참고
 #
 # ~/.local/bin 의 rift-grid 를 hosts/darwin/common.nix 의 rift-grid 에이전트가 띄운다. 설치 자리를 바꾸면 그쪽도 바꾼다.
-# 원본 rift(brew)는 rice/rift-grid/config.toml 의 grid_focus 같은 포크 전용 명령을 읽지 못한다.
+# 원본 rift(brew)는 rice/rift-grid/config.toml 의 focus·grid 같은 포크 전용 명령을 읽지 못한다.
 #
 # nix 가 아니라 여기서 빌드해 이 기계 신원으로 서명한다: 임의 서명이면 손쉬운 사용·화면 기록 허가가 재빌드마다 조용히 끊긴다.
 # --auto 는 받아 온 소스가 지난번에 깐 커밋 그대로면 빌드도 재시작도 안 한다(변경이 있는 트리는 매번 빌드).

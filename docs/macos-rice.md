@@ -38,7 +38,7 @@ sketchybar 를 2026-08-05 까지 썼다. 그리던 여섯 가지 중 다섯(시�
 
 ## 창 테두리
 
-rift-grid 가 그린다(`[settings.ui.borders]`). 그 전에는 JankyBorders 를 rift 의 자식 프로세스로
+rift-grid 가 그린다(`[settings.grid.focus]`). 그 전에는 JankyBorders 를 rift 의 자식 프로세스로
 띄웠다 — `ax_focus` 모드가 rift 의 손쉬운 사용 허가를 물려받게 하려고. 배선은
 `git log -- modules/darwin/rice/borders`.
 
@@ -59,7 +59,7 @@ apps/rice/colors --backend colorz     # 추출 백엔드
 pywal 은 색을 `~/.cache/wal/` 에 쓰기만 하고 끝난다(훅이 없다). 그래서 "누가 그 색을 다시 읽게 만드는가"는 전부 이
 스크립트 몫이고 소비자마다 다르다:
 
-- 창 테두리: rift-grid 설정의 `[settings.ui.borders]` 에서 색 두 줄을 다시 쓰면 rift-grid 가 설정 파일을 감시하다 다시
+- 창 테두리: rift-grid 설정의 `[settings.grid.focus]` 에서 색 두 줄을 다시 쓰면 rift-grid 가 설정 파일을 감시하다 다시
   읽는다. 두께·둥글기·glow 는 사람이 고친 그대로 두고, 섹션이 없으면(rift-grid 전의 설정) 손대지 않는다.
 - wezterm: 할 일이 없다. wezterm.lua 가 colors.json 을 감시 목록에 넣어 뒀다(`add_to_config_reload_watch_list`).
 

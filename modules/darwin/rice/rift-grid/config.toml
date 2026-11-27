@@ -140,11 +140,20 @@ up = "go_to_cell_down"
 down = "go_to_cell_up"
 
 [settings.grid.gestures.four]
-# Down stays macOS's App Exposé while the Overview is closed.
+# Down opens home; with the Overview open it steps back out instead.
 left = "next_grid"
 right = "previous_grid"
 up = "overview"
-down = "none"
+down = "home"
+
+[settings.grid.home]
+# Home (Alt+Space): the app grid with a search box. "full" covers the display; "window" is a panel in its middle.
+style = "full"
+frequent = true
+# Boxes by kind of app; move an app with its right-click menu (Category).
+categorize = true
+# Cmd+Space and the four-finger pinch open home instead of Spotlight and Apps.
+take_spotlight = true
 
 [virtual_workspaces]
 enabled = true
@@ -212,6 +221,7 @@ move2 = "Alt + Ctrl"
 
 # rift-grid's grid overview, driven as Mission Control — needs [settings.ui.mission_control] enabled.
 "Alt + O" = "show_mission_control_all"
+"Alt + Space" = "home"
 
 "Alt + E" = { exec = ["/bin/sh", "-c", "open ~"] }
 

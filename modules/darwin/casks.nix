@@ -16,6 +16,7 @@ let
     "bruno"
     "dbeaver-community"
     "redis-insight"
+    "lm-studio"
 
     # Terminals. 주 터미널은 apps/subline-terminal 이 까는 subline-terminal 이고 아래 둘은 참고용이다.
     "ghostty"

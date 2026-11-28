@@ -102,7 +102,7 @@ export HOMEBREW_NO_INSTALL_FROM_API=1
 nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle
 
 # 2. 검증 — 시스템을 안 건드린다
-nix build .#darwinConfigurations.aarch64-darwin.system
+nix run .#build
 
 # 3. 적용 — 새 brew 본체와 새 탭이 /opt/homebrew에 걸린다
 nix run .#build-switch

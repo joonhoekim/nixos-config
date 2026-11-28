@@ -9,17 +9,15 @@ no separate registry in the flake: a directory's name is both the flake target
 and its `networking.hostName`. Attaching a new machine is what `./apps/setup`
 does — see [NixOS — first build](#nixos--first-build-on-a-new-machine).
 
-The NixOS configurations are keyed by **hostname** — `mn56`, `evo-t1` and
-`galaxy-chromebook-1` (all `x86_64-linux`), e.g. `.#mn56`. A host directory only
+The NixOS configurations are keyed by **hostname**, e.g. `.#mn56`. A host directory only
 exists for a machine that actually exists, since it needs that machine's
 generated `hardware-configuration.nix`.
 
-macOS comes in two tiers. `hosts/darwin/` is the **shared** config and is keyed
-by **architecture** — right now `aarch64-darwin` (Apple Silicon) only. Several
-Macs under the same account name need nothing more than that one copy. Once a
-machine needs to diverge, or someone with a different account name joins, run
-`./apps/setup` on that Mac to create `hosts/darwin/<hostname>/`: it is keyed by
-hostname and wins when present. Intel Macs (`x86_64-darwin`) are dropped, since
+On macOS, too, each Mac is one `hosts/darwin/<hostname>/`, keyed by hostname
+(`LocalHostName`). A Mac without its own directory uses the shared config keyed
+by **architecture** (`hosts/darwin/`, e.g. `.#aarch64-darwin`) — that is for a
+new Mac's first switch or a fork; for a Mac you keep using, run `./apps/setup`
+on it to create its own directory. Intel Macs (`x86_64-darwin`) are dropped, since
 nixpkgs 26.11 removed support; reviving one means a separate nixpkgs input
 pinned to the 26.05 darwin branch.
 
@@ -231,11 +229,12 @@ nix run .#build-switch          # build the new generation and activate it
 - Extra flags pass through, e.g. `nix run .#build-switch -- --show-trace`.
 
 To call the rebuild tools directly instead, name the config explicitly (a bare
-`.#` resolves by hostname, which won't match the arch-named darwin configs):
+`.#` resolves by hostname, which won't match the arch-named shared config on a
+Mac without its own directory):
 
 ```sh
-sudo darwin-rebuild switch --flake .#aarch64-darwin   # macOS
-sudo nixos-rebuild  switch --flake .#mn56              # NixOS
+sudo darwin-rebuild switch --flake .#<host>   # macOS (aarch64-darwin for the shared config)
+sudo nixos-rebuild  switch --flake .#<host>   # NixOS
 ```
 
 ## Other flake apps

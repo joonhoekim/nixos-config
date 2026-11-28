@@ -72,12 +72,7 @@ macOS 의 cask 는 nix 밖이라 이 도구로 잴 수 없다.
    nixpkgs 를 올릴 때마다 시험까지 다시 돈다.
 4. **쓸 때만 메모리를 쓰는 앱은 디스크로만 판단한다.**
 
-## 지금 가벼운 기계가 고른 것
+## 기계마다 무엇을 골랐나
 
-| | CLI 묶음 | GUI (core 외) |
-|---|---|---|
-| jhs-MacBook-Air | media mobile toys | 브라우저 셋, onlyoffice, dbeaver |
-| galaxy-chromebook-1 | media mobile | 브라우저 셋, onlyoffice, dbeaver, mpv, zathura, resources |
-
-모든 기계에 깔리는 GUI core 는 macOS 에서 VS Code, NixOS 에서 VS Code, ghostty, loupe,
-gnome-calculator 다(`modules/nixos/gui-apps.nix`). 호스트별 현황은 `nix run .#inventory`.
+호스트별 묶음과 GUI 앱은 `nix run .#inventory` 가 보여 준다. 모든 기계에 깔리는 GUI core 는
+`modules/darwin/casks.nix`·`modules/nixos/gui-apps.nix` 의 `core` 목록이다.

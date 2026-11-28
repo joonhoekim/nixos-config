@@ -8,15 +8,13 @@ macOS(nix-darwin + home-manager)와 NixOS를 위한 개인 Nix 설정.
 목록은 없고, 디렉토리 이름이 곧 flake 타겟이자 `networking.hostName`이다. 새 기계를
 붙이는 건 `./apps/setup`이 한다 — [NixOS 첫 빌드](#nixos-첫-빌드) 참고.
 
-NixOS 설정은 **hostname**으로 키잉된다 — `mn56`, `evo-t1`, `galaxy-chromebook-1`(모두
-`x86_64-linux`). 예: `.#mn56`. 호스트 디렉토리는 실제로 존재하는 머신만 만든다(그
+NixOS 설정은 **hostname**으로 키잉된다 — 예: `.#mn56`. 호스트 디렉토리는 실제로 존재하는 머신만 만든다(그
 머신에서 생성한 `hardware-configuration.nix`가 필요하다).
 
-macOS는 두 층이다. `hosts/darwin/`은 **공용** 설정이고 **아키텍처**로 키잉된다 — 현재는
-`aarch64-darwin`(Apple Silicon)뿐. Mac을 여러 대 쓰면서 계정 이름이 같으면 이 한 벌로
-끝난다. 기계마다 갈라야 할 것이 생기거나 계정 이름이 다른 사람이 끼면 그 Mac에서
-`./apps/setup`을 돌려 `hosts/darwin/<hostname>/`을 만든다 — hostname으로 키잉되고, 있으면
-그쪽이 이긴다. 인텔 Mac(`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 —
+macOS도 Mac 한 대가 `hosts/darwin/<hostname>/` 하나이고 hostname(`LocalHostName`)으로
+키잉된다. 전용 디렉토리가 없는 Mac은 **아키텍처**로 키잉한 공용 설정(`hosts/darwin/`,
+예: `.#aarch64-darwin`)을 쓴다 — 새 Mac의 첫 switch나 포크를 위한 자리이고, 계속 쓸 Mac은
+그 Mac에서 `./apps/setup`을 돌려 전용 디렉토리를 만든다. 인텔 Mac(`x86_64-darwin`)은 nixpkgs 26.11이 지원을 끊어서 제외했다 —
 되살리려면 26.05 darwin 브랜치에 고정한 별도 nixpkgs input이 필요하다.
 
 계정 이름·git 신원·authorized key는 `users/<이름>.nix` 한 장에 있고(계약은
@@ -215,12 +213,12 @@ nix run .#build-switch          # 새 generation을 빌드해 활성화
   `sudo`를 부른다. 전체를 root로 돌리면 저장소의 git 소유권 검사가 깨진다.
 - 추가 플래그는 그대로 전달된다 — 예: `nix run .#build-switch -- --show-trace`.
 
-rebuild 도구를 직접 부르려면 설정 이름을 명시한다(맨 `.#`는 hostname으로 해석돼 arch
-이름의 darwin 설정과 안 맞는다):
+rebuild 도구를 직접 부르려면 설정 이름을 명시한다(맨 `.#`는 hostname으로 해석돼 전용
+디렉토리가 없는 Mac에서는 arch 이름의 공용 설정과 안 맞는다):
 
 ```sh
-sudo darwin-rebuild switch --flake .#aarch64-darwin   # macOS
-sudo nixos-rebuild  switch --flake .#mn56              # NixOS
+sudo darwin-rebuild switch --flake .#<호스트>   # macOS (공용 설정이면 aarch64-darwin)
+sudo nixos-rebuild  switch --flake .#<호스트>   # NixOS
 ```
 
 ## 그 밖의 flake 앱

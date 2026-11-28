@@ -10,7 +10,8 @@
 모든 것의 시작점. `inputs`(외부 의존성)와 `outputs`(그걸로 무엇을 만들지)로 나뉜다.
 `outputs`가 만드는 네 가지:
 
-- `darwinConfigurations.<arch>` → `hosts/darwin/` (macOS) — 이 Mac에서 쓰는 것
+- `darwinConfigurations.<hostname>` → `hosts/darwin/<host>/` (macOS), 그리고 전용 디렉토리가 없는 Mac 이
+  쓰는 공용 `darwinConfigurations.<arch>` → `hosts/darwin/`
 - `nixosConfigurations.<hostname>` → `hosts/nixos/<host>/` (Linux, 예: `mn56`)
 - `apps.<system>.<name>` → `apps/` 아래 스크립트 (`nix run`의 실체) — 빌드 4종(build-switch,
   build, rollback, clean), 라이싱 도구들(rice-* → `apps/rice/`), 점검(check → `apps/check/`),
@@ -19,7 +20,7 @@
 - `devShells`
 
 흐름: `nix run .#build-switch` → `apps.<현재system>.build-switch` → 공유 스크립트 `apps/build-switch`
-실행 → `uname`으로 OS를 감지해 macOS면 `darwinConfigurations.<arch>`, NixOS면
+실행 → `uname`으로 OS를 감지해 macOS면 `darwinConfigurations.<LocalHostName>`(없으면 `<arch>`), NixOS면
 `nixosConfigurations.<hostname>`을 빌드·활성화. (`apps/`의 자세한 구조는 아래 "apps/" 절.)
 
 ---
@@ -30,7 +31,7 @@
 
 ```nix
 linuxSystems  = [ "x86_64-linux" "aarch64-linux" ];
-darwinSystems = [ "aarch64-darwin" ];  # 인텔 Mac은 nixpkgs 26.11에서 지원 중단
+darwinSystems = [ "aarch64-darwin" ];
 # macOS: darwin.lib.darwinSystem + ./hosts/darwin
 # Linux: nixpkgs.lib.nixosSystem  + ./hosts/nixos
 ```
@@ -58,27 +59,14 @@ lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
 ## 전체 import 그래프
 
 ```text
-hosts/darwin/default.nix          ← 공용 macOS 호스트 (imports ./common.nix)
-hosts/darwin/common.nix           ← macOS 진입점 (시스템 레벨 설정)
+hosts/darwin/<host>/default.nix   ← 이 Mac 전용 (stateVersion, 고른 묶음·cask)
+hosts/darwin/default.nix          ← 전용 디렉토리가 없는 Mac 의 공용 호스트
+        │ 둘 다 imports ../common.nix (또는 ./common.nix)
+hosts/darwin/common.nix           ← macOS 시스템 레벨 설정 (defaults, 로그인 항목, nix)
 │   imports = [
-├──→ modules/darwin/home-manager.nix   ← macOS 유저/홈 레벨
-│    │   imports ./casks.nix         (GUI 앱. core + 호스트가 고르는 local.casks)
-│    │   imports ./dock              (Dock 관리 모듈)
-│    │   home-manager.users.<user>:
-│    │     packages = ./packages.nix             (shared + macOS 전용 패키지)
-│    │     programs = ../shared/home-manager.nix          ← 공유
-│    └
-└──→ modules/shared (= modules/shared/default.nix)   ← nixpkgs 설정 + overlays
-
-modules/shared/   ← darwin과 nixos가 둘 다 쓰는 공통부
-├─ home-manager.nix       ./programs 조각(zsh, git, vim, ssh, ...)을 하나로 폴드
-├─ programs/              프로그램별 home-manager 조각
-├─ packages.nix           공통 CLI 패키지
-├─ fonts.nix              공통 폰트 (fonts.packages로 등록)
-├─ ghostty/               터미널 라이싱 시드 + 심는 모듈 (양 플랫폼)
-├─ mise-install.nix       mise 도구를 switch 때 까는 활성화 조각 (양 플랫폼)
-├─ rice-seed-helpers.nix  라이싱 시드용 seed/ensure 셸 함수
-└─ default.nix            nixpkgs.config + overlays
+├──→ modules/darwin/*                  ← macOS 전용 모듈
+│      home-manager.nix 가 home-manager 를 배선하고 ../shared/home-manager.nix 를 쓴다
+└──→ modules/shared                    ← 양 플랫폼 공통 (구성은 modules/shared/README.md)
 ```
 
 리눅스도 대칭이다. `hosts/nixos/<host>/default.nix` → `hosts/nixos/common.nix` → `modules/nixos/*`
@@ -123,8 +111,8 @@ mkApps = system:
 앱 이름은 `nix run .#<이름>`과 스토어 경로에 그대로 쓰이므로 평평하고(`rice-save`),
 파일 경로는 디렉터리를 가질 수 있다(`apps/rice/save`). 흐름: `nix run .#build-switch` →
 writeScriptBin 래퍼 → `apps/build-switch` → `uname`으로 OS 판별 → macOS면
-`darwinConfigurations.<arch>`, NixOS면 `nixosConfigurations.<hostname>`을 빌드·활성화.
-새 app은 스크립트를 두고 `mkApps`에 넣으면 노출된다. `rice/lib.sh`·`build-lib.sh`처럼
+`darwinConfigurations.<LocalHostName>`(없으면 `<arch>`), NixOS면 `nixosConfigurations.<hostname>`을
+빌드·활성화. 새 app은 스크립트를 두고 `mkApps`에 넣으면 노출된다. `rice/lib.sh`·`build-lib.sh`처럼
 sourced 되는 조각은 목록에 넣지 않는다.
 
 ### 각 app이 하는 일
@@ -160,8 +148,7 @@ sourced 되는 조각은 목록에 넣지 않는다.
 - **호스트 목록은 `hosts/<플랫폼>/` 아래의 디렉토리 그 자체다.** `flake.nix`가
   `builtins.readDir`로 읽으므로 따로 등록하는 목록이 없고, 디렉토리 이름이 곧 flake
   타겟이자 `networking.hostName`이다(`mkDefault`로 박힌다).
-- NixOS 호스트는 hostname으로 키잉된다(`nixosConfigurations.mn56`, `.evo-t1`,
-  `.galaxy-chromebook-1`). 각 `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관
+- NixOS 호스트는 hostname으로 키잉된다(예: `nixosConfigurations.mn56`). 각 `hosts/nixos/<host>/`는 공용 `common.nix`(하드웨어 무관
   설정) + 자기 `hardware-configuration.nix` + 누가 쓰는지를 가리키는 `identity.nix`를
   import/선언한다.
 - macOS는 두 층이다. `hosts/darwin/`이 공용(arch로 키잉)이고, 그 Mac 전용이 필요하면
@@ -179,15 +166,17 @@ sourced 되는 조각은 목록에 넣지 않는다.
 ### macOS 호스트의 두 층 — 언제 전용 디렉토리를 만드나
 
 공용 macOS 호스트(`hosts/darwin/`, `darwinConfigurations.<arch>` 예: `.#aarch64-darwin`)는 전용 디렉토리가 없는 Mac
-이 전부 쓴다. 한 사람이 Mac 을 여러 대 쓰면서 계정 이름이 같으면 이 한 벌로 충분하다.
+이 쓴다. 새 Mac 의 첫 switch 나 포크를 위한 자리다. 공용 호스트를 쓰는 Mac 은 stateVersion 같은 기계별 값이 공용
+기본값에 묶이고, 묶음과 cask 도 기본값(전부)을 받는다.
 
-기계마다 갈라야 할 것이 생기거나(도크 구성, stateVersion) 계정 이름이 다른 사람이 끼면, 그 Mac 에서 `./apps/setup`
-을 돌려 `hosts/darwin/<hostname>/` 을 만든다. hostname 으로 키잉되고, 있으면 `apps/build-switch` 가 그쪽을 먼저
+계속 쓸 Mac 은 그 Mac 에서 `./apps/setup` 을 돌려 `hosts/darwin/<hostname>/` 을 만든다. hostname 으로 키잉되고, 있으면 `apps/build-switch` 가 그쪽을 먼저
 고른다. 전용 호스트는 자기 `identity.nix` 를 들고 있어서 계정 이름을 따로 갈 수 있다. arch 이름(aarch64-darwin)을
 hostname 으로 쓰는 기계는 없으므로 두 층의 이름은 겹치지 않는다.
 
 `localHostName` 만 디렉토리 이름에서 박는다(flake.nix 의 mkDarwinHost). `scutil --get LocalHostName` 이 돌려주는
 값이 정확히 이것이고 `apps/build-switch` 가 타겟을 그 값으로 고른다. HostName 과 ComputerName 은 건드리지 않는다.
+그래서 디렉토리 이름은 macOS 가 정한 이름이 아니어도 된다. 지금 이름과 다르면 첫 switch 만
+`nix run .#build-switch -- --host <이름>` 으로 하고, 그 switch 가 LocalHostName 을 바꾼 뒤로는 인자 없이 된다.
 
 NixOS 에는 이런 공용 층이 없다. 호스트마다 자기 hardware-configuration.nix 가 반드시 있어야 해서 "여러 기계가 나눠
 쓰는 호스트" 자체가 성립하지 않는다.
@@ -203,7 +192,7 @@ NixOS 에는 이런 공용 층이 없다. 호스트마다 자기 hardware-config
 - GUI 앱(cask): `modules/darwin/casks.nix` — `core` 는 모든 Mac, 나머지는 호스트의 `local.casks`
 - GUI 앱(NixOS): `modules/nixos/gui-apps.nix` — `core` 는 모든 NixOS 기계, 나머지는 호스트의 `local.guiApps`
 - 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`, 무엇이 얼마나 무거운지: `nix run .#footprint -- <호스트>`
-- macOS 시스템 설정: `hosts/darwin/default.nix`의 `system.defaults`
+- macOS 시스템 설정: `hosts/darwin/common.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고
   `apps/rice/save`로 되받는다 — files.nix 류의 심링크는 이제 없다

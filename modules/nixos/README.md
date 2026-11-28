@@ -106,33 +106,27 @@ Ctrl + Space + Esc(kanata 가 끝난다).
 
 ## 호스트 추가하기
 
-호스트는 아키텍처가 아니라 **hostname**으로 키잉된다. 현재 `mn56`(Firebat MN56, Ryzen
-7840HS), `evo-t1`(GMKtec EVO-T1, Core Ultra 9 285H), `galaxy-chromebook-1` 셋이 있고,
-새 호스트는 이들을 그대로 따라 하면 된다. CPU 벤더가 아니라 **머신 이름**으로 짓는다 —
-같은 칩을 쓰는 기기가 둘 이상이면 `amd`나 `intel` 같은 이름은 바로 무너진다.
+`hosts/nixos/` 아래 디렉토리 하나가 기계 한 대다. flake 가 이 디렉토리들을 읽으므로 따로
+등록할 목록이 없고, 디렉토리 이름이 flake 타겟이자 `networking.hostName` 이 된다
+(flake.nix 의 `mkNixosHost` 가 `mkDefault` 로 정한다). 호스트 파일에 `networking.hostName` 을
+또 적지 않는다 — 어긋나면 `apps/build-switch` 가 인자 없이 `hostname` 으로 고른 타겟이 안 맞는다.
+지금 있는 호스트는 `ls hosts/nixos/`, 각자 고른 것은 `nix run .#inventory`.
 
-호스트 디렉토리는 **실제로 존재하는 머신**만 만든다. 그 머신에서 생성한 진짜
-`hardware-configuration.nix` 없이는 호스트 항목이 아무 쓸모가 없고, placeholder를
-커밋해두면 `nix flake check`만 깨진다. 예전에 있던 `intel` 호스트가 정확히 그 상태여서
-제거했다.
+이름은 CPU 벤더가 아니라 **기계 이름**으로 짓는다 — 같은 칩을 쓰는 기기가 둘이 되면
+`amd`·`intel` 같은 이름은 바로 안 맞는다.
 
-벤더 공통 설정(예: AMD의 `radeontop`/전력 관리 주석, Intel의 thermald·VAAPI 드라이버)은
-호스트 디렉토리가 아니라 [`amd.nix`](amd.nix)·[`intel.nix`](intel.nix) 같은 모듈에 두고
-여러 호스트가 import한다. 호스트 디렉토리에는 그 섀시에만 해당하는 것만 남긴다 —
-`intel.nix`는 실제로 그렇게 생겼다. `galaxy-chromebook-1`이 혼자 들고 있던 조각을,
-두 번째 Intel 호스트(`evo-t1`)가 생긴 시점에 끌어올린 것이다.
+호스트 디렉토리는 **실제로 존재하는 기계**만 만든다. 그 기계에서 생성한
+`hardware-configuration.nix` 가 없으면 `fileSystems` assertion 으로 `nix flake check` 가 깨진다.
 
-flake 속성 이름은 실제 hostname과 달라도 `--flake .#<이름>`으로 지정하면 동작하지만,
-`apps/build-switch`가 인자 없이 실행될 때 `$(hostname)`으로 타겟을 고르므로 둘을 같게
-맞춰두는 편이 편하다.
+벤더 공통 설정(Intel 의 thermald·VAAPI 드라이버 같은 것)은 호스트 디렉토리가 아니라
+[`amd.nix`](amd.nix)·[`intel.nix`](intel.nix) 같은 모듈에 두고 여러 호스트가 import 한다.
+호스트 디렉토리에는 그 섀시에만 해당하는 것만 남긴다.
 
-1. 디렉토리를 만든다:
+새 기계에서는 `./apps/setup` 이 아래를 해 준다. 손으로 하면:
 
-   ```sh
-   mkdir -p hosts/nixos/<hostname>
-   ```
+1. `hosts/nixos/<이름>/identity.nix` — 쓸 사람을 가리키는 한 줄 ([users/README.md](../../users/README.md)).
 
-2. `hosts/nixos/<hostname>/default.nix`:
+2. `hosts/nixos/<이름>/default.nix`:
 
    ```nix
    { ... }:
@@ -142,41 +136,37 @@ flake 속성 이름은 실제 hostname과 달라도 `--flake .#<이름>`으로 �
        ./hardware-configuration.nix
      ];
 
-     networking.hostName = "<hostname>";
+     # 이 기계를 처음 설치한 릴리스(nixos-generate-config 가 쓴 값).
+     system.stateVersion = "<릴리스>";
      # 머신별 튜닝(GPU 드라이버 등)은 여기에.
    }
    ```
 
-3. **그 머신에서** hardware-configuration.nix를 생성한다. 이건 루트/부트 파일시스템, 스왑,
-   initrd 커널 모듈, CPU 마이크로코드를 고정하므로 반드시 실기에서 뽑아야 한다:
+3. **그 기계에서** hardware-configuration.nix 를 생성한다. 루트/부트 파일시스템, 스왑,
+   initrd 커널 모듈, CPU 마이크로코드를 고정하므로 반드시 실기에서 뽑는다:
 
    ```sh
    sudo nixos-generate-config --show-hardware-config \
-     > hosts/nixos/<hostname>/hardware-configuration.nix
+     > hosts/nixos/<이름>/hardware-configuration.nix
    ```
 
-4. `flake.nix`의 `nixosConfigurations`에 한 줄 추가:
+4. `git add hosts/nixos/<이름>` — flake 는 추적되지 않는 파일을 못 본다.
 
-   ```nix
-   <hostname> = mkNixosHost ./hosts/nixos/<hostname>;
-   ```
-
-5. 빌드:
+5. 빌드. hostname 이 아직 디렉토리 이름과 다르면 첫 번째만 `--host` 를 준다:
 
    ```sh
-   nix run .#build-switch                    # hostname 자동 감지
-   nix run .#build-switch -- --host <name>   # 명시적 지정
+   nix run .#build-switch -- --host <이름>
    ```
 
 ### 이미 설치된 머신을 편입할 때
 
 `common.nix`의 `system.stateVersion`과 `home-manager.nix`의 `home.stateVersion`은 둘 다
-`lib.mkDefault "26.11"`이다. 이건 *새로* 설치하는 호스트 기준값이므로, 이미 돌고 있는
-머신을 가져올 때는 그 머신이 설치된 릴리스로 호스트에서 덮어써야 한다:
+`lib.mkDefault` 로 둔 *새로* 설치하는 호스트의 기준값이다. 이미 돌고 있는 머신을 가져올
+때는 그 머신이 설치된 릴리스로 호스트에서 덮어써야 한다:
 
 ```nix
-system.stateVersion = "25.11";
-home-manager.users.${user}.home.stateVersion = "25.11";
+system.stateVersion = "<설치한 릴리스>";
+home-manager.users.${user}.home.stateVersion = "<설치한 릴리스>";
 ```
 
 stateVersion은 nixpkgs 채널이 아니라 상태 데이터(DB 포맷, 기본 경로 등) 호환성을

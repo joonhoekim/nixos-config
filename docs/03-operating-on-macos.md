@@ -228,7 +228,7 @@ LaunchAgent 가 crash-loop 을 돌거나, LaunchServices 가 옛 핸들러를 �
 (`'du-dust' renamed to 'dust'` 등). 에러가 보통 대체 이름을 알려준다. 무엇이 문제인지 모르면:
 
 ```bash
-nix build .#darwinConfigurations.aarch64-darwin.system --dry-run   # 새로 빌드되는 것 미리 보기
+nix run .#build -- --dry-run                                       # 새로 빌드되는 것 미리 보기
 nix-store -l /nix/store/<...>.drv                                  # 실패 derivation 전체 로그
 ```
 
@@ -325,13 +325,10 @@ log show --last 10m --style compact --predicate 'process == "tccd"' \
 
 ## 4. 자주 쓰는 명령어 치트시트
 
-아키텍처는 `aarch64-darwin` 기준(다른 Mac이면 그 자리를 해당 system으로).
-
 ```bash
 # ── 일상 워크플로 ──
 nix run .#build-switch                                   # 빌드 + 활성화 (가장 자주). sudo 암호
-nix build .#darwinConfigurations.aarch64-darwin.system  # 활성화 없이 빌드만 — 안전 검증
-nix run .#build                                          # 빌드만 하는 저장소 앱(위의 래퍼)
+nix run .#build                                          # 활성화 없이 빌드만 — 안전 검증. 타겟은 build-switch 와 같다
 
 # ── 롤백 / generation ──
 nix run .#rollback                          # 직전으로 (저장소 앱)

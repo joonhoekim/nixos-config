@@ -439,7 +439,8 @@ nix run .#build-switch
 `git add`를 안 했다. 7절 끝을 볼 것. flake는 git이 추적하는 파일만 본다.
 
 **설치 중에 `attribute 'evo-t1' missing`**
-`flake.nix`의 `nixosConfigurations`에 호스트를 안 넣었거나 이름이 다르다.
+`hosts/nixos/evo-t1/` 이 없거나 `git add` 하지 않았거나, 디렉토리 이름이 다르다. 호스트는
+`hosts/nixos/` 아래 디렉토리에서만 온다.
 
 **`infinite recursion` 또는 `fileSystems` assertion**
 `hardware-configuration.nix`가 비었거나 placeholder다. 이 레포가 실제로 존재하는

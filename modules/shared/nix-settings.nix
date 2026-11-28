@@ -13,12 +13,19 @@
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       ];
+
+      # Recover faster from stuck substituter connections on flaky networks.
+      stalled-download-timeout = 60; # default 300s
+      connect-timeout = 10;          # default 5s
     };
 
     gc = {
       automatic = true;
       options = "--delete-older-than 30d";
     };
+
+    # Own timer rather than auto-optimise-store, which runs inline and slows every build.
+    optimise.automatic = true;
 
     extraOptions = ''
       experimental-features = nix-command flakes

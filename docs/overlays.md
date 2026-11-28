@@ -77,7 +77,7 @@ DT_UNKNOWN 분기가 XFS 때문에 "모르겠으면 stat() 으로 실체를 보�
 
 **해법.** **실제 파일**로 된 폰트 디렉터리를 만들어 샌드박스 안의 `/usr/share/fonts` 위에 덮어 씌운다(`--ro-bind`).
 링크가 아니라 복사인 것이 이 오버레이의 전부라 `cp -L` 을 링크로 "최적화"하면 원래 버그로 돌아간다. 중복된 용량은
-hosts/nixos/common.nix 의 `nix.optimise.automatic` 이 동일 파일을 하드링크로 묶으면서 대부분 회수한다. buildFHSEnv 는
+modules/shared/nix-settings.nix 의 `nix.optimise.automatic` 이 동일 파일을 하드링크로 묶으면서 대부분 회수한다. buildFHSEnv 는
 extraBwrapArgs 를 bwrap argv 배열에 따옴표 없이 보간하므로, 공백 있는 문자열 하나가 인자 셋이 된다.
 
 **왜 손으로 고른 허용 목록인가** (시스템 폰트에서 자동으로 가져오는 것은 재어봤고, 답은 아니다):

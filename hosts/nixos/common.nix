@@ -57,18 +57,11 @@
       # Both lists need it: trusted is moot if the daemon refuses the connection.
       allowed-users = [ "@wheel" "${user}" ];
       trusted-users = [ "@wheel" "${user}" ];
-
-      # Recover faster from stuck substituter connections on flaky networks.
-      stalled-download-timeout = 60; # default 300s
-      connect-timeout = 10;          # default 5s
     };
 
     # configurationLimit only trims the boot menu; generations stay GC roots, so
     # without this the store only grows (56G at 28 generations, measured).
     gc.dates = "weekly";
-
-    # Own timer rather than auto-optimise-store, which runs inline and slows every build.
-    optimise.automatic = true;
 
     # Builds take the CPU and disk only when nothing else wants them, so the desktop
     # stays responsive. Only builds through the daemon; a cargo or make in a shell is not one.

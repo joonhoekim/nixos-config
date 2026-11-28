@@ -44,29 +44,10 @@
   # /etc/shells 에 없으면 chsh 가 거절하고 sshd 등이 로그인을 막는다.
   environment.shells = [ pkgs.bashInteractive ];
 
-  # nix.package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
+  # 양 플랫폼 공통 값은 modules/shared/nix-settings.nix, nix.package 는 modules/shared/nix-implementation.nix.
   nix = {
-    settings = {
-      trusted-users = [ "@admin" "${user}" ];
-      substituters = [ "https://nix-community.cachix.org" "https://cache.nixos.org" ];
-      # substituters 의 캐시마다 키가 있어야 한다. 키가 없는 캐시의 경로는 require-sigs 에
-      # 걸려 전부 버려지는데, 빌드는 실패하지 않고 로컬 빌드로 조용히 넘어간다.
-      # nix-community 키의 출처: https://app.cachix.org/api/v1/cache/nix-community
-      trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      ];
-    };
-
-    gc = {
-      automatic = true;
-      interval = { Weekday = 0; Hour = 2; Minute = 0; };
-      options = "--delete-older-than 30d";
-    };
-
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
+    settings.trusted-users = [ "@admin" "${user}" ];
+    gc.interval = { Weekday = 0; Hour = 2; Minute = 0; };
   };
 
   # Touch ID (and Apple Watch) for sudo. `reattach` makes it work inside tmux.

@@ -47,6 +47,7 @@
   # hostName 은 flake.nix 의 mkNixosHost 가 디렉토리 이름으로 mkDefault 한다.
   networking.networkmanager.enable = true;
 
+  # 양 플랫폼 공통 값은 modules/shared/nix-settings.nix, nix.package 는 modules/shared/nix-implementation.nix.
   nix = {
     # nix.nixPath is deliberately unset: any plain definition beats the mkDefault
     # `nixpkgs=flake:nixpkgs` of nixos/modules/misc/nixpkgs-flake.nix, and
@@ -56,14 +57,6 @@
       # Both lists need it: trusted is moot if the daemon refuses the connection.
       allowed-users = [ "@wheel" "${user}" ];
       trusted-users = [ "@wheel" "${user}" ];
-      substituters = [ "https://nix-community.cachix.org" "https://cache.nixos.org" ];
-      # substituters 의 캐시마다 키가 있어야 한다. 키가 없는 캐시의 경로는 require-sigs 에
-      # 걸려 전부 버려지는데, 빌드는 실패하지 않고 로컬 빌드로 조용히 넘어간다.
-      # nix-community 키의 출처: https://app.cachix.org/api/v1/cache/nix-community
-      trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      ];
 
       # Recover faster from stuck substituter connections on flaky networks.
       stalled-download-timeout = 60; # default 300s
@@ -72,11 +65,7 @@
 
     # configurationLimit only trims the boot menu; generations stay GC roots, so
     # without this the store only grows (56G at 28 generations, measured).
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
+    gc.dates = "weekly";
 
     # Own timer rather than auto-optimise-store, which runs inline and slows every build.
     optimise.automatic = true;
@@ -85,11 +74,6 @@
     # stays responsive. Only builds through the daemon; a cargo or make in a shell is not one.
     daemonCPUSchedPolicy = "idle";
     daemonIOSchedClass = "idle";
-
-    # package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
   };
 
   programs = {

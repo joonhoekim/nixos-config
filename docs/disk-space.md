@@ -81,8 +81,8 @@ pnpm store 는 캐시 디렉터리 밖(`pnpm store path`)에 있어서 캐시 �
 놓친다. 프로젝트의 `node_modules` 가 store 를 하드링크하므로, `du` 로 잰 store 크기만큼
 다 줄지는 않는다 — 아직 쓰는 패키지는 링크가 남아 지워지지 않는다.
 
-nix 세대는 양쪽 다 `nix run .#clean` 이다. 주간 자동 GC(30일)가
-`hosts/darwin/common.nix` · `hosts/nixos/common.nix` 의 `nix.gc` 에 있다.
+nix 세대는 양쪽 다 `nix run .#clean` 이다. 자동 GC 의 보존 기간은 `modules/shared/nix-settings.nix`,
+일정은 `hosts/<플랫폼>/common.nix` 의 `nix.gc` 에 있다.
 
 ---
 
@@ -112,7 +112,7 @@ Preboot 볼륨은 OS 업데이트 직후 10G 넘게 커질 수 있다. macOS 가
 잔재**다 — 앱이 다시 받아 올 수 있는 캐시, 받아 둔 모델 가중치, 시뮬레이터 런타임. 묻는 질문도 다르다:
 clean 은 "오래된 세대를 지워라", reclaim 은 "지금 뭘 지우면 몇 G 가 나오나". nix 세대도 reclaim 의 대상
 하나로 들어 있지만 실제 삭제는 apps/clean 을 부른다(GC 명령이 두 곳에 적히면 한쪽만 고치게 된다). 기본
-나이 30d 는 hosts/darwin/common.nix 의 주간 자동 GC 와 같은 값이다.
+나이는 modules/shared/nix-settings.nix 의 자동 GC 보존 기간과 같은 값이다.
 
 **왜 클리너 앱을 쓰지 않나.** 이 기계에서 /nix/store 는 40G 짜리 하드링크 농장이고, 설정 > 저장 공간은
 그걸 통째로 "System Data" 로 집계한다. 범용 클리너는 그 트리를 orphaned files 나 broken symlinks 로 읽는다

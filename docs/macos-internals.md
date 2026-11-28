@@ -92,7 +92,7 @@ nix 나 brew 가 아니라 apps/rift-grid 가 기계마다 빌드·서명해 `~/
 손쉬운 사용·화면 기록 허가를 서명에 묶고, apps/mac-signing-cert 의 로컬 신원만 리빌드를 넘어 허가를 유지하기 때문이다
 ([03-operating-on-macos 의 rift-grid 항목](03-operating-on-macos.md#3-최초-셋업에서-겪는-함정들)).
 
-hosts/darwin/common.nix 의 에이전트:
+modules/darwin/login-items.nix 의 에이전트:
 
 - `path`: rift-grid 의 키바인딩은 `rift-grid-cli`(같은 `~/.local/bin`)와 systemPath 의 도구를 부르는데, LaunchAgent 는
   로그인 셸의 PATH 를 하나도 물려받지 않는다.

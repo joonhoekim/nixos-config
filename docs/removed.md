@@ -74,7 +74,7 @@ keyd 는 포인터를 못 움직여서 레이어의 마우스 쪽이 F키 센티
 로그인에 뜨지 않고 `open -a AeroSpace` 로만 쓰던 폴백이다. 되살린 뒤에는:
 
 - `nix flake lock` — `nikitabobko-tap` 이 lock 에 다시 들어간다.
-- `hosts/darwin/common.nix` 의 `spaces.spans-displays` 를 `true` 로. AeroSpace 는
+- `modules/darwin/defaults.nix` 의 `spaces.spans-displays` 를 `true` 로. AeroSpace 는
   `true`, rift 는 `false` 를 요구한다. 로그아웃해야 반영된다.
 - rift 를 먼저 끈다 — `launchctl bootout gui/$UID/org.nixos.rift-grid`. 두 타일링 WM 이
   같은 창을 잡으면 둘 다 제대로 안 돈다.

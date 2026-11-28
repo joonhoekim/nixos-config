@@ -19,7 +19,7 @@ OS 마다 다른 것은 `(platform ...)` 블록의 별칭 몇 개뿐이다. `kan
 ```
 
 macOS 에서는 launchd 데몬이 띄운다(`modules/darwin/kanata.nix`). 한/영은 macOS 에서 오른쪽 ⌘ → F18 이고, F18 은 "입력 소스
-다음으로" 단축키다(`hosts/darwin/common.nix` 의 AppleSymbolicHotKeys 61).
+다음으로" 단축키다(`modules/darwin/defaults.nix` 의 AppleSymbolicHotKeys 61).
 
 ## 오른쪽 Alt (Windows 한/영)
 

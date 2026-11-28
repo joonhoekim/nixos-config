@@ -12,6 +12,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── scripts/           # 셸이 소싱하는 macOS 전용 헬퍼
 ├── casks.nix          # Homebrew cask (macOS GUI 앱) — core + 호스트가 고르는 local.casks
 ├── default-apps.nix   # 파일 종류별 기본 앱. plist 쓰기는 set-default-handlers.py
+├── defaults.nix       # macOS 설정 값 (system.defaults, 입력 소스 전환 단축키)
 ├── home-manager.nix   # 유저 레벨 설정 (shared/home-manager.nix + macOS 고유분)
 ├── homebrew.nix       # brew 본체와 탭(nix-homebrew). 무엇을 까는지는 casks.nix 와 호스트
 ├── ios.nix            # Xcode (App Store, masApps)
@@ -21,7 +22,7 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 └── packages.nix       # macOS 전용 패키지 (shared/packages.nix + macOS 전용 도구)
 ```
 
-시스템 레벨 설정(계정, home-manager 배선, macOS defaults)은 이 디렉토리가 아니라
+시스템 레벨 설정(계정, home-manager 배선, nix, sudo)은 이 디렉토리가 아니라
 [`../../hosts/darwin/common.nix`](../../hosts/darwin/common.nix)에 있다.
 
 ## 호스트

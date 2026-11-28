@@ -132,7 +132,7 @@ state = running 만으로는 승인됐다고 보지 않고, 이번 실행이 5 �
 ### 8. 로그아웃 · 다시 로그인
 
 "Displays have separate Spaces" 와 LaunchServices 의 기본 앱 캐시는 로그인 때 읽힌다
-(`hosts/darwin/common.nix`, `modules/darwin/default-apps.nix`).
+(`modules/darwin/defaults.nix`, `modules/darwin/default-apps.nix`).
 
 ### 9. 확인
 

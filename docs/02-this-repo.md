@@ -192,7 +192,7 @@ NixOS 에는 이런 공용 층이 없다. 호스트마다 자기 hardware-config
 - GUI 앱(cask): `modules/darwin/casks.nix` — `core` 는 모든 Mac, 나머지는 호스트의 `local.casks`
 - GUI 앱(NixOS): `modules/nixos/gui-apps.nix` — `core` 는 모든 NixOS 기계, 나머지는 호스트의 `local.guiApps`
 - 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`, 무엇이 얼마나 무거운지: `nix run .#footprint -- <호스트>`
-- macOS 시스템 설정: `hosts/darwin/common.nix`의 `system.defaults`
+- macOS 시스템 설정: `modules/darwin/defaults.nix`의 `system.defaults`
 - Dock 항목: `modules/darwin/dock/entries.nix`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고
   `apps/rice/save`로 되받는다 — files.nix 류의 심링크는 이제 없다

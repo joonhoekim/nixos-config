@@ -1,4 +1,4 @@
-{ config, lib, pkgs, user, ... }:
+{ config, lib, pkgs, user, identity, home-manager, ... }:
 
 let
   # 앱이 없는데 `open -a` 를 남기면 로그인마다 실패하고 apps/check/mac 이 그 job 을 ✗ 로 보인다.
@@ -7,8 +7,10 @@ in
 
 {
   imports = [
-    ../../modules/darwin/home-manager.nix
+    home-manager.darwinModules.home-manager
     ../../modules/darwin/homebrew.nix
+    ../../modules/darwin/casks.nix
+    ../../modules/darwin/dock
     ../../modules/darwin/default-apps.nix
     ../../modules/darwin/ios.nix
     # Caps Lock 레이어와 한/영(오른쪽 ⌘ → F18). 레이어는 Windows 와 같은 파일이다.
@@ -18,6 +20,32 @@ in
     ../../modules/darwin/rice
     ../../modules/shared
   ];
+
+  home-manager = {
+    useGlobalPkgs = true;
+    # NixOS 쪽(hosts/nixos/common.nix)과 같은 값. 경로(/etc/profiles/per-user/<user>/bin)가 갈리면 절대 경로를
+    # 요구하는 도구 설정(VS Code 의 todo-tree.ripgrep.ripgrep)을 한 벌로 공유할 수 없다.
+    useUserPackages = true;
+    # 첫 activation 에서 이미 있는 dotfile(~/.zshrc 등)을 <이름>.backup 으로 옮긴다. 없으면 activation 이 거절한다.
+    # apps/uninstall 이 이 확장자로 되돌린다.
+    backupFileExtension = "backup";
+    # Separate arg scope from system specialArgs.
+    extraSpecialArgs = { inherit user identity; bundles = config.local.packages.bundles; };
+    users.${user} = import ../../modules/darwin/home-manager.nix;
+  };
+
+  users.users.${user} = {
+    name = "${user}";
+    home = "/Users/${user}";
+    isHidden = false;
+    # 이 값만으로는 로그인 셸이 안 바뀐다 — nix-darwin 은 users.knownUsers 계정에만 UserShell 을 쓴다
+    # (modules/users/default.nix). 실제 변경은 아래 dscl 이 한다.
+    shell = pkgs.bashInteractive;
+  };
+
+  # 로그인 셸은 nix 의 bash 5: bash 를 가정한 스크립트가 zsh 에선 조용히 다르게 돌고, /bin/bash 는 3.2 다.
+  # /etc/shells 에 없으면 chsh 가 거절하고 sshd 등이 로그인을 막는다.
+  environment.shells = [ pkgs.bashInteractive ];
 
   # nix.package 는 local.nix.implementation 이 정한다 (modules/shared/nix-implementation.nix).
   nix = {
@@ -228,6 +256,12 @@ in
     # `defaults -dict-add` merges just key 61 — CustomUserPreferences would overwrite all of AppleSymbolicHotKeys.
     # params = [ char keycode modifiers ]; 65535 = no char, 79 = F18, 8388608 = fn flag.
     activationScripts.postActivation.text = ''
+      # 경로를 글자 그대로 쓴다 — apps/check/mac 이 `dscl . -create ... UserShell <경로>` 줄을 기대값으로 읽는다.
+      if [ "$(dscl . -read /Users/${user} UserShell | awk '{ print $2 }')" != /run/current-system/sw/bin/bash ]; then
+        echo "setting login shell of ${user} to bash..." >&2
+        dscl . -create /Users/${user} UserShell /run/current-system/sw/bin/bash
+      fi
+
       echo "configuring input-source hotkey (next source = F18)..." >&2
       # NOTE: must be XML plist with <true/> — an old-style `enabled=1` writes an
       # integer, which macOS treats as "not enabled" and reverts to the default.

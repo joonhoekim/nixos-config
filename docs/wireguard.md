@@ -87,8 +87,7 @@ sudo wg show
 sudo "$(command -v wg-quick)" up wg0
 ```
 
-App Store 의 WireGuard 앱(`modules/darwin/home-manager.nix` 의 주석 처리된
-`masApps` 항목)과 동시에 쓰지 않는다 — 같은 터널을 둘이 올리면 라우팅이 꼬인다.
+App Store 의 WireGuard 앱과 동시에 쓰지 않는다 — 같은 터널을 둘이 올리면 라우팅이 꼬인다.
 
 ## 붙었는지 확인
 

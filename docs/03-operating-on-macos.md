@@ -261,7 +261,7 @@ nix --extra-experimental-features 'nix-command flakes' run .#build-switch
 (이 레포는 이미 그렇게 돼 있다 — 새로 겪는다면 값이 되돌아갔는지부터 볼 것.)
 
 **5. home-manager가 기존 dotfile을 못 덮음.** `Existing file '~/.zshrc' would be clobbered` 등.
-`modules/darwin/home-manager.nix`에서 자동 백업 켜기 (이미 켜져 있다 — 진단용으로 적어 둔다):
+`hosts/darwin/common.nix`에서 자동 백업 켜기 (이미 켜져 있다 — 진단용으로 적어 둔다):
 
 ```nix
 home-manager.backupFileExtension = "backup";   # 기존 파일을 <name>.backup 으로 옮긴 뒤 관리

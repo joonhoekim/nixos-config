@@ -92,7 +92,7 @@ else
   hint "  sudo mv /etc/<파일> /etc/<파일>.before-nix-darwin 뒤 ./apps/build-switch"
 fi
 
-# 로그인 셸. modules/darwin/home-manager.nix 가 dscl 로 쓰는 값이다 — nix-darwin 의
+# 로그인 셸. hosts/darwin/common.nix 가 dscl 로 쓰는 값이다 — nix-darwin 의
 # users.users.<이름>.shell 은 관리자 계정에는 적용되지 않아서 그렇게 한다.
 grep -o 'dscl \. -create /Users/[^ ]* UserShell /[^ ]*' "$act" | sort -u > "$tmp/shell"
 while read -r _ _ _ u _ want; do

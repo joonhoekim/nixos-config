@@ -62,10 +62,10 @@ lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
 hosts/darwin/<host>/default.nix   ← 이 Mac 전용 (stateVersion, 고른 묶음·cask)
 hosts/darwin/default.nix          ← 전용 디렉토리가 없는 Mac 의 공용 호스트
         │ 둘 다 imports ../common.nix (또는 ./common.nix)
-hosts/darwin/common.nix           ← macOS 시스템 레벨 설정 (defaults, 로그인 항목, nix)
+hosts/darwin/common.nix           ← macOS 시스템 레벨 설정 (계정, home-manager 배선, defaults, 로그인 항목, nix)
 │   imports = [
 ├──→ modules/darwin/*                  ← macOS 전용 모듈
-│      home-manager.nix 가 home-manager 를 배선하고 ../shared/home-manager.nix 를 쓴다
+│      home-manager.nix 는 home-manager 모듈이고 ../shared/home-manager.nix 를 쓴다
 └──→ modules/shared                    ← 양 플랫폼 공통 (구성은 modules/shared/README.md)
 ```
 
@@ -193,7 +193,7 @@ NixOS 에는 이런 공용 층이 없다. 호스트마다 자기 hardware-config
 - GUI 앱(NixOS): `modules/nixos/gui-apps.nix` — `core` 는 모든 NixOS 기계, 나머지는 호스트의 `local.guiApps`
 - 호스트별로 무엇을 고르고 있는지: `nix run .#inventory`, 무엇이 얼마나 무거운지: `nix run .#footprint -- <호스트>`
 - macOS 시스템 설정: `hosts/darwin/common.nix`의 `system.defaults`
-- Dock 항목: `modules/darwin/home-manager.nix`의 `local.dock.entries`
+- Dock 항목: `modules/darwin/dock/entries.nix`
 - 라이싱(터미널·WM·셸 룩): 레포가 아니라 `~/.config` 쪽 라이브 파일을 고치고
   `apps/rice/save`로 되받는다 — files.nix 류의 심링크는 이제 없다
 - 외부 의존성: `flake.nix`의 `inputs`

@@ -123,7 +123,7 @@ step "nix-darwin 을 걷는다 (로그인 셸 → /bin/zsh, /etc 복원, launchd
   "for p in \"\$HOME\"/Library/LaunchAgents/org.nixos.*.plist; do [ -e \"\$p\" ] && launchctl bootout gui/\$(id -u) \"\$p\"; done; sudo \"$uninst\"; sudo rm -rf /usr/local/libexec/nix-darwin"
 
 # home-manager 의 링크는 nix-darwin 제거가 건드리지 않는다. home-manager-files 를 가리키는 링크만 지우고 <이름>.backup
-# (backupFileExtension, modules/darwin/home-manager.nix)을 되돌린다. 링크가 아니었던 파일의 .backup 은 사용자 것일 수 있어 둔다.
+# (backupFileExtension, hosts/darwin/common.nix)을 되돌린다. 링크가 아니었던 파일의 .backup 은 사용자 것일 수 있어 둔다.
 hm_find='find "$HOME" -maxdepth 4 \( -path "$HOME/Library" -o -path "$HOME/git" -o -path "$HOME/.Trash" \) -prune -o -type l -lname "/nix/store/*-home-manager-files/*" -print'
 hm_links="$(eval "$hm_find" 2>/dev/null | head -1)"
 step "home-manager 가 만든 링크를 지우고 그 자리의 .backup 을 되돌린다" "$([ -n "$hm_links" ] && echo 1 || echo 0)" \

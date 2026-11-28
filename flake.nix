@@ -58,7 +58,7 @@
   };
 
   # 홈브루 탭 input 은 inputs.<이름> 으로 닿으므로 input 을 늘릴 때 고칠 자리는 위 목록 하나다.
-  outputs = inputs@{ self, nixpkgs, home-manager, darwin, ... }:
+  outputs = inputs@{ self, nixpkgs, darwin, ... }:
     let
       # specialArgs 는 모듈 평가 전에 정해져야 해서 신원은 호스트 옵션이 아니라 별도 파일이다(users/README.md).
       # throw 가 없으면 한참 뒤 `users.users.""` 근처에서 엉뚱하게 터진다. `git add` 안 한 파일도 여기로 온다.
@@ -117,6 +117,7 @@
       };
       # name 은 공용 호스트면 null. localHostName 만 박는 것은 apps/build-switch 가
       # `scutil --get LocalHostName` 으로 타겟을 고르기 때문이다.
+      # home-manager 배선은 양 플랫폼 모두 hosts/<플랫폼>/common.nix 에 있다 — flake 는 호스트 조립만 한다.
       mkDarwinHost = dir: name: system:
         let
           identity = identityOf dir;
@@ -126,7 +127,6 @@
           inherit system;
           specialArgs = inputs // { inherit user identity; };
           modules = [
-            home-manager.darwinModules.home-manager
             dir
           ]
           ++ nixpkgs.lib.optional (name != null)
@@ -175,7 +175,6 @@
       # networking.hostName 은 디렉토리 이름에서만 온다. 호스트 파일에 따로 적어 어긋나면 빌드는 되지만
       # apps/build-switch 의 맨손 호출(`hostname` 으로 타겟을 고른다)이 영영 안 맞는다.
       nixosConfigurations = let
-        # home-manager 배선은 hosts/nixos/common.nix 에 있다 — flake 는 순수 배선만 한다.
         mkNixosHost = name:
           let
             dir = ./hosts/nixos + "/${name}";

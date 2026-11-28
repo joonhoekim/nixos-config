@@ -33,9 +33,8 @@ drwxr-xr-x  root  /opt/homebrew/Library/Taps/homebrew/homebrew-core   ← 읽기
 drwxrwxr-x  jh    /opt/homebrew/Cellar                                ← 내 것
 ```
 
-선언은 `modules/darwin/casks.nix`(cask 앱)에 있다. formula 는 지금 선언한 것이 없고, 필요하면
-`modules/darwin/home-manager.nix` 의 `homebrew.brews` 에 적는다.
-탭 자체와 brew 본체는 `flake.nix`의 `nix-homebrew` 블록이다.
+선언은 `modules/darwin/casks.nix`(cask 앱)에 있다. formula 는 nixpkgs 가 먼저고, 꼭 brew 여야 하면
+호스트 파일의 `homebrew.brews` 에 적는다. 탭 자체와 brew 본체는 `modules/darwin/homebrew.nix` 다.
 
 ---
 

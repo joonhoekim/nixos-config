@@ -13,6 +13,8 @@ let
   inherit (pkgs) stdenv dockutil;
 in
 {
+  imports = [ ./entries.nix ];
+
   options = {
     local.dock = {
       enable = mkOption {

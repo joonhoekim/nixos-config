@@ -12,7 +12,8 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── scripts/           # 셸이 소싱하는 macOS 전용 헬퍼
 ├── casks.nix          # Homebrew cask (macOS GUI 앱) — core + 호스트가 고르는 local.casks
 ├── default-apps.nix   # 파일 종류별 기본 앱. plist 쓰기는 set-default-handlers.py
-├── home-manager.nix   # 계정·homebrew·home-manager 배선 (shared/home-manager.nix + macOS 고유분)
+├── home-manager.nix   # 계정·home-manager 배선 (shared/home-manager.nix + macOS 고유분)
+├── homebrew.nix       # brew 본체와 탭(nix-homebrew). 무엇을 까는지는 casks.nix 와 호스트
 ├── ios.nix            # Xcode (App Store, masApps)
 ├── kanata.nix         # Caps Lock 레이어·한/영 (kanata + 드라이버, 설정은 ../shared/kanata)
 ├── launchd-names.nix  # launchd 서비스가 Background App Activity 에 제 이름으로 보이게 하는 래퍼

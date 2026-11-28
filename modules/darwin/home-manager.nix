@@ -27,17 +27,6 @@
     fi
   '';
 
-  homebrew = {
-    enable = true;
-    # tap 이름을 Brewfile 에도 적는다 — 없으면 cleanup 을 켠 호스트에서 brew bundle 이 스토어 링크인
-    # tap 을 untap 하려다 Permission denied 로 실패한다.
-    taps = builtins.attrNames config.nix-homebrew.taps;
-    # casks 는 ./casks.nix 가 채운다. formula 는 nixpkgs(modules/shared/packages.nix)로, 꼭 brew 여야 하면 `brews`.
-    # onActivation.cleanup = "uninstall";
-
-    # masApps 는 ./ios.nix 에 있다(Xcode).
-  };
-
   home-manager = {
     useGlobalPkgs = true;
     # NixOS 쪽(hosts/nixos/common.nix)과 같은 값. 경로(/etc/profiles/per-user/<user>/bin)가 갈리면 절대 경로를

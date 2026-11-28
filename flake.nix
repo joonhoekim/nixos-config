@@ -127,21 +127,6 @@
           specialArgs = inputs // { inherit user identity; };
           modules = [
             home-manager.darwinModules.home-manager
-            inputs.nix-homebrew.darwinModules.nix-homebrew
-            {
-              nix-homebrew = {
-                inherit user;
-                enable = true;
-                taps = {
-                  "homebrew/homebrew-core" = inputs.homebrew-core;
-                  "homebrew/homebrew-cask" = inputs.homebrew-cask;
-                  "homebrew/homebrew-bundle" = inputs.homebrew-bundle;
-                };
-                # Allow imperative `brew tap`/`brew install` to coexist with Nix.
-                mutableTaps = true;
-                autoMigrate = true;
-              };
-            }
             dir
           ]
           ++ nixpkgs.lib.optional (name != null)

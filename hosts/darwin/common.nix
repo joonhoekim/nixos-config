@@ -8,6 +8,7 @@ in
 {
   imports = [
     ../../modules/darwin/home-manager.nix
+    ../../modules/darwin/homebrew.nix
     ../../modules/darwin/default-apps.nix
     ../../modules/darwin/ios.nix
     # Caps Lock 레이어와 한/영(오른쪽 ⌘ → F18). 레이어는 Windows 와 같은 파일이다.

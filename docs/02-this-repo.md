@@ -62,7 +62,7 @@ lib.optionalString pkgs.stdenv.hostPlatform.isDarwin
 hosts/darwin/<host>/default.nix   ← 이 Mac 전용 (stateVersion, 고른 묶음·cask)
 hosts/darwin/default.nix          ← 전용 디렉토리가 없는 Mac 의 공용 호스트
         │ 둘 다 imports ../common.nix (또는 ./common.nix)
-hosts/darwin/common.nix           ← macOS 시스템 레벨 설정 (계정, home-manager 배선, defaults, 로그인 항목, nix)
+hosts/darwin/common.nix           ← macOS 시스템 레벨 설정 (계정, home-manager 배선, nix, sudo)
 │   imports = [
 ├──→ modules/darwin/*                  ← macOS 전용 모듈
 │      home-manager.nix 는 home-manager 모듈이고 ../shared/home-manager.nix 를 쓴다

@@ -17,10 +17,11 @@ macOS(nix-darwin) 호스트에서만 쓰는 설정. 크로스 플랫폼 설정�
 ├── ios.nix            # Xcode (App Store, masApps)
 ├── kanata.nix         # Caps Lock 레이어·한/영 (kanata + 드라이버, 설정은 ../shared/kanata)
 ├── launchd-names.nix  # launchd 서비스가 Background App Activity 에 제 이름으로 보이게 하는 래퍼
+├── login-items.nix    # 로그인 때 띄우는 앱 (launchd user agent)
 └── packages.nix       # macOS 전용 패키지 (shared/packages.nix + macOS 전용 도구)
 ```
 
-시스템 레벨 설정(계정, home-manager 배선, macOS defaults, 로그인 항목)은 이 디렉토리가 아니라
+시스템 레벨 설정(계정, home-manager 배선, macOS defaults)은 이 디렉토리가 아니라
 [`../../hosts/darwin/common.nix`](../../hosts/darwin/common.nix)에 있다.
 
 ## 호스트

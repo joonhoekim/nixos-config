@@ -55,7 +55,7 @@ make, markdown…)의 macOS 기본값은 Xcode 이고, .js 는 Chrome, .css 는 
 ## 로그인 항목 — Stats·LinearMouse 를 launchd 로 띄우는 이유
 
 launchd 는 macOS 의 서비스 관리자이고, 사용자별 LaunchAgent 는 로그인 때 도는 job 이다. 최근 macOS 에서는 앱 자체의
-"로그인 시 시작" 토글이 유지되지 않아서, GUI 앱의 로그인 항목은 `launchd.user.agents`(hosts/darwin/common.nix)로
+"로그인 시 시작" 토글이 유지되지 않아서, GUI 앱의 로그인 항목은 `launchd.user.agents`(modules/darwin/login-items.nix)로
 선언한다. 앱이 그 호스트에 cask 로 선언되어 있을 때만 둔다(`hasCask`) — 앱 없이 `open -a` 를 남기면 로그인마다
 실패하고 apps/check/mac 이 그 job 의 last exit code 를 ✗ 로 보인다.
 

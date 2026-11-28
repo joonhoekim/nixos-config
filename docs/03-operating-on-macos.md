@@ -285,7 +285,7 @@ build-switch 는 활성화 뒤 `apps/rift-grid --auto` 를 부른다. 손으로 
 - 받아 온 소스가 지난번에 깐 커밋 그대로면 빌드도 재시작도 안 한다(매 build-switch 마다 창 관리자가
   깜빡이지 않게). 변경이 있는 트리는 커밋으로 비교할 수 없으니 매번 빌드한다.
 
-설치 자리는 `~/.local/bin/rift-grid`, `~/.local/bin/rift-grid-cli`. launchd 에이전트(hosts/darwin/common.nix 의
+설치 자리는 `~/.local/bin/rift-grid`, `~/.local/bin/rift-grid-cli`. launchd 에이전트(modules/darwin/login-items.nix 의
 rift-grid, [macos-internals.md](macos-internals.md#rift-grid-로그인-에이전트와-displays-have-separate-spaces))가
 이 경로를 띄우고, 셸과 rift-grid 키바인딩은 PATH 로 rift-grid-cli 에 닿는다. brew 의 원본 rift 는 쓰지 않는다
 — 설정(rice/rift-grid/config.toml)이 focus·grid 같은 포크 전용 명령을 쓰므로 원본은 그 설정을 읽지 못한다.

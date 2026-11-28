@@ -1,9 +1,13 @@
-{ ... }:
+{ user, ... }:
 
 # 가볍게 쓰는 기계라 개발 묶음과 대부분의 GUI 앱을 뺐다. 호스트별 현황은 `nix run .#inventory`.
 
 {
   imports = [ ../common.nix ];
+
+  # 이 기계가 처음 활성화된 값. 상태 호환성을 고정하므로 올리지 않는다.
+  system.stateVersion = 5;
+  home-manager.users.${user}.home.stateVersion = "23.11";
 
   # core 는 항상 깔린다.
   local.packages.bundles = [ "media" "mobile" "toys" ];

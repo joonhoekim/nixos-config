@@ -103,7 +103,8 @@ in
   system = {
     checks.verifyNixPath = false;
     primaryUser = user;
-    stateVersion = 5;
+    # 호스트가 자기 값을 고정한다(hosts/darwin/<이름>/default.nix). 여기 값은 공용 .#<arch> 에만 쓰인다.
+    stateVersion = lib.mkDefault 5;
 
     defaults = {
       NSGlobalDomain = {
